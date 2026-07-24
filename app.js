@@ -4093,7 +4093,31 @@ function updateDriveUI() {
  }
 
 
- window.deleteAssistant = async function(asstKey) {
+  window.toggleAssistantPassword = function(key) {
+    const span = document.getElementById(`asst-pass-${key}`);
+    if (span.innerText === "********") {
+      span.innerText = span.getAttribute("data-pass");
+    } else {
+      span.innerText = "********";
+    }
+  };
+  
+  window.editAssistantPassword = async function(key) {
+    const newPass = prompt("أدخل كلمة المرور الجديدة للمساعد:");
+    if (!newPass) return;
+    const managerId = localStorage.getItem("ca_manager_id");
+    if (!managerId) return;
+    try {
+      await set(ref(database, `users/${managerId}/settings/assistants/${key}/password`), newPass.trim());
+      showToast("تم تحديث كلمة المرور بنجاح", "success");
+      fetchManagerAssistants();
+    } catch (err) {
+      console.error(err);
+      showToast("فشل تحديث كلمة المرور", "err");
+    }
+  };
+
+  window.deleteAssistant = async function(asstKey) {
  const res = await Swal.fire({
  title: 'تأكيد الحذف',
  text: currentLang === 'ar' ? `هل أنت متأكد من حذف المساعد نهائياً؟` : `Delete assistant?`,
