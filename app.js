@@ -2491,23 +2491,19 @@ document.addEventListener('DOMContentLoaded', function() {
  
  const center = globalSnap.val(); // This is the MANAGER_ID
  
- const hashedP = await hashPass(p);
-  const snapshot = await get(child(ref(database), `users/${center}/settings/assistants`));
+ const snapshot = await get(child(ref(database), `users/${center}/settings/assistants`));
   if (snapshot.exists()) {
   const assistants = snapshot.val();
   let foundUsername = "";
   for (let key in assistants) {
   let uName = key;
-  let pass = "********";
+  let pass = assistants[key];
   if (typeof assistants[key] === "object") {
   uName = assistants[key].username || key;
-  pass = "********";
+  pass = assistants[key].password;
   }
-  if (sanitizeKey(uName) === u && (pass === hashedP || pass === p)) {
+  if (sanitizeKey(uName) === u && pass === p) {
   foundUsername = uName;
-  if (pass === p && p.length < 64 && typeof assistants[key] === "object") {
-    await set(ref(database, `users/${center}/settings/assistants/${key}/password`), hashedP);
-  }
   break;
   }
   }
@@ -4072,7 +4068,12 @@ function updateDriveUI() {
  <div class="assistant-avatar">${initial}</div>
  <div class="assistant-info">
  <div class="assistant-name">${uName}</div>
- <div class="assistant-sub">كلمة المرور: ${pass} &nbsp;•&nbsp; تاريخ الإنشاء: ${createdAt}</div>
+ <div class="assistant-sub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+ <span style="display:flex;align-items:center;gap:4px;">كلمة المرور: <span id="asst-pass-${key}" data-pass="${pass}">********</span> 
+ <button class="iconBtn" onclick="window.toggleAssistantPassword('${key}')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);"><i class="fa-solid fa-eye"></i></button>
+ <button class="iconBtn" onclick="window.editAssistantPassword('${key}')" style="background:none;border:none;cursor:pointer;color:var(--primary);"><i class="fa-solid fa-pen"></i></button></span>
+ <span>&nbsp;•&nbsp; تاريخ الإنشاء: ${createdAt}</span>
+</div>
  </div>
  <div class="assistant-actions">
  <button class="btn danger smallBtn" onclick="window.deleteAssistant('${key}')" style="display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-trash-can"></i> 
