@@ -4501,6 +4501,12 @@ function updateDriveUI() {
  if (checkbox && checkbox.checked !== !!currentPermissions[p.key]) {
  checkbox.checked = !!currentPermissions[p.key];
  }
+ if (p.key === 'can_manage_packages' && document.getElementById("allowAssistantPkgToggle")) {
+    const pkgToggle = document.getElementById("allowAssistantPkgToggle");
+    if (pkgToggle.checked !== !!currentPermissions[p.key]) {
+       pkgToggle.checked = !!currentPermissions[p.key];
+    }
+ }
  });
  }
 
