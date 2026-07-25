@@ -3308,9 +3308,28 @@ on("quickAttendId", "keypress", function(e) {
   });
 
   on("openGroupFeesBtn", "click", function() {
-   window.switchTab('Packages');
-   renderGroupFeesModal();
- });
+    const gList = document.getElementById("groupFeesList");
+    if (!gList) return;
+    
+    Swal.fire({
+      title: 'إدارة الباقات والمصاريف',
+      html: '<div id="swalGroupFeesContainer"></div>',
+      width: '800px',
+      showConfirmButton: false,
+      showCloseButton: true,
+      didOpen: () => {
+         document.getElementById('swalGroupFeesContainer').appendChild(gList);
+         if (typeof renderGroupFeesModal === "function") renderGroupFeesModal();
+      },
+      willClose: () => {
+         const sec = document.getElementById("secPackages");
+         const cb = sec ? sec.querySelector('.content-body') : null;
+         if (cb) cb.appendChild(gList);
+         if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
+         if (typeof populatePackages === "function") populatePackages();
+      }
+    });
+  });
 
  on("changeLangBtn", "click", function() { 
  const targetLang = (currentLang === "ar" ? "en" : "ar");
