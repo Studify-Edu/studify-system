@@ -590,7 +590,7 @@ document.addEventListener('DOMContentLoaded', function() {
  "mkt_select_grp_lbl": { ar: "تحديد الباقة / المجموعة", en: "Select Package / Group" },
  "mkt_opt_select": { ar: "-- اختر الباقة --", en: "-- Select Package --" },
  "mkt_msg_lbl": { ar: "نص الرسالة الإعلانية / التنبيه", en: "Message / Broadcast Body" },
- "mkt_msg_plc": { ar: "اكتب هنا نص الإعلان أو التنبيه...\nيمكنك استخدام الوسوم الذكية [اسم_الطالب] و [المبلغ] وسيتم استبدالها تلقائياً لكل طالب.", en: "Write your broadcast text here...\nYou can use smart tags [اسم_الطالب] and [المبلغ] for dynamic student replacement." },
+ "mkt_msg_plc": { ar: "اكتب هنا نص الإعلان أو التنبيه...\r\nيمكنك استخدام الوسوم الذكية [اسم_الطالب] و [المبلغ] وسيتم استبدالها تلقائياً لكل طالب.", en: "Write your broadcast text here...\r\nYou can use smart tags [اسم_الطالب] and [المبلغ] for dynamic student replacement." },
  "mkt_vars_tip": { ar: "المتغيرات الذكية المدعومة في الرسالة:", en: "Supported Smart Variables:" },
  "mkt_click_tip": { ar: "(اضغط على الوسم لإضافته للنص)", en: "(Click tag to insert into text)" },
  "mkt_filter_btn": { ar: "تصفية وعرض داتا الأرقام المستهدفة", en: "Filter & View Target Numbers Data" },
@@ -2870,7 +2870,7 @@ on("quickAttendId", "keypress", function(e) {
  showToast(t("err_no_manager"), "err");
  return; // يمنع فتح الواتساب
  }
- let msg = `مرحباً ${st.name}،\nتم إيداع مبلغ ${v} ج (${methodName}) \nإجمالي المدفوع: ${st.paid} ج.\n\nمع تحيات: أ/ ${currentManager}`;
+ let msg = `مرحباً ${st.name}،\r\nتم إيداع مبلغ ${v} ج (${methodName}) \r\nإجمالي المدفوع: ${st.paid} ج.\r\n\r\nمع تحيات: أ/ ${currentManager}`;
  setTimeout(function() { 
  window.open(`https://wa.me/20${st.phone}?text=${encodeURIComponent(msg)}`, '_blank'); 
  }, 1000);
@@ -2964,7 +2964,7 @@ on("quickAttendId", "keypress", function(e) {
  return;
  }
  
- let lines = notesStr.split("\n").filter(l => l.trim() !== "");
+ let lines = notesStr.split("\r\n").filter(l => l.trim() !== "");
  if (lines.length === 0) {
  container.innerHTML = `<div class="mutedCenter" style="font-size:0.85em;">${t("txt_no_notes")}</div>`;
  return;
@@ -3000,7 +3000,7 @@ on("quickAttendId", "keypress", function(e) {
  container.querySelectorAll(".edit-note-btn").forEach(btn => {
  btn.onclick = function() {
  let idx = toInt(this.getAttribute("data-index"));
- let allLines = (students[currentId].notes || "").split("\n").filter(l => l.trim() !== "");
+ let allLines = (students[currentId].notes || "").split("\r\n").filter(l => l.trim() !== "");
  let currentLine = allLines[idx];
  
  let existingDate = "";
@@ -3032,7 +3032,7 @@ on("quickAttendId", "keypress", function(e) {
  }).then((delRes) => {
  if (delRes.isConfirmed) {
  allLines.splice(idx, 1);
- students[currentId].notes = allLines.join("\n");
+ students[currentId].notes = allLines.join("\r\n");
  saveAll();
  renderStudentNotes(currentId);
  if(typeof showToast === "function") showToast(t("msg_note_deleted"), "warning");
@@ -3040,7 +3040,7 @@ on("quickAttendId", "keypress", function(e) {
  });
  } else {
  allLines[idx] = existingDate ? `[${existingDate}] : ${newText.trim()}` : newText.trim();
- students[currentId].notes = allLines.join("\n");
+ students[currentId].notes = allLines.join("\r\n");
  saveAll();
  renderStudentNotes(currentId);
  if (typeof showToast === "function") showToast(t("msg_note_edited"), "success");
@@ -3062,9 +3062,9 @@ on("quickAttendId", "keypress", function(e) {
  cancelButtonText: currentLang === 'ar' ? 'إلغاء' : 'Cancel'
  }).then((result) => {
  if (result.isConfirmed) {
- let allLines = (students[currentId].notes || "").split("\n").filter(l => l.trim() !== "");
+ let allLines = (students[currentId].notes || "").split("\r\n").filter(l => l.trim() !== "");
  allLines.splice(idx, 1);
- students[currentId].notes = allLines.join("\n");
+ students[currentId].notes = allLines.join("\r\n");
  saveAll();
  renderStudentNotes(currentId);
  if(typeof showToast === "function") showToast(t("msg_note_deleted"), "warning");
@@ -3081,7 +3081,7 @@ on("quickAttendId", "keypress", function(e) {
  
  const now = new Date(); const stamp = `[${now.toISOString().split('T')[0]}]`;
  let oldNotes = students[currentId].notes ? students[currentId].notes : "";
- students[currentId].notes = `${stamp} : ${txt}\n${oldNotes}`;
+ students[currentId].notes = `${stamp} : ${txt}\r\n${oldNotes}`;
  
  saveAll(); renderStudentNotes(currentId); showToast(t("msg_saved"));
  noteInp.value = "";
@@ -3198,7 +3198,8 @@ on("quickAttendId", "keypress", function(e) {
    if (keys.length === 0) {
      h += `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.9em;">لا توجد باقات معرفة بعد. أضف باقة جديدة أعلاه.</div>`;
    } else {
-     keys.forEach(g => {
+      h += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">`;
+      keys.forEach(g => {
        const details = window.getPkgDetails(g);
        const stCount = counts[g] || 0;
        
@@ -3230,10 +3231,11 @@ on("quickAttendId", "keypress", function(e) {
            <button class="btn danger smallBtn iconOnly delete-pkg-btn" data-group="${g}" title="حذف الباقة"><i class="fa-solid fa-trash-can"></i></button>
          </div>
        </div>`;
-     });
-   }
+      });
+      h += `</div>`;
+    }
 
-   if ($("groupFeesList")) $("groupFeesList").innerHTML = h;
+    if ($("groupFeesList")) $("groupFeesList").innerHTML = h;
 
    if ($("newPkgExpiryType")) {
      const handleExpiryTypeChange = () => {
@@ -3313,8 +3315,8 @@ on("quickAttendId", "keypress", function(e) {
     
     Swal.fire({
       title: 'إدارة الباقات والمصاريف',
-      html: '<div id="swalGroupFeesContainer"></div>',
-      width: '800px',
+      html: '<div id="swalGroupFeesContainer" style="max-height: 70vh; overflow-y: auto; overflow-x: hidden; padding-right: 5px;"></div>',
+      width: '850px',
       showConfirmButton: false,
       showCloseButton: true,
       didOpen: () => {
@@ -3401,7 +3403,7 @@ on("quickAttendId", "keypress", function(e) {
  let totalExp = 0;
  for (let i = 0; i < expArr.length; i++) totalExp += expArr[i].amount;
 
- let txt = ` *${t("report_title")}: ${prettyDate(d)}*\n\n`;
+ let txt = ` *${t("report_title")}: ${prettyDate(d)}*\r\n\r\n`;
  
  let groups = {};
  for (let i = 0; i < ids.length; i++) {
@@ -3412,22 +3414,22 @@ on("quickAttendId", "keypress", function(e) {
  groups[c]++; 
  }
  
- for(let g in groups) { txt += ` ${g}: ${groups[g]} طالب\n`; }
+ for(let g in groups) { txt += ` ${g}: ${groups[g]} طالب\r\n`; }
  
- txt += `\n إجمالي الحضور اليوم: ${ids.length}`;
- txt += `\n ${t("badge_rev")} ${rev} ج`;
+ txt += `\r\n إجمالي الحضور اليوم: ${ids.length}`;
+ txt += `\r\n ${t("badge_rev")} ${rev} ج`;
  
  if(expArr.length > 0) {
- txt += `\n\n *${t("wa_exp")}:*`;
+ txt += `\r\n\r\n *${t("wa_exp")}:*`;
  for (let i = 0; i < expArr.length; i++) {
  let ex = expArr[i];
- txt += `\n- ${ex.amount} ج (${ex.reason})`; 
+ txt += `\r\n- ${ex.amount} ج (${ex.reason})`; 
  }
- txt += `\n\n *${t("wa_net")}: ${rev - totalExp} ج*`;
+ txt += `\r\n\r\n *${t("wa_net")}: ${rev - totalExp} ج*`;
  }
  
  let shiftStr = currentLang === 'ar' ? `إعداد الشيفت: أ/ ${currentManager}` : `Shift Prepared by: ${currentManager}`;
- txt = `${shiftStr}\n\n` + txt;
+ txt = `${shiftStr}\r\n\r\n` + txt;
  navigator.clipboard.writeText(txt).then(function() { showToast(t("msg_copied")); });
  });
 
@@ -3450,7 +3452,7 @@ on("quickAttendId", "keypress", function(e) {
  let s = filled[i];
  let history = s.attendanceDates ? s.attendanceDates.join(" | ") : "";
  let rankAr = s.rank === 'vip' ? 'VIP ' : (s.rank === 'warn' ? 'إنذار ️' : 'عادي ');
- let cleanNotes = s.notes ? s.notes.replace(/\n/g, " - ") : ""; 
+ let cleanNotes = s.notes ? s.notes.replace(/\r\n/g, " - ") : ""; 
  
  stData.push([s.id, s.name, s.className || "عام", s.phone, s.paid, rankAr, history, cleanNotes]);
  }
@@ -3535,7 +3537,7 @@ on("importExcelInput", "change", async function(e) {
  st.rank = rankAr.includes("VIP") ? "vip" : (rankAr.includes("إنذار") ? "warn" : "normal");
  
  let n = row["الملاحظات"] || "";
- st.notes = n ? n.replace(/ - /g, "\n") : "";
+ st.notes = n ? n.replace(/ - /g, "\r\n") : "";
  
  let h = row["سجل الحضور"] || row["History"] || "";
  if(h) {
@@ -5208,7 +5210,7 @@ function updateDriveUI() {
  if(phone) {
  let centerMgr = evalData.manager || "إدارة السنتر";
  let mName = method === "instapay" ? "إنستاباي " : (method === "wallet" ? "فودافون كاش " : "كاش ");
- let msg = `مرحباً ${name}،\nتم تسجيل حضورك بنجاح لحصة اليوم (${className}) \nالمبلغ المدفوع: ${amount} ج (${mName}).\n\nمع تحيات: أ/ ${centerMgr}`;
+ let msg = `مرحباً ${name}،\r\nتم تسجيل حضورك بنجاح لحصة اليوم (${className}) \r\nالمبلغ المدفوع: ${amount} ج (${mName}).\r\n\r\nمع تحيات: أ/ ${centerMgr}`;
  window.open(`https://wa.me/20${phone}?text=${encodeURIComponent(msg)}`, '_blank');
  }
  });
@@ -5539,7 +5541,7 @@ function updateDriveUI() {
  let msgInp = $("marketingMsgBody");
  if (val === "debtors" && msgInp) {
  if (!msgInp.value || msgInp.value.trim() === "") {
- msgInp.value = "مساء الخير أ/ [اسم_الطالب]،\nنتمنى أن تكون بكل خير.\nحابة أفكّرك بأن الرصيد المتبقي من رسوم الكورس هو [المبلغ] ج، ونستأذنك في استكماله خلال حضورك في أقرب محاضرة لضمان استمرار الخدمة بسلاسة.\nشكراً جداً لتعاونك معنا ";
+ msgInp.value = "مساء الخير أ/ [اسم_الطالب]،\r\nنتمنى أن تكون بكل خير.\r\nحابة أفكّرك بأن الرصيد المتبقي من رسوم الكورس هو [المبلغ] ج، ونستأذنك في استكماله خلال حضورك في أقرب محاضرة لضمان استمرار الخدمة بسلاسة.\r\nشكراً جداً لتعاونك معنا ";
  }
  }
  });
@@ -5614,7 +5616,7 @@ function updateDriveUI() {
  customMsg = customMsg.replace(/\[اسم_الطالب\]/g, item.name);
  customMsg = customMsg.replace(/\[المبلغ\]/g, item.remain || 0);
  } else {
- customMsg = `مرحباً بك أ/ ${item.name}،\nيرجى التواصل مع إدارة السنتر.`;
+ customMsg = `مرحباً بك أ/ ${item.name}،\r\nيرجى التواصل مع إدارة السنتر.`;
  }
  
  let waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(customMsg)}`;
@@ -5650,7 +5652,7 @@ function updateDriveUI() {
  return;
  }
  let arr = currentCampaignList.map(item => item.phone);
- let textToCopy = arr.join("\n");
+ let textToCopy = arr.join("\r\n");
  navigator.clipboard.writeText(textToCopy).then(() => {
  showToast(`تم نسخ ${arr.length} رقم موبايل بنجاح (جاهز للصق في برامج الإرسال)`, "success");
  playSound("beep");
@@ -5681,7 +5683,7 @@ function updateDriveUI() {
  customMsg = customMsg.replace(/\[اسم_الطالب\]/g, item.name);
  customMsg = customMsg.replace(/\[المبلغ\]/g, item.remain || 0);
  } else {
- customMsg = `مرحباً بك أ/ ${item.name}،\nيرجى التواصل مع إدارة السنتر.`;
+ customMsg = `مرحباً بك أ/ ${item.name}،\r\nيرجى التواصل مع إدارة السنتر.`;
  }
 
  let cleanPhone = item.phone.startsWith("0") ? "+2" + item.phone : "+20" + item.phone;
@@ -6030,7 +6032,7 @@ function updateDriveUI() {
  
  div.innerHTML = `
  <div style="font-size:0.85em; color:var(--text-secondary); margin-bottom:5px;"> ${d.toLocaleString()}</div>
- <div style="font-weight:bold; margin-bottom:10px; color:var(--text-main);">${ann.message.replace(/\n/g, '<br>')}</div>
+ <div style="font-weight:bold; margin-bottom:10px; color:var(--text-main);">${ann.message.replace(/\r\n/g, '<br>')}</div>
  <div style="font-size:0.85em; color:var(--primary);">️ تمت القراءة بواسطة: ${readsCount} مساعد</div>
  `;
  managerBroadcastHistory.appendChild(div);
@@ -6076,7 +6078,7 @@ function updateDriveUI() {
  div.innerHTML = `
  ${dotHtml}
  <div style="font-size:0.85em; color:var(--text-secondary); margin-bottom:8px;"> ${d.toLocaleString()}</div>
- <div style="font-weight:bold; color:var(--text-main); line-height: 1.5; padding-left: ${!isRead ? '20px' : '0'}">${ann.message.replace(/\n/g, '<br>')}</div>
+ <div style="font-weight:bold; color:var(--text-main); line-height: 1.5; padding-left: ${!isRead ? '20px' : '0'}">${ann.message.replace(/\r\n/g, '<br>')}</div>
  `;
  
  noticeBoardList.appendChild(div);
@@ -6401,8 +6403,8 @@ function updateDriveUI() {
 
  // Build tree view
  if (treeEl) {
- let tree = `<span style="color:var(--success);">users/</span>\n`;
- tree += ` <span style="color:var(--success);">${mid}/</span>\n`;
+ let tree = `<span style="color:var(--success);">users/</span>\r\n`;
+ tree += ` <span style="color:var(--success);">${mid}/</span>\r\n`;
  const allKeys = Object.keys(remote).filter(k => k !== '_lastModified').sort();
  for (let i = 0; i < allKeys.length; i++) {
  const k = allKeys[i];
@@ -6414,21 +6416,21 @@ function updateDriveUI() {
  if (typeof val === 'object' && val !== null) {
  const subKeys = Object.keys(val);
  const count = subKeys.length;
- tree += ` ${connector}<span style="color:var(--primary);"><strong>${k}</strong></span> <span style="color:var(--text-secondary);">(${count} عنصر)</span>\n`;
+ tree += ` ${connector}<span style="color:var(--primary);"><strong>${k}</strong></span> <span style="color:var(--text-secondary);">(${count} عنصر)</span>\r\n`;
  const preview = subKeys.slice(0, 3);
  for (let j = 0; j < preview.length; j++) {
  const subIsLast = j === preview.length - 1 && count <= 3;
  const sc = subIsLast ? '└── ' : '├── ';
- tree += ` ${subConnector}${sc}<span style="color:var(--text-primary);">${preview[j]}</span>\n`;
+ tree += ` ${subConnector}${sc}<span style="color:var(--text-primary);">${preview[j]}</span>\r\n`;
  }
  if (count > 3) {
- tree += ` ${subConnector}└── <span style="color:var(--text-secondary);">... و ${count - 3} عنصر آخر</span>\n`;
+ tree += ` ${subConnector}└── <span style="color:var(--text-secondary);">... و ${count - 3} عنصر آخر</span>\r\n`;
  }
  } else {
- tree += ` ${connector}<span style="color:var(--warning);">${k}</span>: <span style="color:var(--text-secondary);">${String(val).substring(0, 50)}</span>\n`;
+ tree += ` ${connector}<span style="color:var(--warning);">${k}</span>: <span style="color:var(--text-secondary);">${String(val).substring(0, 50)}</span>\r\n`;
  }
  }
- tree += ` └── <span style="color:var(--warning);">_lastModified</span>: <span style="color:var(--text-secondary);">${lastModStr}</span>\n`;
+ tree += ` └── <span style="color:var(--warning);">_lastModified</span>: <span style="color:var(--text-secondary);">${lastModStr}</span>\r\n`;
  treeEl.innerHTML = `<pre style="margin:0; white-space:pre; overflow-x:auto;">${tree}</pre>`;
  }
 
