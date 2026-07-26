@@ -1251,8 +1251,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
  if (remoteTimestamp >= localTimestamp || (localStudentCount === 0 && remoteStudentCount > 0)) {
  // Server is newer or equal, or local DB is empty (Incognito/new device) — use server data
- students = remote.students || students;
- deletedStudents = remote.deletedStudents || deletedStudents;
+ students = sanitizeFirebaseObject(remote.students || students);
+  deletedStudents = sanitizeFirebaseObject(remote.deletedStudents || deletedStudents);
  attByDate = remote.attendance || attByDate;
  revenueByDate = remote.finances?.revenue || revenueByDate;
  expensesByDate = remote.finances?.expenses || expensesByDate;
@@ -1279,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', function() {
  } else {
  // Local is newer — merge granularly (field-level)
  console.log("[loadAll] Local data is newer — performing granular merge");
- const remoteStudents = remote.students || {};
+ const remoteStudents = sanitizeFirebaseObject(remote.students || {});
  const remoteAtt = remote.attendance || {};
  
  // Merge students: keep the record with the newer lastModified
@@ -1963,7 +1963,7 @@ document.addEventListener('DOMContentLoaded', function() {
  let filled = [];
  const allStudents = Object.values(students);
  for (let i = 0; i < allStudents.length; i++) {
- if (allStudents[i].name || allStudents[i].paid > 0) filled.push(allStudents[i]);
+ if (allStudents[i] && (allStudents[i].name || allStudents[i].paid > 0)) filled.push(allStudents[i]);
  }
  
  const today = nowDateStr(); 
@@ -4251,7 +4251,7 @@ function updateDriveUI() {
  // populate class filter
  if (clsSel) {
  const existing = [...clsSel.options].map(o => o.value);
- const classes = [...new Set(Object.values(students).map(s => s.className || "عام"))];
+ const classes = [...new Set(Object.values(students).filter(s => s).map(s => s.className || "عام"))];
  classes.forEach(c => {
  if (!existing.includes(c)) {
  const opt = document.createElement("option");
@@ -6169,7 +6169,7 @@ function updateDriveUI() {
  showToast("تم رفع البيانات إلى السحابة ", "success");
  } else {
  console.log("[Sync] Server is newer → Pulling");
- const remoteStudents = remote.students || {};
+ const remoteStudents = sanitizeFirebaseObject(remote.students || {});
  for (const id in remoteStudents) {
  const remoteStudent = remoteStudents[id];
  const localStudent = students[id];
@@ -6297,7 +6297,23 @@ function updateDriveUI() {
  // ==========================================
  // CLOUD DATA MONITOR
  // ==========================================
- const CLOUD_MONITOR_SECTIONS = [
+ 
+// Firebase array-to-object sanitizer
+function sanitizeFirebaseObject(obj) {
+  if (!obj) return {};
+  if (Array.isArray(obj)) {
+    const newObj = {};
+    obj.forEach((item, idx) => {
+      if (item) newObj[String(idx)] = item;
+    });
+    return newObj;
+  }
+  // Clean nulls from objects just in case
+  Object.keys(obj).forEach(k => { if (!obj[k]) delete obj[k]; });
+  return obj;
+}
+
+const CLOUD_MONITOR_SECTIONS = [
  { key: 'students', firebaseKey: 'students', label: 'الطلاب', localVar: () => students },
  { key: 'attendance', firebaseKey: 'attendance', label: 'الحضور والغياب', localVar: () => attByDate },
  { key: 'revenue', firebaseKey: 'finances/revenue', label: 'الإيرادات اليومية', localVar: () => revenueByDate },
