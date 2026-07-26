@@ -5148,51 +5148,7 @@ function updateDriveUI() {
   if ($("vaultWalletAll")) $("vaultWalletAll").textContent = (allVaults.wallet ? allVaults.wallet.net : 0) + " ج";
   if ($("vaultInstapayAll")) $("vaultInstapayAll").textContent = (allVaults.instapay ? allVaults.instapay.net : 0) + " ج";
 
-
-  let todayVaults = calculateVaultsBalances(nowDateStr());
-  let allVaults = calculateVaultsBalances();
-
-  const vaultNames = { cash: "كاش", wallet: "فودافون كاش", instapay: "إنستا باي" };
-  const vaultIcons = { cash: "fa-money-bill-wave", wallet: "fa-wallet", instapay: "fa-mobile-screen" };
-  const vaultColors = { cash: "var(--success)", wallet: "var(--danger)", instapay: "var(--primary)" };
-  
-  let vaultsHtml = `<div style="margin-top:20px;">
-    <h3 style="color:var(--primary); margin-bottom:10px;"><i class="fa-solid fa-vault"></i> تفاصيل الخزائن وتقفيل الشيفت</h3>
-    
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-      
-      <!-- أرصدة اليوم -->
-      <div style="background:var(--bg-surface); padding:15px; border-radius:10px; border:1px solid var(--border);">
-         <h4 style="margin:0 0 10px 0; color:var(--text-primary);"><i class="fa-solid fa-calendar-day"></i> تقفيل شيفت اليوم</h4>
-         <div style="display:flex; flex-direction:column; gap:8px;">`;
-         
-  ['cash', 'wallet', 'instapay'].forEach(k => {
-      let v = todayVaults[k] || {income:0, expense:0, net:0};
-      vaultsHtml += `
-          <div style="display:flex; justify-content:space-between; padding:8px; background:var(--bg-inset); border-radius:6px;">
-             <span style="color:${vaultColors[k]}; font-weight:bold;"><i class="fa-solid ${vaultIcons[k]}"></i> ${vaultNames[k]}</span>
-             <span style="font-weight:bold;">${v.net} ج <span style="font-size:0.8em; color:var(--text-secondary);">(دخل ${v.income} - خرج ${v.expense})</span></span>
-          </div>`;
-  });
-  vaultsHtml += `</div></div>
-      
-      <!-- إجمالي المركز -->
-      <div style="background:var(--bg-surface); padding:15px; border-radius:10px; border:1px solid var(--border);">
-         <h4 style="margin:0 0 10px 0; color:var(--text-primary);"><i class="fa-solid fa-building-columns"></i> إجمالي أرصدة المركز (كل الأيام)</h4>
-         <div style="display:flex; flex-direction:column; gap:8px;">`;
-         
-  ['cash', 'wallet', 'instapay'].forEach(k => {
-      let v = allVaults[k] || {income:0, expense:0, net:0};
-      vaultsHtml += `
-          <div style="display:flex; justify-content:space-between; padding:8px; background:var(--bg-inset); border-radius:6px;">
-             <span style="color:${vaultColors[k]}; font-weight:bold;"><i class="fa-solid ${vaultIcons[k]}"></i> ${vaultNames[k]}</span>
-             <span style="font-weight:bold;">${v.net} ج</span>
-          </div>`;
-  });
-  vaultsHtml += `</div></div></div></div>`;
-
- if($("secReports") && $("secReports").querySelector(".card")) { const target = $("secReports").querySelector(".card"); let vDiv = document.getElementById("vaultsContainer"); if(!vDiv) { vDiv = document.createElement("div"); vDiv.id = "vaultsContainer"; target.insertBefore(vDiv, target.children[2]); } vDiv.innerHTML = vaultsHtml; }
- if ($("debtorsCount")) $("debtorsCount").textContent = debtors.length;
+  if ($("debtorsCount")) $("debtorsCount").textContent = debtors.length;
 
  const tb = $("debtsTable");
  if (tb) {
