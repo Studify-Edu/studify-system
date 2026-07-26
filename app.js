@@ -5140,6 +5140,18 @@ function updateDriveUI() {
   let todayVaults = calculateVaultsBalances(nowDateStr());
   let allVaults = calculateVaultsBalances();
 
+  if ($("vaultCashToday")) $("vaultCashToday").textContent = (todayVaults.cash ? todayVaults.cash.net : 0) + " ج";
+  if ($("vaultWalletToday")) $("vaultWalletToday").textContent = (todayVaults.wallet ? todayVaults.wallet.net : 0) + " ج";
+  if ($("vaultInstapayToday")) $("vaultInstapayToday").textContent = (todayVaults.instapay ? todayVaults.instapay.net : 0) + " ج";
+  
+  if ($("vaultCashAll")) $("vaultCashAll").textContent = (allVaults.cash ? allVaults.cash.net : 0) + " ج";
+  if ($("vaultWalletAll")) $("vaultWalletAll").textContent = (allVaults.wallet ? allVaults.wallet.net : 0) + " ج";
+  if ($("vaultInstapayAll")) $("vaultInstapayAll").textContent = (allVaults.instapay ? allVaults.instapay.net : 0) + " ج";
+
+
+  let todayVaults = calculateVaultsBalances(nowDateStr());
+  let allVaults = calculateVaultsBalances();
+
   const vaultNames = { cash: "كاش", wallet: "فودافون كاش", instapay: "إنستا باي" };
   const vaultIcons = { cash: "fa-money-bill-wave", wallet: "fa-wallet", instapay: "fa-mobile-screen" };
   const vaultColors = { cash: "var(--success)", wallet: "var(--danger)", instapay: "var(--primary)" };

@@ -15,8 +15,8 @@
 
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V47">
- <link rel="stylesheet" href="icons.css?v=STUDIFY_V47">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V48">
+ <link rel="stylesheet" href="icons.css?v=STUDIFY_V48">
  
  <!-- PREVENT THEME FLASH -->
  <script>
@@ -1116,9 +1116,46 @@
  <h2 data-i18n="reports_main_title"> التقارير التحليلية والمالية</h2>
  <button id="exportReportExcelBtn" class="btn success" style="font-size: 1em; padding: 10px 20px; font-weight: bold;" data-i18n="btn_export_colored"> تصدير التقرير (Excel ملون)</button>
  </div>
- </div>
+  <!-- ====== VAULTS STATS (تقفيل الشيفت والأرصدة) ====== -->
+  <div class="card" style="margin-bottom:25px; background:var(--bg-surface); border:1px solid var(--border);">
+     <h3 style="color:var(--primary); margin:0 0 15px 0;"><i class="fa-solid fa-vault"></i> أرصدة الخزائن وتقفيل الشيفت</h3>
+     
+     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        
+        <!-- Cash Card -->
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:10px;">
+           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-weight:bold; color:#166534;"><i class="fa-solid fa-money-bill-wave"></i> درج الكاش</span>
+              <span class="badge" style="background:#dcfce7; color:#15803d;">كاش</span>
+           </div>
+           <div style="font-size:0.9em; color:#166534;">اليوم: <b id="vaultCashToday" style="font-size:1.3em; color:#15803d;">0 ج</b></div>
+           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;">الإجمالي الكلي: <b id="vaultCashAll">0 ج</b></div>
+        </div>
 
- <h2 data-i18n="term_fin_summary"> الملخص المالي التحليلي للترم</h2>
+        <!-- Instapay Card -->
+        <div style="background:#e0f2fe; border:1px solid #bae6fd; padding:15px; border-radius:10px;">
+           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-weight:bold; color:#0369a1;"><i class="fa-solid fa-mobile-screen"></i> حساب إنستا باي</span>
+              <span class="badge" style="background:#bae6fd; color:#0284c7;">InstaPay</span>
+           </div>
+           <div style="font-size:0.9em; color:#0369a1;">اليوم: <b id="vaultInstapayToday" style="font-size:1.3em; color:#0284c7;">0 ج</b></div>
+           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;">الإجمالي الكلي: <b id="vaultInstapayAll">0 ج</b></div>
+        </div>
+
+        <!-- Wallet Card -->
+        <div style="background:#fef2f2; border:1px solid #fecaca; padding:15px; border-radius:10px;">
+           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-weight:bold; color:#991b1b;"><i class="fa-solid fa-wallet"></i> فودافون كاش / محفظة</span>
+              <span class="badge" style="background:#fecaca; color:#dc2626;">محفظة</span>
+           </div>
+           <div style="font-size:0.9em; color:#991b1b;">اليوم: <b id="vaultWalletToday" style="font-size:1.3em; color:#dc2626;">0 ج</b></div>
+           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;">الإجمالي الكلي: <b id="vaultWalletAll">0 ج</b></div>
+        </div>
+
+     </div>
+  </div>
+
+  <h2 data-i18n="term_fin_summary"> الملخص المالي التحليلي للترم</h2>
  <div class="finance-grid" style="margin-bottom: 30px;">
  <div class="finance-card" style="border-inline-start: 4px solid var(--primary);">
  <h4 data-i18n="term_total_req" style="color: var(--primary); font-weight: bold;">إجمالي المطلوب (الكامل)</h4>
@@ -1807,6 +1844,6 @@
  <!-- Firebase SDK -->
  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"></script>
  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js"></script>
- <script type="module" src="app.js?v=STUDIFY_V47"></script>
+ <script type="module" src="app.js?v=STUDIFY_V48"></script>
 </body>
 </html>
