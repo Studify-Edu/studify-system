@@ -5537,7 +5537,27 @@ function updateDriveUI() {
  
  if(count === 0) html = `<div class="mutedCenter">${t("txt_no_rev")}</div>`;
  
- if($("revenueModalBody")) $("revenueModalBody").innerHTML = html;
+ 
+  let todayV = calculateVaultsBalances(today);
+  let vaultCardsHeader = `
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:15px; background:var(--bg-inset); padding:10px; border-radius:10px; text-align:center;">
+       <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:8px; border-radius:8px;">
+          <div style="font-size:0.8em; color:#166534; font-weight:bold;"><i class="fa-solid fa-money-bill-wave"></i> كاش</div>
+          <div style="font-size:1.1em; font-weight:bold; color:#15803d;">${todayV.cash ? todayV.cash.net : 0} ج</div>
+       </div>
+       <div style="background:#e0f2fe; border:1px solid #bae6fd; padding:8px; border-radius:8px;">
+          <div style="font-size:0.8em; color:#0369a1; font-weight:bold;"><i class="fa-solid fa-mobile-screen"></i> إنستاباي</div>
+          <div style="font-size:1.1em; font-weight:bold; color:#0284c7;">${todayV.instapay ? todayV.instapay.net : 0} ج</div>
+       </div>
+       <div style="background:#fef2f2; border:1px solid #fecaca; padding:8px; border-radius:8px;">
+          <div style="font-size:0.8em; color:#991b1b; font-weight:bold;"><i class="fa-solid fa-wallet"></i> فودافون كاش</div>
+          <div style="font-size:1.1em; font-weight:bold; color:#dc2626;">${todayV.wallet ? todayV.wallet.net : 0} ج</div>
+       </div>
+    </div>
+  `;
+  html = vaultCardsHeader + html;
+
+  if($("revenueModalBody")) $("revenueModalBody").innerHTML = html;
  if($("revenueModal")) $("revenueModal").classList.remove("hidden");
  });
 
