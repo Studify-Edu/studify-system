@@ -3178,7 +3178,7 @@ on("quickAttendId", "keypress", function(e) {
  
  const today = nowDateStr(); 
  if(!expensesByDate[today]) expensesByDate[today] = [];
- expensesByDate[today].push({amount:a, reason:r}); saveAll();
+ expensesByDate[today].push({amount:a, reason:r, method:m}); saveAll();
  
  $("expenseAmtInp").value = ""; $("expenseReasonInp").value = ""; 
  showToast(t("msg_exp_saved")); renderReport(today);
@@ -5136,6 +5136,50 @@ function updateDriveUI() {
  if ($("totalExpectedTerm")) $("totalExpectedTerm").textContent = totalExpected;
  if ($("totalPaidTerm")) $("totalPaidTerm").textContent = totalPaid;
  if ($("totalRemainingTerm")) $("totalRemainingTerm").textContent = totalRemaining;
+
+  let todayVaults = calculateVaultsBalances(nowDateStr());
+  let allVaults = calculateVaultsBalances();
+
+  const vaultNames = { cash: "كاش", wallet: "فودافون كاش", instapay: "إنستا باي" };
+  const vaultIcons = { cash: "fa-money-bill-wave", wallet: "fa-wallet", instapay: "fa-mobile-screen" };
+  const vaultColors = { cash: "var(--success)", wallet: "var(--danger)", instapay: "var(--primary)" };
+  
+  let vaultsHtml = `<div style="margin-top:20px;">
+    <h3 style="color:var(--primary); margin-bottom:10px;"><i class="fa-solid fa-vault"></i> تفاصيل الخزائن وتقفيل الشيفت</h3>
+    
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+      
+      <!-- أرصدة اليوم -->
+      <div style="background:var(--bg-surface); padding:15px; border-radius:10px; border:1px solid var(--border);">
+         <h4 style="margin:0 0 10px 0; color:var(--text-primary);"><i class="fa-solid fa-calendar-day"></i> تقفيل شيفت اليوم</h4>
+         <div style="display:flex; flex-direction:column; gap:8px;">`;
+         
+  ['cash', 'wallet', 'instapay'].forEach(k => {
+      let v = todayVaults[k] || {income:0, expense:0, net:0};
+      vaultsHtml += `
+          <div style="display:flex; justify-content:space-between; padding:8px; background:var(--bg-inset); border-radius:6px;">
+             <span style="color:${vaultColors[k]}; font-weight:bold;"><i class="fa-solid ${vaultIcons[k]}"></i> ${vaultNames[k]}</span>
+             <span style="font-weight:bold;">${v.net} ج <span style="font-size:0.8em; color:var(--text-secondary);">(دخل ${v.income} - خرج ${v.expense})</span></span>
+          </div>`;
+  });
+  vaultsHtml += `</div></div>
+      
+      <!-- إجمالي المركز -->
+      <div style="background:var(--bg-surface); padding:15px; border-radius:10px; border:1px solid var(--border);">
+         <h4 style="margin:0 0 10px 0; color:var(--text-primary);"><i class="fa-solid fa-building-columns"></i> إجمالي أرصدة المركز (كل الأيام)</h4>
+         <div style="display:flex; flex-direction:column; gap:8px;">`;
+         
+  ['cash', 'wallet', 'instapay'].forEach(k => {
+      let v = allVaults[k] || {income:0, expense:0, net:0};
+      vaultsHtml += `
+          <div style="display:flex; justify-content:space-between; padding:8px; background:var(--bg-inset); border-radius:6px;">
+             <span style="color:${vaultColors[k]}; font-weight:bold;"><i class="fa-solid ${vaultIcons[k]}"></i> ${vaultNames[k]}</span>
+             <span style="font-weight:bold;">${v.net} ج</span>
+          </div>`;
+  });
+  vaultsHtml += `</div></div></div></div>`;
+
+ if($("secReports") && $("secReports").querySelector(".card")) { const target = $("secReports").querySelector(".card"); let vDiv = document.getElementById("vaultsContainer"); if(!vDiv) { vDiv = document.createElement("div"); vDiv.id = "vaultsContainer"; target.insertBefore(vDiv, target.children[2]); } vDiv.innerHTML = vaultsHtml; }
  if ($("debtorsCount")) $("debtorsCount").textContent = debtors.length;
 
  const tb = $("debtsTable");
@@ -5676,14 +5720,7 @@ function updateDriveUI() {
  
  // تسجيل العائد في إيرادات اليوم التلقائية بالخزينة كاش
  let today = nowDateStr();
- if(!revenueByDate[today]) revenueByDate[today] = [];
- revenueByDate[today].push({
- stId: `مبيعات مذكرات (#${b.name})`,
- stName: `بيع نسخة مذكرة: ${b.name}`,
- amount: b.price,
- method: "cash",
- ts: Date.now()
- });
+ revenueByDate[today] = (revenueByDate[today] || 0) + b.price;
  
  saveAll();
  renderBookletsStock();
@@ -6710,7 +6747,7 @@ const CLOUD_MONITOR_SECTIONS = [
 });
 
 
-window.payStudentInstallment = function(stId, instId) {
+window.payStudentInstallment = function(stId, instId, method="cash") {
     const st = students[stId];
     if (!st || !st.installments) return;
     const inst = st.installments.find(i => i.id === instId);
@@ -6722,7 +6759,8 @@ window.payStudentInstallment = function(stId, instId) {
         id: "pay_" + Date.now(),
         date: nowDateStr(),
         amount: inst.amount,
-        type: "قسط: " + inst.name
+        type: "قسط: " + inst.name,
+        method: method
     });
     
     // Update student total paid
@@ -6748,4 +6786,44 @@ window.sendInstallmentReminder = function(stId, instId) {
 يرجى المبادرة بالسداد. شكراً لك.`);
     
     window.open(`https://wa.me/20${st.phone}?text=${msg}`, '_blank');
+};
+
+
+window.calculateVaultsBalances = function(dateFilter) {
+    let vaults = {
+        cash: { income: 0, expense: 0, net: 0 },
+        wallet: { income: 0, expense: 0, net: 0 },
+        instapay: { income: 0, expense: 0, net: 0 }
+    };
+
+    // 1. Students Payments
+    Object.values(students).forEach(st => {
+        if (st && st.payments) {
+            st.payments.forEach(p => {
+                if (!dateFilter || p.date === dateFilter) {
+                    let m = p.method || "cash";
+                    if (!vaults[m]) vaults[m] = { income: 0, expense: 0, net: 0 };
+                    vaults[m].income += toInt(p.amount);
+                }
+            });
+        }
+    });
+    
+    // 2. Expenses
+    for (let d in expensesByDate) {
+        if (!dateFilter || d === dateFilter) {
+            expensesByDate[d].forEach(exp => {
+                let m = exp.method || "cash";
+                if (!vaults[m]) vaults[m] = { income: 0, expense: 0, net: 0 };
+                vaults[m].expense += toInt(exp.amount);
+            });
+        }
+    }
+    
+    // Calculate Net
+    Object.keys(vaults).forEach(k => {
+        vaults[k].net = vaults[k].income - vaults[k].expense;
+    });
+
+    return vaults;
 };
