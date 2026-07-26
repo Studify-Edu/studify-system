@@ -1133,7 +1133,13 @@ document.addEventListener('DOMContentLoaded', function() {
  secureSave(K_BOOKLETS, bookletsStock)
  ]);
 
- updateTopStats(); updateFinanceSummary(); renderCharts();
+ updateTopStats(); updateFinanceSummary();
+  if (typeof renderCharts === "function") renderCharts();
+  if (typeof renderList === "function") renderList(true);
+  if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
+  if (typeof renderManagerTermReport === "function") renderManagerTermReport();
+  if (typeof populatePackages === "function") populatePackages();
+  if (typeof updateManagerPermissionsUI === "function") updateManagerPermissionsUI();
  if (typeof renderReportsPage === "function") renderReportsPage();
 
  // Push to Firebase
@@ -2452,14 +2458,18 @@ document.addEventListener('DOMContentLoaded', function() {
  if (info.password === p && p.length < 64) {
  await set(ref(database, `users/${u}/settings/info/password`), hashedP);
  }
- localStorage.setItem(K_AUTH, "1"); 
- localStorage.setItem(K_ROLE, "admin"); 
- localStorage.setItem("ca_manager_id", u);
- localStorage.setItem("ca_current_username", "المدير");
- window.CURRENT_MANAGER_ID = u;
- window.CURRENT_ROLE = "admin";
- checkAuth(); 
- return;
+ localStorage.setItem(K_AUTH, "1");
+  localStorage.setItem(K_ROLE, "admin");
+  localStorage.setItem("ca_manager_id", u);
+  localStorage.setItem("ca_current_username", "المدير");
+  window.CURRENT_MANAGER_ID = u;
+  window.CURRENT_ROLE = "admin";
+  if (typeof showToast === "function") showToast("جاري تحميل بياناتك من السحابة...", "info");
+  await loadAll();
+  await loadPermissions();
+  if (typeof setupPermissionsListener === "function") setupPermissionsListener();
+  checkAuth();
+  return;
  }
  }
  showToast(t("msg_err_pass") || "خطأ في بيانات الدخول", "err"); 
@@ -2508,14 +2518,18 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   }
  if (foundUsername) {
- localStorage.setItem(K_AUTH, "1"); 
- localStorage.setItem(K_ROLE, "assistant"); 
- localStorage.setItem("ca_manager_id", center);
- localStorage.setItem("ca_current_username", foundUsername);
- window.CURRENT_MANAGER_ID = center;
- window.CURRENT_ROLE = "assistant";
- checkAuth(); 
- return;
+ localStorage.setItem(K_AUTH, "1");
+  localStorage.setItem(K_ROLE, "assistant");
+  localStorage.setItem("ca_manager_id", center);
+  localStorage.setItem("ca_current_username", foundUsername);
+  window.CURRENT_MANAGER_ID = center;
+  window.CURRENT_ROLE = "assistant";
+  if (typeof showToast === "function") showToast("جاري تحميل بياناتك من السحابة...", "info");
+  await loadAll();
+  await loadPermissions();
+  if (typeof setupPermissionsListener === "function") setupPermissionsListener();
+  checkAuth();
+  return;
  }
  }
  showToast(t("msg_err_pass") || "كلمة المرور غير صحيحة", "err"); 
