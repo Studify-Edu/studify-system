@@ -6827,3 +6827,79 @@ window.calculateVaultsBalances = function(dateFilter) {
 
     return vaults;
 };
+
+
+window.renderInstallmentsDashboard = function() {
+    const tbody = $("installmentsTbody");
+    if (!tbody) return;
+    
+    const filter = $("filterInstallmentsStatus") ? $("filterInstallmentsStatus").value : "all";
+    const todayStr = nowDateStr().split('T')[0];
+    const todayDate = new Date(todayStr);
+    const nextWeekDate = new Date(todayDate);
+    nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+    
+    let html = "";
+    let hasRecords = false;
+    
+    Object.values(students).forEach(st => {
+        if (!st || !st.installments || st.paymentPlan !== "installments") return;
+        
+        st.installments.forEach(inst => {
+            if (inst.paid) return; // Only show unpaid installments
+            
+            const dueDate = new Date(inst.dueDate);
+            const isOverdue = dueDate < todayDate;
+            const isUpcoming = dueDate >= todayDate && dueDate <= nextWeekDate;
+            
+            if (filter === "overdue" && !isOverdue) return;
+            if (filter === "upcoming" && !isUpcoming) return;
+            
+            hasRecords = true;
+            
+            let statusBadge = "";
+            if (isOverdue) {
+               statusBadge = `<span class="badge" style="background:#fee2e2; color:#991b1b;"><i class="fa-solid fa-circle-exclamation"></i> متأخر</span>`;
+            } else if (isUpcoming) {
+               statusBadge = `<span class="badge" style="background:#fef9c3; color:#854d0e;"><i class="fa-solid fa-clock"></i> قريباً</span>`;
+            } else {
+               statusBadge = `<span class="badge" style="background:#f1f5f9; color:#475569;">مستقبلي</span>`;
+            }
+            
+            html += `
+              <tr>
+                <td>${st.name}</td>
+                <td>${st.phone || '-'}</td>
+                <td>${st.className || '-'}</td>
+                <td>${inst.name}</td>
+                <td style="font-weight:bold; color:var(--success);">${inst.amount} ج</td>
+                <td>${inst.dueDate}</td>
+                <td>${statusBadge}</td>
+                <td>
+                  <div style="display:flex; gap:5px;">
+                     <select id="dashPayInstMethod_${inst.id}" class="inp" style="width:auto; padding:2px 5px; font-size:0.85em;"><option value="cash">كاش</option><option value="instapay">إنستاباي</option><option value="wallet">فودافون كاش</option></select>
+                     <button class="btn success smallBtn" onclick="payStudentInstallment('${st.id}', '${inst.id}', document.getElementById('dashPayInstMethod_${inst.id}').value); setTimeout(renderInstallmentsDashboard, 500);">دفع</button>
+                     <button class="btn secondary smallBtn iconOnly" onclick="sendInstallmentReminder('${st.id}', '${inst.id}')"><i class="fa-brands fa-whatsapp" style="color:#25D366;"></i></button>
+                  </div>
+                </td>
+              </tr>
+            `;
+        });
+    });
+    
+    if (!hasRecords) {
+        html = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-secondary);">لا توجد أقساط مطابقة للبحث</td></tr>`;
+    }
+    
+    tbody.innerHTML = html;
+};
+
+if ($("btnTabInstallments")) {
+    on("btnTabInstallments", "click", function() {
+        window.switchTab("Installments");
+        renderInstallmentsDashboard();
+        if(window.innerWidth <= 768 && $("sidebar")) $("sidebar").classList.remove("open");
+    });
+}
+if ($("filterInstallmentsStatus")) on("filterInstallmentsStatus", "change", renderInstallmentsDashboard);
+if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", renderInstallmentsDashboard);
