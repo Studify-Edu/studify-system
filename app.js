@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
  const dict = {
  "grp_daily": { ar: "الإدارة اليومية", en: "Daily Operations" },
  "nav_session_st": { ar: "طلاب الحصة", en: "Session Students" },
- "grp_finance": { ar: "الحسابات والإحصائيات", en: "Finance & Analytics" },
+ "grp_finance": { ar: "الحسابات والتقارير", en: "Finance & Reports" },
  "grp_tools": { ar: "أدوات وتسويق", en: "Tools & Marketing" },
  "nav_booklets": { ar: "مخزون المذكرات", en: "Booklets Inventory" },
  "nav_marketing": { ar: "حملات التسويق", en: "Marketing Campaigns" },
