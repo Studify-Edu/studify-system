@@ -1622,7 +1622,17 @@ document.addEventListener('DOMContentLoaded', function() {
  
  const paid = st.paid || 0; 
  let stClassName = st.className ? st.className.trim() : "";
- let req = (stClassName && groupFees[stClassName] !== undefined) ? toInt(groupFees[stClassName]) : 0;
+ 
+    let req = 0;
+    if (stClassName && groupFees[stClassName] !== undefined) {
+       const pkg = groupFees[stClassName];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  
  let remain = req - paid;
  let percent = req > 0 ? Math.min((paid/req)*100, 100) : 0;
@@ -1976,7 +1986,17 @@ document.addEventListener('DOMContentLoaded', function() {
  if(fClass !== "all" && s.className !== fClass) isValid = false;
  
  let sClass = s.className ? s.className.trim() : "";
- let req = (sClass && groupFees[sClass] !== undefined) ? toInt(groupFees[sClass]) : 0;
+ 
+    let req = 0;
+    if (sClass && groupFees[sClass] !== undefined) {
+       const pkg = groupFees[sClass];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  let p = s.paid || 0;
  
  if(fStatus !== "all") {
@@ -2028,7 +2048,17 @@ document.addEventListener('DOMContentLoaded', function() {
  const tr = document.createElement("tr");
  
  let sClass = s.className ? s.className.trim() : "";
- let req = (sClass && groupFees[sClass] !== undefined) ? toInt(groupFees[sClass]) : 0;
+ 
+    let req = 0;
+    if (sClass && groupFees[sClass] !== undefined) {
+       const pkg = groupFees[sClass];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  let percent = req > 0 ? Math.min((s.paid/req)*100, 100) : 0;
  let pBar = `<div style="width:100%; background:#eee; height:5px; border-radius:3px; margin-top:3px;"><div style="width:${percent}%; height:100%; background:var(--success); border-radius:3px;"></div></div>`;
  
@@ -2748,7 +2778,17 @@ on("quickAttendId", "keypress", function(e) {
  saveAll(); showToast(t("msg_saved")); updateStudentUI(currentId);
  
  let sClass = s.className ? s.className.trim() : "";
- let req = (sClass && groupFees[sClass] !== undefined) ? toInt(groupFees[sClass]) : 0;
+ 
+    let req = 0;
+    if (sClass && groupFees[sClass] !== undefined) {
+       const pkg = groupFees[sClass];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  if (req > 0 && s.paid >= req) {
  fireConfetti();
  }
@@ -2874,7 +2914,17 @@ on("quickAttendId", "keypress", function(e) {
  saveAll(); updateStudentUI(currentId);
  
  let sClass = st.className ? st.className.trim() : "";
- let req = (sClass && groupFees[sClass] !== undefined) ? toInt(groupFees[sClass]) : 0;
+ 
+    let req = 0;
+    if (sClass && groupFees[sClass] !== undefined) {
+       const pkg = groupFees[sClass];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  
  if(req > 0 && st.paid >= req) fireConfetti();
  playSound("money"); showToast(t("msg_deposit"));
@@ -3106,7 +3156,21 @@ on("quickAttendId", "keypress", function(e) {
  if (phInp && phInp.value) window.open(`https://wa.me/20${phInp.value}`, '_blank'); 
  });
 
- on("saveExpenseBtn", "click", function() {
+ 
+  on("stClass", "change", function() {
+    const cls = this.value;
+    const pkg = groupFees[cls];
+    if (pkg && pkg.hasInstallments) {
+      if($("stPaymentPlanContainer")) $("stPaymentPlanContainer").style.display = "block";
+    } else {
+      if($("stPaymentPlanContainer")) {
+        $("stPaymentPlanContainer").style.display = "none";
+        if($("stPaymentPlan")) $("stPaymentPlan").value = "cash";
+      }
+    }
+  });
+
+  on("saveExpenseBtn", "click", function() {
  if (!$("expenseAmtInp") || !$("expenseReasonInp")) return;
  const a = toInt($("expenseAmtInp").value);
  const r = $("expenseReasonInp").value.trim();
@@ -3198,7 +3262,31 @@ on("quickAttendId", "keypress", function(e) {
          <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=8;">8 حصص</button>
          <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=12;">12 حصة</button>
        </div>
+     
+     <div style="margin-bottom:12px; margin-top:15px; border-top:1px dashed var(--border); padding-top:15px;">
+       <label style="display:flex; align-items:center; gap:8px; font-weight:bold; cursor:pointer; color:var(--primary);">
+         <input type="checkbox" id="newPkgHasInstallments" style="width:18px; height:18px; cursor:pointer;">
+         تفعيل نظام التقسيط لهذه الباقة
+       </label>
      </div>
+     
+     <div id="pkgInstallmentsOpts" style="display:none; margin-bottom:15px; background:#f0fdf4; padding:12px; border-radius:8px; border:1px solid #bbf7d0;">
+       <label style="font-size:0.85em; font-weight:bold; color:var(--success); display:block; margin-bottom:6px;">السعر الإجمالي في حالة التقسيط (ج.م):</label>
+       <input type="number" id="newPkgInstallmentPrice" class="inp" placeholder="السعر الإجمالي (مثال: 600)" style="margin-bottom:12px;">
+       
+       <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">جدول الأقساط المتاح لهذه الباقة:</label>
+       <div id="pkgInstallmentsList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+          <!-- Default Installment Row -->
+          <div class="inst-row" style="display:flex; gap:6px; align-items:center;">
+             <input type="text" class="inp inst-name" placeholder="اسم القسط (مثال: القسط الأول)" value="القسط الأول" style="flex:2;">
+             <input type="number" class="inp inst-amount" placeholder="المبلغ" style="flex:1;">
+             <input type="number" class="inp inst-days" placeholder="يستحق بعد (أيام)" value="0" title="0 يعني يستحق فور الاشتراك" style="flex:1;">
+             <button type="button" class="btn danger smallBtn iconOnly" onclick="this.parentElement.remove()" title="حذف القسط"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+       </div>
+       <button type="button" class="btn secondary smallBtn w100" id="addInstRowBtn"><i class="fa-solid fa-plus"></i> إضافة قسط جديد</button>
+     </div>
+
 
      <button class="btn primary w100" id="addNewPkgBtn" style="padding:10px; font-weight:bold;"><i class="fa-solid fa-plus-circle"></i> حفظ الباقة في النظام</button>
    </div>
@@ -3261,13 +3349,51 @@ on("quickAttendId", "keypress", function(e) {
      handleExpiryTypeChange();
    }
 
-   if ($("addNewPkgBtn")) {
+   
+    if ($("newPkgHasInstallments")) {
+      $("newPkgHasInstallments").onchange = function() {
+        if ($("pkgInstallmentsOpts")) $("pkgInstallmentsOpts").style.display = this.checked ? 'block' : 'none';
+      };
+    }
+    
+    if ($("addInstRowBtn")) {
+      $("addInstRowBtn").onclick = function() {
+        const div = document.createElement("div");
+        div.className = "inst-row";
+        div.style.cssText = "display:flex; gap:6px; align-items:center;";
+        div.innerHTML = `
+             <input type="text" class="inp inst-name" placeholder="اسم القسط" style="flex:2;">
+             <input type="number" class="inp inst-amount" placeholder="المبلغ" style="flex:1;">
+             <input type="number" class="inp inst-days" placeholder="يستحق بعد (أيام)" value="30" style="flex:1;">
+             <button type="button" class="btn danger smallBtn iconOnly" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>
+        `;
+        $("pkgInstallmentsList").appendChild(div);
+      };
+    }
+
+    if ($("addNewPkgBtn")) {
      $("addNewPkgBtn").onclick = function() {
        const n = $("newPkgName").value.trim();
        const p = toInt($("newPkgPrice").value);
        const expType = $("newPkgExpiryType") ? $("newPkgExpiryType").value : "none";
        const days = $("newPkgDays") ? toInt($("newPkgDays").value) : 0;
        const sessions = $("newPkgSessions") ? toInt($("newPkgSessions").value) : 0;
+
+        const hasInst = $("newPkgHasInstallments") ? $("newPkgHasInstallments").checked : false;
+        const instPrice = $("newPkgInstallmentPrice") ? toInt($("newPkgInstallmentPrice").value) : 0;
+        let installments = [];
+        if (hasInst) {
+            const rows = document.querySelectorAll("#pkgInstallmentsList .inst-row");
+            rows.forEach(r => {
+                const name = r.querySelector(".inst-name").value.trim();
+                const amt = toInt(r.querySelector(".inst-amount").value);
+                const days = toInt(r.querySelector(".inst-days").value);
+                if (name && amt > 0) {
+                    installments.push({ name, amount: amt, daysOffset: days });
+                }
+            });
+        }
+
 
        if (!n) {
          if (typeof showToast === "function") showToast("يرجى كتابة اسم الباقة", "err");
@@ -4210,7 +4336,17 @@ function updateDriveUI() {
  if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
  groups[cls].count++;
  if (st && st.paid !== undefined) {
- const req = groupFees[cls] ? toInt(groupFees[cls]) : 0;
+ 
+    let req = 0;
+    if (cls && groupFees[cls] !== undefined) {
+       const pkg = groupFees[cls];
+       if (st && st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg);
+       }
+    }
+
  if (req > 0) groups[cls].revenue += req;
  }
  });
@@ -4267,7 +4403,17 @@ function updateDriveUI() {
  if (search && !st.name.toLowerCase().includes(search)) return;
  const cls = (st.className || "عام").trim();
  if (clsFilter && cls !== clsFilter) return;
- const req = groupFees[cls] ? toInt(groupFees[cls]) : 0;
+ 
+    let req = 0;
+    if (cls && groupFees[cls] !== undefined) {
+       const pkg = groupFees[cls];
+       if (st && st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg);
+       }
+    }
+
  const paid = st.paid || 0;
  const debt = req > 0 ? Math.max(0, req - paid) : 0;
  const attCount = Object.values(attByDate).reduce((n, ids) => n + (ids.includes(String(st.id)) ? 1 : 0), 0);
@@ -4651,7 +4797,17 @@ function updateDriveUI() {
  students[stId].paid = groupFees[cls] ? toInt(groupFees[cls]) : students[stId].paid;
  } else if (r.type === "discount") {
  const cls = (students[stId].className || "").trim();
- const req = groupFees[cls] ? toInt(groupFees[cls]) : 0;
+ 
+    let req = 0;
+    if (cls && groupFees[cls] !== undefined) {
+       const pkg = groupFees[cls];
+       if (st && st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg);
+       }
+    }
+
  const discounted = Math.max(0, req - toInt(r.amount));
  students[stId].paid = Math.max(students[stId].paid || 0, discounted > 0 ? req - toInt(r.amount) : 0);
  }
@@ -4714,7 +4870,17 @@ function updateDriveUI() {
  const reason = $("mgrDirectReason") ? $("mgrDirectReason").value.trim() : "";
  if (!stId || !students[stId]) return showToast("الطالب غير موجود", "err");
  const cls = (students[stId].className || "").trim();
- const req = groupFees[cls] ? toInt(groupFees[cls]) : 0;
+ 
+    let req = 0;
+    if (cls && groupFees[cls] !== undefined) {
+       const pkg = groupFees[cls];
+       if (st && st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg);
+       }
+    }
+
  if (amount > 0 && req > 0) {
  students[stId].paid = Math.max(students[stId].paid || 0, req - amount);
  } else if (amount === 0 && req > 0) {
@@ -4942,7 +5108,17 @@ function updateDriveUI() {
  let s = allStuds[i];
  if (s.name || s.paid > 0) {
  let sClass = s.className ? s.className.trim() : "";
- let req = (sClass && groupFees[sClass] !== undefined) ? toInt(groupFees[sClass]) : 0;
+ 
+    let req = 0;
+    if (sClass && groupFees[sClass] !== undefined) {
+       const pkg = groupFees[sClass];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  let p = s.paid || 0;
  let remain = req > 0 ? (req - p) : 0;
  if (remain < 0) remain = 0;
@@ -5022,7 +5198,17 @@ function updateDriveUI() {
  let s = allStuds[i];
  if (s.name || s.paid > 0) {
  let sClass = s.className ? s.className.trim() : "";
- let req = (sClass && groupFees[sClass] !== undefined) ? toInt(groupFees[sClass]) : 0;
+ 
+    let req = 0;
+    if (sClass && groupFees[sClass] !== undefined) {
+       const pkg = groupFees[sClass];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  let p = s.paid || 0;
  let remain = req > 0 ? (req - p) : 0;
  if (remain < 0) remain = 0;
@@ -5247,7 +5433,17 @@ function updateDriveUI() {
  for(let j=0; j<s.payments.length; j++) {
  if(s.payments[j].date === today) {
  let sClass = s.className ? s.className.trim() : "عام";
- let req = (sClass && groupFees[sClass] !== undefined) ? toInt(groupFees[sClass]) : 0;
+ 
+    let req = 0;
+    if (sClass && groupFees[sClass] !== undefined) {
+       const pkg = groupFees[sClass];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  let remain = req > 0 ? (req - s.paid) : 0;
  if(remain < 0) remain = 0;
  
@@ -5592,7 +5788,17 @@ function updateDriveUI() {
  
  let p = st.phone.trim();
  let stClassName = st.className ? st.className.trim() : "";
- let req = (stClassName && groupFees[stClassName] !== undefined) ? toInt(groupFees[stClassName]) : 0;
+ 
+    let req = 0;
+    if (stClassName && groupFees[stClassName] !== undefined) {
+       const pkg = groupFees[stClassName];
+       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+           req = toInt(pkg.installmentPrice) || 0;
+       } else {
+           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
+       }
+    }
+
  let paid = st.paid || 0;
  let remain = req - paid;
  
@@ -6502,3 +6708,44 @@ const CLOUD_MONITOR_SECTIONS = [
 
  initSystem();
 });
+
+
+window.payStudentInstallment = function(stId, instId) {
+    const st = students[stId];
+    if (!st || !st.installments) return;
+    const inst = st.installments.find(i => i.id === instId);
+    if (!inst) return;
+    
+    // Create a payment record
+    if (!st.payments) st.payments = [];
+    st.payments.push({
+        id: "pay_" + Date.now(),
+        date: nowDateStr(),
+        amount: inst.amount,
+        type: "قسط: " + inst.name
+    });
+    
+    // Update student total paid
+    st.paid = (toInt(st.paid) || 0) + inst.amount;
+    
+    // Mark installment as paid
+    inst.paid = true;
+    inst.paidDate = nowDateStr();
+    
+    saveAll();
+    openStudentModal(stId);
+    if (typeof showToast === "function") showToast("تم تسديد القسط بنجاح");
+};
+
+window.sendInstallmentReminder = function(stId, instId) {
+    const st = students[stId];
+    if (!st || !st.installments || !st.phone) return;
+    const inst = st.installments.find(i => i.id === instId);
+    if (!inst) return;
+    
+    const msg = encodeURIComponent(`مرحباً ${st.name}،
+نود تذكيرك بموعد سداد (${inst.name}) بقيمة ${inst.amount} ج.م والمستحق بتاريخ ${inst.dueDate}.
+يرجى المبادرة بالسداد. شكراً لك.`);
+    
+    window.open(`https://wa.me/20${st.phone}?text=${msg}`, '_blank');
+};

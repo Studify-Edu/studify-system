@@ -15,8 +15,8 @@
 
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V41">
- <link rel="stylesheet" href="icons.css?v=STUDIFY_V41">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V42">
+ <link rel="stylesheet" href="icons.css?v=STUDIFY_V42">
  
  <!-- PREVENT THEME FLASH -->
  <script>
@@ -226,6 +226,12 @@
  <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
  <span class="nav-text" data-i18n="nav_reports">التقارير</span>
  </button>
+
+ <button id="btnTabInstallments" class="nav-item">
+ <span class="nav-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+ <span class="nav-text">متابعة الأقساط</span>
+ </button>
+
  </div>
  </div>
  </div>
@@ -542,7 +548,46 @@
  </div>
  </section>
 
- <!-- ====== STUDENTS ====== -->
+ 
+  <!-- ====== INSTALLMENTS DASHBOARD ====== -->
+  <section id="secInstallments" class="tab-section hidden">
+    <div class="card">
+      <div class="flexBetween" style="margin-bottom:15px;">
+        <h2 style="color:var(--primary);"><i class="fa-solid fa-hand-holding-dollar"></i> لوحة متابعة الأقساط</h2>
+        <div style="display:flex; gap:10px;">
+           <select id="filterInstallmentsStatus" class="inp" style="width:auto;">
+             <option value="all">كل الأقساط المفتوحة</option>
+             <option value="overdue">المتأخرة فقط</option>
+             <option value="upcoming">المستحقة قريباً (7 أيام)</option>
+           </select>
+           <button class="btn secondary" id="refreshInstallmentsBtn" title="تحديث"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+      </div>
+      
+      <div class="tableWrap">
+        <table id="installmentsTable">
+          <thead>
+            <tr>
+              <th>الطالب</th>
+              <th>رقم الموبايل</th>
+              <th>الباقة</th>
+              <th>اسم القسط</th>
+              <th>المبلغ</th>
+              <th>تاريخ الاستحقاق</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="installmentsTbody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ====== STUDENTS ====== -->
  <section id="secStudents" class="tab-section hidden">
  <div class="card">
  <div class="flexBetween">
@@ -1816,6 +1861,6 @@
  <!-- Firebase SDK -->
  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"></script>
  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js"></script>
- <script type="module" src="app.js?v=STUDIFY_V41"></script>
+ <script type="module" src="app.js?v=STUDIFY_V42"></script>
 </body>
 </html>
