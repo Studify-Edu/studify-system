@@ -3166,10 +3166,10 @@ on("quickAttendId", "keypress", function(e) {
      <h4 style="color:var(--primary); margin:0 0 12px 0; font-weight:bold; display:flex; align-items:center; gap:8px;">
        <i class="fa-solid fa-square-plus"></i> إضافة / تعديل باقة جديدة
      </h4>
-     <div style="display:grid; grid-template-columns:1fr 130px; gap:10px; margin-bottom:12px;">
-       <input type="text" id="newPkgName" class="inp" placeholder="اسم الباقة (مثال: شهر سبتمبر / ترم كامل)">
-       <input type="number" id="newPkgPrice" class="inp" placeholder="السعر (ج.م)">
-     </div>
+     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+        <input type="text" id="newPkgName" class="inp" placeholder="اسم الباقة (مثال: سبتمبر / ترم)" style="flex:2; min-width:140px;">
+        <input type="number" id="newPkgPrice" class="inp" placeholder="السعر (ج.م)" style="flex:1; min-width:90px;">
+      </div>
      
      <div style="margin-bottom:12px;">
        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">نظام الصلاحية وتنبيهات الانتهاء:</label>
