@@ -4005,8 +4005,9 @@ function updateDriveUI() {
  'syllabus': JSON.parse(restoreMap[K_SYLLABUS] || "[]"),
  'evaluations': JSON.parse(restoreMap[K_EVAL] || "{}"),
  'sessionStudents': JSON.parse(restoreMap[K_SESSION_STUDENTS] || "{}"),
- 'booklets': JSON.parse(restoreMap[K_BOOKLETS] || "{}")
- });
+ 'booklets': JSON.parse(restoreMap[K_BOOKLETS] || "{}"),
+  '_lastModified': Date.now()
+  });
  }
  
  showToast(currentLang === 'ar' ? "تم استرجاع البيانات بنجاح، سيتم إعادة التحميل..." : "Data restored successfully. Restarting...");
