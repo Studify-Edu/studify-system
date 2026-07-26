@@ -1407,9 +1407,9 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   .settings-grid { grid-template-columns: 1fr; }
   .finance-grid { grid-template-columns: 1fr; }
   
-  .modalContent { width: 95%; padding: 20px; }
+  .modalContent { width: 95%; padding: 20px; max-height: 90vh; overflow-y: auto; }
   
-  /* 🚀 ELITE MOBILE UI REPAIR: SYMMETRICAL ALIGNMENT & FLAWLESS PROPORTIONS */
+  /* 🚀 MOBILE UI v2: FULL TEXT VISIBILITY & PERFECT TOUCH TARGETS */
   .flexBetween { 
     display: flex !important; 
     flex-direction: row !important; 
@@ -1435,16 +1435,53 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
     box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
     border-radius: 12px !important;
     box-sizing: border-box !important;
+    min-height: 44px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
   }
   
-  /* Pristine Card & Row Arrangement */
+  /* Topbar icon buttons: NEVER empty/invisible */
+  .topbar-icon-btn {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--bg-inset) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    color: var(--text-secondary) !important;
+  }
+  .topbar-icon-btn svg {
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Dropdown menus: NEVER overflow screen */
+  .user-profile-dropdown {
+    max-width: calc(100vw - 24px) !important;
+    inset-inline-end: 0 !important;
+  }
+  
+  /* Cards: visible content, no clipping */
   .card {
     padding: 20px 16px !important;
     width: 100% !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+    overflow-x: hidden !important;
     box-sizing: border-box !important;
+    word-break: break-word !important;
   }
   
+  /* Card titles */
+  .card h2 {
+    font-size: 1.1em !important;
+    word-break: break-word !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Rows inside cards */
   .row {
     display: flex !important;
     flex-wrap: wrap !important;
@@ -1456,15 +1493,17 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   
   .row .inp {
     flex: 1 1 120px !important;
-    min-width: 120px !important;
-    height: 44px !important;
+    min-width: 100px !important;
+    height: 48px !important;
     box-sizing: border-box !important;
+    font-size: 1em !important;
   }
   
+  /* Buttons: FULL TEXT VISIBLE, no clipping */
   .row .btn {
     flex: 0 0 auto !important;
-    min-width: 44px !important;
-    height: 44px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
     box-sizing: border-box !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -1477,40 +1516,41 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   }
 
   .row .btn.iconOnly, .btn.iconOnly {
-    width: 44px !important;
-    height: 44px !important;
+    width: 48px !important;
+    height: 48px !important;
     padding: 0 !important;
-    flex: 0 0 44px !important;
+    flex: 0 0 48px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
   }
   
+  /* Wrap rows: ALLOW text to show fully */
   .row.wrap {
     display: flex !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
     gap: 8px !important;
     width: 100% !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
   }
   
   .row.wrap .btn, .row.wrap .st-rank-btn {
-    flex: 1 1 0 !important;
+    flex: 1 1 auto !important;
     margin: 0 !important;
     text-align: center !important;
     justify-content: center !important;
-    padding: 10px 4px !important;
+    padding: 10px 12px !important;
     font-size: 0.85em !important;
-    height: 42px !important;
+    min-height: 44px !important;
     display: inline-flex !important;
     align-items: center !important;
     box-sizing: border-box !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    overflow: visible !important;
   }
   
+  /* Payment rows */
   .payRow {
     display: flex !important;
     flex-wrap: wrap !important;
@@ -1519,12 +1559,66 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
     width: 100% !important;
     justify-content: space-between !important;
   }
+  .payRow .inp {
+    min-height: 44px !important;
+  }
+  .payRow .btn {
+    min-height: 44px !important;
+    padding: 0 14px !important;
+  }
+  
+  /* Labels: always readable */
+  .lbl {
+    font-size: 0.88em !important;
+    word-break: break-word !important;
+  }
+  
+  /* Student pills */
+  .studentHead {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .studentHead .pill {
+    font-size: 0.85em !important;
+    padding: 6px 12px !important;
+  }
+  
+  /* Debt warning */
+  #debtWarningContainer {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 10px !important;
+  }
+  
+  /* Select inputs */
+  select.inp {
+    min-height: 44px !important;
+    font-size: 0.9em !important;
+  }
 }
 
 @media (max-width: 480px) {
-  .topbar-end { gap: 8px; }
-  .stat-pill { font-size: 0.82em !important; padding: 8px 10px !important; gap: 6px !important; }
-  .row .btn:not(.iconOnly) { font-size: 0.9em !important; padding: 0 12px !important; }
+  .topbar-end { gap: 6px; }
+  .topbar-icon-btn { 
+    min-width: 36px !important; 
+    min-height: 36px !important; 
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .topbar-icon-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .stat-pill { font-size: 0.8em !important; padding: 8px 8px !important; gap: 4px !important; }
+  .row .btn:not(.iconOnly) { font-size: 0.88em !important; padding: 0 10px !important; }
+  .card { padding: 16px 12px !important; }
+  .card h2 { font-size: 1em !important; }
+  
+  /* Topbar: single column stats on very small screens */
+  .topbar-stats {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
 }
 
 /* ── 22. FULLSCREEN FEEDBACK ── */
