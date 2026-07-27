@@ -1990,7 +1990,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let req = 0;
     if (sClass && groupFees[sClass] !== undefined) {
        const pkg = groupFees[sClass];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
        } else {
            req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
@@ -2052,7 +2052,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let req = 0;
     if (sClass && groupFees[sClass] !== undefined) {
        const pkg = groupFees[sClass];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
        } else {
            req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
@@ -2782,7 +2782,7 @@ on("quickAttendId", "keypress", function(e) {
     let req = 0;
     if (sClass && groupFees[sClass] !== undefined) {
        const pkg = groupFees[sClass];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
        } else {
            req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
@@ -4801,7 +4801,7 @@ function updateDriveUI() {
     let req = 0;
     if (cls && groupFees[cls] !== undefined) {
        const pkg = groupFees[cls];
-       if (st && st.paymentPlan === "installments" && pkg.hasInstallments) {
+       if (students[stId] && students[stId].paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
        } else {
            req = toInt(pkg.price || pkg);
@@ -4874,7 +4874,7 @@ function updateDriveUI() {
     let req = 0;
     if (cls && groupFees[cls] !== undefined) {
        const pkg = groupFees[cls];
-       if (st && st.paymentPlan === "installments" && pkg.hasInstallments) {
+       if (students[stId] && students[stId].paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
        } else {
            req = toInt(pkg.price || pkg);
@@ -5112,7 +5112,7 @@ function updateDriveUI() {
     let req = 0;
     if (sClass && groupFees[sClass] !== undefined) {
        const pkg = groupFees[sClass];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
        } else {
            req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
@@ -5214,7 +5214,7 @@ function updateDriveUI() {
     let req = 0;
     if (sClass && groupFees[sClass] !== undefined) {
        const pkg = groupFees[sClass];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
        } else {
            req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
@@ -5449,7 +5449,7 @@ function updateDriveUI() {
     let req = 0;
     if (sClass && groupFees[sClass] !== undefined) {
        const pkg = groupFees[sClass];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
        } else {
            req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
