@@ -6732,7 +6732,6 @@ const CLOUD_MONITOR_SECTIONS = [
 
 
  initSystem();
-});
 
 
 window.payStudentInstallment = function(stId, instId, method="cash") {
@@ -6891,3 +6890,5 @@ if ($("btnTabInstallments")) {
 }
 if ($("filterInstallmentsStatus")) on("filterInstallmentsStatus", "change", renderInstallmentsDashboard);
 if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", renderInstallmentsDashboard);
+
+}); // END DOMContentLoaded

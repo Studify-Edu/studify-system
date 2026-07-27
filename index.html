@@ -15,8 +15,8 @@
 
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V50">
- <link rel="stylesheet" href="icons.css?v=STUDIFY_V50">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V51">
+ <link rel="stylesheet" href="icons.css?v=STUDIFY_V51">
  
  <!-- PREVENT THEME FLASH -->
  <script>
@@ -35,7 +35,7 @@
  // Service Worker Registration
  if ('serviceWorker' in navigator) {
  window.addEventListener('load', () => {
- navigator.serviceWorker.register('/service-worker.js')
+ navigator.serviceWorker.register('./service-worker.js')
  .then(reg => console.log('[SW] Registered:', reg.scope))
  .catch(err => console.warn('[SW] Registration failed:', err));
  });
@@ -1844,6 +1844,6 @@
  <!-- Firebase SDK -->
  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"></script>
  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js"></script>
- <script type="module" src="app.js?v=STUDIFY_V50"></script>
+ <script type="module" src="app.js?v=STUDIFY_V51"></script>
 </body>
 </html>
