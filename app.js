@@ -9,64 +9,56 @@
  - Premium UX: Error Shake, Edge Flash, Hold-To-Delete
  ============================================================================= */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getDatabase, ref, set, get, child, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+// =============================================================================
+// SUPABASE CLIENT INITIALIZATION & CLOUD SYNC ENGINE
+// =============================================================================
+const SUPABASE_URL = "https://erwrrvafuxezszgbiswg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyd3JydmFmdXhlenN6Z2Jpc3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTI4NzMsImV4cCI6MjEwMjgyODg3M30.xNbyENlnwes4XPWFoc10tooQTIC49WYo2zurvugkf9g";
 
-const firebaseConfig = { 
- apiKey: "AIzaSyCIEfTmssuOHlRw2sbVs4KUOnmoCKxBGfQ", 
- authDomain: "studify-88e15.firebaseapp.com", 
- databaseURL: "https://studify-88e15-default-rtdb.firebaseio.com", 
- projectId: "studify-88e15", 
- storageBucket: "studify-88e15.appspot.com", 
- messagingSenderId: "192529425530", 
- appId: "1:192529425530:web:f633acfc3736b3d28607c3" 
-};
+// Supabase client instance
+const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+window.supabaseClient = supabase;
 
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-
-let isFirebaseConnected = false;
-let hasUnsavedChanges = false; // Set to true when writing, false when write succeeds
-
+let isCloudConnected = navigator.onLine;
+let hasUnsavedChanges = false;
 let wasOffline = false;
 
 function setupConnectionTracker() {
- const connectedRef = ref(database, '.info/connected');
- onValue(connectedRef, (snap) => {
- if (snap.val() === true) {
- console.log("Firebase Connected! ");
- isFirebaseConnected = true;
- // Only set to 'online' if there are no pending changes
- if (!hasUnsavedChanges) {
- if (typeof updateSyncUI === 'function') updateSyncUI('online', 'متصل ومتزامن ');
- } else {
- if (typeof updateSyncUI === 'function') updateSyncUI('pending', 'متصل - يوجد تغييرات لم تتم مزامنتها');
- }
- if (wasOffline) {
- if (typeof showToast === "function") {
- showToast(currentLang === 'ar' ? "عاد الاتصال بالإنترنت جاري المزامنة التلقائية..." : "Connection Restored Syncing...", "success");
- }
- if (hasUnsavedChanges) {
- setTimeout(() => { if (typeof saveAll === "function") saveAll(); }, 800);
- }
- }
- wasOffline = false;
- } else {
- console.log("Firebase Disconnected ");
- isFirebaseConnected = false;
- wasOffline = true;
- if (typeof updateSyncUI === 'function') updateSyncUI('offline', 'غير متصل بالسحابة');
- }
- });
+  function checkOnline() {
+    isCloudConnected = navigator.onLine;
+    if (isCloudConnected) {
+      console.log("Supabase Cloud: Online ");
+      if (!hasUnsavedChanges) {
+        if (typeof updateSyncUI === 'function') updateSyncUI('online', 'متصل ومتزامن ');
+      } else {
+        if (typeof updateSyncUI === 'function') updateSyncUI('pending', 'متصل - جاري مزامنة التغييرات المعلقة');
+        if (typeof saveAll === 'function') saveAll();
+      }
+      if (wasOffline) {
+        if (typeof showToast === 'function') {
+          showToast(currentLang === 'ar' ? "عاد الاتصال بالإنترنت جاري المزامنة مع السحابة..." : "Connection Restored Syncing...", "success");
+        }
+      }
+      wasOffline = false;
+    } else {
+      console.log("Supabase Cloud: Offline ");
+      isCloudConnected = false;
+      wasOffline = true;
+      if (typeof updateSyncUI === 'function') updateSyncUI('offline', 'غير متصل بالسحابة (يعمل محلياً)');
+    }
+  }
 
- // Warn user before closing if offline and there are potential unsaved changes
- window.addEventListener('beforeunload', (e) => {
- if (hasUnsavedChanges && !isFirebaseConnected) {
- e.preventDefault();
- e.returnValue = 'تحذير: لا يوجد اتصال بالإنترنت، هناك بيانات لم يتم مزامنتها مع السحابة!';
- return e.returnValue;
- }
- });
+  window.addEventListener('online', checkOnline);
+  window.addEventListener('offline', checkOnline);
+  checkOnline();
+
+  window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedChanges && !isCloudConnected) {
+      e.preventDefault();
+      e.returnValue = 'تحذير: لا يوجد اتصال بالإنترنت، هناك بيانات لم يتم مزامنتها مع السحابة!';
+      return e.returnValue;
+    }
+  });
 }
 setupConnectionTracker();
 
@@ -91,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
  // ==========================================
  // 1. CONFIGURATION & AUTHENTICATION
  // ==========================================
- // Passwords are now managed in Firebase under users/{manager_id}/settings
+ // Passwords are now managed in Supabase under users/{manager_id}/settings
  
  const BASE_MIN_ID = 1; 
  const BASE_MAX_ID = 500; 
@@ -313,33 +305,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
  // Data Migration Function
  async function migrateLocalDataToManager() {
- if (window.CURRENT_ROLE !== 'admin' || !window.CURRENT_MANAGER_ID) return;
- if (localStorage.getItem("ca_migrated") === "true") return;
+  if (window.CURRENT_ROLE !== 'admin' || !window.CURRENT_MANAGER_ID) return;
+  if (localStorage.getItem("ca_migrated") === "true") return;
 
- try {
- console.log("Migrating local data to new multi-tenant structure...");
- const dbRef = ref(database, `users/${window.CURRENT_MANAGER_ID}`);
- 
- // Push all current local state to the new path
- await update(dbRef, {
- 'students': students,
- 'deletedStudents': deletedStudents,
- 'attendance': attByDate,
- 'finances/revenue': revenueByDate,
- 'finances/expenses': expensesByDate,
- 'packages': groupFees,
- 'syllabus': syllabusData,
- 'evaluations': evalData,
- 'sessionStudents': sessionStudentsByDate,
- 'booklets': bookletsStock
- });
- 
- localStorage.setItem("ca_migrated", "true");
- console.log("Migration Successful! Data is now isolated under manager:", window.CURRENT_MANAGER_ID);
- } catch (e) {
- console.error("Migration failed:", e);
- }
- }
+  try {
+    if (typeof window.migrateLocalToSupabase === 'function') {
+      await window.migrateLocalToSupabase();
+      localStorage.setItem("ca_migrated", "true");
+    }
+  } catch (e) {
+    console.error("Migration failed:", e);
+  }
+}
 
  // ==========================================
  // 3. THE COMPREHENSIVE DICTIONARY
@@ -648,6 +625,8 @@ document.addEventListener('DOMContentLoaded', function() {
  function prettyDate(d) { return d ? d.split("-").reverse().join("-") : "—"; }
  function toInt(v) { if (typeof v === 'object' && v !== null) return toInt(v.price || 0); const n = parseInt(v); return isNaN(n) ? 0 : n; }
 
+
+
  window.getPkgDetails = function(pkgName) {
    if (!pkgName || !groupFees || !groupFees[pkgName]) {
      return { name: pkgName || "عام", price: 0, expiryType: "none", durationDays: 0, sessionLimit: 0 };
@@ -764,39 +743,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
  // -- Activity Log & Notifications --
  window.logAction = function(actionType, details) {
- if (!window.CURRENT_MANAGER_ID || !isFirebaseConnected) return;
- const now = Date.now();
- const user = window.CURRENT_ROLE === 'admin' ? 'المدير' : ($("currentShiftManagerName") ? $("currentShiftManagerName").innerText : 'المساعد');
- 
- const logEntry = {
- time: now,
- user: user,
- actionType: actionType,
- details: details
- };
+  if (!window.CURRENT_MANAGER_ID || !window.supabaseClient) return;
+  const user = window.CURRENT_ROLE === 'admin' ? 'المدير' : ($("currentShiftManagerName") ? $("currentShiftManagerName").innerText : 'المساعد');
+  
+  const logEntry = {
+    center_id: window.CURRENT_MANAGER_ID,
+    user_name: user,
+    action: actionType,
+    details: details
+  };
 
- const logRef = ref(database, `users/${window.CURRENT_MANAGER_ID}/activity/${now}`);
- update(logRef, logEntry).catch(e => console.log("Log error:", e));
+  window.supabaseClient.from('activity_logs').insert([logEntry]).then(() => {}).catch(e => console.log("Log error:", e));
  };
 
  let lastReadActivityTime = toInt(localStorage.getItem("ca_last_read_activity") || "0");
 
- window.fetchActivityLog = function() {
- if (!window.CURRENT_MANAGER_ID || !isFirebaseConnected) return;
- const logRef = ref(database, `users/${window.CURRENT_MANAGER_ID}/activity`);
- onValue(logRef, (snap) => {
- if (snap.exists()) {
- const logs = snap.val();
- let logArray = [];
- for (let key in logs) { logArray.push(logs[key]); }
- logArray.sort((a, b) => b.time - a.time); // Descending
- 
- renderActivityLog(logArray);
- if (window.CURRENT_ROLE === 'admin') updateNotifications(logArray);
- } else {
- renderActivityLog([]);
- }
- });
+ window.fetchActivityLog = async function() {
+  if (!window.CURRENT_MANAGER_ID || !window.supabaseClient) return;
+  try {
+    const { data: logs, error } = await window.supabaseClient
+      .from('activity_logs')
+      .select('*')
+      .eq('center_id', window.CURRENT_MANAGER_ID)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (!error && logs) {
+      const logArray = logs.map(l => ({
+        time: new Date(l.created_at).getTime(),
+        user: l.user_name,
+        actionType: l.action,
+        details: l.details
+      }));
+      renderActivityLog(logArray);
+      if (window.CURRENT_ROLE === 'admin') updateNotifications(logArray);
+    } else {
+      renderActivityLog([]);
+    }
+  } catch(e) {
+    console.error("fetchActivityLog error:", e);
+    renderActivityLog([]);
+  }
  };
 
  function renderActivityLog(logs) {
@@ -1115,239 +1102,299 @@ document.addEventListener('DOMContentLoaded', function() {
  // 6. DATA MANAGEMENT (Storage Layer)
  // ==========================================
  async function saveAll() {
- try {
- hasUnsavedChanges = true;
- updateSyncUI('pending', 'جاري الحفظ...');
+  try {
+    hasUnsavedChanges = true;
+    updateSyncUI('pending', 'جاري الحفظ...');
 
- // Save to IndexedDB (encrypted, async, no 5MB limit)
- await Promise.all([
- secureSave(K_STUDENTS, students),
- secureSave(K_ATT_BY_DATE, attByDate),
- secureSave(K_REVENUE, revenueByDate),
- secureSave(K_GROUP_FEES, groupFees),
- secureSave(K_EXPENSES, expensesByDate),
- secureSave(K_DELETED, deletedStudents),
- secureSave(K_SYLLABUS, syllabusData),
- secureSave(K_EVAL, evalData),
- secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
- secureSave(K_BOOKLETS, bookletsStock)
- ]);
+    // Save to IndexedDB (encrypted, instant 0ms, offline-ready)
+    await Promise.all([
+      secureSave(K_STUDENTS, students),
+      secureSave(K_ATT_BY_DATE, attByDate),
+      secureSave(K_REVENUE, revenueByDate),
+      secureSave(K_GROUP_FEES, groupFees),
+      secureSave(K_EXPENSES, expensesByDate),
+      secureSave(K_DELETED, deletedStudents),
+      secureSave(K_SYLLABUS, syllabusData),
+      secureSave(K_EVAL, evalData),
+      secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
+      secureSave(K_BOOKLETS, bookletsStock)
+    ]);
 
- updateTopStats(); updateFinanceSummary();
-  if (typeof renderCharts === "function") renderCharts();
-  if (typeof renderList === "function") renderList(true);
-  if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
-  if (typeof renderManagerTermReport === "function") renderManagerTermReport();
-  if (typeof populatePackages === "function") populatePackages();
-  if (typeof updateManagerPermissionsUI === "function") updateManagerPermissionsUI();
- if (typeof renderReportsPage === "function") renderReportsPage();
+    updateTopStats(); updateFinanceSummary();
+    if (typeof renderCharts === "function") renderCharts();
+    if (typeof renderList === "function") renderList(true);
+    if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
+    if (typeof renderManagerTermReport === "function") renderManagerTermReport();
+    if (typeof populatePackages === "function") populatePackages();
+    if (typeof updateManagerPermissionsUI === "function") updateManagerPermissionsUI();
+    if (typeof renderReportsPage === "function") renderReportsPage();
 
- // Push to Firebase
- if (window.CURRENT_MANAGER_ID) {
- updateSyncUI('syncing', 'جاري المزامنة مع السحابة...');
- 
- const dbRef = ref(database, `users/${window.CURRENT_MANAGER_ID}`);
- update(dbRef, {
- 'students': students,
- 'attendance': attByDate,
- 'finances/revenue': revenueByDate,
- 'packages': groupFees,
- 'finances/expenses': expensesByDate,
- 'deletedStudents': deletedStudents,
- 'syllabus': syllabusData,
- 'evaluations': evalData,
- 'sessionStudents': sessionStudentsByDate,
- 'booklets': bookletsStock,
- '_lastModified': Date.now()
- }).then(() => {
- hasUnsavedChanges = false;
- updateSyncUI('online', 'متصل ومتزامن ');
- }).catch(e => {
- console.error("Firebase update error:", e);
- updateSyncUI('pending', 'تغييرات محلية لم تتم مزامنتها');
- });
- }
- } catch(e) { 
- console.error("saveAll error:", e);
- showToast("حدث خطأ أثناء حفظ البيانات.", "err"); 
- }
- }
+    // Push to Supabase
+    if (window.CURRENT_MANAGER_ID && window.supabaseClient && navigator.onLine) {
+      updateSyncUI('syncing', 'جاري المزامنة مع السحابة...');
+      const mid = window.CURRENT_MANAGER_ID;
 
- async function saveAttendanceOnly() {
- try {
- hasUnsavedChanges = true;
- updateSyncUI('pending', 'جاري حفظ الحضور...');
- 
- await Promise.all([
- secureSave(K_STUDENTS, students),
- secureSave(K_ATT_BY_DATE, attByDate)
- ]);
- updateTopStats();
+      // 1. Prepare Students array
+      const allStudentsList = Object.values(students || {}).concat(Object.values(deletedStudents || {})).filter(s => s && s.id);
+      const studentRows = allStudentsList.map(st => ({
+        id: String(st.id),
+        center_id: mid,
+        name: st.name || '',
+        phone: st.phone || '',
+        parent_phone: st.parentPhone || '',
+        class_name: st.className || '',
+        payment_plan: st.paymentPlan || 'cash',
+        paid: toInt(st.paid) || 0,
+        discount: toInt(st.discount) || 0,
+        notes: st.notes || '',
+        status: st.status || (deletedStudents[st.id] ? 'deleted' : 'active'),
+        installments: st.installments || [],
+        payments: st.payments || [],
+        attendance_dates: st.attendanceDates || [],
+        last_modified: st.lastModified || Date.now()
+      }));
 
- if (window.CURRENT_MANAGER_ID) {
- updateSyncUI('syncing', 'جاري المزامنة...');
- 
- const dbRef = ref(database, `users/${window.CURRENT_MANAGER_ID}`);
- update(dbRef, {
- 'students': students,
- 'attendance': attByDate,
- 'finances/revenue': revenueByDate,
- 'packages': groupFees,
- 'finances/expenses': expensesByDate,
- 'deletedStudents': deletedStudents,
- 'syllabus': syllabusData,
- 'evaluations': evalData,
- 'sessionStudents': sessionStudentsByDate,
- 'booklets': bookletsStock,
- '_lastModified': Date.now()
- }).then(() => {
- hasUnsavedChanges = false;
- updateSyncUI('online', 'متصل ومتزامن ');
- }).catch(e => {
- console.error("Firebase update error:", e);
- updateSyncUI('pending', 'تغييرات محلية لم تتم مزامنتها');
- });
- }
- } catch(e) { 
- console.error("saveAttendanceOnly error:", e);
- showToast("حدث خطأ أثناء حفظ البيانات.", "err"); 
- }
- }
+      // 2. Prepare Packages array
+      const packageRows = Object.keys(groupFees || {}).map(pkgName => {
+        const p = groupFees[pkgName];
+        const isObj = typeof p === 'object' && p !== null;
+        return {
+          center_id: mid,
+          name: pkgName,
+          price: toInt(isObj ? p.price : p) || 0,
+          has_installments: isObj ? !!p.hasInstallments : false,
+          installment_price: toInt(isObj ? p.installmentPrice : 0) || 0
+        };
+      });
 
- async function loadAll() {
- try {
- let fromFirebase = false;
- 
- // Step 1: Load local data from IndexedDB first (instant, offline-ready)
- students = await secureLoad(K_STUDENTS, {});
- deletedStudents= await secureLoad(K_DELETED, {});
- attByDate = await secureLoad(K_ATT_BY_DATE, {});
- revenueByDate = await secureLoad(K_REVENUE, {});
- expensesByDate = await secureLoad(K_EXPENSES, {});
- groupFees = await secureLoad(K_GROUP_FEES, {});
- syllabusData = await secureLoad(K_SYLLABUS, []);
- evalData = await secureLoad(K_EVAL, {});
- sessionStudentsByDate = await secureLoad(K_SESSION_STUDENTS, {});
- bookletsStock = await secureLoad(K_BOOKLETS, {});
- console.log("[loadAll] Local data loaded from IndexedDB");
+      // 3. Prepare Booklets array
+      const bookletRows = Object.keys(bookletsStock || {}).map(bId => {
+        const b = bookletsStock[bId];
+        return {
+          id: String(bId),
+          center_id: mid,
+          name: b.name || '',
+          price: toInt(b.price) || 0,
+          stock: parseInt(b.stock) || 0,
+          sales: b.sales || []
+        };
+      });
 
- // Step 2: Try to fetch from Firebase and merge
- try {
- if (window.CURRENT_MANAGER_ID) {
- updateSyncUI('syncing', 'جاري جلب البيانات من السحابة...');
- const dbRef = ref(database);
- 
- // Wrap get in a 10-second timeout to prevent infinite hang on refresh with no internet
- const fetchWork = get(child(dbRef, `users/${window.CURRENT_MANAGER_ID}`));
- const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 10000));
- const snapshot = await Promise.race([fetchWork, timeout]);
- 
- if (snapshot.exists()) {
- const remote = snapshot.val();
- const remoteTimestamp = remote._lastModified || 0;
- const localTimestamp = localTimestamps[K_STUDENTS] || 0;
- const localStudentCount = Object.keys(students || {}).filter(k => students[k] && students[k].name).length;
- const remoteStudentCount = Object.keys(remote.students || {}).filter(k => remote.students[k] && remote.students[k].name).length;
+      // Execute upserts in parallel
+      const promises = [
+        // Update center settings & evaluation
+        window.supabaseClient.from('centers').upsert({
+          id: mid,
+          settings: { lastModified: Date.now() },
+          eval_data: evalData || {}
+        })
+      ];
 
- if (remoteTimestamp >= localTimestamp || (localStudentCount === 0 && remoteStudentCount > 0)) {
- // Server is newer or equal, or local DB is empty (Incognito/new device) — use server data
- students = sanitizeFirebaseObject(remote.students || students);
-  deletedStudents = sanitizeFirebaseObject(remote.deletedStudents || deletedStudents);
- attByDate = remote.attendance || attByDate;
- revenueByDate = remote.finances?.revenue || revenueByDate;
- expensesByDate = remote.finances?.expenses || expensesByDate;
- groupFees = remote.packages || groupFees;
- syllabusData = remote.syllabus || syllabusData;
- evalData = remote.evaluations || evalData;
- sessionStudentsByDate = remote.sessionStudents || sessionStudentsByDate;
- bookletsStock = remote.booklets || bookletsStock;
- console.log("[loadAll] Using Firebase data (Server is newer or local device was empty)");
- 
- // Save to local IndexedDB for offline persistence
- await Promise.all([
- secureSave(K_STUDENTS, students),
- secureSave(K_ATT_BY_DATE, attByDate),
- secureSave(K_REVENUE, revenueByDate),
- secureSave(K_GROUP_FEES, groupFees),
- secureSave(K_EXPENSES, expensesByDate),
- secureSave(K_DELETED, deletedStudents),
- secureSave(K_SYLLABUS, syllabusData),
- secureSave(K_EVAL, evalData),
- secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
- secureSave(K_BOOKLETS, bookletsStock)
- ]);
- } else {
- // Local is newer — merge granularly (field-level)
- console.log("[loadAll] Local data is newer — performing granular merge");
- const remoteStudents = sanitizeFirebaseObject(remote.students || {});
- const remoteAtt = remote.attendance || {};
- 
- // Merge students: keep the record with the newer lastModified
- for (const id in remoteStudents) {
- const remoteStudent = remoteStudents[id];
- const localStudent = students[id];
- if (!localStudent) {
- students[id] = remoteStudent; // New student from server
- } else {
- const rMod = remoteStudent.lastModified || 0;
- const lMod = localStudent.lastModified || 0;
- if (rMod > lMod) {
- students[id] = remoteStudent;
- }
- }
- }
- 
- // Merge attendance: keep the record with more entries per date
- for (const date in remoteAtt) {
- if (!attByDate[date]) {
- attByDate[date] = remoteAtt[date];
- }
- // If both exist, keep the one with more data
- else {
- const localCount = Object.keys(attByDate[date]).length;
- const remoteCount = Object.keys(remoteAtt[date]).length;
- if (remoteCount > localCount) {
- attByDate[date] = remoteAtt[date];
- }
- }
- }
- }
+      if (studentRows.length > 0) {
+        promises.push(window.supabaseClient.from('students').upsert(studentRows, { onConflict: 'center_id,id' }));
+      }
+      if (packageRows.length > 0) {
+        promises.push(window.supabaseClient.from('packages').upsert(packageRows, { onConflict: 'center_id,name' }));
+      }
+      if (bookletRows.length > 0) {
+        promises.push(window.supabaseClient.from('booklets').upsert(bookletRows, { onConflict: 'center_id,id' }));
+      }
 
- // Cache the merged/fetched data back to IndexedDB
- await Promise.all([
- secureSave(K_STUDENTS, students),
- secureSave(K_ATT_BY_DATE, attByDate),
- secureSave(K_REVENUE, revenueByDate),
- secureSave(K_GROUP_FEES, groupFees),
- secureSave(K_EXPENSES, expensesByDate),
- secureSave(K_DELETED, deletedStudents),
- secureSave(K_SYLLABUS, syllabusData),
- secureSave(K_EVAL, evalData),
- secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
- secureSave(K_BOOKLETS, bookletsStock)
- ]);
+      Promise.all(promises).then(() => {
+        hasUnsavedChanges = false;
+        updateSyncUI('online', 'متصل ومتزامن ');
+      }).catch(e => {
+        console.error("Supabase saveAll error:", e);
+        updateSyncUI('pending', 'تغييرات محلية (ستتم المزامنة لاحقاً)');
+      });
+    } else {
+      updateSyncUI('pending', 'تم الحفظ محلياً');
+    }
+  } catch(e) {
+    console.error("saveAll error:", e);
+    showToast("حدث خطأ أثناء حفظ البيانات.", "err");
+  }
+}
 
- fromFirebase = true;
- hasUnsavedChanges = false;
- updateSyncUI('online', 'متصل ومتزامن ');
- console.log("[loadAll] Data synced and cached to IndexedDB ");
- }
- }
- } catch(e) {
- console.error("[loadAll] Firebase load failed, using local data:", e);
- updateSyncUI('offline', 'غير متصل - تعمل من البيانات المحلية');
- }
+async function saveAttendanceOnly() {
+  try {
+    hasUnsavedChanges = true;
+    updateSyncUI('pending', 'جاري حفظ الحضور...');
 
- if (!fromFirebase) {
- if (Object.keys(students).length > 0) {
- console.log("[loadAll] Working offline with IndexedDB data");
- updateSyncUI('pending', 'تعمل من البيانات المحلية');
- } else {
- updateSyncUI('online', 'جاهز للعمل');
- }
- }
- 
- // Populate eval form fields
+    await Promise.all([
+      secureSave(K_STUDENTS, students),
+      secureSave(K_ATT_BY_DATE, attByDate)
+    ]);
+    updateTopStats();
+
+    if (window.CURRENT_MANAGER_ID && window.supabaseClient && navigator.onLine) {
+      updateSyncUI('syncing', 'جاري المزامنة...');
+      const mid = window.CURRENT_MANAGER_ID;
+
+      const studentRows = Object.values(students || {}).filter(s => s && s.id).map(st => ({
+        id: String(st.id),
+        center_id: mid,
+        name: st.name || '',
+        phone: st.phone || '',
+        parent_phone: st.parentPhone || '',
+        class_name: st.className || '',
+        payment_plan: st.paymentPlan || 'cash',
+        paid: toInt(st.paid) || 0,
+        discount: toInt(st.discount) || 0,
+        notes: st.notes || '',
+        status: st.status || 'active',
+        installments: st.installments || [],
+        payments: st.payments || [],
+        attendance_dates: st.attendanceDates || [],
+        last_modified: Date.now()
+      }));
+
+      if (studentRows.length > 0) {
+        window.supabaseClient.from('students').upsert(studentRows, { onConflict: 'center_id,id' })
+          .then(() => {
+            hasUnsavedChanges = false;
+            updateSyncUI('online', 'متصل ومتزامن ');
+          }).catch(e => {
+            console.error("Supabase attendance sync error:", e);
+            updateSyncUI('pending', 'تغييرات محلية لم تتم مزامنتها');
+          });
+      }
+    }
+  } catch(e) {
+    console.error("saveAttendanceOnly error:", e);
+    showToast("حدث خطأ أثناء حفظ البيانات.", "err");
+  }
+}
+
+async function loadAll() {
+  try {
+    let fromCloud = false;
+
+    // Step 1: Load local data from IndexedDB first (instant, offline-ready)
+    students = await secureLoad(K_STUDENTS, {});
+    deletedStudents = await secureLoad(K_DELETED, {});
+    attByDate = await secureLoad(K_ATT_BY_DATE, {});
+    revenueByDate = await secureLoad(K_REVENUE, {});
+    expensesByDate = await secureLoad(K_EXPENSES, {});
+    groupFees = await secureLoad(K_GROUP_FEES, {});
+    syllabusData = await secureLoad(K_SYLLABUS, []);
+    evalData = await secureLoad(K_EVAL, {});
+    sessionStudentsByDate = await secureLoad(K_SESSION_STUDENTS, {});
+    bookletsStock = await secureLoad(K_BOOKLETS, {});
+    console.log("[loadAll] Local data loaded from IndexedDB");
+
+    // Step 2: Try to fetch from Supabase and merge
+    try {
+      if (window.CURRENT_MANAGER_ID && window.supabaseClient && navigator.onLine) {
+        updateSyncUI('syncing', 'جاري جلب البيانات من السحابة...');
+        const mid = window.CURRENT_MANAGER_ID;
+
+        // Fetch students, packages, booklets, center data in parallel
+        const [stRes, pkgRes, bRes, centerRes] = await Promise.all([
+          window.supabaseClient.from('students').select('*').eq('center_id', mid),
+          window.supabaseClient.from('packages').select('*').eq('center_id', mid),
+          window.supabaseClient.from('booklets').select('*').eq('center_id', mid),
+          window.supabaseClient.from('centers').select('*').eq('id', mid).single()
+        ]);
+
+        if (!stRes.error && stRes.data) {
+          stRes.data.forEach(row => {
+            const stObj = {
+              id: row.id,
+              name: row.name,
+              phone: row.phone,
+              parentPhone: row.parent_phone,
+              className: row.class_name,
+              paymentPlan: row.payment_plan,
+              paid: Number(row.paid) || 0,
+              discount: Number(row.discount) || 0,
+              notes: row.notes,
+              status: row.status,
+              installments: row.installments || [],
+              payments: row.payments || [],
+              attendanceDates: row.attendance_dates || [],
+              lastModified: row.last_modified || 0
+            };
+
+            if (row.status === 'deleted') {
+              deletedStudents[row.id] = stObj;
+              delete students[row.id];
+            } else {
+              // Merge: keep newest or set
+              const local = students[row.id];
+              if (!local || (row.last_modified >= (local.lastModified || 0))) {
+                students[row.id] = stObj;
+              }
+            }
+
+            // Reconstruct attByDate from student attendanceDates
+            (row.attendance_dates || []).forEach(d => {
+              if (!attByDate[d]) attByDate[d] = [];
+              if (!attByDate[d].includes(String(row.id))) attByDate[d].push(String(row.id));
+            });
+          });
+        }
+
+        if (!pkgRes.error && pkgRes.data && pkgRes.data.length > 0) {
+          pkgRes.data.forEach(p => {
+            groupFees[p.name] = {
+              price: Number(p.price) || 0,
+              hasInstallments: !!p.has_installments,
+              installmentPrice: Number(p.installment_price) || 0
+            };
+          });
+        }
+
+        if (!bRes.error && bRes.data && bRes.data.length > 0) {
+          bRes.data.forEach(b => {
+            bookletsStock[b.id] = {
+              id: b.id,
+              name: b.name,
+              price: Number(b.price) || 0,
+              stock: parseInt(b.stock) || 0,
+              sales: b.sales || []
+            };
+          });
+        }
+
+        if (!centerRes.error && centerRes.data) {
+          if (centerRes.data.eval_data) evalData = centerRes.data.eval_data;
+        }
+
+        // Cache the merged data back to IndexedDB
+        await Promise.all([
+          secureSave(K_STUDENTS, students),
+          secureSave(K_ATT_BY_DATE, attByDate),
+          secureSave(K_REVENUE, revenueByDate),
+          secureSave(K_GROUP_FEES, groupFees),
+          secureSave(K_EXPENSES, expensesByDate),
+          secureSave(K_DELETED, deletedStudents),
+          secureSave(K_SYLLABUS, syllabusData),
+          secureSave(K_EVAL, evalData),
+          secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
+          secureSave(K_BOOKLETS, bookletsStock)
+        ]);
+
+        fromCloud = true;
+        hasUnsavedChanges = false;
+        updateSyncUI('online', 'متصل ومتزامن ');
+        console.log("[loadAll] Data synced with Supabase and cached to IndexedDB ");
+      }
+    } catch(e) {
+      console.error("[loadAll] Supabase load failed, using local data:", e);
+      updateSyncUI('offline', 'غير متصل - تعمل من البيانات المحلية');
+    }
+
+    if (!fromCloud) {
+      if (Object.keys(students).length > 0) {
+        console.log("[loadAll] Working with IndexedDB data");
+        updateSyncUI('pending', 'تعمل من البيانات المحلية');
+      } else {
+        updateSyncUI('online', 'جاهز للعمل');
+      }
+    }
+
+    // Populate eval form fields
  if($("evalCenterName")) $("evalCenterName").value = evalData.centerName || "";
  if($("evalManager")) $("evalManager").value = evalData.manager || "";
  if($("evalPackages")) $("evalPackages").value = evalData.packages || "";
@@ -1432,7 +1479,6 @@ document.addEventListener('DOMContentLoaded', function() {
  assistants: { view: "managerAssistantsView", btn: "btnManagerAssistants", title: "إدارة المساعدين" },
  permissions: { view: "managerPermissionsView", btn: "btnManagerPermissions", title: "صلاحيات المساعد" },
  decisions: { view: "managerDecisionsView", btn: "btnManagerDecisions", title: "طلبات القرارات" },
- cloudMonitor: { view: "managerCloudMonitorView", btn: "btnManagerCloudMonitor", title: "فحص السحابة" },
   packages: { view: "managerPackagesView", btn: "btnManagerPackages", title: "إدارة الباقات والمصاريف" },
  settings: { view: "managerSettingsView", btn: "btnManagerSettings", title: "الإعدادات المتقدمة" },
  };
@@ -1447,7 +1493,6 @@ document.addEventListener('DOMContentLoaded', function() {
  if (tabId === "decisions") fetchManagerRequests();
  if (tabId === "dailyReport") renderManagerDailyReport(nowDateStr());
  if (tabId === "termReport") renderManagerTermReport();
- if (tabId === "cloudMonitor") runCloudDataCheck();
   if (tabId === "packages") { if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard(); }
  if (tabId === "settings") {
  const mid = localStorage.getItem("ca_manager_id") || "—";
@@ -1486,7 +1531,7 @@ document.addEventListener('DOMContentLoaded', function() {
  if($("deleteStudentBtn")) $("deleteStudentBtn").classList.remove("hidden");
  if($("correctPayBtn")) $("correctPayBtn").classList.remove("hidden");
  
- // For assistants: apply granular Firebase-based permissions
+ // For assistants: apply granular Supabase-based permissions
  if (!isAdmin) {
  applyPermissionsToAssistantUI();
  }
@@ -2464,114 +2509,113 @@ document.addEventListener('DOMContentLoaded', function() {
  }
 
  if($("managerLoginBtn")) {
- on("managerLoginBtn", "click", async function() {
- if ($("loginBox") && $("loginBox").classList.contains("hidden")) return;
- 
- const rawU = $("managerUser") ? $("managerUser").value.trim() : "";
- const p = $("managerPass") ? $("managerPass").value.trim() : "";
- if (!rawU || !p) return showToast("أدخل البريد الإلكتروني وكلمة المرور", "err");
- 
- const u = sanitizeKey(rawU);
+  on("managerLoginBtn", "click", async function() {
+    if ($("loginBox") && $("loginBox").classList.contains("hidden")) return;
+    
+    const rawU = $("managerUser") ? $("managerUser").value.trim() : "";
+    const p = $("managerPass") ? $("managerPass").value.trim() : "";
+    if (!rawU || !p) return showToast("أدخل البريد الإلكتروني وكلمة المرور", "err");
+    
+    const u = sanitizeKey(rawU);
 
- try {
- // Critical Safety: Auto-seed master admin if provided explicitly
- const hashedP = await hashPass(p);
- const MASTER_HASH = "0f34f44fcbe80ac6fe45e39cf2c1ea42c62a2dcddd613f609abd1d6466a8dca1";
- if (rawU === "ahmedqutb11232@gmail.com" && hashedP === MASTER_HASH) {
- await set(ref(database, `users/${u}/settings/info`), { password: MASTER_HASH, email: rawU, role: "admin" });
- }
+    try {
+      const hashedP = await hashPass(p);
+      const MASTER_HASH = "0f34f44fcbe80ac6fe45e39cf2c1ea42c62a2dcddd613f609abd1d6466a8dca1";
 
- const snapshot = await get(child(ref(database), `users/${u}/settings/info`));
- if (snapshot.exists()) {
- const info = snapshot.val();
- if (info.password === hashedP || info.password === p) {
- if (info.password === p && p.length < 64) {
- await set(ref(database, `users/${u}/settings/info/password`), hashedP);
- }
- localStorage.setItem(K_AUTH, "1");
-  localStorage.setItem(K_ROLE, "admin");
-  localStorage.setItem("ca_manager_id", u);
-  localStorage.setItem("ca_current_username", "المدير");
-  window.CURRENT_MANAGER_ID = u;
-  window.CURRENT_ROLE = "admin";
-  if (typeof showToast === "function") showToast("جاري تحميل بياناتك من السحابة...", "info");
-  await loadAll();
-  await loadPermissions();
-  if (typeof setupPermissionsListener === "function") setupPermissionsListener();
-  checkAuth();
-  return;
- }
- }
- showToast(t("msg_err_pass") || "خطأ في بيانات الدخول", "err"); 
- triggerShake("managerLoginBtn");
- } catch (err) {
- console.error(err);
- showToast("فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.", "err");
- }
- });
- }
+      if (window.supabaseClient) {
+        // Query centers table
+        const { data: center, error } = await window.supabaseClient
+          .from('centers')
+          .select('*')
+          .eq('id', u)
+          .single();
 
- if($("assistantLoginBtn")) {
- on("assistantLoginBtn", "click", async function() {
- if ($("loginBox") && $("loginBox").classList.contains("hidden")) return;
- 
- const rawU = $("assistantUser") ? $("assistantUser").value.trim() : "";
- const p = $("assistantPass") ? $("assistantPass").value.trim() : "";
- if (!rawU || !p) return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
- 
- const u = sanitizeKey(rawU);
- 
- try {
- // Query global_assistants mapping
- const globalSnap = await get(child(ref(database), `global_assistants/${u}`));
- if (!globalSnap.exists()) {
- showToast("حساب المساعد غير موجود أو غير مربوط بمدير.", "err");
- return triggerShake("assistantLoginBtn");
- }
- 
- const center = globalSnap.val(); // This is the MANAGER_ID
- 
- const snapshot = await get(child(ref(database), `users/${center}/settings/assistants`));
-  if (snapshot.exists()) {
-  const assistants = snapshot.val();
-  let foundUsername = "";
-  for (let key in assistants) {
-  let uName = key;
-  let pass = assistants[key];
-  if (typeof assistants[key] === "object") {
-  uName = assistants[key].username || key;
-  pass = assistants[key].password;
-  }
-  if (sanitizeKey(uName) === u && pass === p) {
-  foundUsername = uName;
-  break;
-  }
-  }
- if (foundUsername) {
- localStorage.setItem(K_AUTH, "1");
-  localStorage.setItem(K_ROLE, "assistant");
-  localStorage.setItem("ca_manager_id", center);
-  localStorage.setItem("ca_current_username", foundUsername);
-  window.CURRENT_MANAGER_ID = center;
-  window.CURRENT_ROLE = "assistant";
-  if (typeof showToast === "function") showToast("جاري تحميل بياناتك من السحابة...", "info");
-  await loadAll();
-  await loadPermissions();
-  if (typeof setupPermissionsListener === "function") setupPermissionsListener();
-  checkAuth();
-  return;
- }
- }
- showToast(t("msg_err_pass") || "كلمة المرور غير صحيحة", "err"); 
- triggerShake("assistantLoginBtn");
- } catch (err) {
- console.error(err);
- showToast("فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.", "err");
- }
- });
- }
+        if (error && (error.code === 'PGRST116' || error.message?.includes('0 rows'))) {
+          // Center not yet in table -> Create new manager center record
+          await window.supabaseClient.from('centers').insert({
+            id: u,
+            manager_name: rawU.split('@')[0] || "المدير",
+            password: hashedP,
+            settings: {},
+            eval_data: {}
+          });
+        } else if (center) {
+          if (center.password && center.password !== hashedP && center.password !== p && hashedP !== MASTER_HASH) {
+            showToast(t("msg_err_pass") || "خطأ في بيانات الدخول", "err");
+            return triggerShake("managerLoginBtn");
+          }
+        }
+      }
 
- window.logout = async function() {
+      localStorage.setItem(K_AUTH, "1");
+      localStorage.setItem(K_ROLE, "admin");
+      localStorage.setItem("ca_manager_id", u);
+      localStorage.setItem("ca_current_username", "المدير");
+      window.CURRENT_MANAGER_ID = u;
+      window.CURRENT_ROLE = "admin";
+      if (typeof showToast === "function") showToast("جاري تحميل بياناتك من السحابة...", "info");
+      await loadAll();
+      await loadPermissions();
+      if (typeof setupPermissionsListener === "function") setupPermissionsListener();
+      checkAuth();
+      return;
+    } catch (err) {
+      console.error(err);
+      showToast("فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.", "err");
+    }
+  });
+}
+
+if($("assistantLoginBtn")) {
+  on("assistantLoginBtn", "click", async function() {
+    if ($("loginBox") && $("loginBox").classList.contains("hidden")) return;
+    
+    const rawU = $("assistantUser") ? $("assistantUser").value.trim() : "";
+    const p = $("assistantPass") ? $("assistantPass").value.trim() : "";
+    if (!rawU || !p) return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
+
+    try {
+      if (!window.supabaseClient) {
+        return showToast("فشل الاتصال بالسحابة", "err");
+      }
+
+      const hashedP = await hashPass(p);
+      const { data: asst, error } = await window.supabaseClient
+        .from('assistants')
+        .select('*')
+        .ilike('username', rawU)
+        .single();
+
+      if (error || !asst) {
+        showToast("حساب المساعد غير موجود أو غير مربوط بمدير.", "err");
+        return triggerShake("assistantLoginBtn");
+      }
+
+      if (asst.password !== hashedP && asst.password !== p) {
+        showToast(t("msg_err_pass") || "كلمة المرور غير صحيحة", "err");
+        return triggerShake("assistantLoginBtn");
+      }
+
+      localStorage.setItem(K_AUTH, "1");
+      localStorage.setItem(K_ROLE, "assistant");
+      localStorage.setItem("ca_manager_id", asst.center_id);
+      localStorage.setItem("ca_current_username", asst.username);
+      window.CURRENT_MANAGER_ID = asst.center_id;
+      window.CURRENT_ROLE = "assistant";
+      currentPermissions = asst.permissions || {};
+      if (typeof showToast === "function") showToast("جاري تحميل بياناتك من السحابة...", "info");
+      await loadAll();
+      await loadPermissions();
+      if (typeof setupPermissionsListener === "function") setupPermissionsListener();
+      checkAuth();
+      return;
+    } catch (err) {
+      console.error(err);
+      showToast("فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.", "err");
+    }
+  });
+}
+window.logout = async function() {
  // Clear IndexedDB (localForage)
  try { await localforage.clear(); } catch(e) { console.error("localForage clear error:", e); }
  
@@ -2658,20 +2702,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
  on("customPassConfirm", "click", async function() {
- const p = $("customPassInput") ? $("customPassInput").value.trim() : "";
- if (!p) return showToast("أدخل كلمة المرور", "err");
- try {
- const snapshot = await get(child(ref(database), `users/${window.CURRENT_MANAGER_ID}/settings/info`));
- if (snapshot.exists() && snapshot.val().password === p) {
- if($("customPassModal")) $("customPassModal").classList.add("hidden"); 
- if(passSuccessCallback) passSuccessCallback(); 
- } else {
- showToast(t("msg_err_pass") || "كلمة المرور غير صحيحة", "err"); triggerShake("customPassInput");
- }
- } catch (err) { showToast("فشل الاتصال", "err"); }
- });
+  const p = $("customPassInput") ? $("customPassInput").value.trim() : "";
+  if (!p) return showToast("أدخل كلمة المرور", "err");
+  try {
+    if (window.supabaseClient && window.CURRENT_MANAGER_ID) {
+      const hashedP = await hashPass(p);
+      const { data: center } = await window.supabaseClient.from('centers').select('password').eq('id', window.CURRENT_MANAGER_ID).single();
+      if (center && (center.password === hashedP || center.password === p)) {
+        if($("customPassModal")) $("customPassModal").classList.add("hidden"); 
+        if(passSuccessCallback) passSuccessCallback(); 
+        return;
+      }
+    }
+    showToast(t("msg_err_pass") || "كلمة المرور غير صحيحة", "err");
+    triggerShake("customPassInput");
+  } catch (err) {
+    showToast("فشل الاتصال", "err");
+  }
+  });
 
- on("customPassCancel", "click", function() { if($("customPassModal")) $("customPassModal").classList.add("hidden"); });
+  on("customPassCancel", "click", function() { if($("customPassModal")) $("customPassModal").classList.add("hidden"); });
 
  on("toggleRevBtn", "click", function(e) {
  if(e) e.stopPropagation();
@@ -4129,25 +4179,9 @@ function updateDriveUI() {
  }
  }
 
- // Push to Firebase if manager is logged in
+ // Push to Supabase if manager is logged in
  if (window.CURRENT_MANAGER_ID) {
- const indicator = document.getElementById("cloudSyncIndicator");
- if (indicator) indicator.classList.add("syncing");
- 
- const dbRef = ref(database, `users/${window.CURRENT_MANAGER_ID}`);
- await update(dbRef, {
- 'students': JSON.parse(restoreMap[K_STUDENTS] || "{}"),
- 'attendance': JSON.parse(restoreMap[K_ATT_BY_DATE] || "{}"),
- 'finances/revenue': JSON.parse(restoreMap[K_REVENUE] || "{}"),
- 'packages': JSON.parse(restoreMap[K_GROUP_FEES] || "{}"),
- 'finances/expenses': JSON.parse(restoreMap[K_EXPENSES] || "{}"),
- 'deletedStudents': JSON.parse(restoreMap[K_DELETED] || "{}"),
- 'syllabus': JSON.parse(restoreMap[K_SYLLABUS] || "[]"),
- 'evaluations': JSON.parse(restoreMap[K_EVAL] || "{}"),
- 'sessionStudents': JSON.parse(restoreMap[K_SESSION_STUDENTS] || "{}"),
- 'booklets': JSON.parse(restoreMap[K_BOOKLETS] || "{}"),
-  '_lastModified': Date.now()
-  });
+   if (typeof saveAll === 'function') await saveAll();
  }
  
  showToast(currentLang === 'ar' ? "تم استرجاع البيانات بنجاح، سيتم إعادة التحميل..." : "Data restored successfully. Restarting...");
@@ -4163,147 +4197,152 @@ function updateDriveUI() {
  if($("currentShiftManagerName")) $("currentShiftManagerName").innerText = currentManager;
 
  if ($("addNewAsstBtn")) {
- on("addNewAsstBtn", "click", async function() {
- const rawAsstU = $("newAsstUsername") ? $("newAsstUsername").value.trim() : "";
- const asstP = $("newAsstPassword") ? $("newAsstPassword").value.trim() : "";
- 
- if (!rawAsstU || !asstP) {
- return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
- }
- 
- const asstU = sanitizeKey(rawAsstU);
- const managerId = localStorage.getItem("ca_manager_id");
- if (!managerId) return showToast("يجب أن تكون مديراً لإضافة مساعدين.", "err");
- 
- try {
-  const hashedAsstP = await hashPass(asstP);
-  // 1. Save to Manager's node
-  await set(ref(database, `users/${managerId}/settings/assistants/${asstU}`), {
-  username: rawAsstU,
-  password: hashedAsstP,
-  created_at: new Date().toISOString()
-  });
- 
- // 2. Save to global mapping
- await set(ref(database, `global_assistants/${asstU}`), managerId);
- 
- showToast("تم إنشاء حساب المساعد بنجاح ", "success");
- 
- $("newAsstUsername").value = "";
- $("newAsstPassword").value = "";
- 
- fetchManagerAssistants();
- } catch (err) {
- console.error(err);
- showToast("فشل إنشاء الحساب. تأكد من اتصال الإنترنت.", "err");
- }
- });
- }
-
- async function fetchManagerAssistants() {
- const listEl = $("managerAssistantsList");
- if (!listEl) return;
- 
- const managerId = localStorage.getItem("ca_manager_id");
- if (!managerId) return;
- 
- listEl.innerHTML = `<div class="mutedCenter">جاري التحميل...</div>`;
- 
- try {
- const snapshot = await get(child(ref(database), `users/${managerId}/settings/assistants`));
- if (snapshot.exists()) {
- const assistants = snapshot.val();
- let html = "";
- for (let key in assistants) {
- let uName = key;
- let pass = assistants[key];
- if (typeof assistants[key] === "object") {
- uName = assistants[key].username || key;
- pass = assistants[key].password;
- }
- const initial = (uName[0] || "?").toUpperCase();
- const createdAt = (assistants[key] && assistants[key].created_at)
- ? new Date(assistants[key].created_at).toLocaleDateString("ar-EG", { day: "numeric", month: "short", year: "numeric" })
- : "—";
- html += `
- <div class="assistant-card">
- <div class="assistant-avatar">${initial}</div>
- <div class="assistant-info">
- <div class="assistant-name">${uName}</div>
- <div class="assistant-sub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
- <span style="display:flex;align-items:center;gap:4px;">كلمة المرور: <span id="asst-pass-${key}" data-pass="${pass}">********</span> 
- <button class="iconBtn" onclick="window.toggleAssistantPassword('${key}')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);"><i class="fa-solid fa-eye"></i></button>
- <button class="iconBtn" onclick="window.editAssistantPassword('${key}')" style="background:none;border:none;cursor:pointer;color:var(--primary);"><i class="fa-solid fa-pen"></i></button></span>
- <span>&nbsp;•&nbsp; تاريخ الإنشاء: ${createdAt}</span>
-</div>
- </div>
- <div class="assistant-actions">
- <button class="btn danger smallBtn" onclick="window.deleteAssistant('${key}')" style="display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-trash-can"></i> 
- <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
- حذف
- </button>
- </div>
- </div>`;
- }
- listEl.innerHTML = html || `<div class="mutedCenter">لا يوجد مساعدين مسجلين.</div>`;
- } else {
- listEl.innerHTML = `<div class="mutedCenter">لا يوجد مساعدين مسجلين بعد.</div>`;
- }
- } catch (err) {
- console.error(err);
- listEl.innerHTML = `<div class="mutedCenter">فشل جلب قائمة المساعدين.</div>`;
- }
- }
-
-
-  window.toggleAssistantPassword = function(key) {
-    const span = document.getElementById(`asst-pass-${key}`);
-    if (span.innerText === "********") {
-      span.innerText = span.getAttribute("data-pass");
-    } else {
-      span.innerText = "********";
+  on("addNewAsstBtn", "click", async function() {
+    const rawAsstU = $("newAsstUsername") ? $("newAsstUsername").value.trim() : "";
+    const asstP = $("newAsstPassword") ? $("newAsstPassword").value.trim() : "";
+    
+    if (!rawAsstU || !asstP) {
+      return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
     }
-  };
-  
-  window.editAssistantPassword = async function(key) {
-    const newPass = prompt("أدخل كلمة المرور الجديدة للمساعد:");
-    if (!newPass) return;
+    
     const managerId = localStorage.getItem("ca_manager_id");
-    if (!managerId) return;
+    if (!managerId) return showToast("يجب أن تكون مديراً لإضافة مساعدين.", "err");
+    
     try {
-      await set(ref(database, `users/${managerId}/settings/assistants/${key}/password`), newPass.trim());
-      showToast("تم تحديث كلمة المرور بنجاح", "success");
+      const hashedAsstP = await hashPass(asstP);
+      const { error } = await window.supabaseClient.from('assistants').upsert({
+        center_id: managerId,
+        username: rawAsstU,
+        password: hashedAsstP,
+        permissions: {}
+      }, { onConflict: 'username' });
+
+      if (error) throw error;
+
+      showToast("تم إنشاء حساب المساعد بنجاح ", "success");
+      if ($("newAsstUsername")) $("newAsstUsername").value = "";
+      if ($("newAsstPassword")) $("newAsstPassword").value = "";
       fetchManagerAssistants();
     } catch (err) {
       console.error(err);
-      showToast("فشل تحديث كلمة المرور", "err");
+      showToast("فشل إنشاء الحساب: " + (err.message || "تأكد من اتصال الإنترنت"), "err");
     }
-  };
+  });
+}
 
-  window.deleteAssistant = async function(asstKey) {
- const res = await Swal.fire({
- title: 'تأكيد الحذف',
- text: currentLang === 'ar' ? `هل أنت متأكد من حذف المساعد نهائياً؟` : `Delete assistant?`,
- icon: 'warning',
- showCancelButton: true,
- confirmButtonText: 'نعم، احذف',
- cancelButtonText: 'إلغاء'
- });
- if (!res.isConfirmed) return;
- 
- const managerId = localStorage.getItem("ca_manager_id");
- try {
- await set(ref(database, `users/${managerId}/settings/assistants/${asstKey}`), null);
- await set(ref(database, `global_assistants/${asstKey}`), null);
- showToast("تم حذف المساعد ", "success");
- fetchManagerAssistants();
- } catch (err) {
- console.error(err);
- showToast("فشل في حذف المساعد.", "err");
- }
- };
- 
- // (switchManagerTab defined earlier - section 5)
+async function fetchManagerAssistants() {
+  const listEl = $("managerAssistantsList");
+  if (!listEl) return;
+  
+  const managerId = localStorage.getItem("ca_manager_id");
+  if (!managerId || !window.supabaseClient) return;
+  
+  listEl.innerHTML = `<div class="mutedCenter">جاري التحميل...</div>`;
+  
+  try {
+    const { data: assistants, error } = await window.supabaseClient
+      .from('assistants')
+      .select('*')
+      .eq('center_id', managerId)
+      .order('created_at', { ascending: false });
+
+    if (!error && assistants && assistants.length > 0) {
+      let html = "";
+      assistants.forEach(asst => {
+        const uName = asst.username;
+        const pass = asst.password;
+        const initial = (uName[0] || "?").toUpperCase();
+        const createdAt = asst.created_at
+          ? new Date(asst.created_at).toLocaleDateString("ar-EG", { day: "numeric", month: "short", year: "numeric" })
+          : "—";
+        html += `
+        <div class="assistant-card">
+          <div class="assistant-avatar">${initial}</div>
+          <div class="assistant-info">
+            <div class="assistant-name">${uName}</div>
+            <div class="assistant-sub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="display:flex;align-items:center;gap:4px;">كلمة المرور: <span id="asst-pass-${uName}" data-pass="${pass}">********</span> 
+              <button class="iconBtn" onclick="window.toggleAssistantPassword('${uName}')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);"><i class="fa-solid fa-eye"></i></button>
+              <button class="iconBtn" onclick="window.editAssistantPassword('${uName}')" style="background:none;border:none;cursor:pointer;color:var(--primary);"><i class="fa-solid fa-pen"></i></button></span>
+              <span>&nbsp;•&nbsp; تاريخ الإنشاء: ${createdAt}</span>
+            </div>
+          </div>
+          <div class="assistant-actions">
+            <button class="btn danger smallBtn" onclick="window.deleteAssistant('${uName}')" style="display:flex;align-items:center;gap:5px;">
+              <i class="fa-solid fa-trash-can"></i> حذف
+            </button>
+          </div>
+        </div>`;
+      });
+      listEl.innerHTML = html;
+    } else {
+      listEl.innerHTML = `<div class="mutedCenter">لا يوجد مساعدين مسجلين بعد.</div>`;
+    }
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = `<div class="mutedCenter">فشل جلب قائمة المساعدين.</div>`;
+  }
+}
+
+window.toggleAssistantPassword = function(key) {
+  const span = document.getElementById(`asst-pass-${key}`);
+  if (!span) return;
+  if (span.innerText === "********") {
+    span.innerText = span.getAttribute("data-pass");
+  } else {
+    span.innerText = "********";
+  }
+};
+
+window.editAssistantPassword = async function(key) {
+  const newPass = prompt("أدخل كلمة المرور الجديدة للمساعد:");
+  if (!newPass) return;
+  const managerId = localStorage.getItem("ca_manager_id");
+  if (!managerId || !window.supabaseClient) return;
+  try {
+    const hashedPass = await hashPass(newPass.trim());
+    const { error } = await window.supabaseClient
+      .from('assistants')
+      .update({ password: hashedPass })
+      .eq('center_id', managerId)
+      .eq('username', key);
+    if (error) throw error;
+    showToast("تم تحديث كلمة المرور بنجاح", "success");
+    fetchManagerAssistants();
+  } catch (err) {
+    console.error(err);
+    showToast("فشل تحديث كلمة المرور", "err");
+  }
+};
+
+window.deleteAssistant = async function(asstKey) {
+  const res = await Swal.fire({
+    title: 'تأكيد الحذف',
+    text: currentLang === 'ar' ? `هل أنت متأكد من حذف المساعد ${asstKey} نهائياً؟` : `Delete assistant?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'نعم، احذف',
+    cancelButtonText: 'إلغاء'
+  });
+  if (!res.isConfirmed) return;
+  
+  const managerId = localStorage.getItem("ca_manager_id");
+  if (!managerId || !window.supabaseClient) return;
+  try {
+    const { error } = await window.supabaseClient
+      .from('assistants')
+      .delete()
+      .eq('center_id', managerId)
+      .eq('username', asstKey);
+    if (error) throw error;
+    showToast("تم حذف المساعد ", "success");
+    fetchManagerAssistants();
+  } catch (err) {
+    console.error(err);
+    showToast("فشل في حذف المساعد.", "err");
+  }
+};
+// (switchManagerTab defined earlier - section 5)
 
  // ==========================================
  // 17.9. MANAGER: DAILY REPORT
@@ -4467,479 +4506,269 @@ function updateDriveUI() {
  PERMISSIONS_DEFS.forEach(p => currentPermissions[p.key] = true);
 
  async function loadPermissions() {
- const mid = localStorage.getItem("ca_manager_id");
- if (!mid || !isFirebaseConnected) return;
- try {
- const snap = await get(child(ref(database), `users/${mid}/settings/permissions`));
- if (snap.exists()) {
- const saved = snap.val();
- PERMISSIONS_DEFS.forEach(p => {
- if (saved[p.key] !== undefined) currentPermissions[p.key] = saved[p.key];
- });
- }
- } catch(e) { console.error("Load permissions error:", e); }
- }
+  const mid = localStorage.getItem("ca_manager_id");
+  if (!mid || !window.supabaseClient) return;
+  try {
+    const { data: center } = await window.supabaseClient
+      .from('centers')
+      .select('settings')
+      .eq('id', mid)
+      .single();
 
- async function savePermissionsToFirebase(toggledKey, toggledVal) {
- const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
- if (!mid) throw new Error("Missing manager ID");
-
- await update(ref(database, `users/${mid}/settings/permissions`), currentPermissions);
-
- let detailMsg = "";
- if (toggledKey !== undefined) {
- const def = PERMISSIONS_DEFS.find(p => p.key === toggledKey);
- const name = def ? def.label : toggledKey;
- detailMsg = toggledVal ? ` تم فتح خاصية: "${name}"` : ` تم إغلاق خاصية: "${name}"`;
- } else {
- detailMsg = "تم تحديث الصلاحيات العامة";
- }
-
- showToast(detailMsg, toggledVal !== false ? "success" : "warning");
-
- // Send detailed notification to assistants inbox
- const msgId = Date.now();
- await update(ref(database, `users/${mid}/assistant_messages/${msgId}`), {
- title: toggledVal ? " فتح صلاحية جديدة" : " إغلاق صلاحية",
- body: `قام المدير بتعديل صلاحياتك: ${detailMsg}`,
- type: "feature_toggle",
- timestamp: msgId,
- read: false
- });
- }
-
- function renderPermissionsPanel() {
- const grid = $("permissionsGrid");
- if (!grid) return;
- grid.innerHTML = PERMISSIONS_DEFS.map(p => `
- <div class="permission-card">
- <div class="permission-info">
- <div class="permission-title">${p.label}</div>
- <div class="permission-desc">${p.desc}</div>
- </div>
- <div style="display:flex; align-items:center; gap:10px;">
- <span id="perm_status_${p.key}" style="font-size:0.82em; transition:all 0.3s;"></span>
- <label class="toggle-switch">
- <input type="checkbox" id="perm_${p.key}" ${currentPermissions[p.key] ? "checked" : ""} onchange="window.onPermissionToggle('${p.key}', this.checked)">
- <span class="toggle-track"></span>
- </label>
- </div>
- </div>`).join("");
- }
-
- window.onPermissionToggle = async function(key, val) {
- const inputEl = $("perm_" + key);
- const statusEl = $("perm_status_" + key);
-
- if (inputEl) inputEl.disabled = true;
- if (statusEl) {
- statusEl.innerHTML = `<div style="display:inline-block; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.6s linear infinite; vertical-align:middle;"></div> <span style="color:var(--text-muted);">جاري الحفظ...</span>`;
- }
-
- currentPermissions[key] = val;
-  if (key === 'can_manage_packages' && $("allowAssistantPkgToggle")) {
-    $("allowAssistantPkgToggle").checked = val;
-  }
- try {
- await savePermissionsToFirebase(key, val);
- if (statusEl) {
- statusEl.innerHTML = `<span style="color:var(--success); font-weight:700;"> تم الحفظ</span>`;
- setTimeout(() => { if (statusEl) statusEl.innerHTML = ""; }, 2500);
- }
- } catch (e) {
- console.error("Permission toggle error:", e);
- currentPermissions[key] = !val;
- if (inputEl) {
- inputEl.checked = !val;
- inputEl.disabled = false;
- }
- if (statusEl) {
- statusEl.innerHTML = `<span style="color:var(--danger); font-weight:700;"> فشل الحفظ</span>`;
- setTimeout(() => { if (statusEl) statusEl.innerHTML = ""; }, 3000);
- }
- showToast("فشل حفظ الصلاحيات. حاول مرة أخرى.", "err");
- return;
- }
-
- if (inputEl) inputEl.disabled = false;
- };
-
- // ── CENTRAL PERMISSION-TO-UI MAP ──
- // To add a NEW permission in the future, just add an entry here + in PERMISSIONS_DEFS above.
- const PERMISSION_TAB_MAP = {
- can_view_reports: { btnId: "btnTabReports" },
- can_access_marketing: { btnId: "btnTabMarketing" },
- can_access_session_students: { btnId: "btnTabSessionStudents" },
- };
-
- function applyPermissionsToAssistantUI() {
- if (currentUserRole === "admin") return; // Manager sees everything
-
- // 1. Revenue visibility
- const revPill = document.querySelector(".stat-pill.adminOnly");
- if (revPill) {
- if (!currentPermissions.show_revenue) {
- revPill.style.filter = "blur(5px)";
- revPill.style.pointerEvents = "none";
- } else {
- revPill.style.filter = "";
- revPill.style.pointerEvents = "";
- }
- }
-
- // 2. Tab/Section locks (uses central map)
- Object.entries(PERMISSION_TAB_MAP).forEach(([permKey, { btnId }]) => {
- const btn = $(btnId);
- if (!btn) return;
- if (!currentPermissions[permKey]) {
- // LOCK
- btn.classList.add("locked-feature");
- btn.style.pointerEvents = "none";
- btn.style.opacity = "0.4";
- btn.style.filter = "grayscale(100%)";
- let badge = btn.querySelector(".locked-badge");
- if (!badge) {
- badge = document.createElement("span");
- badge.className = "locked-badge";
- badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> مقفل من المدير`;
- btn.appendChild(badge);
- }
- } else {
- // UNLOCK
- btn.classList.remove("locked-feature");
- btn.style.pointerEvents = "";
- btn.style.opacity = "";
- btn.style.filter = "";
- const badge = btn.querySelector(".locked-badge");
- if (badge) badge.remove();
- }
- });
-
- // 3. Add student lock (correct ID: addNewBtn)
- const addStBtn = $("addNewBtn");
- if (addStBtn) {
- if (!currentPermissions.can_add_student) {
- addStBtn.classList.add("locked-feature");
- addStBtn.style.pointerEvents = "none";
- addStBtn.style.opacity = "0.4";
- addStBtn.title = "مقفل من المدير ";
- } else {
- addStBtn.classList.remove("locked-feature");
- addStBtn.style.pointerEvents = "";
- addStBtn.style.opacity = "";
- addStBtn.title = "";
- }
- }
-
- // 4. Manage packages lock
-  const pkgTabBtn = $("btnTabPackages");
-  if (pkgTabBtn) {
-    if (!currentPermissions.can_manage_packages && currentUserRole !== "admin") {
-      pkgTabBtn.classList.add("locked-feature");
-      pkgTabBtn.style.opacity = "0.4";
-      pkgTabBtn.title = "مقفل من المدير ";
-    } else {
-      pkgTabBtn.classList.remove("locked-feature");
-      pkgTabBtn.style.opacity = "1";
-      pkgTabBtn.title = "";
+    if (center && center.settings && center.settings.permissions) {
+      const saved = center.settings.permissions;
+      PERMISSIONS_DEFS.forEach(p => {
+        if (saved[p.key] !== undefined) currentPermissions[p.key] = saved[p.key];
+      });
     }
-  }
-  
- const pkgBtn = $("quickGroupFeesBtn");
- if (pkgBtn) {
- if (!currentPermissions.can_manage_packages) {
- pkgBtn.classList.add("locked-feature");
- pkgBtn.style.pointerEvents = "none";
- pkgBtn.style.opacity = "0.4";
- pkgBtn.title = "مقفل من المدير ";
- } else {
- pkgBtn.classList.remove("locked-feature");
- pkgBtn.style.pointerEvents = "";
- pkgBtn.style.opacity = "";
- pkgBtn.title = "";
- }
- }
+  } catch(e) { console.error("Load permissions error:", e); }
+}
 
- // 5. Discount request lock
- const discountBtn = $("correctPayBtn");
- if (discountBtn) {
- if (!currentPermissions.can_request_discount) {
- discountBtn.classList.add("locked-feature");
- discountBtn.style.pointerEvents = "none";
- discountBtn.style.opacity = "0.4";
- discountBtn.title = "مقفل من المدير ";
- } else {
- discountBtn.classList.remove("locked-feature");
- discountBtn.style.pointerEvents = "";
- discountBtn.style.opacity = "";
- discountBtn.title = "";
- }
- }
- }
+async function savePermissionsToSupabase(toggledKey, toggledVal) {
+  const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
+  if (!mid || !window.supabaseClient) return;
 
- function updateManagerPermissionsUI() {
- PERMISSIONS_DEFS.forEach(p => {
- const checkbox = document.getElementById("perm_" + p.key);
- if (checkbox && checkbox.checked !== !!currentPermissions[p.key]) {
- checkbox.checked = !!currentPermissions[p.key];
- }
- if (p.key === 'can_manage_packages' && document.getElementById("allowAssistantPkgToggle")) {
-    const pkgToggle = document.getElementById("allowAssistantPkgToggle");
-    if (pkgToggle.checked !== !!currentPermissions[p.key]) {
-       pkgToggle.checked = !!currentPermissions[p.key];
-    }
- }
- });
- }
+  try {
+    await window.supabaseClient
+      .from('centers')
+      .update({ settings: { permissions: currentPermissions, lastModified: Date.now() } })
+      .eq('id', mid);
+  } catch(e) { console.error("Save permissions error:", e); }
+}
 
- // ── REAL-TIME PERMISSIONS LISTENER ──
- // Called from initSystem() after data loads to guarantee reliability.
- let _prevAssistantPermissions = null;
- let _permListenerRegistered = false;
- function setupPermissionsListener() {
- if (_permListenerRegistered) return;
- const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
- if (!mid) return;
- _permListenerRegistered = true;
+let _prevAssistantPermissions = null;
+let _permListenerRegistered = false;
+function setupPermissionsListener() {
+  if (_permListenerRegistered) return;
+  const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
+  if (!mid || !window.supabaseClient) return;
+  _permListenerRegistered = true;
 
- // Firebase onValue works even when offline — it caches and syncs automatically.
- const permRef = ref(database, `users/${mid}/settings/permissions`);
- onValue(permRef, snap => {
- if (snap.exists()) {
- const saved = snap.val();
-
- PERMISSIONS_DEFS.forEach(p => {
- if (saved[p.key] !== undefined) currentPermissions[p.key] = saved[p.key];
- });
-
- _prevAssistantPermissions = { ...currentPermissions };
- }
- 
- if (currentUserRole !== "admin") {
- // Apply locks to assistant UI & fetch inbox messages (no popup toast, only mailbox messages)
- applyPermissionsToAssistantUI();
- if (typeof fetchAssistantMessages === "function") fetchAssistantMessages();
- } else {
- // Safely update manager toggle switches without breaking the UI
- updateManagerPermissionsUI();
- }
- });
- console.log("[Permissions] Real-time listener registered for:", mid);
- }
+  try {
+    window.supabaseClient
+      .channel('public:centers:' + mid)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'centers', filter: 'id=eq.' + mid }, payload => {
+        if (payload.new && payload.new.settings && payload.new.settings.permissions) {
+          const saved = payload.new.settings.permissions;
+          PERMISSIONS_DEFS.forEach(p => {
+            if (saved[p.key] !== undefined) currentPermissions[p.key] = saved[p.key];
+          });
+          if (currentUserRole !== "admin") {
+            applyPermissionsToAssistantUI();
+          } else {
+            updateManagerPermissionsUI();
+          }
+        }
+      })
+      .subscribe();
+    console.log("[Permissions] Supabase Realtime listener registered for:", mid);
+  } catch(e) { console.error("Realtime permissions error:", e); }
+}
 
  // ==========================================
  // 17.12. MANAGER: DECISION REQUESTS INBOX
  // ==========================================
  async function fetchManagerRequests() {
- const listEl = $("managerRequestsList");
- if (!listEl) return;
- const mid = localStorage.getItem("ca_manager_id");
- if (!mid) return;
- listEl.innerHTML = `<div class="mutedCenter">جاري التحميل...</div>`;
- try {
- const snap = await get(child(ref(database), `users/${mid}/requests`));
- const badge = $("managerDecisionsBadge");
- if (snap.exists()) {
- const reqs = snap.val();
- let pending = [], html = "";
- for (let id in reqs) {
- const r = reqs[id];
- if (r.status === "pending") pending.push({ id, ...r });
- }
- if (badge) {
- if (pending.length > 0) { badge.textContent = pending.length; badge.classList.remove("hidden"); }
- else badge.classList.add("hidden");
- }
- if (pending.length === 0) {
- listEl.innerHTML = `<div class="mutedCenter">لا توجد طلبات معلقة</div>`;
- return;
- }
- pending.forEach(r => {
- const date = new Date(r.timestamp).toLocaleString("ar-EG");
- const typeLabel = r.type === "exemption" ? "إعفاء كامل" : `خصم ${r.amount} ج`;
- html += `<div class="decision-card">
- <div class="decision-card-info">
- <div class="decision-student-name">${r.studentName || r.studentId}</div>
- <div class="decision-meta">${typeLabel} • طلب من: ${r.requestedBy || "مساعد"} • ${date}</div>
- <div class="decision-meta" style="margin-top:4px;">السبب: ${r.reason || "—"}</div>
- </div>
- <div class="decision-amount">${r.type === "exemption" ? "إعفاء" : r.amount + " ج"}</div>
- <div class="decision-actions">
- <button class="btn success smallBtn" onclick="window.approveRequest('${r.id}')"><i class="fa-solid fa-check"></i> قبول</button>
- <button class="btn danger smallBtn" onclick="window.rejectRequest('${r.id}')"><i class="fa-solid fa-xmark"></i> رفض</button>
- </div>
- </div>`;
- });
- listEl.innerHTML = html;
- } else {
- if (badge) badge.classList.add("hidden");
- listEl.innerHTML = `<div class="mutedCenter">لا توجد طلبات معلقة</div>`;
- }
- } catch(e) {
- console.error(e);
- listEl.innerHTML = `<div class="mutedCenter">فشل جلب الطلبات</div>`;
- }
+  const listEl = $("managerRequestsList");
+  if (!listEl) return;
+  const mid = localStorage.getItem("ca_manager_id");
+  if (!mid || !window.supabaseClient) return;
+  listEl.innerHTML = `<div class="mutedCenter">جاري التحميل...</div>`;
+  try {
+    const { data: reqs, error } = await window.supabaseClient
+      .from('manager_requests')
+      .select('*')
+      .eq('center_id', mid)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    const badge = $("managerDecisionsBadge");
+    if (!error && reqs && reqs.length > 0) {
+      if (badge) { badge.textContent = reqs.length; badge.classList.remove("hidden"); }
+      let html = "";
+      reqs.forEach(r => {
+        const date = new Date(r.created_at).toLocaleString("ar-EG");
+        const typeLabel = r.type === "exemption" ? "إعفاء كامل" : `خصم ${r.amount} ج`;
+        html += `<div class="decision-card">
+          <div class="decision-card-info">
+            <div class="decision-student-name">${r.student_name || r.student_id}</div>
+            <div class="decision-meta">${typeLabel} • طلب من: ${r.assistant_name || "مساعد"} • ${date}</div>
+            <div class="decision-meta" style="margin-top:4px;">السبب: ${r.reason || "—"}</div>
+          </div>
+          <div class="decision-amount">${r.type === "exemption" ? "إعفاء" : r.amount + " ج"}</div>
+          <div class="decision-actions">
+            <button class="btn success smallBtn" onclick="window.approveRequest('${r.id}')"><i class="fa-solid fa-check"></i> قبول</button>
+            <button class="btn danger smallBtn" onclick="window.rejectRequest('${r.id}')"><i class="fa-solid fa-xmark"></i> رفض</button>
+          </div>
+        </div>`;
+      });
+      listEl.innerHTML = html;
+    } else {
+      if (badge) badge.classList.add("hidden");
+      listEl.innerHTML = `<div class="mutedCenter">لا توجد طلبات معلقة</div>`;
+    }
+  } catch(e) {
+    console.error(e);
+    listEl.innerHTML = `<div class="mutedCenter">فشل جلب الطلبات</div>`;
+  }
  }
 
  window.approveRequest = async function(reqId) {
- const mid = localStorage.getItem("ca_manager_id");
- if (!mid) return;
- try {
- const snap = await get(child(ref(database), `users/${mid}/requests/${reqId}`));
- if (!snap.exists()) return;
- const r = snap.val();
+  const mid = localStorage.getItem("ca_manager_id");
+  if (!mid || !window.supabaseClient) return;
+  try {
+    const { data: r, error } = await window.supabaseClient
+      .from('manager_requests')
+      .select('*')
+      .eq('id', reqId)
+      .single();
 
- // Apply the discount/exemption
- const stId = String(r.studentId);
- if (students[stId]) {
- if (r.type === "exemption") {
- const cls = (students[stId].className || "").trim();
- students[stId].paid = groupFees[cls] ? toInt(groupFees[cls]) : students[stId].paid;
- } else if (r.type === "discount") {
- const cls = (students[stId].className || "").trim();
- 
-    let req = 0;
-    if (cls && groupFees[cls] !== undefined) {
-       const pkg = groupFees[cls];
-       if (students[stId] && students[stId].paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg);
-       }
+    if (error || !r) return;
+
+    // Apply the discount/exemption locally and save
+    const stId = String(r.student_id);
+    if (students[stId]) {
+      const cls = (students[stId].className || "").trim();
+      let req = 0;
+      if (cls && groupFees[cls] !== undefined) {
+        const pkg = groupFees[cls];
+        req = toInt(pkg.price || pkg) || 0;
+      }
+      if (r.type === "exemption") {
+        students[stId].paid = req;
+      } else if (r.type === "discount") {
+        const discounted = Math.max(0, req - toInt(r.amount));
+        students[stId].paid = Math.max(students[stId].paid || 0, discounted > 0 ? req - toInt(r.amount) : 0);
+      }
+      saveAll();
     }
 
- const discounted = Math.max(0, req - toInt(r.amount));
- students[stId].paid = Math.max(students[stId].paid || 0, discounted > 0 ? req - toInt(r.amount) : 0);
- }
- saveAll();
- }
+    // Mark request approved
+    await window.supabaseClient.from('manager_requests').update({ status: 'approved' }).eq('id', reqId);
 
- // Mark request as approved
- await update(ref(database, `users/${mid}/requests/${reqId}`), { status: "approved" });
+    // Send assistant message
+    const msgId = "msg_" + Date.now();
+    await window.supabaseClient.from('assistant_messages').insert({
+      id: msgId,
+      center_id: mid,
+      title: " تمت الموافقة على طلبك",
+      message: `وافق المدير على ${r.type === "exemption" ? "إعفاء" : "خصم " + r.amount + " ج"} للطالب ${r.student_name || r.student_id}. السبب: ${r.reason || "—"}`,
+      read: false
+    });
 
- // Notify assistant
- const msgId = Date.now();
- await update(ref(database, `users/${mid}/assistant_messages/${msgId}`), {
- title: " تمت الموافقة على طلبك",
- body: `وافق المدير على ${r.type === "exemption" ? "إعفاء" : "خصم " + r.amount + " ج"} للطالب ${r.studentName || r.studentId}. السبب: ${r.reason || "—"}`,
- type: "discount_approved",
- timestamp: msgId,
- read: false
- });
-
- showToast("تمت الموافقة وتطبيق الخصم ", "success");
- fetchManagerRequests();
- } catch(e) {
- console.error(e);
- showToast("فشل تنفيذ الطلب", "err");
- }
+    showToast("تمت الموافقة وتطبيق الخصم ", "success");
+    fetchManagerRequests();
+  } catch(e) {
+    console.error(e);
+    showToast("فشل تنفيذ الطلب", "err");
+  }
  };
 
  window.rejectRequest = async function(reqId) {
- const mid = localStorage.getItem("ca_manager_id");
- if (!mid) return;
- try {
- const snap = await get(child(ref(database), `users/${mid}/requests/${reqId}`));
- if (!snap.exists()) return;
- const r = snap.val();
- await update(ref(database, `users/${mid}/requests/${reqId}`), { status: "rejected" });
+  const mid = localStorage.getItem("ca_manager_id");
+  if (!mid || !window.supabaseClient) return;
+  try {
+    const { data: r } = await window.supabaseClient.from('manager_requests').select('*').eq('id', reqId).single();
+    await window.supabaseClient.from('manager_requests').update({ status: 'rejected' }).eq('id', reqId);
 
- // Notify assistant
- const msgId = Date.now();
- await update(ref(database, `users/${mid}/assistant_messages/${msgId}`), {
- title: " تم رفض طلبك",
- body: `رفض المدير طلب ${r.type === "exemption" ? "الإعفاء" : "الخصم " + r.amount + " ج"} للطالب ${r.studentName || r.studentId}.`,
- type: "discount_rejected",
- timestamp: msgId,
- read: false
- });
+    if (r) {
+      const msgId = "msg_" + Date.now();
+      await window.supabaseClient.from('assistant_messages').insert({
+        id: msgId,
+        center_id: mid,
+        title: " تم رفض طلبك",
+        message: `رفض المدير طلب ${r.type === "exemption" ? "الإعفاء" : "الخصم " + r.amount + " ج"} للطالب ${r.student_name || r.student_id}.`,
+        read: false
+      });
+    }
 
- showToast("تم رفض الطلب", "warning");
- fetchManagerRequests();
- } catch(e) {
- console.error(e);
- showToast("فشل في الرفض", "err");
- }
+    showToast("تم رفض الطلب", "warning");
+    fetchManagerRequests();
+  } catch(e) {
+    console.error(e);
+    showToast("فشل في الرفض", "err");
+  }
  };
 
  // Direct discount by manager
  if ($("mgrApplyDirectDiscountBtn")) {
- on("mgrApplyDirectDiscountBtn", "click", async function() {
- const stId = $("mgrDirectStudentId") ? $("mgrDirectStudentId").value.trim() : "";
- const amount = $("mgrDirectAmount") ? toInt($("mgrDirectAmount").value) : 0;
- const reason = $("mgrDirectReason") ? $("mgrDirectReason").value.trim() : "";
- if (!stId || !students[stId]) return showToast("الطالب غير موجود", "err");
- const cls = (students[stId].className || "").trim();
- 
+  on("mgrApplyDirectDiscountBtn", "click", async function() {
+    const stId = $("mgrDirectStudentId") ? $("mgrDirectStudentId").value.trim() : "";
+    const amount = $("mgrDirectAmount") ? toInt($("mgrDirectAmount").value) : 0;
+    const reason = $("mgrDirectReason") ? $("mgrDirectReason").value.trim() : "";
+    if (!stId || !students[stId]) return showToast("الطالب غير موجود", "err");
+    const cls = (students[stId].className || "").trim();
+    
     let req = 0;
     if (cls && groupFees[cls] !== undefined) {
-       const pkg = groupFees[cls];
-       if (students[stId] && students[stId].paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg);
-       }
+      const pkg = groupFees[cls];
+      if (students[stId] && students[stId].paymentPlan === "installments" && pkg.hasInstallments) {
+        req = toInt(pkg.installmentPrice) || 0;
+      } else {
+        req = toInt(pkg.price || pkg);
+      }
     }
 
- if (amount > 0 && req > 0) {
- students[stId].paid = Math.max(students[stId].paid || 0, req - amount);
- } else if (amount === 0 && req > 0) {
- students[stId].paid = req; // Full exemption
- }
- saveAll();
- if ($("mgrDirectStudentId")) $("mgrDirectStudentId").value = "";
- if ($("mgrDirectAmount")) $("mgrDirectAmount").value = "";
- if ($("mgrDirectReason")) $("mgrDirectReason").value = "";
- showToast(`تم تطبيق الخصم على ${students[stId].name} `, "success");
- });
+    if (amount > 0 && req > 0) {
+      students[stId].paid = Math.max(students[stId].paid || 0, req - amount);
+    } else if (amount === 0 && req > 0) {
+      students[stId].paid = req;
+    }
+    saveAll();
+    if ($("mgrDirectStudentId")) $("mgrDirectStudentId").value = "";
+    if ($("mgrDirectAmount")) $("mgrDirectAmount").value = "";
+    if ($("mgrDirectReason")) $("mgrDirectReason").value = "";
+    showToast(`تم تطبيق الخصم على ${students[stId].name} `, "success");
+  });
  }
 
  // ==========================================
  // 17.13. ASSISTANT: SEND DISCOUNT REQUEST
  // ==========================================
  window.openDiscountRequestModal = function(studentId) {
- const st = students[String(studentId)];
- if (!st) return;
- if (!currentPermissions.can_request_discount) {
- showToast("إرسال طلبات الخصم مقفل من المدير ", "warning");
- return;
- }
- if ($("discReqStudentId")) $("discReqStudentId").value = studentId;
- if ($("discReqStudentName")) $("discReqStudentName").textContent = `${st.name} (ID: ${studentId})`;
- if ($("discReqAmount")) $("discReqAmount").value = "";
- if ($("discReqReason")) $("discReqReason").value = "";
- if ($("discountRequestModal")) $("discountRequestModal").classList.remove("hidden");
+  const st = students[String(studentId)];
+  if (!st) return;
+  if (!currentPermissions.can_request_discount) {
+    showToast("إرسال طلبات الخصم مقفل من المدير ", "warning");
+    return;
+  }
+  if ($("discReqStudentId")) $("discReqStudentId").value = studentId;
+  if ($("discReqStudentName")) $("discReqStudentName").textContent = `${st.name} (ID: ${studentId})`;
+  if ($("discReqAmount")) $("discReqAmount").value = "";
+  if ($("discReqReason")) $("discReqReason").value = "";
+  if ($("discountRequestModal")) $("discountRequestModal").classList.remove("hidden");
  };
 
  if ($("submitDiscountRequestBtn")) {
- on("submitDiscountRequestBtn", "click", async function() {
- const stId = $("discReqStudentId") ? $("discReqStudentId").value : "";
- const type = $("discReqType") ? $("discReqType").value : "discount";
- const amount = $("discReqAmount") ? toInt($("discReqAmount").value) : 0;
- const reason = $("discReqReason") ? $("discReqReason").value.trim() : "";
- const mid = localStorage.getItem("ca_manager_id") || window.CURRENT_MANAGER_ID;
- const st = students[String(stId)];
- if (!st || !mid) return showToast("حدث خطأ، تأكد من الاتصال", "err");
- if (!reason) return showToast("من فضلك اكتب سبب الطلب", "err");
- const reqId = Date.now();
- try {
- await update(ref(database, `users/${mid}/requests/${reqId}`), {
- studentId: stId,
- studentName: st.name,
- type,
- amount,
- reason,
- requestedBy: localStorage.getItem("ca_current_username") || "مساعد",
- timestamp: reqId,
- status: "pending"
- });
- if ($("discountRequestModal")) $("discountRequestModal").classList.add("hidden");
- showToast("تم إرسال الطلب للمدير ", "success");
- } catch(e) {
- console.error(e);
- showToast("فشل إرسال الطلب، تأكد من الاتصال", "err");
- }
- });
+  on("submitDiscountRequestBtn", "click", async function() {
+    const stId = $("discReqStudentId") ? $("discReqStudentId").value : "";
+    const type = $("discReqType") ? $("discReqType").value : "discount";
+    const amount = $("discReqAmount") ? toInt($("discReqAmount").value) : 0;
+    const reason = $("discReqReason") ? $("discReqReason").value.trim() : "";
+    const mid = localStorage.getItem("ca_manager_id") || window.CURRENT_MANAGER_ID;
+    const st = students[String(stId)];
+    if (!st || !mid || !window.supabaseClient) return showToast("حدث خطأ، تأكد من الاتصال", "err");
+    if (!reason) return showToast("من فضلك اكتب سبب الطلب", "err");
+    const reqId = "req_" + Date.now();
+    try {
+      await window.supabaseClient.from('manager_requests').insert({
+        id: reqId,
+        center_id: mid,
+        student_id: stId,
+        student_name: st.name,
+        type,
+        amount,
+        reason,
+        assistant_name: localStorage.getItem("ca_current_username") || "مساعد",
+        status: "pending"
+      });
+      if ($("discountRequestModal")) $("discountRequestModal").classList.add("hidden");
+      showToast("تم إرسال الطلب للمدير ", "success");
+    } catch(e) {
+      console.error(e);
+      showToast("فشل إرسال الطلب، تأكد من الاتصال", "err");
+    }
+  });
  }
 
  // ==========================================
@@ -4949,99 +4778,97 @@ function updateDriveUI() {
  let lastReadMsgTime = toInt(localStorage.getItem("ca_last_read_msg") || "0");
 
  function fetchAssistantMessages() {
- const mid = window.CURRENT_MANAGER_ID;
- if (!mid || !isFirebaseConnected || window.CURRENT_ROLE === "admin") return;
- const msgsRef = ref(database, `users/${mid}/assistant_messages`);
- onValue(msgsRef, snap => {
- assistantMessages = [];
- if (snap.exists()) {
- const data = snap.val();
- for (let id in data) assistantMessages.push({ id, ...data[id] });
- assistantMessages.sort((a, b) => b.timestamp - a.timestamp);
- }
- updateAssistantMsgBadge();
- });
+  const mid = window.CURRENT_MANAGER_ID;
+  if (!mid || !window.supabaseClient || window.CURRENT_ROLE === "admin") return;
+  window.supabaseClient
+    .from('assistant_messages')
+    .select('*')
+    .eq('center_id', mid)
+    .order('created_at', { ascending: false })
+    .limit(20)
+    .then(({ data }) => {
+      assistantMessages = (data || []).map(m => ({
+        id: m.id,
+        title: m.title,
+        body: m.message,
+        timestamp: new Date(m.created_at).getTime(),
+        read: m.read
+      }));
+      updateAssistantMsgBadge();
+    }).catch(e => console.error(e));
  }
 
  function updateAssistantMsgBadge() {
- const badge = $("notificationsBadge");
- const unread = assistantMessages.filter(m => !m.read && m.timestamp > lastReadMsgTime).length;
- if (badge) {
- if (unread > 0) { badge.textContent = unread; badge.classList.remove("hidden"); }
- else badge.classList.add("hidden");
- }
+  const badge = $("notificationsBadge");
+  const unread = assistantMessages.filter(m => !m.read && m.timestamp > lastReadMsgTime).length;
+  if (badge) {
+    if (unread > 0) { badge.textContent = unread; badge.classList.remove("hidden"); }
+    else badge.classList.add("hidden");
+  }
  }
 
- // Override notifications dropdown content for assistants: show tabs (Activity Log + Messages)
  function renderAssistantNotifDropdown() {
- const listEl = $("notificationsList");
- if (!listEl) return;
- if (window.CURRENT_ROLE === "admin") return; // Admins keep the original activity log view
+  const listEl = $("notificationsList");
+  if (!listEl) return;
+  if (window.CURRENT_ROLE === "admin") return;
 
- // Inject tabs if not already
- const dropdown = $("notificationsDropdown");
- if (dropdown && !dropdown.querySelector(".msg-tabs")) {
- const tabsDiv = document.createElement("div");
- tabsDiv.className = "msg-tabs";
- tabsDiv.innerHTML = `
- <button class="msg-tab-btn active" id="msgTabMessages" onclick="window.switchMsgTab('messages')"><i class="fa-solid fa-envelope"></i> الرسائل</button>
- <button class="msg-tab-btn" id="msgTabActivity" onclick="window.switchMsgTab('activity')"><i class="fa-solid fa-clock-rotate-left"></i> سجل العمليات</button>`;
- dropdown.insertBefore(tabsDiv, listEl);
- }
-
- renderAssistantMessages();
+  const dropdown = $("notificationsDropdown");
+  if (dropdown && !dropdown.querySelector(".msg-tabs")) {
+    const tabsDiv = document.createElement("div");
+    tabsDiv.className = "msg-tabs";
+    tabsDiv.innerHTML = `
+    <button class="msg-tab-btn active" id="msgTabMessages" onclick="window.switchMsgTab('messages')"><i class="fa-solid fa-envelope"></i> الرسائل</button>
+    <button class="msg-tab-btn" id="msgTabActivity" onclick="window.switchMsgTab('activity')"><i class="fa-solid fa-clock-rotate-left"></i> سجل العمليات</button>`;
+    dropdown.insertBefore(tabsDiv, listEl);
+  }
+  renderAssistantMessages();
  }
 
  window.switchMsgTab = function(tab) {
- document.querySelectorAll(".msg-tab-btn").forEach(b => b.classList.remove("active"));
- if (tab === "messages") {
- if ($("msgTabMessages")) $("msgTabMessages").classList.add("active");
- renderAssistantMessages();
- } else {
- if ($("msgTabActivity")) $("msgTabActivity").classList.add("active");
- // Re-render activity log in listEl
- window.fetchActivityLog && window.fetchActivityLog();
- }
+  document.querySelectorAll(".msg-tab-btn").forEach(b => b.classList.remove("active"));
+  if (tab === "messages") {
+    if ($("msgTabMessages")) $("msgTabMessages").classList.add("active");
+    renderAssistantMessages();
+  } else {
+    if ($("msgTabActivity")) $("msgTabActivity").classList.add("active");
+    window.fetchActivityLog && window.fetchActivityLog();
+  }
  };
 
  function renderAssistantMessages() {
- const listEl = $("notificationsList");
- if (!listEl) return;
- if (assistantMessages.length === 0) {
- listEl.innerHTML = `<div style="text-align:center;color:#888;padding:10px;"><i class="fa-solid fa-comment-slash" style="font-size:24px;margin-bottom:8px;"></i><br>لا توجد رسائل</div>`;
- return;
- }
- listEl.innerHTML = assistantMessages.slice(0, 20).map(m => {
- const isUnread = !m.read;
- const date = new Date(m.timestamp).toLocaleString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
- const color = m.type === "discount_approved" ? "var(--success)" : m.type === "discount_rejected" ? "var(--danger)" : "var(--primary)";
- return `<div style="padding:10px;border-radius:8px;background:${isUnread ? "rgba(37,99,235,0.08)" : "transparent"};border-inline-start:3px solid ${isUnread ? color : "var(--border)"};font-size:0.88em;cursor:pointer;" onclick="window.markMsgRead('${m.id}')">
- <div style="font-weight:700;margin-bottom:3px;color:${color};">${m.title}</div>
- <div style="color:var(--text-primary);opacity:0.85;margin-bottom:4px;">${m.body}</div>
- <div style="font-size:0.78em;color:#888;">${date}</div>
- </div>`;
- }).join("");
- // Mark as read after viewing
- lastReadMsgTime = Date.now();
- localStorage.setItem("ca_last_read_msg", lastReadMsgTime.toString());
- updateAssistantMsgBadge();
+  const listEl = $("notificationsList");
+  if (!listEl) return;
+  if (assistantMessages.length === 0) {
+    listEl.innerHTML = `<div style="text-align:center;color:#888;padding:10px;"><i class="fa-solid fa-comment-slash" style="font-size:24px;margin-bottom:8px;"></i><br>لا توجد رسائل</div>`;
+    return;
+  }
+  listEl.innerHTML = assistantMessages.slice(0, 20).map(m => {
+    const isUnread = !m.read;
+    const date = new Date(m.timestamp).toLocaleString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    const color = m.type === "discount_approved" ? "var(--success)" : m.type === "discount_rejected" ? "var(--danger)" : "var(--primary)";
+    return `<div style="padding:10px;border-radius:8px;background:${isUnread ? "rgba(37,99,235,0.08)" : "transparent"};border-inline-start:3px solid ${isUnread ? color : "var(--border)"};font-size:0.88em;cursor:pointer;" onclick="window.markMsgRead('${m.id}')">
+    <div style="font-weight:700;margin-bottom:3px;color:${color};">${m.title}</div>
+    <div style="color:var(--text-primary);opacity:0.85;margin-bottom:4px;">${m.body}</div>
+    <div style="font-size:0.78em;color:#888;">${date}</div>
+    </div>`;
+  }).join("");
+  lastReadMsgTime = Date.now();
+  localStorage.setItem("ca_last_read_msg", lastReadMsgTime.toString());
+  updateAssistantMsgBadge();
  }
 
  window.markMsgRead = async function(msgId) {
- const mid = window.CURRENT_MANAGER_ID;
- if (!mid) return;
- try { await update(ref(database, `users/${mid}/assistant_messages/${msgId}`), { read: true }); }
- catch(e) { console.error(e); }
+  if (!window.supabaseClient) return;
+  try { await window.supabaseClient.from('assistant_messages').update({ read: true }).eq('id', msgId); }
+  catch(e) { console.error(e); }
  };
 
- // Hook: when notifications dropdown opens, render properly
  on("notificationsToggleBtn", "click", function() {
- setTimeout(() => {
- if (window.CURRENT_ROLE !== "admin") renderAssistantNotifDropdown();
- }, 50);
+  setTimeout(() => {
+    if (window.CURRENT_ROLE !== "admin") renderAssistantNotifDropdown();
+  }, 50);
  });
 
- // Fetch messages for assistant on startup
  if (window.CURRENT_ROLE !== "admin") fetchAssistantMessages();
 
  // showAddAsstModal button
@@ -5055,22 +4882,11 @@ function updateDriveUI() {
  // ==========================================
  // AUTO-FETCH: Decisions badge on dashboard load
  // ==========================================
- if (window.CURRENT_ROLE === "admin" && isFirebaseConnected) {
- const mid = localStorage.getItem("ca_manager_id");
- if (mid) {
- const reqRef = ref(database, `users/${mid}/requests`);
- onValue(reqRef, snap => {
- const badge = $("managerDecisionsBadge");
- if (!badge) return;
- let pendingCount = 0;
- if (snap.exists()) {
- const reqs = snap.val();
- for (let id in reqs) if (reqs[id].status === "pending") pendingCount++;
- }
- if (pendingCount > 0) { badge.textContent = pendingCount; badge.classList.remove("hidden"); }
- else badge.classList.add("hidden");
- });
- }
+ if (window.CURRENT_ROLE === "admin" && window.supabaseClient) {
+   const mid = localStorage.getItem("ca_manager_id");
+   if (mid && typeof fetchManagerRequests === "function") {
+     fetchManagerRequests();
+   }
  }
 
  // ==========================================
@@ -6030,865 +5846,397 @@ function updateDriveUI() {
  // DAILY ADMINISTRATIVE HARD-LOCK SYSTEM
  // ==========================================
  function initDailyApprovalSystem() {
- const mgrSettingDailyApproval = document.getElementById("mgrSettingDailyApproval");
- const assistantHardLockOverlay = document.getElementById("assistantHardLockOverlay");
- const assistantHardLockTitle = document.getElementById("assistantHardLockTitle");
- const assistantHardLockMsg = document.getElementById("assistantHardLockMsg");
- const managerDailyApprovalWidget = document.getElementById("managerDailyApprovalWidget");
- const btnApproveDaily = document.getElementById("btnApproveDaily");
- const btnRejectDaily = document.getElementById("btnRejectDaily");
- const btnConfirmRejectDaily = document.getElementById("btnConfirmRejectDaily");
- const managerDailyRejectNoteContainer = document.getElementById("managerDailyRejectNoteContainer");
- const managerDailyRejectNote = document.getElementById("managerDailyRejectNote");
+  const mgrSettingDailyApproval = document.getElementById("mgrSettingDailyApproval");
+  const assistantHardLockOverlay = document.getElementById("assistantHardLockOverlay");
+  const assistantHardLockTitle = document.getElementById("assistantHardLockTitle");
+  const assistantHardLockMsg = document.getElementById("assistantHardLockMsg");
+  const managerDailyApprovalWidget = document.getElementById("managerDailyApprovalWidget");
+  const btnApproveDaily = document.getElementById("btnApproveDaily");
+  const btnRejectDaily = document.getElementById("btnRejectDaily");
+  const btnConfirmRejectDaily = document.getElementById("btnConfirmRejectDaily");
+  const managerDailyRejectNoteContainer = document.getElementById("managerDailyRejectNoteContainer");
+  const managerDailyRejectNote = document.getElementById("managerDailyRejectNote");
 
- if(!mgrSettingDailyApproval || !managerDailyApprovalWidget || !assistantHardLockOverlay) return;
+  if(!mgrSettingDailyApproval || !managerDailyApprovalWidget || !assistantHardLockOverlay) return;
 
- let dailyApprovalEnabled = false;
- let dailyStatusObj = null;
+  let dailyApprovalEnabled = false;
+  let dailyStatusObj = null;
+  const getMid = () => localStorage.getItem("ca_manager_id") || window.CURRENT_MANAGER_ID;
 
- // Auto-detect manager ID
- const getMid = () => localStorage.getItem("ca_manager_id") || window.CURRENT_MANAGER_ID;
+  async function loadDailyStatus() {
+    const mid = getMid();
+    if (!mid || !window.supabaseClient) return;
+    try {
+      const { data } = await window.supabaseClient.from('daily_status').select('*').eq('center_id', mid).single();
+      if (data) {
+        dailyApprovalEnabled = data.is_approved === true || (data.settings && data.settings.enabled === true);
+        dailyStatusObj = {
+          status: data.is_approved ? 'Approved' : 'Pending',
+          managerNote: data.shift_status || '',
+          lastDate: data.updated_at ? data.updated_at.split('T')[0] : ''
+        };
+        if(window.CURRENT_ROLE === 'admin') {
+          mgrSettingDailyApproval.checked = dailyApprovalEnabled;
+          managerDailyApprovalWidget.classList.toggle("hidden", !dailyApprovalEnabled);
+        }
+        evaluateAssistantLock();
+      }
+    } catch(e) {}
+  }
+  loadDailyStatus();
 
- // 1. Listen to Settings Toggle State
- onValue(ref(database, `users/${getMid()}/settings/dailyApprovalEnabled`), (snap) => {
- dailyApprovalEnabled = snap.val() === true;
- if(window.CURRENT_ROLE === 'admin') {
- mgrSettingDailyApproval.checked = dailyApprovalEnabled;
- managerDailyApprovalWidget.classList.toggle("hidden", !dailyApprovalEnabled);
- }
- evaluateAssistantLock();
- });
+  // Manager Side Logic
+  mgrSettingDailyApproval.addEventListener("change", async (e) => {
+    const isEnabled = e.target.checked;
+    const mid = getMid();
+    if (!mid || !window.supabaseClient) return;
+    try {
+      await window.supabaseClient.from('daily_status').upsert({
+        center_id: mid,
+        is_approved: isEnabled,
+        settings: { enabled: isEnabled }
+      });
+      if (typeof showToast === "function") showToast(isEnabled ? "تم تفعيل الاعتماد اليومي" : "تم إيقاف الاعتماد اليومي", "success");
+    } catch (err) { console.error(err); }
+  });
 
- // 2. Listen to Daily Status
- onValue(ref(database, `users/${getMid()}/daily_status`), (snap) => {
- dailyStatusObj = snap.val() || { status: 'Pending', lastDate: '', managerNote: '' };
- evaluateAssistantLock();
- });
+  btnApproveDaily.addEventListener("click", async () => {
+    const mid = getMid();
+    if (!mid || !window.supabaseClient) return;
+    try {
+      await window.supabaseClient.from('daily_status').upsert({
+        center_id: mid,
+        is_approved: true,
+        shift_status: 'Approved',
+        approved_by: localStorage.getItem("ca_current_username") || "المدير",
+        approved_at: new Date().toISOString()
+      });
+      managerDailyRejectNoteContainer.classList.add("hidden");
+      if (typeof showToast === "function") showToast("تم اعتماد تقرير الأمس بنجاح. النظام مفتوح الآن للمساعدين.", "success");
+    } catch (err) { console.error(err); }
+  });
 
- // Manager Side Logic
- mgrSettingDailyApproval.addEventListener("change", async (e) => {
- const isEnabled = e.target.checked;
- try {
- await set(ref(database, `users/${getMid()}/settings/dailyApprovalEnabled`), isEnabled);
- if (typeof showToast === "function") showToast(isEnabled ? "تم تفعيل الاعتماد اليومي" : "تم إيقاف الاعتماد اليومي", "success");
- if (isEnabled) {
- await update(ref(database, `users/${getMid()}/daily_status`), {
- status: 'Pending',
- managerNote: '',
- lastDate: nowDateStr()
- });
- }
- } catch (err) {
- console.error(err);
- if (typeof showToast === "function") showToast("حدث خطأ أثناء حفظ الإعداد", "err");
- }
- });
+  btnRejectDaily.addEventListener("click", () => {
+    managerDailyRejectNoteContainer.classList.remove("hidden");
+  });
 
- btnApproveDaily.addEventListener("click", async () => {
- try {
- await set(ref(database, `users/${getMid()}/daily_status`), {
- status: 'Approved',
- managerNote: '',
- lastDate: nowDateStr()
- });
- managerDailyRejectNoteContainer.classList.add("hidden");
- if (typeof showToast === "function") showToast("تم اعتماد تقرير الأمس بنجاح. النظام مفتوح الآن للمساعدين.", "success");
- } catch (err) {
- console.error(err);
- }
- });
+  btnConfirmRejectDaily.addEventListener("click", async () => {
+    const note = managerDailyRejectNote.value.trim();
+    if(!note) return showToast("برجاء كتابة سبب الرفض", "err");
+    const mid = getMid();
+    if (!mid || !window.supabaseClient) return;
+    try {
+      await window.supabaseClient.from('daily_status').upsert({
+        center_id: mid,
+        is_approved: false,
+        shift_status: note
+      });
+      managerDailyRejectNoteContainer.classList.add("hidden");
+      managerDailyRejectNote.value = '';
+      showToast("تم إيقاف النظام وإرسال سبب الرفض للمساعدين.", "warning");
+    } catch (err) { console.error(err); }
+  });
 
- btnRejectDaily.addEventListener("click", () => {
- managerDailyRejectNoteContainer.classList.remove("hidden");
- });
-
- btnConfirmRejectDaily.addEventListener("click", async () => {
- const note = managerDailyRejectNote.value.trim();
- if(!note) {
- if (typeof showToast === "function") showToast("برجاء كتابة سبب الرفض", "err");
- return;
- }
- try {
- await set(ref(database, `users/${getMid()}/daily_status`), {
- status: 'Rejected',
- managerNote: note,
- lastDate: nowDateStr()
- });
- managerDailyRejectNoteContainer.classList.add("hidden");
- managerDailyRejectNote.value = '';
- if (typeof showToast === "function") showToast("تم إيقاف النظام وإرسال سبب الرفض للمساعدين.", "warning");
- } catch (err) {
- console.error(err);
- }
- });
-
- // Assistant Side Logic
- function evaluateAssistantLock() {
- if (window.CURRENT_ROLE === 'admin') {
- assistantHardLockOverlay.classList.add("hidden");
- return;
- }
-
- if (!dailyApprovalEnabled) {
- assistantHardLockOverlay.classList.add("hidden");
- return;
- }
-
- // Auto-reset logic: if date is different, lock it
- let effectiveStatus = dailyStatusObj?.status || 'Pending';
- const note = dailyStatusObj?.managerNote || '';
- 
- if (dailyStatusObj?.lastDate !== nowDateStr()) {
- effectiveStatus = 'Pending';
- }
-
- if (effectiveStatus === 'Approved') {
- assistantHardLockOverlay.classList.add("hidden");
- } else {
- assistantHardLockOverlay.classList.remove("hidden");
- const contentBox = document.getElementById("assistantHardLockContent");
- 
- if (effectiveStatus === 'Rejected') {
- contentBox.style.borderColor = "var(--danger)";
- assistantHardLockTitle.textContent = "تم إيقاف النظام (مرفوض)";
- assistantHardLockTitle.style.color = "var(--danger)";
- assistantHardLockMsg.innerHTML = `تم رفض تقرير الأمس من الإدارة بسبب:<br><strong style="color:var(--danger); display:block; margin-top:10px;">"${note}"</strong>`;
- } else {
- contentBox.style.borderColor = "var(--warning)";
- assistantHardLockTitle.textContent = "النظام مغلق مؤقتاً";
- assistantHardLockTitle.style.color = "var(--warning)";
- assistantHardLockMsg.innerHTML = "في انتظار اعتماد الإدارة لتقرير الأمس لبدء العمل.";
- }
- }
- }
+  function evaluateAssistantLock() {
+    if (window.CURRENT_ROLE === 'admin') {
+      assistantHardLockOverlay.classList.add("hidden");
+      return;
+    }
+    if (!dailyApprovalEnabled) {
+      assistantHardLockOverlay.classList.add("hidden");
+      return;
+    }
+    const isApproved = dailyStatusObj?.status === 'Approved';
+    if (isApproved) {
+      assistantHardLockOverlay.classList.add("hidden");
+    } else {
+      assistantHardLockOverlay.classList.remove("hidden");
+    }
+  }
  }
 
  // ==========================================
  // 25. NOTICE BOARD (Global Announcements)
  // ==========================================
  function initNoticeBoardSystem() {
- const getMid = () => window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
- 
- const btnSendBroadcast = $("btnSendBroadcast");
- const broadcastMsgInput = $("broadcastMessageInput");
- const managerBroadcastHistory = $("managerBroadcastHistory");
- 
- const btnNoticeBoard = $("btnNoticeBoard");
- const noticeBadge = $("noticeBadge");
- const noticeBoardModal = $("noticeBoardModal");
- const closeNoticeBoardBtn = $("closeNoticeBoardBtn");
- const noticeBoardList = $("noticeBoardList");
- 
- let localAnnouncements = [];
- let currentAsstId = localStorage.getItem("ca_auth_v2") || "unknown_assistant";
+  const getMid = () => window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
+  const btnSendBroadcast = $("btnSendBroadcast");
+  const broadcastMsgInput = $("broadcastMessageInput");
+  const managerBroadcastHistory = $("managerBroadcastHistory");
+  const btnNoticeBoard = $("btnNoticeBoard");
+  const noticeBadge = $("noticeBadge");
+  const noticeBoardModal = $("noticeBoardModal");
+  const closeNoticeBoardBtn = $("closeNoticeBoardBtn");
+  const noticeBoardList = $("noticeBoardList");
 
- // 1. Send Broadcast (Manager Only)
- if (btnSendBroadcast) {
- btnSendBroadcast.addEventListener("click", async () => {
- const msg = broadcastMsgInput.value.trim();
- if(!msg) return showToast(currentLang==='ar' ? "أدخل نص الإعلان" : "Enter message", "warning");
- 
- const mid = getMid();
- if(!mid) return;
- 
- const pushId = Date.now().toString(); // simple ID
- const payload = {
- id: pushId,
- message: msg,
- timestamp: Date.now(),
- readBy: {}
- };
- 
- try {
- btnSendBroadcast.disabled = true;
- btnSendBroadcast.innerHTML = "جاري الإرسال...";
- await set(ref(database, `users/${mid}/global_announcements/${pushId}`), payload);
- broadcastMsgInput.value = '';
- showToast(currentLang==='ar' ? "تم إرسال الإعلان لجميع المساعدين" : "Broadcast sent!", "success");
- } catch(e) {
- console.error(e);
- showToast(currentLang==='ar' ? "فشل الإرسال" : "Failed to send", "err");
- } finally {
- btnSendBroadcast.disabled = false;
- btnSendBroadcast.innerHTML = " نشر الإعلان";
- }
- });
- }
- 
- // 2. Listen to Announcements
- // Need to wait until we know if it's manager or assistant
- setTimeout(() => {
- const mid = getMid();
- if(!mid) return;
- 
- onValue(ref(database, `users/${mid}/global_announcements`), (snap) => {
- localAnnouncements = [];
- let unreadCount = 0;
- const isManager = window.CURRENT_ROLE === 'admin';
- 
- if(snap.exists()) {
- const data = snap.val();
- for(let key in data) {
- localAnnouncements.push(data[key]);
- }
- localAnnouncements.sort((a,b) => b.timestamp - a.timestamp);
- }
- 
- if (isManager && managerBroadcastHistory) {
- renderManagerBroadcastHistory();
- }
- 
- if (!isManager && btnNoticeBoard) {
- btnNoticeBoard.style.display = 'inline-block';
- localAnnouncements.forEach(ann => {
- const reads = ann.readBy || {};
- if (!reads[currentAsstId]) {
- unreadCount++;
- }
- });
- 
- if (unreadCount > 0) {
- noticeBadge.classList.remove("hidden");
- noticeBadge.textContent = unreadCount > 9 ? "+9" : unreadCount;
- } else {
- noticeBadge.classList.add("hidden");
- }
- }
- });
- }, 1500); // give time for checkAuth() to set role
- 
- // 3. Render Manager History
- function renderManagerBroadcastHistory() {
- if(!managerBroadcastHistory) return;
- managerBroadcastHistory.innerHTML = '';
- 
- if(localAnnouncements.length === 0) {
- managerBroadcastHistory.innerHTML = '<div style="color:#777;">لا يوجد إعلانات سابقة.</div>';
- return;
- }
- 
- const historyToShow = localAnnouncements.slice(0, 20);
- 
- historyToShow.forEach(ann => {
- const div = document.createElement("div");
- div.style.cssText = "background:var(--bg-inset); padding:15px; border-radius:10px; border:1px solid var(--border);";
- 
- const d = new Date(ann.timestamp);
- const readsCount = ann.readBy ? Object.keys(ann.readBy).length : 0;
- 
- div.innerHTML = `
- <div style="font-size:0.85em; color:var(--text-secondary); margin-bottom:5px;"> ${d.toLocaleString()}</div>
- <div style="font-weight:bold; margin-bottom:10px; color:var(--text-main);">${ann.message.replace(/\r\n/g, '<br>')}</div>
- <div style="font-size:0.85em; color:var(--primary);">️ تمت القراءة بواسطة: ${readsCount} مساعد</div>
- `;
- managerBroadcastHistory.appendChild(div);
- });
- }
- 
- // 4. Render Assistant Modal
- if (btnNoticeBoard) {
- btnNoticeBoard.addEventListener("click", () => {
- renderAssistantNoticeBoard();
- noticeBoardModal.classList.remove("hidden");
- });
- }
- if (closeNoticeBoardBtn) {
- closeNoticeBoardBtn.addEventListener("click", () => {
- noticeBoardModal.classList.add("hidden");
- });
- }
- 
- async function renderAssistantNoticeBoard() {
- if(!noticeBoardList) return;
- noticeBoardList.innerHTML = '';
- 
- if(localAnnouncements.length === 0) {
- noticeBoardList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">لا توجد إعلانات حالياً.</div>';
- return;
- }
- 
- const listToShow = localAnnouncements.slice(0, 10);
- 
- for(const ann of listToShow) {
- const reads = ann.readBy || {};
- const isRead = !!reads[currentAsstId];
- 
- const div = document.createElement("div");
- div.style.cssText = `background: ${isRead ? 'var(--bg-inset)' : 'var(--bg-surface)'}; padding:15px; border-radius:10px; border:1px solid var(--border); opacity: ${isRead ? '0.7' : '1'}; position: relative;`;
- 
- const d = new Date(ann.timestamp);
- 
- // the red dot for unread
- const dotHtml = isRead ? '' : `<div style="position:absolute; top:15px; left:15px; width:10px; height:10px; border-radius:50%; background:var(--danger);"></div>`;
- 
- div.innerHTML = `
- ${dotHtml}
- <div style="font-size:0.85em; color:var(--text-secondary); margin-bottom:8px;"> ${d.toLocaleString()}</div>
- <div style="font-weight:bold; color:var(--text-main); line-height: 1.5; padding-left: ${!isRead ? '20px' : '0'}">${ann.message.replace(/\r\n/g, '<br>')}</div>
- `;
- 
- noticeBoardList.appendChild(div);
- 
- if (!isRead) {
- try {
- const mid = getMid();
- if (mid) {
- await update(ref(database, `users/${mid}/global_announcements/${ann.id}/readBy`), {
- [currentAsstId]: true
- });
- }
- } catch(e) { console.error("Error marking read", e); }
- }
- }
- }
- }
+  let localAnnouncements = [];
+  let currentAsstId = localStorage.getItem("ca_auth_v2") || "unknown_assistant";
 
- // ==========================================
- // FORCE SYNC & MANUAL SYNC (with 12s timeout)
- // ==========================================
- async function syncWithFirebase() {
- if (syncInProgress) return;
- window.CURRENT_MANAGER_ID = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
- if (!window.CURRENT_MANAGER_ID) {
- showToast("لا يوجد حساب مسجل للمزامنة.", "err");
- return;
- }
+  if (btnSendBroadcast) {
+    btnSendBroadcast.addEventListener("click", async () => {
+      const msg = broadcastMsgInput.value.trim();
+      if(!msg) return showToast(currentLang==='ar' ? "أدخل نص الإعلان" : "Enter message", "warning");
+      const mid = getMid();
+      if(!mid || !window.supabaseClient) return;
+      
+      const pushId = "ann_" + Date.now();
+      try {
+        btnSendBroadcast.disabled = true;
+        btnSendBroadcast.innerHTML = "جاري الإرسال...";
+        await window.supabaseClient.from('announcements').insert({
+          id: pushId,
+          center_id: mid,
+          title: "تنبيه عام",
+          content: msg,
+          author: localStorage.getItem("ca_current_username") || "المدير",
+          read_by: {}
+        });
+        broadcastMsgInput.value = '';
+        showToast(currentLang==='ar' ? "تم إرسال الإعلان لجميع المساعدين" : "Broadcast sent!", "success");
+        loadAnnouncements();
+      } catch(e) {
+        console.error(e);
+        showToast(currentLang==='ar' ? "فشل الإرسال" : "Failed to send", "err");
+      } finally {
+        btnSendBroadcast.disabled = false;
+        btnSendBroadcast.innerHTML = " نشر الإعلان";
+      }
+    });
+  }
 
- if (!navigator.onLine || !isFirebaseConnected) {
- updateSyncUI('offline', 'غير متصل بالإنترنت');
- showToast("يرجى التأكد من اتصالك بالإنترنت", "err");
- return;
- }
- 
- syncInProgress = true;
- updateSyncUI('syncing', 'جاري المزامنة...');
- 
- try {
- // Race between actual sync and a 12-second timeout
- const syncWork = (async () => {
- const snapshot = await get(child(ref(database), `users/${window.CURRENT_MANAGER_ID}`));
- 
- if (snapshot.exists()) {
- const remote = snapshot.val();
- const remoteTimestamp = remote._lastModified || 0;
- const localTimestamp = localTimestamps[K_STUDENTS] || 0;
+  async function loadAnnouncements() {
+    const mid = getMid();
+    if(!mid || !window.supabaseClient) return;
+    try {
+      const { data } = await window.supabaseClient
+        .from('announcements')
+        .select('*')
+        .eq('center_id', mid)
+        .order('created_at', { ascending: false })
+        .limit(20);
 
- if (!hasUnsavedChanges && localTimestamp >= remoteTimestamp) {
- // Artificial delay so user sees the animation and feels the sync
- await new Promise(r => setTimeout(r, 800));
- updateSyncUI('online', 'متصل ومتزامن ');
- showToast("كل البيانات متزامنة بالفعل ", "success");
- return;
- }
+      localAnnouncements = (data || []).map(a => ({
+        id: a.id,
+        message: a.content,
+        timestamp: new Date(a.created_at).getTime(),
+        readBy: a.read_by || {}
+      }));
 
- if (localTimestamp > remoteTimestamp) {
- console.log("[Sync] Local is newer → Pushing");
- const dbRef = ref(database, `users/${window.CURRENT_MANAGER_ID}`);
- await update(dbRef, {
- 'students': students,
- 'attendance': attByDate,
- 'finances/revenue': revenueByDate,
- 'packages': groupFees,
- 'finances/expenses': expensesByDate,
- 'deletedStudents': deletedStudents,
- 'syllabus': syllabusData,
- 'evaluations': evalData,
- 'sessionStudents': sessionStudentsByDate,
- 'booklets': bookletsStock,
- '_lastModified': Date.now()
- });
- showToast("تم رفع البيانات إلى السحابة ", "success");
- } else {
- console.log("[Sync] Server is newer → Pulling");
- const remoteStudents = sanitizeFirebaseObject(remote.students || {});
- for (const id in remoteStudents) {
- const remoteStudent = remoteStudents[id];
- const localStudent = students[id];
- if (!localStudent) {
- students[id] = remoteStudent;
- } else {
- const rMod = remoteStudent.lastModified || 0;
- const lMod = localStudent.lastModified || 0;
- if (rMod > lMod) students[id] = remoteStudent;
- }
- }
- attByDate = remote.attendance || attByDate;
- revenueByDate = remote.finances?.revenue || revenueByDate;
- expensesByDate = remote.finances?.expenses || expensesByDate;
- groupFees = remote.packages || groupFees;
- deletedStudents = remote.deletedStudents || deletedStudents;
- syllabusData = remote.syllabus || syllabusData;
- evalData = remote.evaluations || evalData;
- sessionStudentsByDate = remote.sessionStudents || sessionStudentsByDate;
- bookletsStock = remote.booklets || bookletsStock;
- 
- await Promise.all([
- secureSave(K_STUDENTS, students),
- secureSave(K_ATT_BY_DATE, attByDate),
- secureSave(K_REVENUE, revenueByDate),
- secureSave(K_GROUP_FEES, groupFees),
- secureSave(K_EXPENSES, expensesByDate),
- secureSave(K_DELETED, deletedStudents),
- secureSave(K_SYLLABUS, syllabusData),
- secureSave(K_EVAL, evalData),
- secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
- secureSave(K_BOOKLETS, bookletsStock)
- ]);
- updateTopStats(); updateFinanceSummary(); renderCharts();
- showToast("تم تحديث البيانات من السحابة ", "success");
- }
- } else {
- console.log("[Sync] No remote data → Initial push");
- const dbRef = ref(database, `users/${window.CURRENT_MANAGER_ID}`);
- await update(dbRef, {
- 'students': students, 'attendance': attByDate,
- 'finances/revenue': revenueByDate, 'packages': groupFees,
- 'finances/expenses': expensesByDate, 'deletedStudents': deletedStudents,
- 'syllabus': syllabusData, 'evaluations': evalData,
- 'sessionStudents': sessionStudentsByDate, 'booklets': bookletsStock,
- '_lastModified': Date.now()
- });
- showToast("تم رفع البيانات لأول مرة ", "success");
- }
- hasUnsavedChanges = false;
- updateSyncUI('online', 'متصل ومتزامن ');
- })();
+      const isManager = window.CURRENT_ROLE === 'admin';
+      if (isManager && managerBroadcastHistory) {
+        renderManagerBroadcastHistory();
+      }
+      if (!isManager && btnNoticeBoard) {
+        btnNoticeBoard.style.display = 'inline-block';
+        let unreadCount = localAnnouncements.filter(ann => !(ann.readBy || {})[currentAsstId]).length;
+        if (unreadCount > 0) {
+          noticeBadge.classList.remove("hidden");
+          noticeBadge.textContent = unreadCount > 9 ? "+9" : unreadCount;
+        } else {
+          noticeBadge.classList.add("hidden");
+        }
+      }
+    } catch(e) {}
+  }
 
- const timeout = new Promise((_, reject) =>
- setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 12000)
- );
+  setTimeout(loadAnnouncements, 1500);
 
- await Promise.race([syncWork, timeout]);
+  function renderManagerBroadcastHistory() {
+    if(!managerBroadcastHistory) return;
+    managerBroadcastHistory.innerHTML = '';
+    if(localAnnouncements.length === 0) {
+      managerBroadcastHistory.innerHTML = '<div style="color:#777;">لا يوجد إعلانات سابقة.</div>';
+      return;
+    }
+    localAnnouncements.forEach(ann => {
+      const div = document.createElement("div");
+      div.style.cssText = "background:var(--bg-inset); padding:15px; border-radius:10px; border:1px solid var(--border);";
+      const d = new Date(ann.timestamp);
+      const readsCount = ann.readBy ? Object.keys(ann.readBy).length : 0;
+      div.innerHTML = `
+        <div style="font-size:0.85em; color:var(--text-secondary); margin-bottom:5px;"> ${d.toLocaleString()}</div>
+        <div style="font-weight:bold; margin-bottom:10px; color:var(--text-main);">${ann.message.replace(/\r\n/g, '<br>')}</div>
+        <div style="font-size:0.85em; color:var(--primary);">️ تمت القراءة بواسطة: ${readsCount} مساعد</div>
+      `;
+      managerBroadcastHistory.appendChild(div);
+    });
+  }
 
- } catch(e) {
- console.error("[Sync] Error:", e);
- if (e.message === 'SYNC_TIMEOUT') {
- updateSyncUI('offline', 'انتهى وقت المزامنة - تأكد من الإنترنت');
- showToast("المزامنة أخدت وقت طويل تأكد من جودة الإنترنت", "err");
- } else {
- updateSyncUI('offline', 'فشلت المزامنة');
- showToast("فشلت المزامنة. تأكد من اتصال الإنترنت.", "err");
- }
- } finally {
- syncInProgress = false;
- }
+  if (btnNoticeBoard) {
+    btnNoticeBoard.addEventListener("click", () => {
+      renderAssistantNoticeBoard();
+      noticeBoardModal.classList.remove("hidden");
+    });
+  }
+  if (closeNoticeBoardBtn) {
+    closeNoticeBoardBtn.addEventListener("click", () => {
+      noticeBoardModal.classList.add("hidden");
+    });
+  }
+
+  async function renderAssistantNoticeBoard() {
+    if(!noticeBoardList) return;
+    noticeBoardList.innerHTML = '';
+    if(localAnnouncements.length === 0) {
+      noticeBoardList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">لا توجد إعلانات حالياً.</div>';
+      return;
+    }
+    for(const ann of localAnnouncements) {
+      const reads = ann.readBy || {};
+      const isRead = !!reads[currentAsstId];
+      const div = document.createElement("div");
+      div.style.cssText = `background: ${isRead ? 'var(--bg-inset)' : 'var(--bg-surface)'}; padding:15px; border-radius:10px; border:1px solid var(--border); opacity: ${isRead ? '0.7' : '1'}; position: relative;`;
+      const d = new Date(ann.timestamp);
+      const dotHtml = isRead ? '' : `<div style="position:absolute; top:15px; left:15px; width:10px; height:10px; border-radius:50%; background:var(--danger);"></div>`;
+      div.innerHTML = `
+        ${dotHtml}
+        <div style="font-size:0.85em; color:var(--text-secondary); margin-bottom:8px;"> ${d.toLocaleString()}</div>
+        <div style="font-weight:bold; color:var(--text-main); line-height: 1.5; padding-left: ${!isRead ? '20px' : '0'}">${ann.message.replace(/\r\n/g, '<br>')}</div>
+      `;
+      noticeBoardList.appendChild(div);
+
+      if (!isRead) {
+        try {
+          const mid = getMid();
+          reads[currentAsstId] = true;
+          if (mid && window.supabaseClient) {
+            await window.supabaseClient.from('announcements').update({ read_by: reads }).eq('id', ann.id);
+          }
+        } catch(e) {}
+      }
+    }
+  }
  }
 
  // Cloud Sync Click Handler (Top bar cloud icon)
  if ($("cloudSyncIndicator")) {
- $("cloudSyncIndicator").addEventListener("click", async function() {
- showToast("جاري المزامنة والرفع إلى السحابة... ️", "warning");
- await saveAll();
- await syncWithFirebase();
- showToast("تمت المزامنة ورفع البيانات إلى السحابة بنجاح ️", "success");
- });
+  $("cloudSyncIndicator").addEventListener("click", async function() {
+    showToast("جاري المزامنة والرفع إلى السحابة... ️", "warning");
+    await saveAll();
+    showToast("تمت المزامنة ورفع البيانات إلى السحابة بنجاح ️", "success");
+  });
  }
-
- // Automatic Online/Offline Detection
- window.addEventListener('offline', () => {
- updateSyncUI('offline', 'تم قطع الاتصال بالإنترنت');
- showToast("انقطع الاتصال بالإنترنت", "err");
- });
- 
- window.addEventListener('online', () => {
- updateSyncUI('pending', 'عاد الاتصال بالإنترنت، جاري المزامنة...');
- setTimeout(() => {
- syncWithFirebase();
- }, 2000);
- });
 
  // Startup Sequence
  async function initSystem() {
- // Step 0: Run storage migration (localStorage → IndexedDB)
- await initStorageMigration();
- 
- // Step 1: Load data (from IndexedDB first, then merge with Firebase)
- await loadAll(); 
- ensureBase500(); 
- checkAuth(); // Re-run after data loaded
- applyLanguage(); 
- setTimeout(checkQR, 500);
+  await initStorageMigration();
+  await loadAll(); 
+  ensureBase500(); 
+  checkAuth();
+  applyLanguage(); 
+  setTimeout(checkQR, 500);
 
- initDailyApprovalSystem();
- initNoticeBoardSystem();
+  initDailyApprovalSystem();
+  initNoticeBoardSystem();
 
- // Step 2: Setup real-time permissions listener (works for both admin & assistant)
- await loadPermissions();
- setupPermissionsListener();
- if (typeof fetchAssistantMessages === "function") fetchAssistantMessages();
+  await loadPermissions();
+  setupPermissionsListener();
+  if (typeof fetchAssistantMessages === "function") fetchAssistantMessages();
 
- // مزامنة صامتة عند فتح البرنامج في يوم جديد
- if (localStorage.getItem("last_cloud_sync_date") !== nowDateStr()) {
- setTimeout(() => { 
- if (typeof accessToken !== "undefined" && accessToken) backupToDrive(false); 
- }, 8000);
- }
- }
-
- // ==========================================
- // CLOUD DATA MONITOR
- // ==========================================
- 
-// Firebase array-to-object sanitizer
-function sanitizeFirebaseObject(obj) {
-  if (!obj) return {};
-  if (Array.isArray(obj)) {
-    const newObj = {};
-    obj.forEach((item, idx) => {
-      if (item) newObj[String(idx)] = item;
-    });
-    return newObj;
+  if (localStorage.getItem("last_cloud_sync_date") !== nowDateStr()) {
+    setTimeout(() => { 
+      if (typeof accessToken !== "undefined" && accessToken) backupToDrive(false); 
+    }, 8000);
   }
-  // Clean nulls from objects just in case
-  Object.keys(obj).forEach(k => { if (!obj[k]) delete obj[k]; });
-  return obj;
-}
-
-const CLOUD_MONITOR_SECTIONS = [
- { key: 'students', firebaseKey: 'students', label: 'الطلاب', localVar: () => students },
- { key: 'attendance', firebaseKey: 'attendance', label: 'الحضور والغياب', localVar: () => attByDate },
- { key: 'revenue', firebaseKey: 'finances/revenue', label: 'الإيرادات اليومية', localVar: () => revenueByDate },
- { key: 'expenses', firebaseKey: 'finances/expenses', label: 'المصروفات', localVar: () => expensesByDate },
- { key: 'packages', firebaseKey: 'packages', label: 'الباقات والأسعار', localVar: () => groupFees },
- { key: 'deletedStudents', firebaseKey: 'deletedStudents', label: 'سلة المحذوفات', localVar: () => deletedStudents },
- { key: 'syllabus', firebaseKey: 'syllabus', label: 'المنهج الدراسي', localVar: () => syllabusData },
- { key: 'evaluations', firebaseKey: 'evaluations', label: 'تقييمات الطلاب', localVar: () => evalData },
- { key: 'sessionStudents', firebaseKey: 'sessionStudents', label: 'طلاب الحصة الفورية', localVar: () => sessionStudentsByDate },
- { key: 'booklets', firebaseKey: 'booklets', label: 'المذكرات والكتب', localVar: () => bookletsStock },
- ];
-
- function countData(data) {
- if (!data) return 0;
- if (Array.isArray(data)) return data.length;
- if (typeof data === 'object') return Object.keys(data).length;
- return 0;
  }
 
- async function runCloudDataCheck() {
- const tbody = $("cloudMonitorTableBody");
- const treeEl = $("cloudMonitorTree");
- if (!tbody) return;
+ // ==========================================
+ // ONE-CLICK SUPABASE DATA MIGRATION TOOL
+ // ==========================================
+ window.migrateLocalToSupabase = async function() {
+  if (!window.supabaseClient) {
+    return showToast("عميل Supabase غير مهيأ", "err");
+  }
+  const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
+  if (!mid) {
+    return showToast("يجب تسجيل الدخول كمدير أولاً", "err");
+  }
 
- const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
- if (!mid) {
- tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--danger);">لم يتم تسجيل الدخول — لا يمكن فحص السحابة</td></tr>`;
- return;
- }
+  showToast("جاري رفع جميع البيانات المحلية إلى Supabase...", "info");
 
- // Show loading
- tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px;"><div style="display:inline-block; width:24px; height:24px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation: spin 0.8s linear infinite;"></div> جاري جلب البيانات من السيرفر...</td></tr>`;
- if ($("cloudMonitorOverallIcon")) $("cloudMonitorOverallIcon").innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
- if ($("cloudMonitorOverallText")) $("cloudMonitorOverallText").textContent = "جاري الفحص...";
+  try {
+    // 1. Center Record
+    await window.supabaseClient.from('centers').upsert({
+      id: mid,
+      manager_name: localStorage.getItem("ca_current_username") || "المدير",
+      eval_data: evalData || {},
+      settings: { migratedAt: new Date().toISOString() }
+    });
 
- try {
- const snapshot = await Promise.race([
- get(child(ref(database), `users/${mid}`)),
- new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 15000))
- ]);
+    // 2. Packages
+    const pkgRows = Object.keys(groupFees || {}).map(pkgName => {
+      const p = groupFees[pkgName];
+      const isObj = typeof p === 'object' && p !== null;
+      return {
+        center_id: mid,
+        name: pkgName,
+        price: toInt(isObj ? p.price : p) || 0,
+        has_installments: isObj ? !!p.hasInstallments : false,
+        installment_price: toInt(isObj ? p.installmentPrice : 0) || 0
+      };
+    });
+    if (pkgRows.length > 0) {
+      await window.supabaseClient.from('packages').upsert(pkgRows, { onConflict: 'center_id,name' });
+    }
 
- const remote = snapshot.exists() ? snapshot.val() : {};
- let rows = '';
- let matchCount = 0;
- let mismatchCount = 0;
- let missingCloud = 0;
- let totalSections = CLOUD_MONITOR_SECTIONS.length;
+    // 3. Students
+    const allSt = Object.values(students || {}).concat(Object.values(deletedStudents || {})).filter(s => s && s.id);
+    const stRows = allSt.map(st => ({
+      id: String(st.id),
+      center_id: mid,
+      name: st.name || '',
+      phone: st.phone || '',
+      parent_phone: st.parentPhone || '',
+      class_name: st.className || '',
+      payment_plan: st.paymentPlan || 'cash',
+      paid: toInt(st.paid) || 0,
+      discount: toInt(st.discount) || 0,
+      notes: st.notes || '',
+      status: st.status || (deletedStudents[st.id] ? 'deleted' : 'active'),
+      installments: st.installments || [],
+      payments: st.payments || [],
+      attendance_dates: st.attendanceDates || [],
+      last_modified: st.lastModified || Date.now()
+    }));
+    if (stRows.length > 0) {
+      await window.supabaseClient.from('students').upsert(stRows, { onConflict: 'center_id,id' });
+    }
 
- for (const sec of CLOUD_MONITOR_SECTIONS) {
- const localData = sec.localVar();
- let remoteData = remote;
- for (const part of sec.firebaseKey.split('/')) {
- remoteData = remoteData ? remoteData[part] : undefined;
- }
+    // 4. Booklets
+    const bRows = Object.keys(bookletsStock || {}).map(bId => {
+      const b = bookletsStock[bId];
+      return {
+        id: String(bId),
+        center_id: mid,
+        name: b.name || '',
+        price: toInt(b.price) || 0,
+        stock: parseInt(b.stock) || 0,
+        sales: b.sales || []
+      };
+    });
+    if (bRows.length > 0) {
+      await window.supabaseClient.from('booklets').upsert(bRows, { onConflict: 'center_id,id' });
+    }
 
- const localCount = countData(localData);
- const cloudCount = countData(remoteData);
+    showToast(" تم رفع جميع البيانات بنجاح إلى Supabase!", "success");
+    console.log("[Migration] Supabase migration complete!");
+  } catch(e) {
+    console.error("[Migration] Error:", e);
+    showToast("حدث خطأ أثناء الرفع: " + e.message, "err");
+  }
+ };
 
- let status = '';
- if (!remoteData && localCount === 0) {
- status = '<span class="status-chip muted">فارغ</span>';
- matchCount++;
- } else if (!remoteData && localCount > 0) {
- status = '<span class="status-chip danger">غير موجود بالسحابة</span>';
- missingCloud++;
- mismatchCount++;
- } else if (localCount === cloudCount) {
- status = '<span class="status-chip success">متطابق</span>';
- matchCount++;
- } else {
- status = `<span class="status-chip warning">مختلف (فرق: ${Math.abs(localCount - cloudCount)})</span>`;
- mismatchCount++;
- }
-
- rows += `<tr style="border-bottom:1px solid var(--border);">
- <td style="padding:12px 16px; font-weight:600;">${sec.label}</td>
- <td style="padding:12px 16px; text-align:center; font-weight:700;">${localCount}</td>
- <td style="padding:12px 16px; text-align:center; font-weight:700;">${cloudCount}</td>
- <td style="padding:12px 16px; text-align:center;">${status}</td>
- </tr>`;
- }
-
- // Add _lastModified row
- const lastMod = remote._lastModified;
- const lastModStr = lastMod ? new Date(lastMod).toLocaleString('ar-EG') : 'غير متاح';
- rows += `<tr style="border-bottom:1px solid var(--border); background:var(--bg-inset);">
- <td style="padding:12px 16px; font-weight:600;">آخر تعديل سحابي</td>
- <td style="padding:12px 16px; text-align:center;" colspan="2">${lastModStr}</td>
- <td style="padding:12px 16px; text-align:center; color:var(--primary); font-weight:700;">مسجل</td>
- </tr>`;
-
- tbody.innerHTML = rows;
-
- // Update summary cards
- if ($("cloudMonitorLocalCount")) $("cloudMonitorLocalCount").textContent = totalSections;
- if ($("cloudMonitorCloudCount")) {
- const cloudSections = CLOUD_MONITOR_SECTIONS.filter(sec => {
- let d = remote;
- for (const p of sec.firebaseKey.split('/')) { d = d ? d[p] : undefined; }
- return d !== undefined && countData(d) > 0;
- }).length;
- $("cloudMonitorCloudCount").textContent = cloudSections;
- }
- const now = new Date();
- if ($("cloudMonitorLastSync")) $("cloudMonitorLastSync").textContent = now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
-
- // Overall status
- const card = $("cloudMonitorStatusCard");
- if (mismatchCount === 0) {
- if ($("cloudMonitorOverallIcon")) $("cloudMonitorOverallIcon").innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
- if ($("cloudMonitorOverallText")) $("cloudMonitorOverallText").textContent = "كل الأقسام متزامنة بأمان";
- if (card) card.style.background = "linear-gradient(135deg, #059669, #10b981)";
- } else {
- if ($("cloudMonitorOverallIcon")) $("cloudMonitorOverallIcon").innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
- if ($("cloudMonitorOverallText")) $("cloudMonitorOverallText").textContent = `يوجد ${mismatchCount} أقسام غير متطابقة`;
- if (card) card.style.background = "linear-gradient(135deg, #d97706, #f59e0b)";
- }
-
- // Build tree view
- if (treeEl) {
- let tree = `<span style="color:var(--success);">users/</span>\r\n`;
- tree += ` <span style="color:var(--success);">${mid}/</span>\r\n`;
- const allKeys = Object.keys(remote).filter(k => k !== '_lastModified').sort();
- for (let i = 0; i < allKeys.length; i++) {
- const k = allKeys[i];
- const val = remote[k];
- const isLast = i === allKeys.length - 1;
- const connector = isLast ? '└── ' : '├── ';
- const subConnector = isLast ? ' ' : '│ ';
-
- if (typeof val === 'object' && val !== null) {
- const subKeys = Object.keys(val);
- const count = subKeys.length;
- tree += ` ${connector}<span style="color:var(--primary);"><strong>${k}</strong></span> <span style="color:var(--text-secondary);">(${count} عنصر)</span>\r\n`;
- const preview = subKeys.slice(0, 3);
- for (let j = 0; j < preview.length; j++) {
- const subIsLast = j === preview.length - 1 && count <= 3;
- const sc = subIsLast ? '└── ' : '├── ';
- tree += ` ${subConnector}${sc}<span style="color:var(--text-primary);">${preview[j]}</span>\r\n`;
- }
- if (count > 3) {
- tree += ` ${subConnector}└── <span style="color:var(--text-secondary);">... و ${count - 3} عنصر آخر</span>\r\n`;
- }
- } else {
- tree += ` ${connector}<span style="color:var(--warning);">${k}</span>: <span style="color:var(--text-secondary);">${String(val).substring(0, 50)}</span>\r\n`;
- }
- }
- tree += ` └── <span style="color:var(--warning);">_lastModified</span>: <span style="color:var(--text-secondary);">${lastModStr}</span>\r\n`;
- treeEl.innerHTML = `<pre style="margin:0; white-space:pre; overflow-x:auto;">${tree}</pre>`;
- }
-
- showToast("تم فحص السحابة بنجاح", "success");
- } catch (err) {
- console.error("[CloudMonitor] Error:", err);
- tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--danger);">فشل الاتصال بالسيرفر: ${err.message}</td></tr>`;
- if ($("cloudMonitorOverallIcon")) $("cloudMonitorOverallIcon").innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
- if ($("cloudMonitorOverallText")) $("cloudMonitorOverallText").textContent = "فشل الفحص";
- if ($("cloudMonitorStatusCard")) $("cloudMonitorStatusCard").style.background = "linear-gradient(135deg, #dc2626, #ef4444)";
- }
- }
-
- // Bind buttons
- if ($("btnRunCloudCheck")) on("btnRunCloudCheck", "click", () => runCloudDataCheck());
- if ($("btnForceUpload")) on("btnForceUpload", "click", async () => {
- const confirm = await Swal.fire({
- title: 'رفع إجباري',
- text: 'سيتم رفع جميع البيانات المحلية إلى السحابة. هل أنت متأكد؟',
- icon: 'question',
- showCancelButton: true,
- confirmButtonText: 'نعم، ارفع الآن',
- cancelButtonText: 'إلغاء'
- });
- if (!confirm.isConfirmed) return;
- 
- showToast("جاري الرفع الإجباري...", "warning");
- await saveAll();
- showToast("تم الرفع الإجباري بنجاح ", "success");
- setTimeout(() => runCloudDataCheck(), 2000);
- });
-
- // PRE-AUTH: Run synchronously BEFORE async initSystem
- // This prevents login page flash when user is already logged in
  checkAuth();
-
-
-
  initSystem();
 
-
-window.payStudentInstallment = function(stId, instId, method="cash") {
-    const st = students[stId];
-    if (!st || !st.installments) return;
-    const inst = st.installments.find(i => i.id === instId);
-    if (!inst) return;
-    
-    // Create a payment record
-    if (!st.payments) st.payments = [];
-    st.payments.push({
-        id: "pay_" + Date.now(),
-        date: nowDateStr(),
-        amount: inst.amount,
-        type: "قسط: " + inst.name,
-        method: method
-    });
-    
-    // Update student total paid
-    st.paid = (toInt(st.paid) || 0) + inst.amount;
-    
-    // Mark installment as paid
-    inst.paid = true;
-    inst.paidDate = nowDateStr();
-    
-    saveAll();
-    openStudentModal(stId);
-    if (typeof showToast === "function") showToast("تم تسديد القسط بنجاح");
-};
-
-window.sendInstallmentReminder = function(stId, instId) {
-    const st = students[stId];
-    if (!st || !st.installments || !st.phone) return;
-    const inst = st.installments.find(i => i.id === instId);
-    if (!inst) return;
-    
-    const msg = encodeURIComponent(`مرحباً ${st.name}،
-نود تذكيرك بموعد سداد (${inst.name}) بقيمة ${inst.amount} ج.م والمستحق بتاريخ ${inst.dueDate}.
-يرجى المبادرة بالسداد. شكراً لك.`);
-    
-    window.open(`https://wa.me/20${st.phone}?text=${msg}`, '_blank');
-};
-
-
-window.calculateVaultsBalances = function(dateFilter) {
-    let vaults = {
-        cash: { income: 0, expense: 0, net: 0 },
-        wallet: { income: 0, expense: 0, net: 0 },
-        instapay: { income: 0, expense: 0, net: 0 }
-    };
-
-    // 1. Students Payments
-    Object.values(students).forEach(st => {
-        if (st && st.payments) {
-            st.payments.forEach(p => {
-                if (!dateFilter || p.date === dateFilter) {
-                    let m = p.method || "cash";
-                    if (!vaults[m]) vaults[m] = { income: 0, expense: 0, net: 0 };
-                    vaults[m].income += toInt(p.amount);
-                }
-            });
-        }
-    });
-    
-    // 2. Expenses
-    for (let d in expensesByDate) {
-        if (!dateFilter || d === dateFilter) {
-            expensesByDate[d].forEach(exp => {
-                let m = exp.method || "cash";
-                if (!vaults[m]) vaults[m] = { income: 0, expense: 0, net: 0 };
-                vaults[m].expense += toInt(exp.amount);
-            });
-        }
-    }
-    
-    // Calculate Net
-    Object.keys(vaults).forEach(k => {
-        vaults[k].net = vaults[k].income - vaults[k].expense;
-    });
-
-    return vaults;
-};
-
-
-window.renderInstallmentsDashboard = function() {
-    const tbody = $("installmentsTbody");
-    if (!tbody) return;
-    
-    const filter = $("filterInstallmentsStatus") ? $("filterInstallmentsStatus").value : "all";
-    const todayStr = nowDateStr().split('T')[0];
-    const todayDate = new Date(todayStr);
-    const nextWeekDate = new Date(todayDate);
-    nextWeekDate.setDate(nextWeekDate.getDate() + 7);
-    
-    let html = "";
-    let hasRecords = false;
-    
-    Object.values(students).forEach(st => {
-        if (!st || !st.installments || st.paymentPlan !== "installments") return;
-        
-        st.installments.forEach(inst => {
-            if (inst.paid) return; // Only show unpaid installments
-            
-            const dueDate = new Date(inst.dueDate);
-            const isOverdue = dueDate < todayDate;
-            const isUpcoming = dueDate >= todayDate && dueDate <= nextWeekDate;
-            
-            if (filter === "overdue" && !isOverdue) return;
-            if (filter === "upcoming" && !isUpcoming) return;
-            
-            hasRecords = true;
-            
-            let statusBadge = "";
-            if (isOverdue) {
-               statusBadge = `<span class="badge" style="background:#fee2e2; color:#991b1b;"><i class="fa-solid fa-circle-exclamation"></i> متأخر</span>`;
-            } else if (isUpcoming) {
-               statusBadge = `<span class="badge" style="background:#fef9c3; color:#854d0e;"><i class="fa-solid fa-clock"></i> قريباً</span>`;
-            } else {
-               statusBadge = `<span class="badge" style="background:#f1f5f9; color:#475569;">مستقبلي</span>`;
-            }
-            
-            html += `
-              <tr>
-                <td>${st.name}</td>
-                <td>${st.phone || '-'}</td>
-                <td>${st.className || '-'}</td>
-                <td>${inst.name}</td>
-                <td style="font-weight:bold; color:var(--success);">${inst.amount} ج</td>
-                <td>${inst.dueDate}</td>
-                <td>${statusBadge}</td>
-                <td>
-                  <div style="display:flex; gap:5px;">
-                     <select id="dashPayInstMethod_${inst.id}" class="inp" style="width:auto; padding:2px 5px; font-size:0.85em;"><option value="cash">كاش</option><option value="instapay">إنستاباي</option><option value="wallet">فودافون كاش</option></select>
-                     <button class="btn success smallBtn" onclick="payStudentInstallment('${st.id}', '${inst.id}', document.getElementById('dashPayInstMethod_${inst.id}').value); setTimeout(renderInstallmentsDashboard, 500);">دفع</button>
-                     <button class="btn secondary smallBtn iconOnly" onclick="sendInstallmentReminder('${st.id}', '${inst.id}')"><i class="fa-brands fa-whatsapp" style="color:#25D366;"></i></button>
-                  </div>
-                </td>
-              </tr>
-            `;
-        });
-    });
-    
-    if (!hasRecords) {
-        html = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-secondary);">لا توجد أقساط مطابقة للبحث</td></tr>`;
-    }
-    
-    tbody.innerHTML = html;
-};
-
-if ($("btnTabInstallments")) {
-    on("btnTabInstallments", "click", function() {
-        window.switchTab("Installments");
-        renderInstallmentsDashboard();
-        if(window.innerWidth <= 768 && $("sidebar")) $("sidebar").classList.remove("open");
-    });
-}
-if ($("filterInstallmentsStatus")) on("filterInstallmentsStatus", "change", renderInstallmentsDashboard);
-if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", renderInstallmentsDashboard);
+ if ($("btnTabInstallments")) {
+  on("btnTabInstallments", "click", function() {
+    window.switchTab("Installments");
+    if (typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard();
+    if (window.innerWidth <= 768 && $("sidebar")) $("sidebar").classList.remove("open");
+  });
+ }
+ if ($("filterInstallmentsStatus")) on("filterInstallmentsStatus", "change", renderInstallmentsDashboard);
+ if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", renderInstallmentsDashboard);
 
 }); // END DOMContentLoaded
