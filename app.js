@@ -1308,9 +1308,9 @@ async function loadAll() {
         // Fetch students, packages, booklets, center data in parallel
         const [stRes, pkgRes, bRes, centerRes] = await Promise.all([
           window.supabaseClient.from('students').select('*').not('id', 'is', null),
-          window.supabaseClient.from('packages').select('*').not('id', 'is', null),
+          window.supabaseClient.from('packages').select('*'),
           window.supabaseClient.from('booklets').select('*').not('id', 'is', null),
-          window.supabaseClient.from('centers').select('*').eq('id', mid).single()
+          window.supabaseClient.from('settings').select('*').eq('id', 1).maybeSingle()
         ]);
 
         if (!stRes.error && stRes.data) {
@@ -5869,7 +5869,7 @@ window.deleteAssistant = async function(asstKey) {
   async function loadDailyStatus() {
     if (!window.supabaseClient) return;
     try {
-      const { data } = await window.supabaseClient.from('settings').select('*').eq('id', 1).single();
+      const { data } = await window.supabaseClient.from('settings').select('*').eq('id', 1).maybeSingle();
       if (data) {
         const config = data.config || {};
         dailyApprovalEnabled = (data.daily_shift_status === 'open') || (config.dailyApprovalEnabled === true);
@@ -5893,7 +5893,7 @@ window.deleteAssistant = async function(asstKey) {
     const isEnabled = e.target.checked;
     if (!window.supabaseClient) return;
     try {
-      const { data: current } = await window.supabaseClient.from('settings').select('config').eq('id', 1).single();
+      const { data: current } = await window.supabaseClient.from('settings').select('config').eq('id', 1).maybeSingle();
       const newConfig = current ? (current.config || {}) : {};
       newConfig.dailyApprovalEnabled = isEnabled;
       
@@ -5982,7 +5982,7 @@ window.deleteAssistant = async function(asstKey) {
         btnSendBroadcast.disabled = true;
         btnSendBroadcast.innerHTML = "جاري الإرسال...";
         
-        const { data: curr } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).single();
+        const { data: curr } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).maybeSingle();
         const anns = (curr && curr.announcements) ? curr.announcements : [];
         anns.push({
           id: pushId,
@@ -6011,7 +6011,7 @@ window.deleteAssistant = async function(asstKey) {
   async function loadAnnouncements() {
     if(!window.supabaseClient) return;
     try {
-      const { data } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).single();
+      const { data } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).maybeSingle();
       let arr = (data && data.announcements) ? data.announcements : [];
       arr.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
       
@@ -6098,7 +6098,7 @@ window.deleteAssistant = async function(asstKey) {
       if (!isRead) {
         try {
           if (window.supabaseClient) {
-            const { data: curr } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).single();
+            const { data: curr } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).maybeSingle();
             if (curr && curr.announcements) {
               const aIndex = curr.announcements.findIndex(a => a.id === ann.id);
               if (aIndex !== -1) {
