@@ -747,7 +747,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const user = window.CURRENT_ROLE === 'admin' ? 'المدير' : ($("currentShiftManagerName") ? $("currentShiftManagerName").innerText : 'المساعد');
   
   const logEntry = {
-    center_id: window.CURRENT_MANAGER_ID,
+    
     user_name: user,
     action: actionType,
     details: details
@@ -764,7 +764,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const { data: logs, error } = await window.supabaseClient
       .from('activity_logs')
       .select('*')
-      .eq('center_id', window.CURRENT_MANAGER_ID)
+      .not('id', 'is', null)
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -1138,7 +1138,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const allStudentsList = Object.values(students || {}).concat(Object.values(deletedStudents || {})).filter(s => s && s.id);
       const studentRows = allStudentsList.map(st => ({
         id: String(st.id),
-        center_id: mid,
+        
         name: st.name || '',
         phone: st.phone || '',
         parent_phone: st.parentPhone || '',
@@ -1159,7 +1159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const p = groupFees[pkgName];
         const isObj = typeof p === 'object' && p !== null;
         return {
-          center_id: mid,
+          
           name: pkgName,
           price: toInt(isObj ? p.price : p) || 0,
           has_installments: isObj ? !!p.hasInstallments : false,
@@ -1172,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const b = bookletsStock[bId];
         return {
           id: String(bId),
-          center_id: mid,
+          
           name: b.name || '',
           price: toInt(b.price) || 0,
           stock: parseInt(b.stock) || 0,
@@ -1191,13 +1191,13 @@ document.addEventListener('DOMContentLoaded', function() {
       ];
 
       if (studentRows.length > 0) {
-        promises.push(window.supabaseClient.from('students').upsert(studentRows, { onConflict: 'center_id,id' }));
+        promises.push(window.supabaseClient.from('students').upsert(studentRows, { onConflict: 'id' }));
       }
       if (packageRows.length > 0) {
-        promises.push(window.supabaseClient.from('packages').upsert(packageRows, { onConflict: 'center_id,name' }));
+        promises.push(window.supabaseClient.from('packages').upsert(packageRows, { onConflict: 'name' }));
       }
       if (bookletRows.length > 0) {
-        promises.push(window.supabaseClient.from('booklets').upsert(bookletRows, { onConflict: 'center_id,id' }));
+        promises.push(window.supabaseClient.from('booklets').upsert(bookletRows, { onConflict: 'id' }));
       }
 
       Promise.all(promises).then(() => {
@@ -1233,7 +1233,7 @@ async function saveAttendanceOnly() {
 
       const studentRows = Object.values(students || {}).filter(s => s && s.id).map(st => ({
         id: String(st.id),
-        center_id: mid,
+        
         name: st.name || '',
         phone: st.phone || '',
         parent_phone: st.parentPhone || '',
@@ -1250,7 +1250,7 @@ async function saveAttendanceOnly() {
       }));
 
       if (studentRows.length > 0) {
-        window.supabaseClient.from('students').upsert(studentRows, { onConflict: 'center_id,id' })
+        window.supabaseClient.from('students').upsert(studentRows, { onConflict: 'id' })
           .then(() => {
             hasUnsavedChanges = false;
             updateSyncUI('online', 'متصل ومتزامن ');
@@ -1291,9 +1291,9 @@ async function loadAll() {
 
         // Fetch students, packages, booklets, center data in parallel
         const [stRes, pkgRes, bRes, centerRes] = await Promise.all([
-          window.supabaseClient.from('students').select('*').eq('center_id', mid),
-          window.supabaseClient.from('packages').select('*').eq('center_id', mid),
-          window.supabaseClient.from('booklets').select('*').eq('center_id', mid),
+          window.supabaseClient.from('students').select('*').not('id', 'is', null),
+          window.supabaseClient.from('packages').select('*').not('id', 'is', null),
+          window.supabaseClient.from('booklets').select('*').not('id', 'is', null),
           window.supabaseClient.from('centers').select('*').eq('id', mid).single()
         ]);
 
@@ -1434,39 +1434,47 @@ async function loadAll() {
  // ==========================================
  // 7. AUTHENTICATION & SECURITY
  // ==========================================
- function checkAuth() {
- const sidebar = document.querySelector('.sidebar');
- if(localStorage.getItem(K_AUTH) === "1") {
- currentUserRole = localStorage.getItem(K_ROLE) || "admin";
- 
- // Sync Global Variables
- window.CURRENT_ROLE = currentUserRole;
- $("loginBox").classList.add("hidden");
- 
- if(currentUserRole === 'admin') {
- migrateLocalDataToManager();
- if ($("manager-dashboard")) $("manager-dashboard").classList.remove("hidden");
- $("appBox").classList.add("hidden");
- if(sidebar) sidebar.style.display = "none";
- 
- if (typeof window.switchManagerTab === 'function') {
- window.switchManagerTab('dailyReport');
- }
- 
- if ($("managerTopName")) $("managerTopName").innerText = localStorage.getItem("ca_manager_id") || "المدير العام";
- 
- } else {
- $("appBox").classList.remove("hidden");
- if ($("manager-dashboard")) $("manager-dashboard").classList.add("hidden");
- if(sidebar) sidebar.style.display = "flex";
- showApp();
- }
- } else {
- $("loginBox").classList.remove("hidden"); 
- $("appBox").classList.add("hidden");
- if ($("manager-dashboard")) $("manager-dashboard").classList.add("hidden");
- if(sidebar) sidebar.style.display = "none";
- }
+ async function checkAuth() {
+  const sidebar = document.querySelector('.sidebar');
+  let isLoggedIn = false;
+  
+  if (window.supabaseClient) {
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (session) {
+      isLoggedIn = true;
+    }
+  }
+
+  if(isLoggedIn || localStorage.getItem(K_AUTH) === "1") {
+    currentUserRole = localStorage.getItem(K_ROLE) || "admin";
+    
+    // Sync Global Variables
+    window.CURRENT_ROLE = currentUserRole;
+    $("loginBox").classList.add("hidden");
+    
+    if(currentUserRole === 'admin') {
+      if ($("manager-dashboard")) $("manager-dashboard").classList.remove("hidden");
+      $("appBox").classList.add("hidden");
+      if(sidebar) sidebar.style.display = "none";
+      
+      if (typeof window.switchManagerTab === 'function') {
+        window.switchManagerTab('dailyReport');
+      }
+      
+      if ($("managerTopName")) $("managerTopName").innerText = localStorage.getItem("ca_current_username") || "المدير العام";
+      
+    } else {
+      $("appBox").classList.remove("hidden");
+      if ($("manager-dashboard")) $("manager-dashboard").classList.add("hidden");
+      if(sidebar) sidebar.style.display = "flex";
+      showApp();
+    }
+  } else {
+    $("loginBox").classList.remove("hidden"); 
+    $("appBox").classList.add("hidden");
+    if ($("manager-dashboard")) $("manager-dashboard").classList.add("hidden");
+    if(sidebar) sidebar.style.display = "none";
+  }
  }
 
  window.switchManagerTab = function(tabId) {
@@ -2516,49 +2524,30 @@ async function loadAll() {
     const p = $("managerPass") ? $("managerPass").value.trim() : "";
     if (!rawU || !p) return showToast("أدخل البريد الإلكتروني وكلمة المرور", "err");
     
-    const u = sanitizeKey(rawU);
+    if (typeof showToast === "function") showToast("جاري التحقق من الصلاحيات...", "info");
 
     try {
-      const hashedP = await hashPass(p);
-      const MASTER_HASH = "0f34f44fcbe80ac6fe45e39cf2c1ea42c62a2dcddd613f609abd1d6466a8dca1";
-
-      if (window.supabaseClient) {
-        // Query centers table
-        const { data: center, error } = await window.supabaseClient
-          .from('centers')
-          .select('*')
-          .eq('id', u)
-          .single();
-
-        if (error && (error.code === 'PGRST116' || error.message?.includes('0 rows'))) {
-          // Center not yet in table -> Create new manager center record
-          await window.supabaseClient.from('centers').insert({
-            id: u,
-            manager_name: rawU.split('@')[0] || "المدير",
-            password: hashedP,
-            settings: {},
-            eval_data: {}
-          });
-        } else if (center) {
-          if (center.password && center.password !== hashedP && center.password !== p && hashedP !== MASTER_HASH) {
-            showToast(t("msg_err_pass") || "خطأ في بيانات الدخول", "err");
-            return triggerShake("managerLoginBtn");
-          }
-        }
+      if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
+      
+      const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+        email: rawU,
+        password: p
+      });
+      
+      if (error) {
+        showToast("خطأ في بيانات الدخول: " + error.message, "err");
+        return triggerShake("managerLoginBtn");
       }
 
       localStorage.setItem(K_AUTH, "1");
       localStorage.setItem(K_ROLE, "admin");
-      localStorage.setItem("ca_manager_id", u);
       localStorage.setItem("ca_current_username", "المدير");
-      window.CURRENT_MANAGER_ID = u;
       window.CURRENT_ROLE = "admin";
-      if (typeof showToast === "function") showToast("جاري تحميل بياناتك من السحابة...", "info");
+      
       await loadAll();
       await loadPermissions();
       if (typeof setupPermissionsListener === "function") setupPermissionsListener();
       checkAuth();
-      return;
     } catch (err) {
       console.error(err);
       showToast("فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.", "err");
@@ -2574,41 +2563,34 @@ if($("assistantLoginBtn")) {
     const p = $("assistantPass") ? $("assistantPass").value.trim() : "";
     if (!rawU || !p) return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
 
+    if (typeof showToast === "function") showToast("جاري التحقق من الصلاحيات...", "info");
+
     try {
-      if (!window.supabaseClient) {
-        return showToast("فشل الاتصال بالسحابة", "err");
-      }
+      if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
 
-      const hashedP = await hashPass(p);
-      const { data: asst, error } = await window.supabaseClient
-        .from('assistants')
-        .select('*')
-        .ilike('username', rawU)
-        .single();
+      // We map the assistant username to an email format required by Supabase Auth
+      const asstEmail = rawU.toLowerCase().replace(/[^a-z0-9]/g, '') + "@studify.com";
 
-      if (error || !asst) {
-        showToast("حساب المساعد غير موجود أو غير مربوط بمدير.", "err");
-        return triggerShake("assistantLoginBtn");
-      }
+      const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+        email: asstEmail,
+        password: p
+      });
 
-      if (asst.password !== hashedP && asst.password !== p) {
-        showToast(t("msg_err_pass") || "كلمة المرور غير صحيحة", "err");
+      if (error) {
+        showToast("حساب المساعد غير موجود أو كلمة المرور خاطئة.", "err");
         return triggerShake("assistantLoginBtn");
       }
 
       localStorage.setItem(K_AUTH, "1");
       localStorage.setItem(K_ROLE, "assistant");
-      localStorage.setItem("ca_manager_id", asst.center_id);
-      localStorage.setItem("ca_current_username", asst.username);
-      window.CURRENT_MANAGER_ID = asst.center_id;
+      localStorage.setItem("ca_current_username", rawU);
       window.CURRENT_ROLE = "assistant";
-      currentPermissions = asst.permissions || {};
-      if (typeof showToast === "function") showToast("جاري تحميل بياناتك من السحابة...", "info");
+      
+      // Load settings to get permissions
       await loadAll();
       await loadPermissions();
       if (typeof setupPermissionsListener === "function") setupPermissionsListener();
       checkAuth();
-      return;
     } catch (err) {
       console.error(err);
       showToast("فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.", "err");
@@ -2616,16 +2598,18 @@ if($("assistantLoginBtn")) {
   });
 }
 window.logout = async function() {
- // Clear IndexedDB (localForage)
- try { await localforage.clear(); } catch(e) { console.error("localForage clear error:", e); }
- 
- // Clear auth keys from localStorage
- localStorage.removeItem(K_AUTH);
- localStorage.removeItem(K_ROLE);
- localStorage.removeItem("ca_manager_id");
- localStorage.removeItem("ca_current_username");
- location.reload();
- };
+  if (window.supabaseClient) {
+    await window.supabaseClient.auth.signOut();
+  }
+  // Clear IndexedDB (localForage)
+  try { await localforage.clear(); } catch(e) { console.error("localForage clear error:", e); }
+  
+  // Clear auth keys from localStorage
+  localStorage.removeItem(K_AUTH);
+  localStorage.removeItem(K_ROLE);
+  localStorage.removeItem("ca_current_username");
+  location.reload();
+};
 
  if($("logoutBtn")) on("logoutBtn", "click", window.logout);
  if($("managerLogoutBtn")) on("managerLogoutBtn", "click", window.logout);
@@ -4211,7 +4195,7 @@ function updateDriveUI() {
     try {
       const hashedAsstP = await hashPass(asstP);
       const { error } = await window.supabaseClient.from('assistants').upsert({
-        center_id: managerId,
+        
         username: rawAsstU,
         password: hashedAsstP,
         permissions: {}
@@ -4243,7 +4227,7 @@ async function fetchManagerAssistants() {
     const { data: assistants, error } = await window.supabaseClient
       .from('assistants')
       .select('*')
-      .eq('center_id', managerId)
+      .not('id', 'is', null)
       .order('created_at', { ascending: false });
 
     if (!error && assistants && assistants.length > 0) {
@@ -4304,7 +4288,7 @@ window.editAssistantPassword = async function(key) {
     const { error } = await window.supabaseClient
       .from('assistants')
       .update({ password: hashedPass })
-      .eq('center_id', managerId)
+      .not('id', 'is', null)
       .eq('username', key);
     if (error) throw error;
     showToast("تم تحديث كلمة المرور بنجاح", "success");
@@ -4332,7 +4316,7 @@ window.deleteAssistant = async function(asstKey) {
     const { error } = await window.supabaseClient
       .from('assistants')
       .delete()
-      .eq('center_id', managerId)
+      .not('id', 'is', null)
       .eq('username', asstKey);
     if (error) throw error;
     showToast("تم حذف المساعد ", "success");
@@ -4578,7 +4562,7 @@ function setupPermissionsListener() {
     const { data: reqs, error } = await window.supabaseClient
       .from('manager_requests')
       .select('*')
-      .eq('center_id', mid)
+      .not('id', 'is', null)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
@@ -4650,7 +4634,7 @@ function setupPermissionsListener() {
     const msgId = "msg_" + Date.now();
     await window.supabaseClient.from('assistant_messages').insert({
       id: msgId,
-      center_id: mid,
+      
       title: " تمت الموافقة على طلبك",
       message: `وافق المدير على ${r.type === "exemption" ? "إعفاء" : "خصم " + r.amount + " ج"} للطالب ${r.student_name || r.student_id}. السبب: ${r.reason || "—"}`,
       read: false
@@ -4675,7 +4659,7 @@ function setupPermissionsListener() {
       const msgId = "msg_" + Date.now();
       await window.supabaseClient.from('assistant_messages').insert({
         id: msgId,
-        center_id: mid,
+        
         title: " تم رفض طلبك",
         message: `رفض المدير طلب ${r.type === "exemption" ? "الإعفاء" : "الخصم " + r.amount + " ج"} للطالب ${r.student_name || r.student_id}.`,
         read: false
@@ -4753,7 +4737,7 @@ function setupPermissionsListener() {
     try {
       await window.supabaseClient.from('manager_requests').insert({
         id: reqId,
-        center_id: mid,
+        
         student_id: stId,
         student_name: st.name,
         type,
@@ -4783,7 +4767,7 @@ function setupPermissionsListener() {
   window.supabaseClient
     .from('assistant_messages')
     .select('*')
-    .eq('center_id', mid)
+    .not('id', 'is', null)
     .order('created_at', { ascending: false })
     .limit(20)
     .then(({ data }) => {
@@ -5864,20 +5848,20 @@ function setupPermissionsListener() {
   const getMid = () => localStorage.getItem("ca_manager_id") || window.CURRENT_MANAGER_ID;
 
   async function loadDailyStatus() {
-    const mid = getMid();
-    if (!mid || !window.supabaseClient) return;
+    if (!window.supabaseClient) return;
     try {
-      const { data } = await window.supabaseClient.from('daily_status').select('*').eq('center_id', mid).single();
+      const { data } = await window.supabaseClient.from('settings').select('*').eq('id', 1).single();
       if (data) {
-        dailyApprovalEnabled = data.is_approved === true || (data.settings && data.settings.enabled === true);
+        const config = data.config || {};
+        dailyApprovalEnabled = (data.daily_shift_status === 'open') || (config.dailyApprovalEnabled === true);
         dailyStatusObj = {
-          status: data.is_approved ? 'Approved' : 'Pending',
-          managerNote: data.shift_status || '',
+          status: data.daily_shift_status === 'open' ? 'Approved' : 'Pending',
+          managerNote: data.daily_shift_status === 'open' ? '' : data.daily_shift_status,
           lastDate: data.updated_at ? data.updated_at.split('T')[0] : ''
         };
         if(window.CURRENT_ROLE === 'admin') {
-          mgrSettingDailyApproval.checked = dailyApprovalEnabled;
-          managerDailyApprovalWidget.classList.toggle("hidden", !dailyApprovalEnabled);
+          mgrSettingDailyApproval.checked = config.dailyApprovalEnabled === true;
+          managerDailyApprovalWidget.classList.toggle("hidden", !config.dailyApprovalEnabled);
         }
         evaluateAssistantLock();
       }
@@ -5888,29 +5872,27 @@ function setupPermissionsListener() {
   // Manager Side Logic
   mgrSettingDailyApproval.addEventListener("change", async (e) => {
     const isEnabled = e.target.checked;
-    const mid = getMid();
-    if (!mid || !window.supabaseClient) return;
+    if (!window.supabaseClient) return;
     try {
-      await window.supabaseClient.from('daily_status').upsert({
-        center_id: mid,
-        is_approved: isEnabled,
-        settings: { enabled: isEnabled }
-      });
+      const { data: current } = await window.supabaseClient.from('settings').select('config').eq('id', 1).single();
+      const newConfig = current ? (current.config || {}) : {};
+      newConfig.dailyApprovalEnabled = isEnabled;
+      
+      await window.supabaseClient.from('settings').update({
+        config: newConfig
+      }).eq('id', 1);
       if (typeof showToast === "function") showToast(isEnabled ? "تم تفعيل الاعتماد اليومي" : "تم إيقاف الاعتماد اليومي", "success");
     } catch (err) { console.error(err); }
   });
 
   btnApproveDaily.addEventListener("click", async () => {
-    const mid = getMid();
-    if (!mid || !window.supabaseClient) return;
+    if (!window.supabaseClient) return;
     try {
-      await window.supabaseClient.from('daily_status').upsert({
-        center_id: mid,
-        is_approved: true,
-        shift_status: 'Approved',
-        approved_by: localStorage.getItem("ca_current_username") || "المدير",
-        approved_at: new Date().toISOString()
-      });
+      await window.supabaseClient.from('settings').update({
+        daily_shift_status: 'open',
+        daily_approved_by: localStorage.getItem("ca_current_username") || "المدير",
+        updated_at: new Date().toISOString()
+      }).eq('id', 1);
       managerDailyRejectNoteContainer.classList.add("hidden");
       if (typeof showToast === "function") showToast("تم اعتماد تقرير الأمس بنجاح. النظام مفتوح الآن للمساعدين.", "success");
     } catch (err) { console.error(err); }
@@ -5923,14 +5905,12 @@ function setupPermissionsListener() {
   btnConfirmRejectDaily.addEventListener("click", async () => {
     const note = managerDailyRejectNote.value.trim();
     if(!note) return showToast("برجاء كتابة سبب الرفض", "err");
-    const mid = getMid();
-    if (!mid || !window.supabaseClient) return;
+    if (!window.supabaseClient) return;
     try {
-      await window.supabaseClient.from('daily_status').upsert({
-        center_id: mid,
-        is_approved: false,
-        shift_status: note
-      });
+      await window.supabaseClient.from('settings').update({
+        daily_shift_status: note,
+        updated_at: new Date().toISOString()
+      }).eq('id', 1);
       managerDailyRejectNoteContainer.classList.add("hidden");
       managerDailyRejectNote.value = '';
       showToast("تم إيقاف النظام وإرسال سبب الرفض للمساعدين.", "warning");
@@ -5976,21 +5956,26 @@ function setupPermissionsListener() {
     btnSendBroadcast.addEventListener("click", async () => {
       const msg = broadcastMsgInput.value.trim();
       if(!msg) return showToast(currentLang==='ar' ? "أدخل نص الإعلان" : "Enter message", "warning");
-      const mid = getMid();
-      if(!mid || !window.supabaseClient) return;
+      if(!window.supabaseClient) return;
       
       const pushId = "ann_" + Date.now();
       try {
         btnSendBroadcast.disabled = true;
         btnSendBroadcast.innerHTML = "جاري الإرسال...";
-        await window.supabaseClient.from('announcements').insert({
+        
+        const { data: curr } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).single();
+        const anns = (curr && curr.announcements) ? curr.announcements : [];
+        anns.push({
           id: pushId,
-          center_id: mid,
           title: "تنبيه عام",
           content: msg,
           author: localStorage.getItem("ca_current_username") || "المدير",
-          read_by: {}
+          read_by: {},
+          created_at: new Date().toISOString()
         });
+        
+        await window.supabaseClient.from('settings').update({ announcements: anns }).eq('id', 1);
+        
         broadcastMsgInput.value = '';
         showToast(currentLang==='ar' ? "تم إرسال الإعلان لجميع المساعدين" : "Broadcast sent!", "success");
         loadAnnouncements();
@@ -6005,17 +5990,13 @@ function setupPermissionsListener() {
   }
 
   async function loadAnnouncements() {
-    const mid = getMid();
-    if(!mid || !window.supabaseClient) return;
+    if(!window.supabaseClient) return;
     try {
-      const { data } = await window.supabaseClient
-        .from('announcements')
-        .select('*')
-        .eq('center_id', mid)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      localAnnouncements = (data || []).map(a => ({
+      const { data } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).single();
+      let arr = (data && data.announcements) ? data.announcements : [];
+      arr.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      localAnnouncements = arr.map(a => ({
         id: a.id,
         message: a.content,
         timestamp: new Date(a.created_at).getTime(),
@@ -6091,23 +6072,29 @@ function setupPermissionsListener() {
       div.innerHTML = `
         ${dotHtml}
         <div style="font-size:0.85em; color:var(--text-secondary); margin-bottom:8px;"> ${d.toLocaleString()}</div>
-        <div style="font-weight:bold; color:var(--text-main); line-height: 1.5; padding-left: ${!isRead ? '20px' : '0'}">${ann.message.replace(/\r\n/g, '<br>')}</div>
+        <div style="font-weight:bold; color:var(--text-main); line-height: 1.5; padding-left: ${!isRead ? '20px' : '0'}" >${ann.message.replace(/\r\n/g, '<br>')}</div>
       `;
       noticeBoardList.appendChild(div);
 
       if (!isRead) {
         try {
-          const mid = getMid();
-          reads[currentAsstId] = true;
-          if (mid && window.supabaseClient) {
-            await window.supabaseClient.from('announcements').update({ read_by: reads }).eq('id', ann.id);
+          if (window.supabaseClient) {
+            const { data: curr } = await window.supabaseClient.from('settings').select('announcements').eq('id', 1).single();
+            if (curr && curr.announcements) {
+              const aIndex = curr.announcements.findIndex(a => a.id === ann.id);
+              if (aIndex !== -1) {
+                if (!curr.announcements[aIndex].read_by) curr.announcements[aIndex].read_by = {};
+                curr.announcements[aIndex].read_by[currentAsstId] = true;
+                await window.supabaseClient.from('settings').update({ announcements: curr.announcements }).eq('id', 1);
+              }
+            }
           }
         } catch(e) {}
       }
     }
   }
  }
-
+ 
  // Cloud Sync Click Handler (Top bar cloud icon)
  if ($("cloudSyncIndicator")) {
   $("cloudSyncIndicator").addEventListener("click", async function() {
@@ -6168,7 +6155,7 @@ function setupPermissionsListener() {
       const p = groupFees[pkgName];
       const isObj = typeof p === 'object' && p !== null;
       return {
-        center_id: mid,
+        
         name: pkgName,
         price: toInt(isObj ? p.price : p) || 0,
         has_installments: isObj ? !!p.hasInstallments : false,
@@ -6176,14 +6163,14 @@ function setupPermissionsListener() {
       };
     });
     if (pkgRows.length > 0) {
-      await window.supabaseClient.from('packages').upsert(pkgRows, { onConflict: 'center_id,name' });
+      await window.supabaseClient.from('packages').upsert(pkgRows, { onConflict: 'name' });
     }
 
     // 3. Students
     const allSt = Object.values(students || {}).concat(Object.values(deletedStudents || {})).filter(s => s && s.id);
     const stRows = allSt.map(st => ({
       id: String(st.id),
-      center_id: mid,
+      
       name: st.name || '',
       phone: st.phone || '',
       parent_phone: st.parentPhone || '',
@@ -6199,7 +6186,7 @@ function setupPermissionsListener() {
       last_modified: st.lastModified || Date.now()
     }));
     if (stRows.length > 0) {
-      await window.supabaseClient.from('students').upsert(stRows, { onConflict: 'center_id,id' });
+      await window.supabaseClient.from('students').upsert(stRows, { onConflict: 'id' });
     }
 
     // 4. Booklets
@@ -6207,7 +6194,7 @@ function setupPermissionsListener() {
       const b = bookletsStock[bId];
       return {
         id: String(bId),
-        center_id: mid,
+        
         name: b.name || '',
         price: toInt(b.price) || 0,
         stock: parseInt(b.stock) || 0,
@@ -6215,7 +6202,7 @@ function setupPermissionsListener() {
       };
     });
     if (bRows.length > 0) {
-      await window.supabaseClient.from('booklets').upsert(bRows, { onConflict: 'center_id,id' });
+      await window.supabaseClient.from('booklets').upsert(bRows, { onConflict: 'id' });
     }
 
     showToast(" تم رفع جميع البيانات بنجاح إلى Supabase!", "success");
