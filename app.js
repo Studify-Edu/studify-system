@@ -6242,7 +6242,7 @@ window.deleteAssistant = async function(asstKey) {
     if (window.innerWidth <= 768 && $("sidebar")) $("sidebar").classList.remove("open");
   });
  }
- if ($("filterInstallmentsStatus")) on("filterInstallmentsStatus", "change", renderInstallmentsDashboard);
- if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", renderInstallmentsDashboard);
+ if ($("filterInstallmentsStatus")) on("filterInstallmentsStatus", "change", () => { if(typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard(); });
+ if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", () => { if(typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard(); });
 
 }); // END DOMContentLoaded
