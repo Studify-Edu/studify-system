@@ -6206,7 +6206,16 @@ window.deleteAssistant = async function(asstKey) {
   $("cloudSyncIndicator").addEventListener("click", async function() {
     showToast("جاري المزامنة والرفع إلى السحابة... ️", "warning");
     await saveAll();
-    showToast("تمت المزامنة ورفع البيانات إلى السحابة بنجاح ️", "success");
+    
+    // Refresh permissions
+    if (window.CURRENT_ROLE !== 'admin') {
+      await loadPermissions();
+      if (typeof applyPermissionsToAssistantUI === 'function') {
+        applyPermissionsToAssistantUI();
+      }
+    }
+    
+    showToast("تمت المزامنة وتحديث الصلاحيات بنجاح ️", "success");
   });
  }
 
