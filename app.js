@@ -1,3 +1,19 @@
+
+window.addEventListener('error', function(event) {
+  if (!document.body) return;
+  const errDiv = document.createElement('div');
+  errDiv.style.cssText = 'position:fixed; top:0; left:0; width:100%; background:#d32f2f; color:white; padding:12px; z-index:999999; font-weight:bold; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.5); direction:ltr; font-family:monospace; font-size:14px;';
+  errDiv.innerHTML = 'Error: ' + event.message + ' <br><span style="font-size:12px;opacity:0.8;">At ' + event.filename + ':' + event.lineno + '</span>';
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.innerText = 'Dismiss';
+  closeBtn.style.cssText = 'margin-left:15px; background:white; color:#d32f2f; border:none; padding:4px 10px; cursor:pointer; font-weight:bold; border-radius:4px;';
+  closeBtn.onclick = () => errDiv.remove();
+  
+  errDiv.appendChild(closeBtn);
+  document.body.appendChild(errDiv);
+});
+
 /* =============================================================================
  Center System V-PRO MAX (THE ULTIMATE SHIELD EDITION - PREMIUM UX)
  -----------------------------------------------------------------------------
@@ -4554,60 +4570,6 @@ window.deleteAssistant = async function(asstKey) {
       });
     }
   } catch(e) { console.error("Load permissions error:", e); }
-}
-
-async function savePermissionsToSupabase(toggledKey, toggledVal) {
-  const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
-  if (!mid || !window.supabaseClient) return;
-
-  try {
-    await window.supabaseClient
-      .from('centers')
-      .update({ settings: { permissions: currentPermissions, lastModified: Date.now() } })
-      .eq('id', mid);
-  } catch(e) { console.error("Save permissions error:", e); }
-}
-
-let _prevAssistantPermissions = null;
-let _permListenerRegistered = false;
-
-newConfig.global_permissions = currentPermissions;
-    
-    await window.supabaseClient.from('settings').update({
-      config: newConfig
-    }).eq('id', 1);
-    showToast("تم تحديث الصلاحية بنجاح", "success");
-  } catch (err) {
-    console.error(err);
-    showToast("فشل حفظ الصلاحية", "err");
-  }
-};
-
-function setupPermissionsListener() {
-  if (_permListenerRegistered) return;
-  const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
-  if (!mid || !window.supabaseClient) return;
-  _permListenerRegistered = true;
-
-  try {
-    window.supabaseClient
-      .channel('public:centers:' + mid)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'centers', filter: 'id=eq.' + mid }, payload => {
-        if (payload.new && payload.new.settings && payload.new.settings.permissions) {
-          const saved = payload.new.settings.permissions;
-          PERMISSIONS_DEFS.forEach(p => {
-            if (saved[p.key] !== undefined) currentPermissions[p.key] = saved[p.key];
-          });
-          if (currentUserRole !== "admin") {
-            applyPermissionsToAssistantUI();
-          } else {
-            updateManagerPermissionsUI();
-          }
-        }
-      })
-      .subscribe();
-    console.log("[Permissions] Supabase Realtime listener registered for:", mid);
-  } catch(e) { console.error("Realtime permissions error:", e); }
 }
 
  // ==========================================
