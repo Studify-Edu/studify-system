@@ -1552,10 +1552,11 @@ async function loadAll() {
 function applyPermissionsToAssistantUI() {
   const p = currentPermissions || {};
   
-  // 1. Hide adminOnly elements by default for assistants
+  // 1. Lock adminOnly elements by default for assistants
   document.querySelectorAll('.adminOnly').forEach(el => {
     if (!el.classList.contains('tab-section')) {
-      el.classList.add('hidden');
+      el.classList.add('locked-feature');
+      el.removeAttribute('onclick'); // prevent clicks
     }
   });
   
@@ -1573,38 +1574,49 @@ function applyPermissionsToAssistantUI() {
   }
 
   if (p.can_add_student === false) {
-    if (document.getElementById('openAddModalBtn')) document.getElementById('openAddModalBtn').classList.add('hidden');
+    if (document.getElementById('openAddModalBtn')) {
+      document.getElementById('openAddModalBtn').classList.add('locked-feature');
+      document.getElementById('openAddModalBtn').removeAttribute('onclick');
+    }
   }
 
   if (p.can_manage_packages === false) {
-    if (document.getElementById('btnTabPackages')) document.getElementById('btnTabPackages').classList.add('hidden');
+    if (document.getElementById('btnTabPackages')) {
+      document.getElementById('btnTabPackages').classList.add('locked-feature');
+      document.getElementById('btnTabPackages').removeAttribute('onclick');
+    }
   }
 
   if (p.can_view_reports === false) {
-    if (document.getElementById('btnTabReports')) document.getElementById('btnTabReports').classList.add('hidden');
-    if (document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.add('hidden');
+    if (document.getElementById('btnTabReports')) {
+      document.getElementById('btnTabReports').classList.add('locked-feature');
+      document.getElementById('btnTabReports').removeAttribute('onclick');
+    }
+    if (document.getElementById('btnTabInstallments')) {
+      document.getElementById('btnTabInstallments').classList.add('locked-feature');
+      document.getElementById('btnTabInstallments').removeAttribute('onclick');
+    }
   }
 
   if (p.can_access_marketing === false) {
-    if (document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.add('hidden');
+    if (document.getElementById('btnTabMarketing')) {
+      document.getElementById('btnTabMarketing').classList.add('locked-feature');
+      document.getElementById('btnTabMarketing').removeAttribute('onclick');
+    }
   }
 
   if (p.can_access_session_students === false) {
-    if (document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.add('hidden');
+    if (document.getElementById('btnTabSessionStudents')) {
+      document.getElementById('btnTabSessionStudents').classList.add('locked-feature');
+      document.getElementById('btnTabSessionStudents').removeAttribute('onclick');
+    }
   }
 
-  // 4. Hide empty nav-groups
+  // Ensure nav-groups are visible if they contain locked items (don't hide them)
   document.querySelectorAll('.nav-group').forEach(group => {
-    const visibleItems = Array.from(group.querySelectorAll('.nav-item')).filter(item => !item.classList.contains('hidden') && item.style.display !== 'none');
-    if (visibleItems.length === 0) {
-      group.style.display = 'none';
-    } else {
-      group.style.display = 'block';
-    }
+    group.style.display = 'block';
   });
 }
-
-
 function applyPermissions() {
  const isAdmin = (currentUserRole === "admin");
  if ($("currentUserBadgeText")) {
@@ -2643,9 +2655,7 @@ if($("assistantLoginBtn")) {
     const p = $("assistantPass") ? $("assistantPass").value.trim() : "";
     if (!rawU || !p) return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
 
-    if (rawU.endsWith("@studify.com")) {
-      rawU = rawU.replace("@studify.com", "");
-    }
+    
 
     try {
       if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
@@ -2653,7 +2663,7 @@ if($("assistantLoginBtn")) {
       const { data, error } = await window.supabaseClient
         .from('assistants')
         .select('*')
-        .eq('username', rawU)
+        .eq('email', rawU)
         .eq('password', p);
 
       if (error || !data || data.length === 0) {
@@ -2663,7 +2673,7 @@ if($("assistantLoginBtn")) {
 
       localStorage.setItem(K_AUTH, "1");
       localStorage.setItem(K_ROLE, "assistant");
-      localStorage.setItem("ca_current_username", rawU);
+      localStorage.setItem("ca_current_username", data[0].username);
       window.CURRENT_ROLE = "assistant";
       
       // Load settings to get permissions
@@ -4280,6 +4290,7 @@ function updateDriveUI() {
       
       const { error: dbErr } = await window.supabaseClient.from('assistants').insert([{
         username: rawAsstU.toLowerCase(),
+        email: rawAsstU.toLowerCase() + '@studify.com',
         password: asstP,
         permissions: {}
       }]);
