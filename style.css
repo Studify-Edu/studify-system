@@ -2998,9 +2998,9 @@ body::after {
   inset-inline-start: calc(100% + 14px);
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(15, 23, 42, 0.95);
+  background: var(--glass-modal, rgba(15,23,42,0.95));
   backdrop-filter: blur(10px);
-  color: #f1f5f9;
+  color: var(--text-primary);
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 0.82em;
@@ -3078,7 +3078,7 @@ tr:hover td:first-child {
 #cmdPalette {
   position: fixed;
   inset: 0;
-  background: rgba(11, 17, 32, 0.75);
+  background: var(--glass-overlay, rgba(11,17,32,0.75));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   z-index: 999999;
@@ -3097,8 +3097,8 @@ tr:hover td:first-child {
 #cmdPaletteBox {
   width: 100%;
   max-width: 560px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--glass-modal, rgba(15,23,42,0.95));
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   box-shadow: 0 32px 64px -16px rgba(0,0,0,0.7), 0 0 0 1px rgba(37,99,235,0.3);
   overflow: hidden;
@@ -3116,9 +3116,9 @@ tr:hover td:first-child {
   padding: 18px 20px;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--text-primary);
   font-family: var(--font);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid var(--glass-border);
 }
 #cmdPaletteInput::placeholder { color: rgba(148, 163, 184, 0.6); }
 #cmdResults {
@@ -3134,19 +3134,19 @@ tr:hover td:first-child {
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s ease;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   font-size: 0.93rem;
   font-weight: 600;
 }
 .cmd-result-item:hover,
 .cmd-result-item.selected {
   background: rgba(37, 99, 235, 0.15);
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 .cmd-result-item .cmd-icon {
   width: 32px;
   height: 32px;
-  background: rgba(255,255,255,0.06);
+  background: var(--bg-inset);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -3164,7 +3164,7 @@ tr:hover td:first-child {
   gap: 12px;
 }
 .cmd-hint kbd {
-  background: rgba(255,255,255,0.08);
+  background: var(--bg-hover);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 4px;
   padding: 1px 6px;

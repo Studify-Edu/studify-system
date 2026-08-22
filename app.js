@@ -2402,6 +2402,7 @@ function applyPermissions() {
  if(theme === "dark") document.body.classList.add("theme-dark");
  localStorage.setItem(K_THEME, theme); 
  if($("themeSelector")) $("themeSelector").value = theme;
+    if($("themeSelectorAdmin")) $("themeSelectorAdmin").value = theme;
  // Update topbar theme toggle icon with stunning SVG icons
  var themeBtn = $("topbarThemeToggle");
  if(themeBtn) {
@@ -3625,6 +3626,7 @@ on("quickAttendId", "keypress", function(e) {
  });
 
  on("themeSelector", "change", function(e) { switchThemeWithAnimation(e.target.value); });
+ on("themeSelectorAdmin", "change", function(e) { switchThemeWithAnimation(e.target.value); });
 
  if($("bgInput")) {
  $("bgInput").addEventListener("change", function(e) {

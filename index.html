@@ -1698,6 +1698,13 @@
  <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:20px; max-width:500px;">
  <p class="muted" style="font-size:0.9em;">هنا يمكنك ضبط إعدادات السنتر وقواعد البيانات والنسخ الاحتياطي.</p>
  <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
+  <div>
+  <label data-i18n="lbl_theme">ثيم البرنامج:</label>
+  <select id="themeSelectorAdmin" class="inp" style="width:100%; margin-top:5px;">
+  <option value="light" data-i18n="theme_light">الوضع النهاري (Light Mode)</option>
+  <option value="dark" data-i18n="theme_dark">الوضع الليلي (Dark Mode)</option>
+  </select>
+  </div>
  
  </div>
  </div>
@@ -1734,7 +1741,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V74"></script>
+ <script type="module" src="app.js?v=STUDIFY_V75"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
