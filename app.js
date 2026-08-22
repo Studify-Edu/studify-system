@@ -4522,6 +4522,45 @@ async function savePermissionsToSupabase(toggledKey, toggledVal) {
 
 let _prevAssistantPermissions = null;
 let _permListenerRegistered = false;
+
+window.updateManagerPermissionsUI = function() {
+  const grid = $("permissionsGrid");
+  if (!grid) return;
+  let html = "";
+  PERMISSIONS_DEFS.forEach(p => {
+    const isChecked = currentPermissions[p.key] === true;
+    html += `
+    <div class="permission-card">
+      <div class="permission-info">
+        <h4>${p.label}</h4>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="perm_${p.key}" ${isChecked ? "checked" : ""} onchange="window.togglePermission('${p.key}', this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>`;
+  });
+  grid.innerHTML = html;
+};
+
+window.togglePermission = async function(key, val) {
+  currentPermissions[key] = val;
+  if (!window.supabaseClient) return;
+  try {
+    const { data: current } = await window.supabaseClient.from('settings').select('config').eq('id', 1).single();
+    const newConfig = current ? (current.config || {}) : {};
+    newConfig.global_permissions = currentPermissions;
+    
+    await window.supabaseClient.from('settings').update({
+      config: newConfig
+    }).eq('id', 1);
+    showToast("تم تحديث الصلاحية بنجاح", "success");
+  } catch (err) {
+    console.error(err);
+    showToast("فشل حفظ الصلاحية", "err");
+  }
+};
+
 function setupPermissionsListener() {
   if (_permListenerRegistered) return;
   const mid = window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");
