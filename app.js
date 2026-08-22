@@ -897,15 +897,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
  function showToast(msg, type = "success") {
  let container = $("toastContainer"); if(!container) return;
- const toast = document.createElement("div"); 
+ const toast = document.createElement("div");
  toast.className = `toast toast-${type}`;
- let icon = type==='err' ? '' : (type==='warning' ? '️' : '');
- toast.innerHTML = `<span style="margin-left:10px;">${icon}</span> ${msg}`;
+ const icons = { success: '<i class="fa-solid fa-circle-check"></i>', err: '<i class="fa-solid fa-circle-xmark"></i>', warning: '<i class="fa-solid fa-triangle-exclamation"></i>', info: '<i class="fa-solid fa-circle-info"></i>' };
+ const duration = type === 'err' ? 4500 : 3500;
+ toast.innerHTML = `
+   <div class="toast-inner">
+     <div class="toast-icon-wrap">${icons[type] || icons.info}</div>
+     <span class="toast-msg">${msg}</span>
+     <button class="toast-close-btn" onclick="this.closest('.toast').remove()">&times;</button>
+   </div>
+   <div class="toast-progress-bar" style="animation-duration:${duration}ms;"></div>
+ `;
  container.appendChild(toast);
- setTimeout(() => { 
- toast.style.animation = "slideOut 0.3s forwards"; 
- setTimeout(() => toast.remove(), 300); 
- }, 3000);
+ setTimeout(() => {
+   toast.style.animation = "toastSlideOut 0.35s cubic-bezier(0.4, 0, 1, 1) forwards";
+   setTimeout(() => toast.remove(), 350);
+ }, duration);
  }
 
  function showUndoToast(msg, onUndo) {
@@ -6316,3 +6324,202 @@ window.togglePasswordVisibility = function(inputId, btnEl) {
     btnEl.style.color = "var(--text-muted)";
   }
 };
+
+
+// ============================================================
+// 🚀 STUDIFY PREMIUM UI v2.0 — JAVASCRIPT FEATURES
+// ============================================================
+
+// ── IDEA #2: COUNT-UP ANIMATION
+window.animateCountUp = function(el, target, duration = 1000) {
+  if (!el || isNaN(target)) return;
+  const start = 0;
+  const startTime = performance.now();
+  const update = (currentTime) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    const current = Math.floor(eased * target);
+    el.textContent = current.toLocaleString('ar-EG');
+    if (progress < 1) requestAnimationFrame(update);
+    else el.textContent = Number(target).toLocaleString('ar-EG');
+  };
+  requestAnimationFrame(update);
+};
+
+// Apply count-up to all elements with data-countup attribute
+function applyCountUpToStats() {
+  document.querySelectorAll('[data-countup]').forEach(el => {
+    const raw = parseFloat(el.getAttribute('data-countup') || el.textContent);
+    if (!isNaN(raw) && raw > 0) window.animateCountUp(el, raw, 900);
+  });
+}
+
+// ── IDEA #3: SIDEBAR NAV RIPPLE
+document.addEventListener('click', function(e) {
+  const navItem = e.target.closest('.nav-item');
+  if (!navItem) return;
+  const ripple = document.createElement('span');
+  ripple.className = 'nav-ripple';
+  const rect = navItem.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  ripple.style.width = ripple.style.height = size + 'px';
+  ripple.style.left = (e.clientX - rect.left - size/2) + 'px';
+  ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
+  navItem.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+});
+
+// ── IDEA #3: SIDEBAR TOOLTIPS — inject data-tooltip on nav items
+(function initSidebarTooltips() {
+  const tooltipMap = {
+    'btnTabHome': 'الرئيسية',
+    'btnTabStudents': 'الطلاب',
+    'btnTabSessionStudents': 'طلاب الحصة',
+    'btnTabPackages': 'الباقات والأسعار',
+    'btnTabSyllabus': 'المنهج',
+    'btnTabReports': 'التقارير',
+    'btnTabInstallments': 'متابعة الأقساط',
+    'btnTabBooklets': 'مخزون المذكرات',
+    'btnTabMarketing': 'حملات التسويق',
+    'btnTabAdmin': 'الإعدادات',
+  };
+  Object.entries(tooltipMap).forEach(([id, label]) => {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('data-tooltip', label);
+  });
+})();
+
+// ── IDEA #6: TABLE STAGGERED ROW ANIMATIONS
+window.applyTableAnimation = function(tableEl) {
+  if (!tableEl) return;
+  const rows = tableEl.querySelectorAll('tbody tr');
+  rows.forEach((row, i) => {
+    row.classList.remove('animated-row');
+    row.style.animationDelay = '';
+    // Force reflow then add animation
+    void row.offsetWidth;
+    row.style.animationDelay = (i * 45) + 'ms';
+    row.classList.add('animated-row');
+  });
+};
+
+// ── IDEA #10: COMMAND PALETTE (Ctrl+K)
+(function initCommandPalette() {
+  if (document.getElementById('cmdPalette')) return; // Already initialized
+
+  const commands = [
+    { label: 'الرئيسية', icon: 'fa-house', action: () => window.switchTab('Home') },
+    { label: 'قائمة الطلاب', icon: 'fa-users', action: () => { window.switchTab('Students'); if(typeof renderList === 'function') renderList(true); } },
+    { label: 'طلاب الحصة', icon: 'fa-user-check', action: () => window.switchTab('SessionStudents') },
+    { label: 'الباقات والأسعار', icon: 'fa-boxes-packing', action: () => window.switchTab('Packages') },
+    { label: 'المنهج الدراسي', icon: 'fa-book-open', action: () => window.switchTab('Syllabus') },
+    { label: 'التقارير', icon: 'fa-chart-pie', action: () => { window.switchTab('Reports'); if(typeof renderReportsPage === 'function') renderReportsPage(); } },
+    { label: 'متابعة الأقساط', icon: 'fa-hand-holding-dollar', action: () => window.switchTab('Installments') },
+    { label: 'مخزون المذكرات', icon: 'fa-book-bookmark', action: () => window.switchTab('Booklets') },
+    { label: 'الإعدادات', icon: 'fa-gear', action: () => window.switchTab('Admin') },
+    { label: 'حفظ البيانات', icon: 'fa-cloud-arrow-up', action: () => { if(typeof saveAll === 'function') saveAll(); } },
+    { label: 'تبديل الثيم', icon: 'fa-moon', action: () => document.getElementById('topbarThemeToggle')?.click() },
+    { label: 'تسجيل الخروج', icon: 'fa-right-from-bracket', action: () => document.getElementById('logoutBtn')?.click() },
+  ];
+
+  // Build DOM
+  const palette = document.createElement('div');
+  palette.id = 'cmdPalette';
+  palette.innerHTML = `
+    <div id="cmdPaletteBox">
+      <input id="cmdPaletteInput" placeholder="ابحث عن أي حاجة... (اكتب اسم القسم أو الأمر)" autocomplete="off" spellcheck="false">
+      <div id="cmdResults"></div>
+      <div class="cmd-hint">
+        <span><kbd>↑↓</kbd> للتنقل</span>
+        <span><kbd>Enter</kbd> للتنفيذ</span>
+        <span><kbd>Esc</kbd> للإغلاق</span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(palette);
+
+  let selectedIdx = 0;
+
+  function renderResults(query) {
+    const resultsEl = document.getElementById('cmdResults');
+    const filtered = query
+      ? commands.filter(c => c.label.toLowerCase().includes(query.toLowerCase()) || c.icon.includes(query))
+      : commands;
+    selectedIdx = 0;
+    resultsEl.innerHTML = filtered.length
+      ? filtered.map((c, i) => `
+          <div class="cmd-result-item${i === 0 ? ' selected' : ''}" data-idx="${i}">
+            <div class="cmd-icon"><i class="fa-solid ${c.icon}"></i></div>
+            <span>${c.label}</span>
+          </div>
+        `).join('')
+      : '<div style="padding:20px; text-align:center; color:rgba(148,163,184,0.5);">لا توجد نتائج</div>';
+
+    resultsEl.querySelectorAll('.cmd-result-item').forEach((item, i) => {
+      item.addEventListener('click', () => {
+        filtered[i]?.action();
+        closePalette();
+      });
+      item.addEventListener('mouseenter', () => {
+        resultsEl.querySelectorAll('.cmd-result-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+        selectedIdx = i;
+      });
+    });
+    return filtered;
+  }
+
+  function openPalette() {
+    palette.classList.add('active');
+    const inp = document.getElementById('cmdPaletteInput');
+    inp.value = '';
+    renderResults('');
+    setTimeout(() => inp.focus(), 50);
+  }
+
+  function closePalette() {
+    palette.classList.remove('active');
+  }
+
+  palette.addEventListener('click', e => {
+    if (e.target === palette) closePalette();
+  });
+
+  document.getElementById('cmdPaletteInput').addEventListener('input', function() {
+    renderResults(this.value);
+  });
+
+  document.getElementById('cmdPaletteInput').addEventListener('keydown', function(e) {
+    const items = document.querySelectorAll('.cmd-result-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIdx = Math.min(selectedIdx + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIdx = Math.max(selectedIdx - 1, 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      items[selectedIdx]?.click();
+    } else if (e.key === 'Escape') {
+      closePalette();
+    }
+    items.forEach((item, i) => item.classList.toggle('selected', i === selectedIdx));
+    items[selectedIdx]?.scrollIntoView({ block: 'nearest' });
+  });
+
+  // Ctrl+K shortcut
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      if (palette.classList.contains('active')) closePalette();
+      else openPalette();
+    }
+    if (e.key === 'Escape' && palette.classList.contains('active')) {
+      closePalette();
+    }
+  });
+
+  // Expose for other uses
+  window.openCommandPalette = openPalette;
+})();
