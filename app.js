@@ -1556,7 +1556,14 @@ if (!window._lockedFeatureListenerAdded) {
     if (lockedEl) {
       e.preventDefault();
       e.stopPropagation();
+      
+      lockedEl.classList.remove('locked-clicked');
+      void lockedEl.offsetWidth; // trigger reflow
+      lockedEl.classList.add('locked-clicked');
+      
       showToast("🔒 هذه الميزة مقفولة من قِبَل المدير", "warning");
+      
+      setTimeout(() => lockedEl.classList.remove('locked-clicked'), 400);
     }
   }, true); // capture phase
   window._lockedFeatureListenerAdded = true;
