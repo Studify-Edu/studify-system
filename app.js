@@ -4205,23 +4205,61 @@ function updateDriveUI() {
       return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
     }
     
+    if (!/^[a-zA-Z0-9_]+$/.test(rawAsstU)) {
+      return showToast("اسم المستخدم يجب أن يكون بحروف إنجليزية فقط وبدون مسافات", "err");
+    }
+    
     const managerId = localStorage.getItem("ca_manager_id");
     if (!managerId) return showToast("يجب أن تكون مديراً لإضافة مساعدين.", "err");
     
+    // Construct the email for Supabase Auth
+    const asstEmail = rawAsstU.toLowerCase() + "@studify.com";
+    
     try {
-      const hashedAsstP = await hashPass(asstP);
-      const { error } = await window.supabaseClient.from('assistants').upsert({
-        
-        username: rawAsstU,
-        password: hashedAsstP,
+      showToast("جاري إنشاء حساب المساعد... الرجاء الانتظار", "info");
+      
+      // Create a secondary Supabase client that doesn't persist session
+      // This prevents the manager from being logged out!
+      const tempClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      });
+      
+      // 1. Sign up the user in Supabase Auth
+      const { data: authData, error: authErr } = await tempClient.auth.signUp({
+        email: asstEmail,
+        password: asstP
+      });
+      
+      if (authErr) {
+        if (authErr.message.includes("already registered") || authErr.status === 422) {
+          throw new Error("اسم المستخدم هذا مسجل مسبقاً، يرجى اختيار اسم آخر.");
+        }
+        throw authErr;
+      }
+      
+      const newUserId = authData.user?.id;
+      if (!newUserId) throw new Error("لم يتم إرجاع ID المستخدم من سوبابيز.");
+
+      // 2. Insert the user profile into the assistants table
+      const { error: dbErr } = await window.supabaseClient.from('assistants').upsert({
+        id: newUserId,
+        username: rawAsstU.toLowerCase(),
         permissions: {}
-      }, { onConflict: 'username' });
+      }, { onConflict: 'id' });
 
-      if (error) throw error;
+      if (dbErr) throw dbErr;
 
-      showToast("تم إنشاء حساب المساعد بنجاح ", "success");
+      showToast("تم إضافة المساعد بنجاح!", "success");
+      
       if ($("newAsstUsername")) $("newAsstUsername").value = "";
       if ($("newAsstPassword")) $("newAsstPassword").value = "";
+      
+      if(typeof window.closeAddAsstModal === "function") window.closeAddAsstModal();
+      
       fetchManagerAssistants();
     } catch (err) {
       console.error(err);
@@ -6264,4 +6302,19 @@ window.openAddAsstModal = function() {
 window.closeAddAsstModal = function() {
   const modal = document.getElementById("addAsstModal");
   if(modal) modal.classList.add("hidden");
+};
+
+
+window.togglePasswordVisibility = function(inputId, btnEl) {
+  const inp = document.getElementById(inputId);
+  if(!inp) return;
+  if(inp.type === "password") {
+    inp.type = "text";
+    btnEl.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+    btnEl.style.color = "var(--primary)";
+  } else {
+    inp.type = "password";
+    btnEl.innerHTML = '<i class="fa-regular fa-eye"></i>';
+    btnEl.style.color = "var(--text-muted)";
+  }
 };

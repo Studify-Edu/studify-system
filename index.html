@@ -1728,29 +1728,59 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V57"></script>
+ <script type="module" src="app.js?v=STUDIFY_V58"></script>
 
-  <!-- Premium Add Assistant Modal -->
+  
+  <!-- Ultra Premium Add Assistant Modal -->
   <div id="addAsstModal" class="modal premium-modal hidden" style="display:flex; align-items:center; justify-content:center;">
-    <div class="modalContent" style="max-width: 420px; width: 90%;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div style="width:40px; height:40px; border-radius:12px; background:rgba(59,130,246,0.15); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+    <div class="modalContent" style="max-width: 500px; width: 95%; background: var(--bg-surface); padding: 30px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);">
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2)); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.5rem; border:1px solid rgba(255,255,255,0.05);">
             <i class="fa-solid fa-user-plus"></i>
           </div>
-          <h2 style="margin:0; font-size:1.3rem; font-weight:700;">إضافة مساعد جديد</h2>
-        </div>
-        <button class="iconBtn" onclick="closeAddAsstModal()" style="font-size:1.2rem; color:var(--text-secondary);">&times;</button>
-      </div>
-      
-      <div style="display:flex; flex-direction:column; gap:16px;">
-        <div>
-          <label style="display:block; margin-bottom:8px; font-weight:600; font-size:0.9rem; color:var(--text-secondary);">اسم المستخدم</label>
-          <div style="position:relative;">
-            <i class="fa-solid fa-at" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
-            <input type="text" id="newAsstUsername" class="inp" placeholder="مثال: ahmed_assistant" style="padding-right:40px; height:48px; border-radius:12px;">
+          <div>
+            <h2 style="margin:0 0 4px 0; font-size:1.4rem; font-weight:800; color:var(--text-main);">إضافة مساعد جديد</h2>
+            <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">قم بإنشاء حساب آمن لمساعدك لإدارة النظام</p>
           </div>
         </div>
+        <button class="iconBtn" onclick="closeAddAsstModal()" style="font-size:1.5rem; color:var(--text-secondary); width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.05); transition:background 0.2s;">&times;</button>
+      </div>
+      
+      <div style="display:flex; flex-direction:column; gap:24px;">
+        <!-- Username Group -->
+        <div>
+          <label style="display:block; margin-bottom:10px; font-weight:700; font-size:0.95rem; color:var(--text-secondary);">اسم المستخدم (إنجليزي فقط)</label>
+          <div style="display:flex; align-items:center; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden; transition:border-color 0.2s;" id="usernameGroup">
+            <input type="text" id="newAsstUsername" placeholder="ahmed" style="flex:1; background:transparent; border:none; padding:0 16px; height:52px; color:var(--text-main); font-size:1.05rem; font-weight:600; outline:none; font-family:monospace;" oninput="this.value = this.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()">
+            <div style="padding:0 16px; height:52px; display:flex; align-items:center; background:rgba(255,255,255,0.05); color:var(--text-muted); font-weight:600; border-right:1px solid rgba(255,255,255,0.05); font-family:monospace;">
+              @studify.com
+            </div>
+          </div>
+        </div>
+        
+        <!-- Password Group -->
+        <div>
+          <label style="display:block; margin-bottom:10px; font-weight:700; font-size:0.95rem; color:var(--text-secondary);">كلمة المرور</label>
+          <div style="position:relative;">
+            <input type="password" id="newAsstPassword" placeholder="أدخل كلمة مرور قوية" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:0 50px 0 16px; height:52px; color:var(--text-main); font-size:1.05rem; outline:none; transition:border-color 0.2s;">
+            <button type="button" onclick="togglePasswordVisibility('newAsstPassword', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--text-muted); cursor:pointer; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:background 0.2s;">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div style="display:flex; gap:16px; margin-top:36px;">
+        <button class="btn secondary" onclick="closeAddAsstModal()" style="flex:1; height:52px; border-radius:14px; font-weight:700; font-size:1rem; background:rgba(255,255,255,0.05); color:var(--text-main);">إلغاء</button>
+        <button id="addNewAsstBtn" class="btn primary" style="flex:2; height:52px; border-radius:14px; font-weight:700; font-size:1rem; display:flex; align-items:center; justify-content:center; gap:10px; background:linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow:0 8px 20px -6px rgba(59,130,246,0.5);">
+          <i class="fa-solid fa-cloud-arrow-up"></i> إنشاء الحساب
+        </button>
+      </div>
+    </div>
+  </div>
+
         
         <div>
           <label style="display:block; margin-bottom:8px; font-weight:600; font-size:0.9rem; color:var(--text-secondary);">كلمة المرور</label>
