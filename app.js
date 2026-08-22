@@ -1582,21 +1582,20 @@ function applyPermissionsToAssistantUI() {
   if (document.getElementById('deleteStudentBtn')) document.getElementById('deleteStudentBtn').classList.add('hidden');
   if (document.getElementById('correctPayBtn')) document.getElementById('correctPayBtn').classList.add('hidden');
 
-  // 3. Revenue: blur entire revenue pill if not allowed
+  // 3. Revenue: Lock properly using .locked-feature
   const revPill = document.getElementById('openRevenueModalBtn');
   if (p.show_revenue === false) {
-    // Strong blur on the revenue number and the whole pill
     if (revPill) {
-      revPill.style.filter = 'blur(8px)';
-      revPill.style.userSelect = 'none';
-      revPill.style.pointerEvents = 'none'; // can't click at all
+      revPill.style.filter = ''; // remove old manual blur
+      revPill.style.userSelect = '';
+      lockEl(revPill);
     }
     if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.add('hidden');
+    // Ensure dashboard shows 0
+    if(document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "0 ج";
   } else {
     if (revPill) {
-      revPill.style.filter = '';
-      revPill.style.userSelect = '';
-      revPill.style.pointerEvents = '';
+      revPill.classList.remove('locked-feature');
     }
     if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.remove('hidden');
   }
@@ -1699,7 +1698,13 @@ function applyPermissions() {
  if($("totalStudentsCount")) $("totalStudentsCount").textContent = filledCount;
  if($("todayCountTop")) $("todayCountTop").textContent = todayCount;
  
- if($("todayRevenue")) $("todayRevenue").textContent = isRevHidden ? "****** ج" : revenue + " ج";
+ if($("todayRevenue")) {
+    if (currentUserRole !== 'admin' && currentPermissions && currentPermissions.show_revenue === false) {
+      $("todayRevenue").textContent = "0 ج";
+    } else {
+      $("todayRevenue").textContent = isRevHidden ? "****** ج" : revenue + " ج";
+    }
+ }
  if($("toggleRevBtn")) $("toggleRevBtn").innerHTML = isRevHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
  }
 

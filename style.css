@@ -2131,41 +2131,40 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 
 /* Locked Feature Overlay */
 .locked-feature {
-  position: relative;
+  position: relative !important;
   pointer-events: auto !important;
   cursor: not-allowed !important;
+  overflow: hidden !important;
 }
 .locked-feature > * {
-  pointer-events: none;
-  user-select: none;
+  filter: blur(4px);
+  opacity: 0.5;
+  pointer-events: none !important;
+  user-select: none !important;
+  transition: all 0.3s ease;
 }
 .locked-feature::before {
-  content: '';
+  content: '\f023  مقفول من قِبَل الإدارة';
+  font-family: 'Font Awesome 6 Free', var(--font);
+  font-weight: 900;
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: inherit;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 5;
-  transition: background 0.2s ease;
-}
-.locked-feature::after {
-  content: '🔒';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 1.1em;
+  color: var(--text-primary);
+  font-size: 1rem;
   z-index: 10;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
+  opacity: 0.95;
+  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 .locked-feature:hover::before {
-  background: rgba(0,0,0,0.45);
-}
-.locked-feature:hover::after {
+  background: var(--glass-modal);
   opacity: 1;
 }
 
