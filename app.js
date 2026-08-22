@@ -4279,18 +4279,33 @@ async function fetchManagerAssistants() {
           
         // Generate Premium Permissions HTML
         const asstPerms = asst.permissions || {};
-        let permsHtml = "";
+        let permsHtml = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px;">`;
         PERMISSIONS_DEFS.forEach(p => {
           const isChecked = asstPerms[p.key] === true;
+          let icon = "fa-check"; // fallback
+          if (p.key.includes("student") || p.key.includes("add_")) icon = "fa-user-plus";
+          else if (p.key.includes("revenue") || p.key.includes("finance")) icon = "fa-wallet";
+          else if (p.key.includes("report")) icon = "fa-chart-pie";
+          else if (p.key.includes("discount")) icon = "fa-tags";
+          else if (p.key.includes("market") || p.key.includes("sms")) icon = "fa-bullhorn";
+          else if (p.key.includes("packages") || p.key.includes("pricing")) icon = "fa-cubes";
+          else if (p.key.includes("attendance")) icon = "fa-clock";
+          else if (p.key.includes("delete")) icon = "fa-trash";
+          else if (p.key.includes("setting")) icon = "fa-cogs";
+
           permsHtml += `
-          <div class="perm-item-premium">
-            <span class="perm-label-premium">${p.label}</span>
+          <div class="perm-item-premium" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; transition: 0.2s ease;">
+            <span class="perm-label-premium" style="display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:600;">
+              <i class="fa-solid ${icon}" style="color: var(--primary); font-size:1.1rem; width:20px; text-align:center;"></i> 
+              ${p.label}
+            </span>
             <label class="ios-toggle">
               <input type="checkbox" ${isChecked ? "checked" : ""} onchange="window.toggleAssistantPermission('${uName}', '${p.key}', this.checked)">
               <span class="ios-slider"></span>
             </label>
           </div>`;
         });
+        permsHtml += `</div>`;
 
         html += `
         <div class="assistant-premium-card">
@@ -6498,41 +6513,6 @@ window.applyTableAnimation = function(tableEl) {
   window.openCommandPalette = openPalette;
 })();
 
-window.changeAssistantPassword = async function(userId, username) {
-  const { value: newPassword } = await Swal.fire({
-    title: 'تغيير كلمة المرور',
-    text: `أدخل كلمة المرور الجديدة للمساعد: ${username}`,
-    input: 'password',
-    inputPlaceholder: 'كلمة المرور الجديدة',
-    showCancelButton: true,
-    confirmButtonText: 'تغيير',
-    cancelButtonText: 'إلغاء',
-    inputValidator: (value) => {
-      if (!value || value.length < 1) {
-        return 'يجب إدخال كلمة مرور!';
-      }
-    }
-  });
-
-  if (newPassword) {
-    try {
-      showToast('جاري تغيير كلمة المرور...', 'info');
-      const { error } = await window.supabaseClient
-        .from('assistants')
-        .update({ password: newPassword })
-        .eq('username', username.toLowerCase());
-
-      if (error) {
-         throw error;
-      }
-      showToast('تم تغيير كلمة المرور بنجاح!', 'success');
-    } catch (err) {
-      console.error(err);
-      Swal.fire('خطأ', err.message || 'حدث خطأ أثناء تغيير كلمة المرور.', 'error');
-    }
-  }
-};
-
 // --- MANAGER PASSWORD RESET ---
 const changeMyPasswordBtn = document.getElementById('changeMyPasswordBtn');
 if (changeMyPasswordBtn) {
@@ -6574,3 +6554,57 @@ if (changeMyPasswordBtn) {
     }
   });
 }
+
+window.changeAssistantPassword = async function(userId, username) {
+  // Fetch current password
+  if (typeof showToast === 'function') showToast('جاري جلب بيانات المساعد...', 'info');
+  const { data, error: fetchErr } = await window.supabaseClient.from('assistants').select('password').eq('username', username.toLowerCase()).single();
+  
+  if (fetchErr || !data) {
+    return Swal.fire('خطأ', 'فشل في جلب بيانات المساعد.', 'error');
+  }
+  
+  const oldPass = data.password;
+
+  const { value: newPassword } = await Swal.fire({
+    title: 'تغيير كلمة المرور',
+    html: `
+      <div style="text-align: right; margin-bottom: 15px;">كلمة المرور الحالية للمساعد <b>${username}</b> هي:</div>
+      <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary); background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 20px;">${oldPass}</div>
+      <div style="text-align: right; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">أدخل كلمة المرور الجديدة أدناه، أو اتركها فارغة للإلغاء:</div>
+    `,
+    input: 'text',
+    inputValue: oldPass,
+    inputPlaceholder: 'كلمة المرور الجديدة',
+    showCancelButton: true,
+    confirmButtonText: 'حفظ التعديل <i class="fa-solid fa-check"></i>',
+    cancelButtonText: 'إلغاء',
+    inputValidator: (value) => {
+      if (!value || value.trim().length < 1) {
+        return 'يجب إدخال كلمة مرور!';
+      }
+    }
+  });
+
+  if (newPassword && newPassword !== oldPass) {
+    try {
+      if (typeof showToast === 'function') showToast('جاري تغيير كلمة المرور...', 'info');
+      const { error } = await window.supabaseClient
+        .from('assistants')
+        .update({ password: newPassword })
+        .eq('username', username.toLowerCase());
+
+      if (error) {
+         throw error;
+      }
+      if (typeof showToast === 'function') showToast('تم تغيير كلمة المرور بنجاح!', 'success');
+      
+      // Optionally refresh to show any changes, though not strictly needed here
+      if(typeof fetchManagerAssistants === 'function') fetchManagerAssistants();
+      
+    } catch (err) {
+      console.error(err);
+      Swal.fire('خطأ', err.message || 'حدث خطأ أثناء تغيير كلمة المرور.', 'error');
+    }
+  }
+};
