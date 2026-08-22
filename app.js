@@ -6598,3 +6598,44 @@ window.changeAssistantPassword = async function(userId, username) {
     }
   }
 };
+
+// --- MANAGER PASSWORD RESET ---
+const changeMyPasswordBtn = document.getElementById('changeMyPasswordBtn');
+if (changeMyPasswordBtn) {
+  changeMyPasswordBtn.addEventListener('click', async () => {
+    // Hide the dropdown
+    const dropdown = document.getElementById('userProfileDropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+
+    const { value: newPassword } = await Swal.fire({
+      title: 'تغيير كلمة المرور الخاصة بك',
+      text: 'الرجاء إدخال كلمة المرور الجديدة',
+      input: 'password',
+      inputPlaceholder: 'كلمة المرور الجديدة',
+      showCancelButton: true,
+      confirmButtonText: 'تغيير',
+      cancelButtonText: 'إلغاء',
+      inputValidator: (value) => {
+        if (!value || value.length < 1) {
+          return 'يجب إدخال كلمة مرور!';
+        }
+      }
+    });
+
+    if (newPassword) {
+      try {
+        if (typeof showToast === 'function') showToast('جاري تغيير كلمة المرور...', 'info');
+        const { data, error } = await window.supabaseClient.auth.updateUser({
+          password: newPassword
+        });
+        
+        if (error) throw error;
+        
+        if (typeof showToast === 'function') showToast('تم تغيير كلمة المرور بنجاح!', 'success');
+      } catch (err) {
+        console.error(err);
+        Swal.fire('خطأ', err.message || 'حدث خطأ أثناء تغيير كلمة المرور.', 'error');
+      }
+    }
+  });
+}
