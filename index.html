@@ -15,7 +15,7 @@
 
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V52">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V59">
  <link rel="stylesheet" href="icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME FLASH -->
@@ -1728,11 +1728,11 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V58"></script>
+ <script type="module" src="app.js?v=STUDIFY_V59"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
-  <div id="addAsstModal" class="modal premium-modal hidden" style="display:flex; align-items:center; justify-content:center;">
+  <div id="addAsstModal" class="modal premium-modal hidden">
     <div class="modalContent" style="max-width: 500px; width: 95%; background: var(--bg-surface); padding: 30px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);">
       
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
@@ -1752,9 +1752,9 @@
         <!-- Username Group -->
         <div>
           <label style="display:block; margin-bottom:10px; font-weight:700; font-size:0.95rem; color:var(--text-secondary);">اسم المستخدم (إنجليزي فقط)</label>
-          <div style="display:flex; align-items:center; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden; transition:border-color 0.2s;" id="usernameGroup">
-            <input type="text" id="newAsstUsername" placeholder="ahmed" style="flex:1; background:transparent; border:none; padding:0 16px; height:52px; color:var(--text-main); font-size:1.05rem; font-weight:600; outline:none; font-family:monospace;" oninput="this.value = this.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()">
-            <div style="padding:0 16px; height:52px; display:flex; align-items:center; background:rgba(255,255,255,0.05); color:var(--text-muted); font-weight:600; border-right:1px solid rgba(255,255,255,0.05); font-family:monospace;">
+          <div style="display:flex; align-items:center; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden; transition:border-color 0.2s; direction:ltr;" id="usernameGroup">
+            <input type="text" id="newAsstUsername" placeholder="ahmed" style="flex:1; background:transparent; border:none; padding:0 16px; height:52px; color:var(--text-main); font-size:1.1rem; font-weight:700; outline:none; font-family:monospace; text-align:right;">
+            <div style="padding:0 16px; height:52px; display:flex; align-items:center; background:var(--primary); color:#fff; font-weight:700; font-size:1.1rem; border-left:1px solid rgba(255,255,255,0.1); font-family:monospace; box-shadow: inset 0 0 10px rgba(0,0,0,0.2);">
               @studify.com
             </div>
           </div>
