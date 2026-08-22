@@ -1552,67 +1552,103 @@ async function loadAll() {
 function applyPermissionsToAssistantUI() {
   const p = currentPermissions || {};
   
+  // Helper: show locked toast
+  function lockedMsg() {
+    showToast("🔒 هذه الميزة مقفولة من قِبَل المدير", "warning");
+  }
+  
+  // Helper: add locked click handler (replaces onclick with toast)
+  function lockEl(el) {
+    if (!el) return;
+    el.classList.add('locked-feature');
+    el.removeAttribute('onclick');
+    el.style.pointerEvents = 'auto'; // keep pointer so click fires
+    el.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      lockedMsg();
+    }, { capture: true });
+  }
+
   // 1. Lock adminOnly elements by default for assistants
   document.querySelectorAll('.adminOnly').forEach(el => {
     if (!el.classList.contains('tab-section')) {
-      el.classList.add('locked-feature');
-      el.removeAttribute('onclick'); // prevent clicks
+      lockEl(el);
     }
   });
   
-  // 2. Hide settings and dangerous actions permanently
+  // 2. Always hide settings and dangerous actions
   if (document.getElementById('btnTabAdmin')) document.getElementById('btnTabAdmin').classList.add('hidden');
   if (document.getElementById('deleteStudentBtn')) document.getElementById('deleteStudentBtn').classList.add('hidden');
   if (document.getElementById('correctPayBtn')) document.getElementById('correctPayBtn').classList.add('hidden');
 
-  // 3. Conditional permissions
+  // 3. Revenue: blur entire revenue pill if not allowed
+  const revPill = document.getElementById('openRevenueModalBtn');
   if (p.show_revenue === false) {
-    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = '****** ج';
+    // Strong blur on the revenue number and the whole pill
+    if (revPill) {
+      revPill.style.filter = 'blur(8px)';
+      revPill.style.userSelect = 'none';
+      revPill.style.pointerEvents = 'none'; // can't click at all
+    }
     if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.add('hidden');
   } else {
+    if (revPill) {
+      revPill.style.filter = '';
+      revPill.style.userSelect = '';
+      revPill.style.pointerEvents = '';
+    }
     if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.remove('hidden');
   }
 
+  // 4. Add student: lock both the card in homepage AND the sidebar btn
   if (p.can_add_student === false) {
-    if (document.getElementById('openAddModalBtn')) {
-      document.getElementById('openAddModalBtn').classList.add('locked-feature');
-      document.getElementById('openAddModalBtn').removeAttribute('onclick');
+    // Lock sidebar nav btn if exists
+    const addNavBtn = document.getElementById('openAddModalBtn');
+    if (addNavBtn) lockEl(addNavBtn);
+    
+    // Lock the add-student card in homepage
+    const addCard = document.querySelector('.card.bento-sm');
+    if (addCard) {
+      addCard.classList.add('locked-feature');
+      addCard.style.pointerEvents = 'auto';
+      addCard.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        lockedMsg();
+      }, { capture: true });
+    }
+    
+    // Also lock the addNewBtn itself
+    const addNewBtn = document.getElementById('addNewBtn');
+    if (addNewBtn) lockEl(addNewBtn);
+    
+    // Lock the newId input
+    const newIdInput = document.getElementById('newId');
+    if (newIdInput) {
+      newIdInput.disabled = true;
+      newIdInput.placeholder = '🔒 مقفول من قِبَل المدير';
     }
   }
 
   if (p.can_manage_packages === false) {
-    if (document.getElementById('btnTabPackages')) {
-      document.getElementById('btnTabPackages').classList.add('locked-feature');
-      document.getElementById('btnTabPackages').removeAttribute('onclick');
-    }
+    lockEl(document.getElementById('btnTabPackages'));
   }
 
   if (p.can_view_reports === false) {
-    if (document.getElementById('btnTabReports')) {
-      document.getElementById('btnTabReports').classList.add('locked-feature');
-      document.getElementById('btnTabReports').removeAttribute('onclick');
-    }
-    if (document.getElementById('btnTabInstallments')) {
-      document.getElementById('btnTabInstallments').classList.add('locked-feature');
-      document.getElementById('btnTabInstallments').removeAttribute('onclick');
-    }
+    lockEl(document.getElementById('btnTabReports'));
+    lockEl(document.getElementById('btnTabInstallments'));
   }
 
   if (p.can_access_marketing === false) {
-    if (document.getElementById('btnTabMarketing')) {
-      document.getElementById('btnTabMarketing').classList.add('locked-feature');
-      document.getElementById('btnTabMarketing').removeAttribute('onclick');
-    }
+    lockEl(document.getElementById('btnTabMarketing'));
   }
 
   if (p.can_access_session_students === false) {
-    if (document.getElementById('btnTabSessionStudents')) {
-      document.getElementById('btnTabSessionStudents').classList.add('locked-feature');
-      document.getElementById('btnTabSessionStudents').removeAttribute('onclick');
-    }
+    lockEl(document.getElementById('btnTabSessionStudents'));
   }
 
-  // Ensure nav-groups are visible if they contain locked items (don't hide them)
+  // Ensure nav-groups remain visible
   document.querySelectorAll('.nav-group').forEach(group => {
     group.style.display = 'block';
   });
@@ -6206,18 +6242,22 @@ window.deleteAssistant = async function(asstKey) {
  // Cloud Sync Click Handler (Top bar cloud icon)
  if ($("cloudSyncIndicator")) {
   $("cloudSyncIndicator").addEventListener("click", async function() {
-    showToast("جاري المزامنة والرفع إلى السحابة... ️", "warning");
-    await saveAll();
-    
-    // Refresh permissions
-    if (window.CURRENT_ROLE !== 'admin') {
-      await loadPermissions();
-      if (typeof applyPermissionsToAssistantUI === 'function') {
+    showToast("جاري المزامنة والرفع إلى السحابة... ☁️", "warning");
+    try {
+      await saveAll(); // This uses Supabase via the app's saveAll function
+      
+      // For assistants: reload permissions from Supabase and re-apply UI
+      if (currentUserRole !== 'admin') {
+        await loadPermissions();
         applyPermissionsToAssistantUI();
+        showToast("✅ تمت المزامنة وتحديث الصلاحيات بنجاح", "success");
+      } else {
+        showToast("✅ تمت المزامنة ورفع البيانات إلى السحابة بنجاح", "success");
       }
+    } catch(err) {
+      console.error('Cloud sync error:', err);
+      showToast("❌ خطأ في المزامنة، تحقق من الاتصال", "error");
     }
-    
-    showToast("تمت المزامنة وتحديث الصلاحيات بنجاح ️", "success");
   });
  }
 
