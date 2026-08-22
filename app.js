@@ -4375,6 +4375,9 @@ async function fetchManagerAssistants() {
             <button class="btn secondary" onclick="document.getElementById('perms-${uName}').classList.toggle('hidden')" style="background:rgba(255,255,255,0.05); color:var(--text-main);">
               <i class="fa-solid fa-sliders"></i> الصلاحيات
             </button>
+            <button class="btn" style="background:var(--primary); color:#fff;" onclick="window.changeAssistantPassword('${asst.id}', '${uName}')">
+              <i class="fa-solid fa-key"></i> الباسورد
+            </button>
             <button class="btn danger" onclick="window.deleteAssistant('${uName}')">
               <i class="fa-solid fa-trash"></i> حذف
             </button>
@@ -6558,3 +6561,40 @@ window.applyTableAnimation = function(tableEl) {
   // Expose for other uses
   window.openCommandPalette = openPalette;
 })();
+
+window.changeAssistantPassword = async function(userId, username) {
+  const { value: newPassword } = await Swal.fire({
+    title: 'تغيير كلمة المرور',
+    text: `أدخل كلمة المرور الجديدة للمساعد: ${username}`,
+    input: 'password',
+    inputPlaceholder: 'كلمة المرور الجديدة',
+    showCancelButton: true,
+    confirmButtonText: 'تغيير',
+    cancelButtonText: 'إلغاء',
+    inputValidator: (value) => {
+      if (!value || value.length < 1) {
+        return 'يجب إدخال كلمة مرور!';
+      }
+    }
+  });
+
+  if (newPassword) {
+    try {
+      showToast('جاري تغيير كلمة المرور...', 'info');
+      const { error } = await window.supabaseClient.rpc('update_user_password', {
+        target_user_id: userId,
+        new_password: newPassword
+      });
+      if (error) {
+         if (error.message && error.message.includes("Could not find the function")) {
+             throw new Error("دالة تغيير الباسورد (RPC) مش موجودة في سوبابيز. راجع رسالة الدعم لتركيبها.");
+         }
+         throw error;
+      }
+      showToast('تم تغيير كلمة المرور بنجاح!', 'success');
+    } catch (err) {
+      console.error(err);
+      Swal.fire('خطأ', err.message || 'حدث خطأ أثناء تغيير كلمة المرور.', 'error');
+    }
+  }
+};
