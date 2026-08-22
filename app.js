@@ -1563,11 +1563,14 @@ function applyPermissionsToAssistantUI() {
     el.classList.add('locked-feature');
     el.removeAttribute('onclick');
     el.style.pointerEvents = 'auto'; // keep pointer so click fires
-    el.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      lockedMsg();
-    }, { capture: true });
+    if (!el.dataset.lockedHandler) {
+      el.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        lockedMsg();
+      }, { capture: true });
+      el.dataset.lockedHandler = "true";
+    }
   }
 
   // 1. Lock adminOnly elements by default for assistants
@@ -1592,7 +1595,7 @@ function applyPermissionsToAssistantUI() {
     }
     if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.add('hidden');
     // Ensure dashboard shows 0
-    if(document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "0 ج";
+    if(document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "---";
   } else {
     if (revPill) {
       revPill.classList.remove('locked-feature');
@@ -1607,15 +1610,12 @@ function applyPermissionsToAssistantUI() {
     if (addNavBtn) lockEl(addNavBtn);
     
     // Lock the add-student card in homepage
-    const addCard = document.querySelector('.card.bento-sm');
-    if (addCard) {
-      addCard.classList.add('locked-feature');
-      addCard.style.pointerEvents = 'auto';
-      addCard.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        lockedMsg();
-      }, { capture: true });
+    const addNewBtnEl = document.getElementById('addNewBtn');
+    if (addNewBtnEl) {
+      const addCard = addNewBtnEl.closest('.card');
+      if (addCard) {
+        lockEl(addCard);
+      }
     }
     
     // Also lock the addNewBtn itself
@@ -1700,7 +1700,7 @@ function applyPermissions() {
  
  if($("todayRevenue")) {
     if (currentUserRole !== 'admin' && currentPermissions && currentPermissions.show_revenue === false) {
-      $("todayRevenue").textContent = "0 ج";
+      $("todayRevenue").textContent = "---";
     } else {
       $("todayRevenue").textContent = isRevHidden ? "****** ج" : revenue + " ج";
     }

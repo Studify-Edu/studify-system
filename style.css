@@ -2137,15 +2137,15 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   overflow: hidden !important;
 }
 .locked-feature > * {
-  filter: blur(4px);
-  opacity: 0.5;
+  filter: blur(15px) !important;
+  opacity: 0 !important;
   pointer-events: none !important;
   user-select: none !important;
   transition: all 0.3s ease;
 }
 .locked-feature::before {
-  content: '\f023  مقفول من قِبَل الإدارة';
-  font-family: 'Font Awesome 6 Free', var(--font);
+  content: 'مقفول من قِبَل الإدارة';
+  font-family: var(--font);
   font-weight: 900;
   position: absolute;
   inset: 0;
@@ -2153,11 +2153,11 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   align-items: center;
   justify-content: center;
   background: var(--glass-overlay);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: inherit;
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 1.1rem;
   z-index: 10;
   opacity: 0.95;
   transition: all 0.3s ease;
