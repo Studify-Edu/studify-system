@@ -4234,27 +4234,56 @@ async function fetchManagerAssistants() {
       let html = "";
       assistants.forEach(asst => {
         const uName = asst.username;
-        const pass = asst.password;
         const initial = (uName[0] || "?").toUpperCase();
         const createdAt = asst.created_at
           ? new Date(asst.created_at).toLocaleDateString("ar-EG", { day: "numeric", month: "short", year: "numeric" })
           : "—";
+          
+        // Generate Permissions HTML for this assistant
+        const asstPerms = asst.permissions || {};
+        let permsHtml = "";
+        PERMISSIONS_DEFS.forEach(p => {
+          const isChecked = asstPerms[p.key] === true;
+          permsHtml += `
+          <div class="permission-card" style="margin-bottom:8px; padding:10px; background:var(--bg-body); border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center;">
+            <div class="permission-info" style="margin:0;">
+              <h4 style="margin:0; font-size:0.9em;">${p.label}</h4>
+            </div>
+            <label class="toggle-switch" style="margin:0;">
+              <input type="checkbox" ${isChecked ? "checked" : ""} onchange="window.toggleAssistantPermission('${uName}', '${p.key}', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>`;
+        });
+
         html += `
-        <div class="assistant-card">
-          <div class="assistant-avatar">${initial}</div>
-          <div class="assistant-info">
-            <div class="assistant-name">${uName}</div>
-            <div class="assistant-sub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span style="display:flex;align-items:center;gap:4px;">كلمة المرور: <span id="asst-pass-${uName}" data-pass="${pass}">********</span> 
-              <button class="iconBtn" onclick="window.toggleAssistantPassword('${uName}')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);"><i class="fa-solid fa-eye"></i></button>
-              <button class="iconBtn" onclick="window.editAssistantPassword('${uName}')" style="background:none;border:none;cursor:pointer;color:var(--primary);"><i class="fa-solid fa-pen"></i></button></span>
-              <span>&nbsp;•&nbsp; تاريخ الإنشاء: ${createdAt}</span>
+        <div class="assistant-card" style="margin-bottom:15px;">
+          <div class="flexBetween" style="width:100%;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="assistant-avatar">${initial}</div>
+              <div class="assistant-info">
+                <div class="assistant-name">${uName}</div>
+                <div class="assistant-sub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span style="display:flex;align-items:center;gap:4px;color:var(--success);font-weight:bold;"><i class="fa-solid fa-shield-halved"></i> كلمة المرور محمية بنظام Auth</span>
+                  <span>&nbsp;•&nbsp; تاريخ الإنشاء: ${createdAt}</span>
+                </div>
+              </div>
+            </div>
+            <div class="assistant-actions" style="display:flex; gap:10px;">
+              <button class="btn secondary smallBtn" onclick="document.getElementById('perms-${uName}').classList.toggle('hidden')" style="display:flex;align-items:center;gap:5px;">
+                <i class="fa-solid fa-sliders"></i> الصلاحيات
+              </button>
+              <button class="btn danger smallBtn" onclick="window.deleteAssistant('${uName}')" style="display:flex;align-items:center;gap:5px;">
+                <i class="fa-solid fa-trash-can"></i> حذف
+              </button>
             </div>
           </div>
-          <div class="assistant-actions">
-            <button class="btn danger smallBtn" onclick="window.deleteAssistant('${uName}')" style="display:flex;align-items:center;gap:5px;">
-              <i class="fa-solid fa-trash-can"></i> حذف
-            </button>
+          
+          <div id="perms-${uName}" class="hidden" style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border); width:100%;">
+             <h4 style="margin-bottom:10px; font-size:0.95em; color:var(--text-main);">صلاحيات المساعد: ${uName}</h4>
+             <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:10px;">
+               ${permsHtml}
+             </div>
           </div>
         </div>`;
       });
@@ -4268,15 +4297,24 @@ async function fetchManagerAssistants() {
   }
 }
 
-window.toggleAssistantPassword = function(key) {
-  const span = document.getElementById(`asst-pass-${key}`);
-  if (!span) return;
-  if (span.innerText === "********") {
-    span.innerText = span.getAttribute("data-pass");
-  } else {
-    span.innerText = "********";
+window.toggleAssistantPermission = async function(username, key, val) {
+  if (!window.supabaseClient) return;
+  try {
+    // 1. Fetch current permissions for this assistant
+    const { data: asst } = await window.supabaseClient.from('assistants').select('permissions').eq('username', username).single();
+    const currentPerms = asst ? (asst.permissions || {}) : {};
+    
+    // 2. Update it
+    currentPerms[key] = val;
+    await window.supabaseClient.from('assistants').update({ permissions: currentPerms }).eq('username', username);
+    
+    showToast("تم تحديث صلاحية المساعد بنجاح", "success");
+  } catch (err) {
+    console.error(err);
+    showToast("فشل تحديث الصلاحية", "err");
   }
 };
+
 
 window.editAssistantPassword = async function(key) {
   const newPass = prompt("أدخل كلمة المرور الجديدة للمساعد:");
@@ -4476,6 +4514,7 @@ window.deleteAssistant = async function(asstKey) {
  // 17.11. MANAGER: PERMISSIONS SYSTEM
  // ==========================================
  const PERMISSIONS_DEFS = [
+  { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي" },
  { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يسمح للمساعد برؤية إيراد اليوم في الشريط العلوي" },
  { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح للمساعد بإضافة طلاب جديدين للنظام" },
  { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "يسمح للمساعد بتعديل الباقات والأسعار" },
@@ -4490,17 +4529,26 @@ window.deleteAssistant = async function(asstKey) {
  PERMISSIONS_DEFS.forEach(p => currentPermissions[p.key] = true);
 
  async function loadPermissions() {
-  const mid = localStorage.getItem("ca_manager_id");
-  if (!mid || !window.supabaseClient) return;
+  if (!window.supabaseClient) return;
+  
+  if (window.CURRENT_ROLE === "admin") {
+      // Admin has all permissions automatically
+      PERMISSIONS_DEFS.forEach(p => currentPermissions[p.key] = true);
+      return;
+  }
+  
+  const currentUsername = localStorage.getItem("ca_current_username");
+  if (!currentUsername) return;
+  
   try {
-    const { data: center } = await window.supabaseClient
-      .from('centers')
-      .select('settings')
-      .eq('id', mid)
+    const { data: asst } = await window.supabaseClient
+      .from('assistants')
+      .select('permissions')
+      .eq('username', currentUsername)
       .single();
 
-    if (center && center.settings && center.settings.permissions) {
-      const saved = center.settings.permissions;
+    if (asst && asst.permissions) {
+      const saved = asst.permissions;
       PERMISSIONS_DEFS.forEach(p => {
         if (saved[p.key] !== undefined) currentPermissions[p.key] = saved[p.key];
       });
@@ -4523,33 +4571,7 @@ async function savePermissionsToSupabase(toggledKey, toggledVal) {
 let _prevAssistantPermissions = null;
 let _permListenerRegistered = false;
 
-window.updateManagerPermissionsUI = function() {
-  const grid = $("permissionsGrid");
-  if (!grid) return;
-  let html = "";
-  PERMISSIONS_DEFS.forEach(p => {
-    const isChecked = currentPermissions[p.key] === true;
-    html += `
-    <div class="permission-card">
-      <div class="permission-info">
-        <h4>${p.label}</h4>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="perm_${p.key}" ${isChecked ? "checked" : ""} onchange="window.togglePermission('${p.key}', this.checked)">
-        <span class="slider"></span>
-      </label>
-    </div>`;
-  });
-  grid.innerHTML = html;
-};
-
-window.togglePermission = async function(key, val) {
-  currentPermissions[key] = val;
-  if (!window.supabaseClient) return;
-  try {
-    const { data: current } = await window.supabaseClient.from('settings').select('config').eq('id', 1).single();
-    const newConfig = current ? (current.config || {}) : {};
-    newConfig.global_permissions = currentPermissions;
+newConfig.global_permissions = currentPermissions;
     
     await window.supabaseClient.from('settings').update({
       config: newConfig

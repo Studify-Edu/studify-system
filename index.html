@@ -1621,17 +1621,7 @@
  </div>
  </div>
 
- <!-- ====== PERMISSIONS ====== -->
- <div id="managerPermissionsView" class="manager-view hidden">
- <h3 class="manager-section-title">
- <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
- صلاحيات المساعد
- </h3>
- <p class="muted" style="margin-bottom:20px; font-size:0.9em;">العناصر المقفلة تظهر للمساعد مع أيقونة قفل ورسالة "مقفل من المدير" دون إخفائها.</p>
- <div class="permissions-grid" id="permissionsGrid">
- <!-- Injected by JS -->
- </div>
- </div>
+ 
 
  <!-- ====== DECISIONS / REQUESTS ====== -->
  <div id="managerDecisionsView" class="manager-view hidden">
@@ -1714,24 +1704,7 @@
  <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:20px; max-width:500px;">
  <p class="muted" style="font-size:0.9em;">هنا يمكنك ضبط إعدادات السنتر وقواعد البيانات والنسخ الاحتياطي.</p>
  <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
- <div class="flexBetween" style="background:var(--bg-inset); padding:14px; border-radius:var(--radius-sm);">
- <span style="font-weight:600; font-size:0.9em;">معرف المركز (Manager ID)</span>
- <code id="mgrSettingsManagerId" style="font-size:0.85em; color:var(--primary); background:var(--bg-body); padding:4px 10px; border-radius:6px;">—</code>
- </div>
- <div class="flexBetween" style="background:var(--bg-inset); padding:14px; border-radius:var(--radius-sm);">
- <span style="font-weight:600; font-size:0.9em;">إعادة تعيين المزامنة</span>
- <button class="btn danger smallBtn" onclick="localStorage.removeItem('last_cloud_sync_date'); showToast && showToast('تم الإعادة ', 'success');">إعادة التعيين</button>
- </div>
- <div class="flexBetween" style="background:var(--bg-inset); padding:14px; border-radius:var(--radius-sm);">
- <div>
- <span style="font-weight:600; font-size:0.9em; display:block; margin-bottom:4px;">تفعيل الاعتماد اليومي</span>
- <p class="muted" style="font-size:0.8em; margin:0; max-width: 250px;">سيتم قفل النظام تماماً عند المساعدين حتى تقوم باعتماد تقرير الأمس.</p>
- </div>
- <label class="switch" style="margin:0;">
- <input type="checkbox" id="mgrSettingDailyApproval">
- <span class="slider round"></span>
- </label>
- </div>
+ 
  </div>
  </div>
  </div>
