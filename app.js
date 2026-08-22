@@ -2562,7 +2562,6 @@ async function loadAll() {
       
       await loadAll();
       await loadPermissions();
-      if (typeof setupPermissionsListener === "function") 
       checkAuth();
     } catch (err) {
       console.error(err);
@@ -2605,7 +2604,6 @@ if($("assistantLoginBtn")) {
       // Load settings to get permissions
       await loadAll();
       await loadPermissions();
-      if (typeof setupPermissionsListener === "function") 
       checkAuth();
     } catch (err) {
       console.error(err);
