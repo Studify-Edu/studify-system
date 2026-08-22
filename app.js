@@ -4234,8 +4234,7 @@ async function fetchManagerAssistants() {
   const listEl = $("managerAssistantsList");
   if (!listEl) return;
   
-  const managerId = localStorage.getItem("ca_manager_id");
-  if (!managerId || !window.supabaseClient) return;
+  if (!window.supabaseClient) return;
   
   listEl.innerHTML = `<div class="mutedCenter">جاري التحميل...</div>`;
   
@@ -4247,69 +4246,79 @@ async function fetchManagerAssistants() {
       .order('created_at', { ascending: false });
 
     if (!error && assistants && assistants.length > 0) {
-      let html = "";
+      const managerUsername = localStorage.getItem("ca_current_username") || "admin";
+      
+      let html = '<div class="assistant-grid">';
+      let asstCount = 0;
+      
       assistants.forEach(asst => {
         const uName = asst.username;
+        // Filter out the manager
+        if(uName.toLowerCase() === managerUsername.toLowerCase() || uName === 'admin') return;
+        
+        asstCount++;
         const initial = (uName[0] || "?").toUpperCase();
         const createdAt = asst.created_at
           ? new Date(asst.created_at).toLocaleDateString("ar-EG", { day: "numeric", month: "short", year: "numeric" })
           : "—";
           
-        // Generate Permissions HTML for this assistant
+        // Generate Premium Permissions HTML
         const asstPerms = asst.permissions || {};
         let permsHtml = "";
         PERMISSIONS_DEFS.forEach(p => {
           const isChecked = asstPerms[p.key] === true;
           permsHtml += `
-          <div class="permission-card" style="margin-bottom:8px; padding:10px; background:var(--bg-body); border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center;">
-            <div class="permission-info" style="margin:0;">
-              <h4 style="margin:0; font-size:0.9em;">${p.label}</h4>
-            </div>
-            <label class="toggle-switch" style="margin:0;">
+          <div class="perm-item-premium">
+            <span class="perm-label-premium">${p.label}</span>
+            <label class="ios-toggle">
               <input type="checkbox" ${isChecked ? "checked" : ""} onchange="window.toggleAssistantPermission('${uName}', '${p.key}', this.checked)">
-              <span class="slider"></span>
+              <span class="ios-slider"></span>
             </label>
           </div>`;
         });
 
         html += `
-        <div class="assistant-card" style="margin-bottom:15px;">
-          <div class="flexBetween" style="width:100%;">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div class="assistant-avatar">${initial}</div>
-              <div class="assistant-info">
-                <div class="assistant-name">${uName}</div>
-                <div class="assistant-sub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <span style="display:flex;align-items:center;gap:4px;color:var(--success);font-weight:bold;"><i class="fa-solid fa-shield-halved"></i> كلمة المرور محمية بنظام Auth</span>
-                  <span>&nbsp;•&nbsp; تاريخ الإنشاء: ${createdAt}</span>
-                </div>
+        <div class="assistant-premium-card">
+          <div class="asst-card-header">
+            <div class="asst-avatar-premium">${initial}</div>
+            <div class="asst-info-premium">
+              <h3>${uName}</h3>
+              <div class="asst-badge-secure">
+                <i class="fa-solid fa-lock"></i> كلمة المرور محمية
               </div>
-            </div>
-            <div class="assistant-actions" style="display:flex; gap:10px;">
-              <button class="btn secondary smallBtn" onclick="document.getElementById('perms-${uName}').classList.toggle('hidden')" style="display:flex;align-items:center;gap:5px;">
-                <i class="fa-solid fa-sliders"></i> الصلاحيات
-              </button>
-              <button class="btn danger smallBtn" onclick="window.deleteAssistant('${uName}')" style="display:flex;align-items:center;gap:5px;">
-                <i class="fa-solid fa-trash-can"></i> حذف
-              </button>
+              <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+                أضيف في: ${createdAt}
+              </div>
             </div>
           </div>
           
-          <div id="perms-${uName}" class="hidden" style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border); width:100%;">
-             <h4 style="margin-bottom:10px; font-size:0.95em; color:var(--text-main);">صلاحيات المساعد: ${uName}</h4>
-             <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:10px;">
-               ${permsHtml}
-             </div>
+          <div class="asst-card-actions">
+            <button class="btn secondary" onclick="document.getElementById('perms-${uName}').classList.toggle('hidden')" style="background:rgba(255,255,255,0.05); color:var(--text-main);">
+              <i class="fa-solid fa-sliders"></i> الصلاحيات
+            </button>
+            <button class="btn danger" onclick="window.deleteAssistant('${uName}')">
+              <i class="fa-solid fa-trash"></i> حذف
+            </button>
+          </div>
+          
+          <div id="perms-${uName}" class="premium-permissions-panel hidden">
+             ${permsHtml}
           </div>
         </div>`;
       });
-      listEl.innerHTML = html;
+      html += '</div>';
+      
+      if(asstCount === 0) {
+        listEl.innerHTML = `<div class="mutedCenter">لا يوجد مساعدين مسجلين بعد.</div>`;
+      } else {
+        listEl.innerHTML = html;
+      }
     } else {
       listEl.innerHTML = `<div class="mutedCenter">لا يوجد مساعدين مسجلين بعد.</div>`;
     }
   } catch (err) {
     console.error(err);
-    listEl.innerHTML = `<div class="mutedCenter">فشل جلب قائمة المساعدين.</div>`;
+    listEl.innerHTML = `<div class="mutedCenter">حدث خطأ في تحميل المساعدين.</div>`;
   }
 }
 
@@ -6246,3 +6255,13 @@ window.deleteAssistant = async function(asstKey) {
  if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", () => { if(typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard(); });
 
 }); // END DOMContentLoaded
+
+
+window.openAddAsstModal = function() {
+  const modal = document.getElementById("addAsstModal");
+  if(modal) modal.classList.remove("hidden");
+};
+window.closeAddAsstModal = function() {
+  const modal = document.getElementById("addAsstModal");
+  if(modal) modal.classList.add("hidden");
+};
