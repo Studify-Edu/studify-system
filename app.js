@@ -4241,14 +4241,49 @@ function updateDriveUI() {
       });
       
       if (authErr) {
-        if (authErr.message.includes("already registered") || authErr.status === 422) {
-          throw new Error("اسم المستخدم هذا مسجل مسبقاً، يرجى اختيار اسم آخر.");
+        const isAlreadyExists = authErr.message.includes("already registered") || authErr.status === 422 || authErr.message.includes("User already registered");
+        if (isAlreadyExists) {
+          // ── RECOVERY: Account exists in Auth but maybe missing from assistants table ──
+          // Try to sign in with the provided credentials to recover the user ID
+          showToast("الحساب موجود، جاري محاولة الاسترجاع...", "warning");
+          const { data: signInData, error: signInErr } = await tempClient.auth.signInWithPassword({
+            email: asstEmail,
+            password: asstP
+          });
+
+          if (signInErr) {
+            // Wrong password — user truly exists with different password
+            throw new Error("اسم المستخدم محجوز مسبقاً. جرب اسماً آخر، أو استخدم نفس كلمة المرور الأصلية للاسترجاع.");
+          }
+
+          // Sign-in succeeded → get the user ID and upsert the DB row
+          const recoveredId = signInData.user?.id;
+          if (!recoveredId) throw new Error("لم يمكن استرجاع معرف المستخدم.");
+
+          const { error: recoverDbErr } = await window.supabaseClient.from('assistants').upsert({
+            id: recoveredId,
+            username: rawAsstU.toLowerCase(),
+            permissions: {}
+          }, { onConflict: 'id' });
+
+          if (recoverDbErr) throw recoverDbErr;
+
+          showToast("✅ تم استرجاع الحساب وإضافة المساعد بنجاح!", "success");
+          if ($("newAsstUsername")) $("newAsstUsername").value = "";
+          if ($("newAsstPassword")) $("newAsstPassword").value = "";
+          if(typeof window.closeAddAsstModal === "function") window.closeAddAsstModal();
+          fetchManagerAssistants();
+          return; // Done — exit early
         }
         throw authErr;
       }
       
       const newUserId = authData.user?.id;
-      if (!newUserId) throw new Error("لم يتم إرجاع ID المستخدم من سوبابيز.");
+      if (!newUserId) {
+        // Some Supabase configs return null user on signUp if email confirmation is required
+        // Try to sign in immediately to confirm the account was created
+        throw new Error("تحقق من إعدادات Supabase — يبدو أن تأكيد البريد الإلكتروني مطلوب. يرجى تعطيل 'Email Confirmation' من Supabase Dashboard.");
+      }
 
       // 2. Insert the user profile into the assistants table
       const { error: dbErr } = await window.supabaseClient.from('assistants').upsert({
