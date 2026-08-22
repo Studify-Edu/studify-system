@@ -1513,7 +1513,7 @@ async function loadAll() {
  if ($("managerPageTitle")) $("managerPageTitle").textContent = tab.title;
 
  if (tabId === "assistants") fetchManagerAssistants();
- if (tabId === "permissions") renderPermissionsPanel();
+ 
  if (tabId === "decisions") fetchManagerRequests();
  if (tabId === "dailyReport") renderManagerDailyReport(nowDateStr());
  if (tabId === "termReport") renderManagerTermReport();
