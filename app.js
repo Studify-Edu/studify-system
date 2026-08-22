@@ -2562,7 +2562,7 @@ async function loadAll() {
       
       await loadAll();
       await loadPermissions();
-      if (typeof setupPermissionsListener === "function") setupPermissionsListener();
+      if (typeof setupPermissionsListener === "function") 
       checkAuth();
     } catch (err) {
       console.error(err);
@@ -2605,7 +2605,7 @@ if($("assistantLoginBtn")) {
       // Load settings to get permissions
       await loadAll();
       await loadPermissions();
-      if (typeof setupPermissionsListener === "function") setupPermissionsListener();
+      if (typeof setupPermissionsListener === "function") 
       checkAuth();
     } catch (err) {
       console.error(err);
@@ -6136,7 +6136,7 @@ window.deleteAssistant = async function(asstKey) {
   initNoticeBoardSystem();
 
   await loadPermissions();
-  setupPermissionsListener();
+  
   if (typeof fetchAssistantMessages === "function") fetchAssistantMessages();
 
   if (localStorage.getItem("last_cloud_sync_date") !== nowDateStr()) {
