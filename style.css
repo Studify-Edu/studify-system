@@ -2132,13 +2132,13 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 /* Locked Feature Overlay */
 .locked-feature {
   position: relative !important;
-  pointer-events: auto !important;
+  pointer-events: auto !important; /* Allow wrapper to catch clicks */
   cursor: not-allowed !important;
   overflow: hidden !important;
 }
 .locked-feature > * {
-  filter: blur(15px) !important;
-  opacity: 0 !important;
+  filter: blur(6px) !important;
+  opacity: 0.6 !important;
   pointer-events: none !important;
   user-select: none !important;
   transition: all 0.3s ease;
@@ -2146,26 +2146,26 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 .locked-feature::before {
   content: 'مقفول من قِبَل الإدارة';
   font-family: var(--font);
-  font-weight: 900;
+  font-weight: 700;
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--glass-overlay);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: inherit;
   color: var(--text-primary);
-  font-size: 1.1rem;
+  font-size: 1rem;
   z-index: 10;
-  opacity: 0.95;
+  opacity: 0; /* Hidden normally so they can see it's blurred */
   transition: all 0.3s ease;
   white-space: nowrap;
 }
 .locked-feature:hover::before {
+  opacity: 1; /* Shows only on hover */
   background: var(--glass-modal);
-  opacity: 1;
 }
 
 /* Decision / Request Cards */

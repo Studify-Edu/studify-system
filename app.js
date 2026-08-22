@@ -1549,34 +1549,35 @@ async function loadAll() {
  }
 
  
+// Global click interceptor for locked features
+if (!window._lockedFeatureListenerAdded) {
+  document.addEventListener('click', function(e) {
+    const lockedEl = e.target.closest('.locked-feature');
+    if (lockedEl) {
+      e.preventDefault();
+      e.stopPropagation();
+      showToast("🔒 هذه الميزة مقفولة من قِبَل المدير", "warning");
+    }
+  }, true); // capture phase
+  window._lockedFeatureListenerAdded = true;
+}
+
 function applyPermissionsToAssistantUI() {
   const p = currentPermissions || {};
   
-  // Helper: show locked toast
-  function lockedMsg() {
-    showToast("🔒 هذه الميزة مقفولة من قِبَل المدير", "warning");
-  }
-  
-  // Helper: add locked click handler (replaces onclick with toast)
-  function lockEl(el) {
-    if (!el) return;
-    el.classList.add('locked-feature');
-    el.removeAttribute('onclick');
-    el.style.pointerEvents = 'auto'; // keep pointer so click fires
-    if (!el.dataset.lockedHandler) {
-      el.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        lockedMsg();
-      }, { capture: true });
-      el.dataset.lockedHandler = "true";
+  // Reset all locks first
+  document.querySelectorAll('.locked-feature').forEach(el => {
+    el.classList.remove('locked-feature');
+    if(el.id === 'newId') {
+      el.disabled = false;
+      el.placeholder = 'ID (ex: 601)';
     }
-  }
+  });
 
   // 1. Lock adminOnly elements by default for assistants
   document.querySelectorAll('.adminOnly').forEach(el => {
     if (!el.classList.contains('tab-section')) {
-      lockEl(el);
+      el.classList.add('locked-feature');
     }
   });
   
@@ -1585,44 +1586,29 @@ function applyPermissionsToAssistantUI() {
   if (document.getElementById('deleteStudentBtn')) document.getElementById('deleteStudentBtn').classList.add('hidden');
   if (document.getElementById('correctPayBtn')) document.getElementById('correctPayBtn').classList.add('hidden');
 
-  // 3. Revenue: Lock properly using .locked-feature
+  // 3. Revenue
   const revPill = document.getElementById('openRevenueModalBtn');
   if (p.show_revenue === false) {
-    if (revPill) {
-      revPill.style.filter = ''; // remove old manual blur
-      revPill.style.userSelect = '';
-      lockEl(revPill);
-    }
+    if (revPill) revPill.classList.add('locked-feature');
     if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.add('hidden');
-    // Ensure dashboard shows 0
-    if(document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "---";
+    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "---";
   } else {
-    if (revPill) {
-      revPill.classList.remove('locked-feature');
-    }
+    if (revPill) revPill.classList.remove('locked-feature');
     if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.remove('hidden');
   }
 
-  // 4. Add student: lock both the card in homepage AND the sidebar btn
+  // 4. Add student
   if (p.can_add_student === false) {
-    // Lock sidebar nav btn if exists
     const addNavBtn = document.getElementById('openAddModalBtn');
-    if (addNavBtn) lockEl(addNavBtn);
+    if (addNavBtn) addNavBtn.classList.add('locked-feature');
     
-    // Lock the add-student card in homepage
     const addNewBtnEl = document.getElementById('addNewBtn');
     if (addNewBtnEl) {
       const addCard = addNewBtnEl.closest('.card');
-      if (addCard) {
-        lockEl(addCard);
-      }
+      if (addCard) addCard.classList.add('locked-feature');
+      addNewBtnEl.classList.add('locked-feature');
     }
     
-    // Also lock the addNewBtn itself
-    const addNewBtn = document.getElementById('addNewBtn');
-    if (addNewBtn) lockEl(addNewBtn);
-    
-    // Lock the newId input
     const newIdInput = document.getElementById('newId');
     if (newIdInput) {
       newIdInput.disabled = true;
@@ -1631,20 +1617,20 @@ function applyPermissionsToAssistantUI() {
   }
 
   if (p.can_manage_packages === false) {
-    lockEl(document.getElementById('btnTabPackages'));
+    if(document.getElementById('btnTabPackages')) document.getElementById('btnTabPackages').classList.add('locked-feature');
   }
 
   if (p.can_view_reports === false) {
-    lockEl(document.getElementById('btnTabReports'));
-    lockEl(document.getElementById('btnTabInstallments'));
+    if(document.getElementById('btnTabReports')) document.getElementById('btnTabReports').classList.add('locked-feature');
+    if(document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.add('locked-feature');
   }
 
   if (p.can_access_marketing === false) {
-    lockEl(document.getElementById('btnTabMarketing'));
+    if(document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.add('locked-feature');
   }
 
   if (p.can_access_session_students === false) {
-    lockEl(document.getElementById('btnTabSessionStudents'));
+    if(document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.add('locked-feature');
   }
 
   // Ensure nav-groups remain visible
