@@ -4555,14 +4555,14 @@ function setupPermissionsListener() {
  async function fetchManagerRequests() {
   const listEl = $("managerRequestsList");
   if (!listEl) return;
-  const mid = localStorage.getItem("ca_manager_id");
-  if (!mid || !window.supabaseClient) return;
-  listEl.innerHTML = `<div class="mutedCenter">جاري التحميل...</div>`;
+  if (!window.supabaseClient) return;
+  listEl.innerHTML = '<div class="mutedCenter">جاري التحميل...</div>';
   try {
     const { data: reqs, error } = await window.supabaseClient
-      .from('manager_requests')
+      .from('communications')
       .select('*')
       .not('id', 'is', null)
+      .eq('type', 'manager_request')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
@@ -4572,37 +4572,36 @@ function setupPermissionsListener() {
       let html = "";
       reqs.forEach(r => {
         const date = new Date(r.created_at).toLocaleString("ar-EG");
-        const typeLabel = r.type === "exemption" ? "إعفاء كامل" : `خصم ${r.amount} ج`;
-        html += `<div class="decision-card">
-          <div class="decision-card-info">
-            <div class="decision-student-name">${r.student_name || r.student_id}</div>
-            <div class="decision-meta">${typeLabel} • طلب من: ${r.assistant_name || "مساعد"} • ${date}</div>
-            <div class="decision-meta" style="margin-top:4px;">السبب: ${r.reason || "—"}</div>
-          </div>
-          <div class="decision-amount">${r.type === "exemption" ? "إعفاء" : r.amount + " ج"}</div>
-          <div class="decision-actions">
-            <button class="btn success smallBtn" onclick="window.approveRequest('${r.id}')"><i class="fa-solid fa-check"></i> قبول</button>
-            <button class="btn danger smallBtn" onclick="window.rejectRequest('${r.id}')"><i class="fa-solid fa-xmark"></i> رفض</button>
-          </div>
-        </div>`;
+        const typeLabel = r.sub_type === "exemption" ? "إعفاء كامل" : 'خصم ' + r.amount + ' ج';
+        html += '<div class="decision-card">' +
+          '<div class="decision-card-info">' +
+            '<div class="decision-student-name">' + (r.student_id || '') + '</div>' +
+            '<div class="decision-meta">' + typeLabel + ' • طلب من: ' + (r.sender_name || "مساعد") + ' • ' + date + '</div>' +
+            '<div class="decision-meta" style="margin-top:4px;">السبب: ' + (r.message || "—") + '</div>' +
+          '</div>' +
+          '<div class="decision-amount">' + (r.sub_type === "exemption" ? "إعفاء" : r.amount + " ج") + '</div>' +
+          '<div class="decision-actions">' +
+            '<button class="btn success smallBtn" onclick="window.approveRequest(\'' + r.id + '\')"><i class="fa-solid fa-check"></i> قبول</button>' +
+            '<button class="btn danger smallBtn" onclick="window.rejectRequest(\'' + r.id + '\')"><i class="fa-solid fa-xmark"></i> رفض</button>' +
+          '</div>' +
+        '</div>';
       });
       listEl.innerHTML = html;
     } else {
       if (badge) badge.classList.add("hidden");
-      listEl.innerHTML = `<div class="mutedCenter">لا توجد طلبات معلقة</div>`;
+      listEl.innerHTML = '<div class="mutedCenter">لا توجد طلبات معلقة</div>';
     }
   } catch(e) {
     console.error(e);
-    listEl.innerHTML = `<div class="mutedCenter">فشل جلب الطلبات</div>`;
+    listEl.innerHTML = '<div class="mutedCenter">فشل جلب الطلبات</div>';
   }
  }
 
  window.approveRequest = async function(reqId) {
-  const mid = localStorage.getItem("ca_manager_id");
-  if (!mid || !window.supabaseClient) return;
+  if (!window.supabaseClient) return;
   try {
     const { data: r, error } = await window.supabaseClient
-      .from('manager_requests')
+      .from('communications')
       .select('*')
       .eq('id', reqId)
       .single();
@@ -4618,9 +4617,9 @@ function setupPermissionsListener() {
         const pkg = groupFees[cls];
         req = toInt(pkg.price || pkg) || 0;
       }
-      if (r.type === "exemption") {
+      if (r.sub_type === "exemption") {
         students[stId].paid = req;
-      } else if (r.type === "discount") {
+      } else if (r.sub_type === "discount") {
         const discounted = Math.max(0, req - toInt(r.amount));
         students[stId].paid = Math.max(students[stId].paid || 0, discounted > 0 ? req - toInt(r.amount) : 0);
       }
@@ -4628,16 +4627,16 @@ function setupPermissionsListener() {
     }
 
     // Mark request approved
-    await window.supabaseClient.from('manager_requests').update({ status: 'approved' }).eq('id', reqId);
+    await window.supabaseClient.from('communications').update({ status: 'approved' }).eq('id', reqId);
 
     // Send assistant message
     const msgId = "msg_" + Date.now();
-    await window.supabaseClient.from('assistant_messages').insert({
+    await window.supabaseClient.from('communications').insert({
       id: msgId,
-      
+      type: 'assistant_message',
       title: " تمت الموافقة على طلبك",
-      message: `وافق المدير على ${r.type === "exemption" ? "إعفاء" : "خصم " + r.amount + " ج"} للطالب ${r.student_name || r.student_id}. السبب: ${r.reason || "—"}`,
-      read: false
+      message: 'وافق المدير على ' + (r.sub_type === "exemption" ? "إعفاء" : "خصم " + r.amount + " ج") + ' للطالب ' + (r.student_id || '') + '. السبب: ' + (r.message || "—"),
+      status: 'unread'
     });
 
     showToast("تمت الموافقة وتطبيق الخصم ", "success");
@@ -4649,20 +4648,19 @@ function setupPermissionsListener() {
  };
 
  window.rejectRequest = async function(reqId) {
-  const mid = localStorage.getItem("ca_manager_id");
-  if (!mid || !window.supabaseClient) return;
+  if (!window.supabaseClient) return;
   try {
-    const { data: r } = await window.supabaseClient.from('manager_requests').select('*').eq('id', reqId).single();
-    await window.supabaseClient.from('manager_requests').update({ status: 'rejected' }).eq('id', reqId);
+    const { data: r } = await window.supabaseClient.from('communications').select('*').eq('id', reqId).single();
+    await window.supabaseClient.from('communications').update({ status: 'rejected' }).eq('id', reqId);
 
     if (r) {
       const msgId = "msg_" + Date.now();
-      await window.supabaseClient.from('assistant_messages').insert({
+      await window.supabaseClient.from('communications').insert({
         id: msgId,
-        
+        type: 'assistant_message',
         title: " تم رفض طلبك",
-        message: `رفض المدير طلب ${r.type === "exemption" ? "الإعفاء" : "الخصم " + r.amount + " ج"} للطالب ${r.student_name || r.student_id}.`,
-        read: false
+        message: 'رفض المدير طلب ' + (r.sub_type === "exemption" ? "الإعفاء" : "الخصم " + r.amount + " ج") + ' للطالب ' + (r.student_id || '') + '.',
+        status: 'unread'
       });
     }
 
@@ -4729,21 +4727,19 @@ function setupPermissionsListener() {
     const type = $("discReqType") ? $("discReqType").value : "discount";
     const amount = $("discReqAmount") ? toInt($("discReqAmount").value) : 0;
     const reason = $("discReqReason") ? $("discReqReason").value.trim() : "";
-    const mid = localStorage.getItem("ca_manager_id") || window.CURRENT_MANAGER_ID;
     const st = students[String(stId)];
-    if (!st || !mid || !window.supabaseClient) return showToast("حدث خطأ، تأكد من الاتصال", "err");
+    if (!st || !window.supabaseClient) return showToast("حدث خطأ، تأكد من الاتصال", "err");
     if (!reason) return showToast("من فضلك اكتب سبب الطلب", "err");
     const reqId = "req_" + Date.now();
     try {
-      await window.supabaseClient.from('manager_requests').insert({
+      await window.supabaseClient.from('communications').insert({
         id: reqId,
-        
+        type: 'manager_request',
         student_id: stId,
-        student_name: st.name,
-        type,
-        amount,
-        reason,
-        assistant_name: localStorage.getItem("ca_current_username") || "مساعد",
+        sub_type: type,
+        amount: amount,
+        message: reason,
+        sender_name: localStorage.getItem("ca_current_username") || "مساعد",
         status: "pending"
       });
       if ($("discountRequestModal")) $("discountRequestModal").classList.add("hidden");
@@ -4762,12 +4758,12 @@ function setupPermissionsListener() {
  let lastReadMsgTime = toInt(localStorage.getItem("ca_last_read_msg") || "0");
 
  function fetchAssistantMessages() {
-  const mid = window.CURRENT_MANAGER_ID;
-  if (!mid || !window.supabaseClient || window.CURRENT_ROLE === "admin") return;
+  if (!window.supabaseClient || window.CURRENT_ROLE === "admin") return;
   window.supabaseClient
-    .from('assistant_messages')
+    .from('communications')
     .select('*')
     .not('id', 'is', null)
+    .eq('type', 'assistant_message')
     .order('created_at', { ascending: false })
     .limit(20)
     .then(({ data }) => {
@@ -4776,7 +4772,7 @@ function setupPermissionsListener() {
         title: m.title,
         body: m.message,
         timestamp: new Date(m.created_at).getTime(),
-        read: m.read
+        read: m.status === 'read'
       }));
       updateAssistantMsgBadge();
     }).catch(e => console.error(e));
@@ -4829,8 +4825,8 @@ function setupPermissionsListener() {
   listEl.innerHTML = assistantMessages.slice(0, 20).map(m => {
     const isUnread = !m.read;
     const date = new Date(m.timestamp).toLocaleString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-    const color = m.type === "discount_approved" ? "var(--success)" : m.type === "discount_rejected" ? "var(--danger)" : "var(--primary)";
-    return `<div style="padding:10px;border-radius:8px;background:${isUnread ? "rgba(37,99,235,0.08)" : "transparent"};border-inline-start:3px solid ${isUnread ? color : "var(--border)"};font-size:0.88em;cursor:pointer;" onclick="window.markMsgRead('${m.id}')">
+    const color = (m.title && m.title.includes("رفض")) ? "var(--danger)" : "var(--success)";
+    return `<div style="padding:10px;border-radius:8px;background:${isUnread ? 'rgba(37,99,235,0.08)' : 'transparent'};border-inline-start:3px solid ${isUnread ? color : 'var(--border)'};font-size:0.88em;cursor:pointer;" onclick="window.markMsgRead('${m.id}')">
     <div style="font-weight:700;margin-bottom:3px;color:${color};">${m.title}</div>
     <div style="color:var(--text-primary);opacity:0.85;margin-bottom:4px;">${m.body}</div>
     <div style="font-size:0.78em;color:#888;">${date}</div>
@@ -4843,7 +4839,7 @@ function setupPermissionsListener() {
 
  window.markMsgRead = async function(msgId) {
   if (!window.supabaseClient) return;
-  try { await window.supabaseClient.from('assistant_messages').update({ read: true }).eq('id', msgId); }
+  try { await window.supabaseClient.from('communications').update({ status: 'read' }).eq('id', msgId); }
   catch(e) { console.error(e); }
  };
 
