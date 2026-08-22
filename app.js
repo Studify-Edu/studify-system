@@ -2582,18 +2582,21 @@ if($("assistantLoginBtn")) {
   on("assistantLoginBtn", "click", async function() {
     if ($("loginBox") && $("loginBox").classList.contains("hidden")) return;
     
-    const rawU = $("assistantUser") ? $("assistantUser").value.trim() : "";
+    let rawU = $("assistantUser") ? $("assistantUser").value.trim().toLowerCase() : "";
     const p = $("assistantPass") ? $("assistantPass").value.trim() : "";
     if (!rawU || !p) return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
 
-    
+    if (rawU.endsWith("@studify.com")) {
+      rawU = rawU.replace("@studify.com", "");
+    }
+
     try {
       if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
 
       const { data, error } = await window.supabaseClient
         .from('assistants')
         .select('*')
-        .eq('username', rawU.toLowerCase())
+        .eq('username', rawU)
         .eq('password', p);
 
       if (error || !data || data.length === 0) {
