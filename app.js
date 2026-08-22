@@ -2553,13 +2553,14 @@ async function loadAll() {
     try {
       if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
       
-      const { data, error } = await window.supabaseClient.auth.signInWithPassword({
-        email: rawU,
-        password: p
-      });
-      
-      if (error) {
-        showToast("خطأ في بيانات الدخول: " + error.message, "err");
+      const { data, error } = await window.supabaseClient
+        .from('manager_account')
+        .select('*')
+        .eq('username', rawU)
+        .eq('password', p);
+        
+      if (error || !data || data.length === 0) {
+        showToast("خطأ في بيانات الدخول: الرجاء التأكد من الحساب وكلمة المرور", "err");
         return triggerShake("managerLoginBtn");
       }
 
@@ -2591,15 +2592,13 @@ if($("assistantLoginBtn")) {
     try {
       if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
 
-      // We map the assistant username to an email format required by Supabase Auth
-      const asstEmail = rawU.toLowerCase().replace(/[^a-z0-9]/g, '') + "@studify.com";
+      const { data, error } = await window.supabaseClient
+        .from('assistants')
+        .select('*')
+        .eq('username', rawU.toLowerCase())
+        .eq('password', p);
 
-      const { data, error } = await window.supabaseClient.auth.signInWithPassword({
-        email: asstEmail,
-        password: p
-      });
-
-      if (error) {
+      if (error || !data || data.length === 0) {
         showToast("حساب المساعد غير موجود أو كلمة المرور خاطئة.", "err");
         return triggerShake("assistantLoginBtn");
       }
@@ -6581,14 +6580,12 @@ window.changeAssistantPassword = async function(userId, username) {
   if (newPassword) {
     try {
       showToast('جاري تغيير كلمة المرور...', 'info');
-      const { error } = await window.supabaseClient.rpc('update_user_password', {
-        target_user_id: userId,
-        new_password: newPassword
-      });
+      const { error } = await window.supabaseClient
+        .from('assistants')
+        .update({ password: newPassword })
+        .eq('username', username.toLowerCase());
+
       if (error) {
-         if (error.message && error.message.includes("Could not find the function")) {
-             throw new Error("دالة تغيير الباسورد (RPC) مش موجودة في سوبابيز. راجع رسالة الدعم لتركيبها.");
-         }
          throw error;
       }
       showToast('تم تغيير كلمة المرور بنجاح!', 'success');
@@ -6625,9 +6622,10 @@ if (changeMyPasswordBtn) {
     if (newPassword) {
       try {
         if (typeof showToast === 'function') showToast('جاري تغيير كلمة المرور...', 'info');
-        const { data, error } = await window.supabaseClient.auth.updateUser({
-          password: newPassword
-        });
+        const { error } = await window.supabaseClient
+          .from('manager_account')
+          .update({ password: newPassword })
+          .eq('id', 1);
         
         if (error) throw error;
         
