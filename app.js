@@ -2548,8 +2548,7 @@ async function loadAll() {
     const p = $("managerPass") ? $("managerPass").value.trim() : "";
     if (!rawU || !p) return showToast("أدخل البريد الإلكتروني وكلمة المرور", "err");
     
-    if (typeof showToast === "function") showToast("جاري التحقق من الصلاحيات...", "info");
-
+    
     try {
       if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
       
@@ -2587,8 +2586,7 @@ if($("assistantLoginBtn")) {
     const p = $("assistantPass") ? $("assistantPass").value.trim() : "";
     if (!rawU || !p) return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
 
-    if (typeof showToast === "function") showToast("جاري التحقق من الصلاحيات...", "info");
-
+    
     try {
       if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
 
@@ -4214,96 +4212,35 @@ function updateDriveUI() {
       return showToast("اسم المستخدم يجب أن يكون بحروف إنجليزية فقط وبدون مسافات", "err");
     }
     
-    const managerId = localStorage.getItem("ca_manager_id");
-    if (!managerId) return showToast("يجب أن تكون مديراً لإضافة مساعدين.", "err");
-    
-    // Construct the email for Supabase Auth
-    const asstEmail = rawAsstU.toLowerCase() + "@studify.com";
+    const role = localStorage.getItem("ca_role") || window.CURRENT_ROLE;
+    if (role !== "admin") return showToast("يجب أن تكون مديراً لإضافة مساعدين.", "err");
     
     try {
       showToast("جاري إنشاء حساب المساعد... الرجاء الانتظار", "info");
       
-      // Create a secondary Supabase client that doesn't persist session
-      // This prevents the manager from being logged out!
-      const tempClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false
-        }
-      });
-      
-      // 1. Sign up the user in Supabase Auth
-      const { data: authData, error: authErr } = await tempClient.auth.signUp({
-        email: asstEmail,
-        password: asstP
-      });
-      
-      if (authErr) {
-        const isAlreadyExists = authErr.message.includes("already registered") || authErr.status === 422 || authErr.message.includes("User already registered");
-        if (isAlreadyExists) {
-          // ── RECOVERY: Account exists in Auth but maybe missing from assistants table ──
-          // Try to sign in with the provided credentials to recover the user ID
-          showToast("الحساب موجود، جاري محاولة الاسترجاع...", "warning");
-          const { data: signInData, error: signInErr } = await tempClient.auth.signInWithPassword({
-            email: asstEmail,
-            password: asstP
-          });
-
-          if (signInErr) {
-            // Wrong password — user truly exists with different password
-            throw new Error("اسم المستخدم محجوز مسبقاً. جرب اسماً آخر، أو استخدم نفس كلمة المرور الأصلية للاسترجاع.");
-          }
-
-          // Sign-in succeeded → get the user ID and upsert the DB row
-          const recoveredId = signInData.user?.id;
-          if (!recoveredId) throw new Error("لم يمكن استرجاع معرف المستخدم.");
-
-          const { error: recoverDbErr } = await window.supabaseClient.from('assistants').upsert({
-            id: recoveredId,
-            username: rawAsstU.toLowerCase(),
-            permissions: {}
-          }, { onConflict: 'id' });
-
-          if (recoverDbErr) throw recoverDbErr;
-
-          showToast("✅ تم استرجاع الحساب وإضافة المساعد بنجاح!", "success");
-          if ($("newAsstUsername")) $("newAsstUsername").value = "";
-          if ($("newAsstPassword")) $("newAsstPassword").value = "";
-          if(typeof window.closeAddAsstModal === "function") window.closeAddAsstModal();
-          fetchManagerAssistants();
-          return; // Done — exit early
-        }
-        throw authErr;
-      }
-      
-      const newUserId = authData.user?.id;
-      if (!newUserId) {
-        // Some Supabase configs return null user on signUp if email confirmation is required
-        // Try to sign in immediately to confirm the account was created
-        throw new Error("تحقق من إعدادات Supabase — يبدو أن تأكيد البريد الإلكتروني مطلوب. يرجى تعطيل 'Email Confirmation' من Supabase Dashboard.");
-      }
-
-      // 2. Insert the user profile into the assistants table
-      const { error: dbErr } = await window.supabaseClient.from('assistants').upsert({
-        id: newUserId,
+      const { error: dbErr } = await window.supabaseClient.from('assistants').insert([{
         username: rawAsstU.toLowerCase(),
+        password: asstP,
         permissions: {}
-      }, { onConflict: 'id' });
+      }]);
 
-      if (dbErr) throw dbErr;
+      if (dbErr) {
+          if (dbErr.code === '23505') { // Unique constraint violation
+              throw new Error("اسم المستخدم محجوز مسبقاً. جرب اسماً آخر.");
+          }
+          throw dbErr;
+      }
 
       showToast("تم إضافة المساعد بنجاح!", "success");
       
       if ($("newAsstUsername")) $("newAsstUsername").value = "";
       if ($("newAsstPassword")) $("newAsstPassword").value = "";
-      
       if(typeof window.closeAddAsstModal === "function") window.closeAddAsstModal();
       
       fetchManagerAssistants();
     } catch (err) {
       console.error(err);
-      showToast("فشل إنشاء الحساب: " + (err.message || "تأكد من اتصال الإنترنت"), "err");
+      showToast(err.message || "فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.", "err");
     }
   });
 }
