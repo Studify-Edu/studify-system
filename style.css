@@ -2853,13 +2853,13 @@ body::after {
   width: calc(100vw - 48px);
 }
 .toast {
-  background: rgba(15, 23, 42, 0.85) !important;
+  background: var(--glass-modal) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  color: #f1f5f9 !important;
+  color: var(--text-primary) !important;
   padding: 0 !important;
   border-radius: 14px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid var(--glass-border) !important;
   border-inline-start: none !important;
   box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5) !important;
   display: flex !important;
@@ -2938,10 +2938,10 @@ body::after {
 
 /* ── IDEA #4: GLASSMORPHISM CARDS ── */
 .card {
-  background: rgba(21, 31, 50, 0.8) !important;
+  background: var(--glass-card) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid var(--glass-border) !important;
   position: relative;
   overflow: hidden;
 }
@@ -2956,7 +2956,7 @@ body::after {
 }
 .card:hover::before { opacity: 1; }
 .card:hover {
-  border-color: rgba(37, 99, 235, 0.25) !important;
+  border-color: rgba(37, 99, 235, 0.5) !important;
   box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.1) !important;
 }
 

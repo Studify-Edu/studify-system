@@ -1592,7 +1592,18 @@ function applyPermissionsToAssistantUI() {
   if (p.can_access_session_students === false) {
     if (document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.add('hidden');
   }
+
+  // 4. Hide empty nav-groups
+  document.querySelectorAll('.nav-group').forEach(group => {
+    const visibleItems = Array.from(group.querySelectorAll('.nav-item')).filter(item => !item.classList.contains('hidden') && item.style.display !== 'none');
+    if (visibleItems.length === 0) {
+      group.style.display = 'none';
+    } else {
+      group.style.display = 'block';
+    }
+  });
 }
+
 
 function applyPermissions() {
  const isAdmin = (currentUserRole === "admin");
