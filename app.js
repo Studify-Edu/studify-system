@@ -1548,7 +1548,53 @@ async function loadAll() {
  window.switchTab('Home');
  }
 
- function applyPermissions() {
+ 
+function applyPermissionsToAssistantUI() {
+  const p = currentPermissions || {};
+  
+  // 1. Hide adminOnly elements by default for assistants
+  document.querySelectorAll('.adminOnly').forEach(el => {
+    if (!el.classList.contains('tab-section')) {
+      el.classList.add('hidden');
+    }
+  });
+  
+  // 2. Hide settings and dangerous actions permanently
+  if (document.getElementById('btnTabAdmin')) document.getElementById('btnTabAdmin').classList.add('hidden');
+  if (document.getElementById('deleteStudentBtn')) document.getElementById('deleteStudentBtn').classList.add('hidden');
+  if (document.getElementById('correctPayBtn')) document.getElementById('correctPayBtn').classList.add('hidden');
+
+  // 3. Conditional permissions
+  if (p.show_revenue === false) {
+    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = '****** ج';
+    if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.add('hidden');
+  } else {
+    if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.remove('hidden');
+  }
+
+  if (p.can_add_student === false) {
+    if (document.getElementById('openAddModalBtn')) document.getElementById('openAddModalBtn').classList.add('hidden');
+  }
+
+  if (p.can_manage_packages === false) {
+    if (document.getElementById('btnTabPackages')) document.getElementById('btnTabPackages').classList.add('hidden');
+  }
+
+  if (p.can_view_reports === false) {
+    if (document.getElementById('btnTabReports')) document.getElementById('btnTabReports').classList.add('hidden');
+    if (document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.add('hidden');
+  }
+
+  if (p.can_access_marketing === false) {
+    if (document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.add('hidden');
+  }
+
+  if (p.can_access_session_students === false) {
+    if (document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.add('hidden');
+  }
+}
+
+function applyPermissions() {
  const isAdmin = (currentUserRole === "admin");
  if ($("currentUserBadgeText")) {
  $("currentUserBadgeText").innerText = isAdmin ? (currentLang === "ar" ? " مسؤول عام" : " Admin") : (currentLang === "ar" ? " مساعد" : " Assistant");

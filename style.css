@@ -3185,16 +3185,16 @@ tr:hover td:first-child {
 
 /* Topbar glassmorphism */
 .topbar {
-  background: rgba(15, 23, 42, 0.7) !important;
+  background: var(--glass-topbar) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
 }
 
 /* Sidebar glassmorphism */
 .sidebar {
-  background: rgba(13, 21, 38, 0.85) !important;
+  background: var(--glass-sidebar) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border-inline-end: 1px solid rgba(255,255,255,0.05) !important;
+  border-inline-end: 1px solid var(--glass-border) !important;
 }
