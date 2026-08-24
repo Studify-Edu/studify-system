@@ -1691,20 +1691,9 @@ function applyPermissionsToAssistantUI() {
     if(document.getElementById('btnTabAdmin')) document.getElementById('btnTabAdmin').classList.add('locked-feature');
   }
 
-  // Manage Assistants
-  if (p.can_manage_assistants) {
-    if(document.getElementById('btnManagerAssistants')) document.getElementById('btnManagerAssistants').classList.remove('locked-feature');
-  } else {
-    if(document.getElementById('btnManagerAssistants')) document.getElementById('btnManagerAssistants').classList.add('locked-feature');
-  }
-
-  // Decisions
-  if (p.can_view_decisions) {
-    if(document.getElementById('btnManagerDecisions')) document.getElementById('btnManagerDecisions').classList.remove('locked-feature');
-  } else {
-    if(document.getElementById('btnManagerDecisions')) document.getElementById('btnManagerDecisions').classList.add('locked-feature');
-  }
-
+  // Permanently hide manager-only tabs from assistants
+  if(document.getElementById('btnManagerAssistants')) document.getElementById('btnManagerAssistants').classList.add('hidden');
+  if(document.getElementById('btnManagerDecisions')) document.getElementById('btnManagerDecisions').classList.add('hidden');
   // Ensure nav-groups remain visible
   document.querySelectorAll('.nav-group').forEach(group => {
     group.style.display = 'block';
@@ -4745,9 +4734,7 @@ window.deleteAssistant = async function(asstKey) {
   { key: "can_access_booklets", label: "مخزون المذكرات", desc: "يسمح للمساعد بفتح وإدارة مخزون المذكرات" },
   { key: "can_access_activity_log", label: "سجل النشاط السريع", desc: "يسمح للمساعد بفتح السجل من القائمة العلوية" },
   { key: "can_access_settings", label: "إعدادات النظام", desc: "يسمح للمساعد بالدخول للوحة تحكم المدير" },
-  { key: "can_manage_assistants", label: "إدارة المساعدين", desc: "يسمح للمساعد بإدارة حسابات المساعدين الآخرين" },
-  { key: "can_view_decisions", label: "طلبات القرارات", desc: "يسمح للمساعد بالبت في طلبات القرارات المعلقة" }
-];
+  ];
 
  // Default: all permissions ON
  let currentPermissions = {};
