@@ -4675,8 +4675,7 @@ window.deleteAssistant = async function(asstKey) {
  const PERMISSIONS_DEFS = [
   { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي" },
   { key: "can_access_settings", label: "إعدادات النظام", desc: "يسمح للمساعد بالدخول لصفحة إعدادات النظام المتقدمة" },
-  { key: "can_access_settings", label: "الإعدادات المتقدمة", desc: "يسمح للمساعد بالدخول لصفحة إعدادات النظام" },
- { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يسمح للمساعد برؤية إيراد اليوم في الشريط العلوي" },
+  { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يسمح للمساعد برؤية إيراد اليوم في الشريط العلوي" },
  { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح للمساعد بإضافة طلاب جديدين للنظام" },
  { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "يسمح للمساعد بتعديل الباقات والأسعار" },
  { key: "can_view_reports", label: "الوصول لصفحة التقارير", desc: "يسمح للمساعد بفتح صفحة التقارير اليومية" },
