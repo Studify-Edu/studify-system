@@ -2137,28 +2137,36 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   overflow: hidden !important;
 }
 .locked-feature > * {
-  filter: blur(6px) !important;
-  opacity: 0.6 !important;
+  filter: blur(2px) !important;
+  opacity: 0.55 !important;
   pointer-events: none !important;
   user-select: none !important;
   transition: all 0.3s ease;
 }
 
-/* Always-visible Lock Icon */
+/* Always-visible Lock Icon (Glassmorphic Circle) */
 .locked-feature::after {
   content: '\f023'; /* FontAwesome lock icon */
   font-family: 'Font Awesome 6 Free', var(--font);
   font-weight: 900;
   position: absolute;
-  top: 40%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 2.5rem;
-  color: var(--text-primary);
-  opacity: 0.9;
+  font-size: 1.6rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  width: 54px;
+  height: 54px;
+  line-height: 54px;
+  text-align: center;
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
   z-index: 9;
   pointer-events: none;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
   transition: all 0.3s ease;
 }
 
@@ -2168,9 +2176,9 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   font-family: var(--font);
   font-weight: 700;
   position: absolute;
-  top: 65%;
+  top: calc(50% + 45px); /* Positioned below the lock circle */
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   padding: 6px 12px;
   background: var(--glass-overlay);
   backdrop-filter: blur(8px);
@@ -2187,10 +2195,6 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 .locked-feature:hover::before {
   opacity: 1;
 }
-/* Keep lock icon visible on hover */
-.locked-feature:hover::after {
-  opacity: 1;
-}
 
 /* Shake Animation on click */
 @keyframes lockShake {
@@ -2204,6 +2208,7 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 .locked-feature.locked-clicked::after {
   animation: lockShake 0.4s ease;
   color: #ff4d4f; /* Turn red on click */
+  border-color: rgba(255, 77, 79, 0.3);
 }
 
 /* Specific fix for the Revenue pill */
@@ -3256,14 +3261,22 @@ tr:hover td:first-child {
 /* Sidebar Nav Item Lock specific styling */
 .nav-item.locked-feature > * {
   filter: blur(1.5px) !important;
-  opacity: 0.6 !important;
+  opacity: 0.5 !important;
 }
 .nav-item.locked-feature::after {
-  font-size: 1rem;
-  top: 50%;
-  left: 15px; /* RTL edge */
-  transform: translateY(-50%);
-  opacity: 0.8;
+  font-size: 1rem !important;
+  top: 50% !important;
+  left: 15px !important; /* RTL edge */
+  transform: translateY(-50%) !important;
+  opacity: 0.8 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: auto !important;
+  height: auto !important;
+  line-height: normal !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 .nav-item.locked-feature::before {
   display: none !important; /* Never show the giant hover text for sidebar items */
