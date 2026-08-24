@@ -1694,7 +1694,6 @@ function applyPermissionsToAssistantUI() {
   // Permanently hide manager-only tabs from assistants
   if(document.getElementById('btnManagerAssistants')) document.getElementById('btnManagerAssistants').classList.add('hidden');
   if(document.getElementById('btnManagerDecisions')) document.getElementById('btnManagerDecisions').classList.add('hidden');
-  if(document.getElementById('btnManagerPackages')) document.getElementById('btnManagerPackages').classList.add('hidden');
   // Ensure nav-groups remain visible
   document.querySelectorAll('.nav-group').forEach(group => {
     group.style.display = 'block';
@@ -4436,15 +4435,15 @@ async function fetchManagerAssistants() {
         // Grouping definitions
         const permGroups = [
           {
-            title: "💰 الصلاحيات المالية",
+            title: "<i class='fa-solid fa-money-bill-wave'></i> الصلاحيات المالية",
             keys: ["show_revenue", "require_daily_approval", "can_request_discount"]
           },
           {
-            title: "⚙️ إدارة البيانات والنظام",
-            keys: ["can_add_student", "can_access_settings"]
+            title: "<i class='fa-solid fa-server'></i> إدارة البيانات والنظام",
+            keys: ["can_add_student", "can_manage_packages", "can_access_settings"]
           },
           {
-            title: "📄 صلاحيات الصفحات والأدوات",
+            title: "<i class='fa-regular fa-file-lines'></i> صلاحيات الصفحات والأدوات",
             keys: ["can_view_reports", "can_access_marketing", "can_access_session_students", "can_access_booklets", "can_access_activity_log"]
           }
         ];
@@ -4762,6 +4761,7 @@ window.deleteAssistant = async function(asstKey) {
   { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي", desc: "يجعل الإيراد معلقاً ولا يُضاف للإجمالي حتى يعتمده المدير" },
   { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يعرض رقم إيراد الوردية الحالي في الشريط العلوي للمساعد" },
   { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح بفتح كارت 'إضافة طالب جديد' وتسجيل البيانات" },
+  { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "إتاحة فتح صفحة إدارة الباقات والأسعار من القائمة الجانبية" },
   { key: "can_view_reports", label: "الوصول لصفحة التقارير", desc: "السماح للمساعد بفتح قسم الحسابات والتقارير" },
   { key: "can_access_marketing", label: "أدوات التسويق", desc: "إتاحة فتح صفحة التسويق وإرسال رسائل للطلاب" },
   { key: "can_access_session_students", label: "طلاب الحصة", desc: "السماح بعرض قائمة الحضور المخصصة للحصة الحالية" },
