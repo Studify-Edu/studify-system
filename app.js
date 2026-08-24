@@ -1581,29 +1581,30 @@ function applyPermissionsToAssistantUI() {
     }
   });
 
-  // 1. Lock adminOnly elements by default for assistants
-  document.querySelectorAll('.adminOnly').forEach(el => {
+  // 1. Lock adminOnly and manager-nav-item elements by default for assistants
+  document.querySelectorAll('.adminOnly, .manager-nav-item').forEach(el => {
     if (!el.classList.contains('tab-section')) {
       el.classList.add('locked-feature');
     }
   });
   
-  // 2. Hide dangerous actions
+  // 2. Hide extreme dangerous actions always
   if (document.getElementById('deleteStudentBtn')) document.getElementById('deleteStudentBtn').classList.add('hidden');
-  if (document.getElementById('correctPayBtn')) document.getElementById('correctPayBtn').classList.add('hidden');
 
-  // 3. Revenue
+  // 3. Unlock logic based on permissions
+  
+  // Revenue
   const revPill = document.getElementById('openRevenueModalBtn');
-  if (p.show_revenue === false) {
+  if (p.show_revenue) {
+    if (revPill) revPill.classList.remove('locked-feature');
+    if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.remove('hidden');
+  } else {
     if (revPill) revPill.classList.add('locked-feature');
     if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.add('hidden');
     if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "---";
-  } else {
-    if (revPill) revPill.classList.remove('locked-feature');
-    if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.remove('hidden');
   }
 
-  // 4. Add student
+  // Add student
   if (p.can_add_student === false) {
     const addNavBtn = document.getElementById('openAddModalBtn');
     if (addNavBtn) addNavBtn.classList.add('locked-feature');
@@ -1622,26 +1623,86 @@ function applyPermissionsToAssistantUI() {
     }
   }
 
-  if (p.can_manage_packages === false) {
+  // Packages
+  if (p.can_manage_packages) {
+    if(document.getElementById('btnTabPackages')) document.getElementById('btnTabPackages').classList.remove('locked-feature');
+    if(document.getElementById('btnManagerPackages')) document.getElementById('btnManagerPackages').classList.remove('locked-feature');
+  } else {
     if(document.getElementById('btnTabPackages')) document.getElementById('btnTabPackages').classList.add('locked-feature');
   }
 
-  if (p.can_view_reports === false) {
+  // Reports
+  if (p.can_view_reports) {
+    if(document.getElementById('btnTabReports')) document.getElementById('btnTabReports').classList.remove('locked-feature');
+    if(document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.remove('locked-feature');
+    if(document.getElementById('btnManagerDailyReport')) document.getElementById('btnManagerDailyReport').classList.remove('locked-feature');
+    if(document.getElementById('btnManagerTermReport')) document.getElementById('btnManagerTermReport').classList.remove('locked-feature');
+  } else {
     if(document.getElementById('btnTabReports')) document.getElementById('btnTabReports').classList.add('locked-feature');
     if(document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.add('locked-feature');
   }
 
-  if (p.can_access_marketing === false) {
+  // Marketing
+  if (p.can_access_marketing) {
+    if(document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.remove('locked-feature');
+  } else {
     if(document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.add('locked-feature');
   }
 
-  if (p.can_access_session_students === false) {
+  // Session Students
+  if (p.can_access_session_students) {
+    if(document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.remove('locked-feature');
+  } else {
     if(document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.add('locked-feature');
   }
 
-  // 5. System Settings
-  if (p.can_access_settings === true) {
+  // Request Discount
+  if (p.can_request_discount) {
+    if (document.getElementById('correctPayBtn')) {
+      document.getElementById('correctPayBtn').classList.remove('hidden');
+      document.getElementById('correctPayBtn').classList.remove('locked-feature');
+    }
+  } else {
+    if (document.getElementById('correctPayBtn')) {
+      document.getElementById('correctPayBtn').classList.remove('hidden');
+      document.getElementById('correctPayBtn').classList.add('locked-feature');
+    }
+  }
+
+  // Booklets
+  if (p.can_access_booklets) {
+    if(document.getElementById('btnTabBooklets')) document.getElementById('btnTabBooklets').classList.remove('locked-feature');
+  } else {
+    if(document.getElementById('btnTabBooklets')) document.getElementById('btnTabBooklets').classList.add('locked-feature');
+  }
+
+  // Activity Log
+  if (p.can_access_activity_log) {
+    if(document.getElementById('quickActivityLogBtn')) document.getElementById('quickActivityLogBtn').classList.remove('locked-feature');
+  } else {
+    if(document.getElementById('quickActivityLogBtn')) document.getElementById('quickActivityLogBtn').classList.add('locked-feature');
+  }
+
+  // Settings / Admin Dashboard
+  if (p.can_access_settings) {
     if(document.getElementById('btnTabAdmin')) document.getElementById('btnTabAdmin').classList.remove('locked-feature');
+    if(document.getElementById('btnManagerSettings')) document.getElementById('btnManagerSettings').classList.remove('locked-feature');
+  } else {
+    if(document.getElementById('btnTabAdmin')) document.getElementById('btnTabAdmin').classList.add('locked-feature');
+  }
+
+  // Manage Assistants
+  if (p.can_manage_assistants) {
+    if(document.getElementById('btnManagerAssistants')) document.getElementById('btnManagerAssistants').classList.remove('locked-feature');
+  } else {
+    if(document.getElementById('btnManagerAssistants')) document.getElementById('btnManagerAssistants').classList.add('locked-feature');
+  }
+
+  // Decisions
+  if (p.can_view_decisions) {
+    if(document.getElementById('btnManagerDecisions')) document.getElementById('btnManagerDecisions').classList.remove('locked-feature');
+  } else {
+    if(document.getElementById('btnManagerDecisions')) document.getElementById('btnManagerDecisions').classList.add('locked-feature');
   }
 
   // Ensure nav-groups remain visible
@@ -4674,15 +4735,19 @@ window.deleteAssistant = async function(asstKey) {
  // ==========================================
  const PERMISSIONS_DEFS = [
   { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي" },
-  { key: "can_access_settings", label: "إعدادات النظام", desc: "يسمح للمساعد بالدخول لصفحة إعدادات النظام المتقدمة" },
   { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يسمح للمساعد برؤية إيراد اليوم في الشريط العلوي" },
- { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح للمساعد بإضافة طلاب جديدين للنظام" },
- { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "يسمح للمساعد بتعديل الباقات والأسعار" },
- { key: "can_view_reports", label: "الوصول لصفحة التقارير", desc: "يسمح للمساعد بفتح صفحة التقارير اليومية" },
- { key: "can_access_marketing", label: "أدوات التسويق", desc: "يسمح للمساعد بفتح صفحة أدوات التسويق" },
- { key: "can_access_session_students", label: "طلاب الحصة", desc: "يسمح للمساعد بفتح صفحة طلاب الحصة" },
- { key: "can_request_discount", label: "طلب خصم / إعفاء", desc: "يسمح للمساعد بإرسال طلب خصم للمدير لمراجعته" },
- ];
+  { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح للمساعد بإضافة طلاب جديدين للنظام" },
+  { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "يسمح للمساعد بتعديل الباقات والأسعار" },
+  { key: "can_view_reports", label: "الوصول لصفحة التقارير", desc: "يسمح للمساعد بفتح صفحة التقارير اليومية" },
+  { key: "can_access_marketing", label: "أدوات التسويق", desc: "يسمح للمساعد بفتح صفحة أدوات التسويق" },
+  { key: "can_access_session_students", label: "طلاب الحصة", desc: "يسمح للمساعد بفتح صفحة طلاب الحصة" },
+  { key: "can_request_discount", label: "طلب خصم / إعفاء", desc: "يسمح للمساعد بإرسال طلب خصم للمدير لمراجعته" },
+  { key: "can_access_booklets", label: "مخزون المذكرات", desc: "يسمح للمساعد بفتح وإدارة مخزون المذكرات" },
+  { key: "can_access_activity_log", label: "سجل النشاط السريع", desc: "يسمح للمساعد بفتح السجل من القائمة العلوية" },
+  { key: "can_access_settings", label: "إعدادات النظام", desc: "يسمح للمساعد بالدخول للوحة تحكم المدير" },
+  { key: "can_manage_assistants", label: "إدارة المساعدين", desc: "يسمح للمساعد بإدارة حسابات المساعدين الآخرين" },
+  { key: "can_view_decisions", label: "طلبات القرارات", desc: "يسمح للمساعد بالبت في طلبات القرارات المعلقة" }
+];
 
  // Default: all permissions ON
  let currentPermissions = {};
