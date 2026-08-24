@@ -3252,3 +3252,19 @@ tr:hover td:first-child {
   -webkit-backdrop-filter: blur(20px) !important;
   border-inline-end: 1px solid var(--glass-border) !important;
 }
+
+/* Sidebar Nav Item Lock specific styling */
+.nav-item.locked-feature > * {
+  filter: blur(1.5px) !important;
+  opacity: 0.6 !important;
+}
+.nav-item.locked-feature::after {
+  font-size: 1rem;
+  top: 50%;
+  left: 15px; /* RTL edge */
+  transform: translateY(-50%);
+  opacity: 0.8;
+}
+.nav-item.locked-feature::before {
+  display: none !important; /* Never show the giant hover text for sidebar items */
+}

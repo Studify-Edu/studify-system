@@ -1639,6 +1639,11 @@ function applyPermissionsToAssistantUI() {
     if(document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.add('locked-feature');
   }
 
+  // 5. System Settings
+  if (p.can_access_settings === true) {
+    if(document.getElementById('btnTabAdmin')) document.getElementById('btnTabAdmin').classList.remove('locked-feature');
+  }
+
   // Ensure nav-groups remain visible
   document.querySelectorAll('.nav-group').forEach(group => {
     group.style.display = 'block';
@@ -4669,6 +4674,8 @@ window.deleteAssistant = async function(asstKey) {
  // ==========================================
  const PERMISSIONS_DEFS = [
   { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي" },
+  { key: "can_access_settings", label: "إعدادات النظام", desc: "يسمح للمساعد بالدخول لصفحة إعدادات النظام المتقدمة" },
+  { key: "can_access_settings", label: "الإعدادات المتقدمة", desc: "يسمح للمساعد بالدخول لصفحة إعدادات النظام" },
  { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يسمح للمساعد برؤية إيراد اليوم في الشريط العلوي" },
  { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح للمساعد بإضافة طلاب جديدين للنظام" },
  { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "يسمح للمساعد بتعديل الباقات والأسعار" },
