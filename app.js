@@ -1706,7 +1706,7 @@ function applyPermissions() {
  }
  
  // Show base UI elements for all roles first
- document.querySelectorAll(".adminOnly").forEach(el => {
+ document.querySelectorAll(".adminOnly, .manager-nav-item").forEach(el => {
  if (!el.classList.contains("tab-section")) {
  el.classList.remove("hidden"); 
  }
