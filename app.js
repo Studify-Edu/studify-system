@@ -1588,8 +1588,7 @@ function applyPermissionsToAssistantUI() {
     }
   });
   
-  // 2. Always hide settings and dangerous actions
-  if (document.getElementById('btnTabAdmin')) document.getElementById('btnTabAdmin').classList.add('hidden');
+  // 2. Hide dangerous actions
   if (document.getElementById('deleteStudentBtn')) document.getElementById('deleteStudentBtn').classList.add('hidden');
   if (document.getElementById('correctPayBtn')) document.getElementById('correctPayBtn').classList.add('hidden');
 
