@@ -1091,15 +1091,7 @@
  <button class="btn primary w100" id="changeLangBtn" data-i18n="btn_change_lang"> تغيير اللغة (Ar / En)</button>
  </div>
  </div>
-
- <div class="settings-card danger-card">
- <h3 data-i18n="set_danger_title"> منطقة الخطر</h3>
- <div style="display:flex; flex-direction:column; gap:10px;">
- <button class="btn warning w100" id="resetTermBtn" data-i18n="btn_reset_term"> تصفير الترم</button>
- <button class="btn danger w100" id="resetBtn" data-i18n="btn_factory_reset"><i class="fa-solid fa-triangle-exclamation" style="margin-inline-end: 8px;"></i> مسح النظام بالكامل</button>
- </div>
- </div>
- </div>
+</div>
  </div>
  </section>
 
@@ -1699,9 +1691,27 @@
   <option value="dark" data-i18n="theme_dark">الوضع الليلي (Dark Mode)</option>
   </select>
   </div>
- 
- </div>
- </div>
+
+  <div class="manager-danger-zone" style="margin-top: 30px; background: rgba(255, 77, 79, 0.05); border: 1px solid rgba(255, 77, 79, 0.3); border-radius: 12px; padding: 20px;">
+    <h3 style="color: var(--danger); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 1.1rem;">
+      <i class="fa-solid fa-triangle-exclamation"></i> 
+      منطقة الخطر (Danger Zone)
+    </h3>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+      تحذير: الإجراءات التالية لا يمكن التراجع عنها. الرجاء توخي الحذر الشديد قبل تنفيذ أي منها.
+    </p>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+      <button class="btn warning" id="resetTermBtn" style="flex: 1; padding: 12px; font-weight: bold; min-width: 200px;">
+        <i class="fa-solid fa-clock-rotate-left"></i> تصفير الترم
+      </button>
+      <button class="btn danger" id="resetBtn" style="flex: 1; padding: 12px; font-weight: bold; min-width: 200px;">
+        <i class="fa-solid fa-skull-crossbones"></i> مسح النظام بالكامل
+      </button>
+    </div>
+  </div>
+
+  </div>
+  </div>
  </div>
 
  </div>
@@ -1735,7 +1745,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V94"></script>
+ <script type="module" src="app.js?v=STUDIFY_V95"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
