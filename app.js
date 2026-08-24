@@ -4375,8 +4375,7 @@ async function fetchManagerAssistants() {
       
       assistants.forEach(asst => {
         const uName = asst.username;
-        // Filter out the manager
-        if(uName.toLowerCase() === managerUsername.toLowerCase() || uName === 'admin') return;
+        // Removed filter so all assistants show up properly
         
         asstCount++;
         const initial = (uName[0] || "?").toUpperCase();
