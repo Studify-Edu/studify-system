@@ -1694,6 +1694,7 @@ function applyPermissionsToAssistantUI() {
   // Permanently hide manager-only tabs from assistants
   if(document.getElementById('btnManagerAssistants')) document.getElementById('btnManagerAssistants').classList.add('hidden');
   if(document.getElementById('btnManagerDecisions')) document.getElementById('btnManagerDecisions').classList.add('hidden');
+  if(document.getElementById('btnManagerPackages')) document.getElementById('btnManagerPackages').classList.add('hidden');
   // Ensure nav-groups remain visible
   document.querySelectorAll('.nav-group').forEach(group => {
     group.style.display = 'block';
@@ -4430,33 +4431,68 @@ async function fetchManagerAssistants() {
           
         // Generate Premium Permissions HTML
         const asstPerms = asst.permissions || {};
-        let permsHtml = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px;">`;
-        PERMISSIONS_DEFS.forEach(p => {
-          const isChecked = asstPerms[p.key] === true;
-          let icon = "fa-check"; // fallback
-          if (p.key.includes("student") || p.key.includes("add_")) icon = "fa-user-plus";
-          else if (p.key.includes("revenue") || p.key.includes("finance")) icon = "fa-wallet";
-          else if (p.key.includes("report")) icon = "fa-chart-pie";
-          else if (p.key.includes("discount")) icon = "fa-tags";
-          else if (p.key.includes("market") || p.key.includes("sms")) icon = "fa-bullhorn";
-          else if (p.key.includes("packages") || p.key.includes("pricing")) icon = "fa-cubes";
-          else if (p.key.includes("attendance")) icon = "fa-clock";
-          else if (p.key.includes("delete")) icon = "fa-trash";
-          else if (p.key.includes("setting")) icon = "fa-cogs";
+        let permsHtml = `<div style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">`;
 
+        // Grouping definitions
+        const permGroups = [
+          {
+            title: "💰 الصلاحيات المالية",
+            keys: ["show_revenue", "require_daily_approval", "can_request_discount"]
+          },
+          {
+            title: "⚙️ إدارة البيانات والنظام",
+            keys: ["can_add_student", "can_access_settings"]
+          },
+          {
+            title: "📄 صلاحيات الصفحات والأدوات",
+            keys: ["can_view_reports", "can_access_marketing", "can_access_session_students", "can_access_booklets", "can_access_activity_log"]
+          }
+        ];
+
+        permGroups.forEach(group => {
           permsHtml += `
-          <div class="perm-item-premium" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; transition: 0.2s ease;">
-            <span class="perm-label-premium" style="display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:600;">
-              <i class="fa-solid ${icon}" style="color: var(--primary); font-size:1.1rem; width:20px; text-align:center;"></i> 
-              ${p.label}
-            </span>
-            <label class="ios-toggle">
-              <input type="checkbox" ${isChecked ? "checked" : ""} onchange="window.toggleAssistantPermission('${uName}', '${p.key}', this.checked)">
-              <span class="ios-slider"></span>
-            </label>
-          </div>`;
+          <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.03);">
+            <h4 style="color: var(--primary); font-size: 0.95rem; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px;">${group.title}</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+          `;
+          
+          group.keys.forEach(k => {
+            const p = PERMISSIONS_DEFS.find(def => def.key === k);
+            if (!p) return;
+            
+            const isChecked = asstPerms[p.key] === true;
+            let icon = "fa-check"; // fallback
+            if (p.key.includes("student") || p.key.includes("add_")) icon = "fa-user-plus";
+            else if (p.key.includes("revenue") || p.key.includes("finance")) icon = "fa-wallet";
+            else if (p.key.includes("report")) icon = "fa-chart-pie";
+            else if (p.key.includes("discount")) icon = "fa-tags";
+            else if (p.key.includes("market") || p.key.includes("sms")) icon = "fa-bullhorn";
+            else if (p.key.includes("attendance")) icon = "fa-clock";
+            else if (p.key.includes("setting")) icon = "fa-cogs";
+            else if (p.key.includes("booklet")) icon = "fa-book-open";
+            else if (p.key.includes("activity")) icon = "fa-list-ul";
+
+            permsHtml += `
+            <div class="perm-item-premium" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 12px 14px; border-radius: 10px; display: flex; align-items: flex-start; justify-content: space-between; transition: 0.2s ease;">
+              <div style="display:flex; align-items:flex-start; gap:12px; flex: 1;">
+                <i class="fa-solid ${icon}" style="color: var(--primary); font-size:1.1rem; width:22px; text-align:center; margin-top: 3px;"></i> 
+                <div style="display:flex; flex-direction: column; gap: 6px; margin-left: 5px;">
+                  <span style="font-size:0.95rem; font-weight:600; color: #fff;">${p.label}</span>
+                  ${p.desc ? `<span style="font-size:0.75rem; color: var(--text-muted); line-height: 1.4;">${p.desc}</span>` : ''}
+                </div>
+              </div>
+              <label class="ios-toggle" style="margin-right: 15px; margin-top: 2px; flex-shrink: 0;">
+                <input type="checkbox" ${isChecked ? "checked" : ""} onchange="window.toggleAssistantPermission('${uName}', '${p.key}', this.checked)">
+                <span class="ios-slider"></span>
+              </label>
+            </div>`;
+          });
+
+          permsHtml += `</div></div>`;
         });
+        
         permsHtml += `</div>`;
+        
 
         html += `
         <div class="assistant-premium-card">
@@ -4723,18 +4759,17 @@ window.deleteAssistant = async function(asstKey) {
  // 17.11. MANAGER: PERMISSIONS SYSTEM
  // ==========================================
  const PERMISSIONS_DEFS = [
-  { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي" },
-  { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يسمح للمساعد برؤية إيراد اليوم في الشريط العلوي" },
-  { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح للمساعد بإضافة طلاب جديدين للنظام" },
-  { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "يسمح للمساعد بتعديل الباقات والأسعار" },
-  { key: "can_view_reports", label: "الوصول لصفحة التقارير", desc: "يسمح للمساعد بفتح صفحة التقارير اليومية" },
-  { key: "can_access_marketing", label: "أدوات التسويق", desc: "يسمح للمساعد بفتح صفحة أدوات التسويق" },
-  { key: "can_access_session_students", label: "طلاب الحصة", desc: "يسمح للمساعد بفتح صفحة طلاب الحصة" },
-  { key: "can_request_discount", label: "طلب خصم / إعفاء", desc: "يسمح للمساعد بإرسال طلب خصم للمدير لمراجعته" },
-  { key: "can_access_booklets", label: "مخزون المذكرات", desc: "يسمح للمساعد بفتح وإدارة مخزون المذكرات" },
-  { key: "can_access_activity_log", label: "سجل النشاط السريع", desc: "يسمح للمساعد بفتح السجل من القائمة العلوية" },
-  { key: "can_access_settings", label: "إعدادات النظام", desc: "يسمح للمساعد بالدخول للوحة تحكم المدير" },
-  ];
+  { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي", desc: "يجعل الإيراد معلقاً ولا يُضاف للإجمالي حتى يعتمده المدير" },
+  { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يعرض رقم إيراد الوردية الحالي في الشريط العلوي للمساعد" },
+  { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح بفتح كارت 'إضافة طالب جديد' وتسجيل البيانات" },
+  { key: "can_view_reports", label: "الوصول لصفحة التقارير", desc: "السماح للمساعد بفتح قسم الحسابات والتقارير" },
+  { key: "can_access_marketing", label: "أدوات التسويق", desc: "إتاحة فتح صفحة التسويق وإرسال رسائل للطلاب" },
+  { key: "can_access_session_students", label: "طلاب الحصة", desc: "السماح بعرض قائمة الحضور المخصصة للحصة الحالية" },
+  { key: "can_request_discount", label: "طلب خصم / إعفاء", desc: "إظهار زر 'خصم' عند الدفع ليتمكن المساعد من طلب إعفاء" },
+  { key: "can_access_booklets", label: "مخزون المذكرات", desc: "السماح بفتح جرد المذكرات وإدارة المبيعات" },
+  { key: "can_access_activity_log", label: "سجل النشاط السريع", desc: "إظهار قائمة سجل التغييرات السريعة من القائمة العلوية" },
+  { key: "can_access_settings", label: "إعدادات النظام", desc: "السماح بفتح لوحة الإعدادات المتقدمة (نسخ احتياطي - تصفير - إلخ)" }
+];
 
  // Default: all permissions ON
  let currentPermissions = {};
