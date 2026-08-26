@@ -366,10 +366,6 @@
  <div id="userProfileDropdown" class="user-profile-dropdown hidden" style="position: absolute; top: 110%; inset-inline-end: 0; width: 260px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;">
  <div style="font-weight: bold; font-size: 0.95em; color: var(--primary); padding: 4px 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;" data-i18n="quick_controls_title">قائمة التحكم السريعة</div>
  
- <button id="quickActivityLogBtn" class="btn secondary adminOnly" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-weight: bold; font-size: 0.9em; text-align: start; justify-content: flex-start;">
- <span></span> <span data-i18n="quick_activity_log">سجل العمليات (Activity Log)</span>
- </button>
- 
  <div style="border-top: 1px solid var(--border); margin: 4px 0;"></div>
  
  <button id="changeMyPasswordBtn" class="btn secondary" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-weight: bold; font-size: 0.9em; text-align: start; justify-content: flex-start; color: var(--primary);">
@@ -1282,16 +1278,6 @@
  </div>
 
 
- <div id="activityLogModal" class="modal hidden">
- <div class="modalContent" style="max-width: 800px; max-height: 85vh; display: flex; flex-direction: column;">
- <div class="flexBetween" style="border-bottom: 2px solid var(--border); padding-bottom: 10px;">
- <h3 style="color: var(--primary);" data-i18n="modal_activity_log"> سجل العمليات (Activity Log)</h3>
- <button class="btn danger smallBtn" onclick="document.getElementById('activityLogModal').classList.add('hidden')"></button>
- </div>
- <div id="activityLogBody" style="margin-top: 15px; overflow-y: auto; flex: 1;">
- <div style="text-align: center; padding: 20px;">جاري تحميل السجل...</div>
- </div>
- </div>
  </div>
 
  <style>
@@ -1745,7 +1731,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V95"></script>
+ <script type="module" src="app.js?v=STUDIFY_V96"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

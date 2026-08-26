@@ -757,111 +757,8 @@ document.addEventListener('DOMContentLoaded', function() {
  return colors[Math.abs(hash) % colors.length];
  }
 
- // -- Activity Log & Notifications --
- window.logAction = function(actionType, details) {
-  if (!window.CURRENT_MANAGER_ID || !window.supabaseClient) return;
-  const user = window.CURRENT_ROLE === 'admin' ? 'المدير' : ($("currentShiftManagerName") ? $("currentShiftManagerName").innerText : 'المساعد');
-  
-  const logEntry = {
-    
-    user_name: user,
-    action: actionType,
-    details: details
-  };
-
-  window.supabaseClient.from('activity_logs').insert([logEntry]).then(() => {}).catch(e => console.log("Log error:", e));
+ window.supabaseClient.from('activity_logs').insert([logEntry]).then(() => {}).catch(e => console.log("Log error:", e));
  };
-
- let lastReadActivityTime = toInt(localStorage.getItem("ca_last_read_activity") || "0");
-
- window.fetchActivityLog = async function() {
-  if (!window.CURRENT_MANAGER_ID || !window.supabaseClient) return;
-  try {
-    const { data: logs, error } = await window.supabaseClient
-      .from('activity_logs')
-      .select('*')
-      .not('id', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(100);
-
-    if (!error && logs) {
-      const logArray = logs.map(l => ({
-        time: new Date(l.created_at).getTime(),
-        user: l.user_name,
-        actionType: l.action,
-        details: l.details
-      }));
-      renderActivityLog(logArray);
-      if (window.CURRENT_ROLE === 'admin') updateNotifications(logArray);
-    } else {
-      renderActivityLog([]);
-    }
-  } catch(e) {
-    console.error("fetchActivityLog error:", e);
-    renderActivityLog([]);
-  }
- };
-
- function renderActivityLog(logs) {
- const body = $("activityLogBody");
- if (!body) return;
- if (logs.length === 0) {
- body.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">لا توجد عمليات مسجلة حتى الآن</div>';
- return;
- }
- let html = '';
- logs.forEach(log => {
- const dateStr = new Date(log.time).toLocaleString('ar-EG');
- html += `
- <div style="border: 1px solid var(--border); padding: 10px; margin-bottom: 10px; border-radius: 8px; background: var(--bg-surface);">
- <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
- <span style="font-weight: bold; color: var(--primary);">${log.actionType}</span>
- <span style="font-size: 0.85em; color: #888;">${dateStr}</span>
- </div>
- <div style="margin-bottom: 5px;">${log.details}</div>
- <div style="font-size: 0.85em; color: var(--success);">بواسطة: ${log.user}</div>
- </div>`;
- });
- body.innerHTML = html;
- }
-
- function updateNotifications(logs) {
- let unreadCount = 0;
- let html = '';
- const notifList = $("notificationsList");
- const badge = $("notificationsBadge");
- 
- logs.slice(0, 30).forEach(log => {
- const isUnread = log.time > lastReadActivityTime;
- if (isUnread) unreadCount++;
- 
- const dateStr = new Date(log.time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
- // For dark mode compatibility, we use rgba for highlight instead of static color
- html += `
- <div style="padding: 10px; border-radius: 8px; background: ${isUnread ? 'rgba(0,123,255,0.1)' : 'transparent'}; border-right: 3px solid ${isUnread ? 'var(--primary)' : 'var(--border)'}; font-size: 0.9em;">
- <div style="font-weight: bold; margin-bottom: 4px;">${log.actionType}</div>
- <div style="color: var(--text-color); margin-bottom: 4px; opacity: 0.8;">${log.details}</div>
- <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #888;">
- <span>${log.user}</span>
- <span>${dateStr}</span>
- </div>
- </div>`;
- });
- 
- if (logs.length === 0) {
- html = '<div style="text-align: center; color: #888; padding: 10px;">لا يوجد إشعارات</div>';
- }
- 
- if (notifList) notifList.innerHTML = html;
- if (badge) {
- if (unreadCount > 0) {
- badge.innerText = unreadCount;
- badge.classList.remove("hidden");
- } else {
- badge.classList.add("hidden");
- }
- }
- }
 
  // -- Premium UX Functions --
  function triggerShake(inputId) {
@@ -1544,7 +1441,6 @@ async function loadAll() {
  renderReport(nowDateStr());
  updateTopStats();
  populatePackages();
- if (typeof window.fetchActivityLog === 'function') window.fetchActivityLog();
  window.switchTab('Home');
  }
 
@@ -1674,13 +1570,6 @@ function applyPermissionsToAssistantUI() {
     if(document.getElementById('btnTabBooklets')) document.getElementById('btnTabBooklets').classList.remove('locked-feature');
   } else {
     if(document.getElementById('btnTabBooklets')) document.getElementById('btnTabBooklets').classList.add('locked-feature');
-  }
-
-  // Activity Log
-  if (p.can_access_activity_log) {
-    if(document.getElementById('quickActivityLogBtn')) document.getElementById('quickActivityLogBtn').classList.remove('locked-feature');
-  } else {
-    if(document.getElementById('quickActivityLogBtn')) document.getElementById('quickActivityLogBtn').classList.add('locked-feature');
   }
 
   // Settings / Admin Dashboard
@@ -2023,7 +1912,6 @@ function applyPermissions() {
  if(!attByDate[d]) attByDate[d] = []; 
  attByDate[d].push(String(id)); 
  
- if (typeof logAction === "function") logAction("تسجيل حضور", `تسجيل حضور الطالب ${s.name || id}`);
  saveAttendanceOnly(); 
  updateLiveFeed(s);
  playSound("success");
@@ -2040,7 +1928,6 @@ function applyPermissions() {
  const s = students[String(id)]; if(!s) return;
  s.attendanceDates = s.attendanceDates.filter(date => date !== d);
  if(attByDate[d]) attByDate[d] = attByDate[d].filter(x => x !== String(id));
- if (typeof logAction === "function") logAction("إلغاء حضور", `إلغاء حضور الطالب ${s.name || id} ليوم ${d}`);
  saveAttendanceOnly();
  }
 
@@ -2822,11 +2709,8 @@ window.logout = async function() {
 
  on("markAllReadBtn", "click", function(e) {
  if(e) e.stopPropagation();
- lastReadActivityTime = Date.now();
- localStorage.setItem("ca_last_read_activity", lastReadActivityTime.toString());
  const badge = $("notificationsBadge");
  if (badge) badge.classList.add("hidden");
- fetchActivityLog();
  });
 
  on("quickActivityLogBtn", "click", function() {
@@ -2985,7 +2869,6 @@ on("quickAttendId", "keypress", function(e) {
  if ($("stName")) s.name = $("stName").value; 
  if ($("stClass")) s.className = $("stClass").value; 
  if ($("stPhone")) s.phone = $("stPhone").value;
- if (typeof logAction === "function") logAction("تعديل بيانات الطالب", `تم تعديل بيانات الطالب ${s.name || currentId}`);
  playSound("click");
  saveAll(); showToast(t("msg_saved")); updateStudentUI(currentId);
  
@@ -3093,8 +2976,6 @@ on("quickAttendId", "keypress", function(e) {
  revenueByDate[today] += v;
  
  st.debt = 0;
- if (typeof logAction === "function") logAction("تسديد مديونية", `تم تسديد كامل مديونية الطالب ${st.name || currentId} بقيمة ${v} ج كاش`);
- 
  saveAll(); updateStudentUI(currentId);
  fireConfetti(); playSound("money"); showToast("تم سداد المديونية بالكامل ");
  });
@@ -3122,7 +3003,6 @@ on("quickAttendId", "keypress", function(e) {
  if (!revenueByDate[today]) revenueByDate[today] = 0;
  revenueByDate[today] += v;
  
- if (typeof logAction === "function") logAction("تسجيل دفعة", `تم دفع مبلغ ${v} ج للطالب ${st.name || currentId} عن طريق ${methodName}`);
  saveAll(); updateStudentUI(currentId);
  
  let sClass = st.className ? st.className.trim() : "";
@@ -3974,11 +3854,9 @@ on("importExcelInput", "change", async function(e) {
  for(let i=0; i<extraIds.length; i++) { if (extraIds[i] !== targetId) newExtra.push(extraIds[i]); }
  extraIds = newExtra;
  }
- if (typeof logAction === "function") logAction("حذف طالب", `نقل الطالب ${backup.name || targetId} إلى سلة المحذوفات`);
  saveAll(); updateStudentUI(null); window.switchTab('Home');
  
  showUndoToast(t("msg_deleted"), function() {
- if (typeof logAction === "function") logAction("استرجاع طالب", `تم استرجاع الطالب ${backup.name || targetId}`);
  students[targetId] = backup; delete deletedStudents[targetId];
  revenueByDate[nowDateStr()] = (revenueByDate[nowDateStr()] || 0) + deducted;
  saveAll(); window.extOpen(targetId); renderReport(nowDateStr()); renderCharts(); showToast(t("msg_undo"));
@@ -4444,7 +4322,7 @@ async function fetchManagerAssistants() {
           },
           {
             title: "<i class='fa-regular fa-file-lines'></i> صلاحيات الصفحات والأدوات",
-            keys: ["can_view_reports", "can_access_marketing", "can_access_session_students", "can_access_booklets", "can_access_activity_log"]
+            keys: ["can_view_reports", "can_access_marketing", "can_access_session_students", "can_access_booklets"]
           }
         ];
 
@@ -4469,8 +4347,6 @@ async function fetchManagerAssistants() {
             else if (p.key.includes("attendance")) icon = "fa-clock";
             else if (p.key.includes("setting")) icon = "fa-cogs";
             else if (p.key.includes("booklet")) icon = "fa-book-open";
-            else if (p.key.includes("activity")) icon = "fa-list-ul";
-
             permsHtml += `
             <div class="perm-item-premium" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 12px 14px; border-radius: 10px; display: flex; align-items: flex-start; justify-content: space-between; transition: 0.2s ease;">
               <div style="display:flex; align-items:flex-start; gap:12px; flex: 1;">
@@ -4767,7 +4643,6 @@ window.deleteAssistant = async function(asstKey) {
   { key: "can_access_session_students", label: "طلاب الحصة", desc: "السماح بعرض قائمة الحضور المخصصة للحصة الحالية" },
   { key: "can_request_discount", label: "طلب خصم / إعفاء", desc: "إظهار زر 'خصم' عند الدفع ليتمكن المساعد من طلب إعفاء" },
   { key: "can_access_booklets", label: "مخزون المذكرات", desc: "السماح بفتح جرد المذكرات وإدارة المبيعات" },
-  { key: "can_access_activity_log", label: "سجل النشاط السريع", desc: "إظهار قائمة سجل التغييرات السريعة من القائمة العلوية" },
   { key: "can_access_settings", label: "إعدادات النظام", desc: "السماح بفتح لوحة الإعدادات المتقدمة (نسخ احتياطي - تصفير - إلخ)" }
 ];
 
@@ -5052,7 +4927,7 @@ window.deleteAssistant = async function(asstKey) {
     tabsDiv.className = "msg-tabs";
     tabsDiv.innerHTML = `
     <button class="msg-tab-btn active" id="msgTabMessages" onclick="window.switchMsgTab('messages')"><i class="fa-solid fa-envelope"></i> الرسائل</button>
-    <button class="msg-tab-btn" id="msgTabActivity" onclick="window.switchMsgTab('activity')"><i class="fa-solid fa-clock-rotate-left"></i> سجل العمليات</button>`;
+    `;
     dropdown.insertBefore(tabsDiv, listEl);
   }
   renderAssistantMessages();
@@ -5063,11 +4938,7 @@ window.deleteAssistant = async function(asstKey) {
   if (tab === "messages") {
     if ($("msgTabMessages")) $("msgTabMessages").classList.add("active");
     renderAssistantMessages();
-  } else {
-    if ($("msgTabActivity")) $("msgTabActivity").classList.add("active");
-    window.fetchActivityLog && window.fetchActivityLog();
-  }
- };
+  }};
 
  function renderAssistantMessages() {
   const listEl = $("notificationsList");
