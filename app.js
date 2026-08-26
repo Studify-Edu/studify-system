@@ -757,8 +757,6 @@ document.addEventListener('DOMContentLoaded', function() {
  return colors[Math.abs(hash) % colors.length];
  }
 
- window.supabaseClient.from('activity_logs').insert([logEntry]).then(() => {}).catch(e => console.log("Log error:", e));
- };
 
  // -- Premium UX Functions --
  function triggerShake(inputId) {
