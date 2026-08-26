@@ -355,11 +355,6 @@ document.addEventListener('DOMContentLoaded', function() {
  "plc_new_manager": { ar: "اسم المسئول الجديد...", en: "New manager name..." },
  "btn_add_manager": { ar: "إضافة", en: "Add" },
  "err_no_manager": { ar: "يرجى اختيار اسم مسئول الشيفت أولاً", en: "Please select a shift manager first" },
- "drive_offline": { ar: "غير متصل", en: "Offline" },
- "drive_online": { ar: "متصل بالسحابة", en: "Cloud Connected" },
- "btn_drive_login": { ar: "ربط بجوجل درايف", en: "Connect Google Drive" },
- "btn_drive_connected": { ar: "متصل بالدرايف", en: "Drive Connected" },
- "btn_drive_restore": { ar: "استرجاع من السحاب", en: "Restore from Cloud" },
  "msg_sync_wait": { ar: "جاري حفظ نسخة احتياطية للسحابة...", en: "Saving backup to cloud..." },
  "msg_sync_done": { ar: "تم الحفظ بنجاح على الدرايف", en: "Saved to Drive successfully" },
  "msg_sync_auto": { ar: "تم تحديث النسخة الاحتياطية تلقائياً", en: "Auto-backup updated on cloud" },
@@ -2444,8 +2439,6 @@ function applyPermissions() {
  // Sidebar doesn't need flex-direction change for RTL (handled by CSS logical properties)
  
  // السطر الجديد لتحديث كلمات جوجل درايف فوراً مع تغيير اللغة
- if (typeof updateDriveUI === "function") updateDriveUI();
-
  // السطور الجديدة لترجمة شاشة إدخال المنهج
  if($("saveSyllabusBtn")) $("saveSyllabusBtn").innerText = currentLang === 'ar' ? "حفظ وتحديث المنهج" : "Save & Update Syllabus";
  if($("syllName")) $("syllName").placeholder = currentLang === 'ar' ? "اسم الشابتر / الدرس..." : "Chapter / Lesson Name...";
@@ -4013,213 +4006,6 @@ on("importExcelInput", "change", async function(e) {
  });
 
  // ==========================================
- // 17.5. GOOGLE DRIVE CLOUD SYNC (SMART SYNC)
- // ==========================================
- const CLIENT_ID = '783299132334-7sk1ffet8bdmj86f179gbttjt5fqosao.apps.googleusercontent.com';
- const SCOPES = 'https://www.googleapis.com/auth/drive.file';
- const BACKUP_FILE_NAME = 'vpro_backup.json';
- let tokenClient;
- let accessToken = localStorage.getItem("drive_token");
-
-function updateDriveUI() {
- const btn = $("driveLoginBtn"); const syncBtn = $("syncNowBtn");
- const statusTxt = $("driveStatusText"); const lastSyncTxt = $("lastSyncText");
- 
- // 1. التحقق من وجود إنترنت حقيقي في الجهاز
- if (!navigator.onLine) {
- if(statusTxt) { 
- statusTxt.innerHTML = currentLang === 'ar' ? " لا يوجد اتصال بالإنترنت" : " No Internet Connection"; 
- statusTxt.style.color = "var(--danger)"; 
- statusTxt.classList.remove("pulse-active"); // وقف النبض
- }
- if(btn) { btn.innerHTML = currentLang === 'ar' ? "بانتظار عودة الإنترنت..." : "Waiting for network..."; btn.style.background = "#666"; }
- if(syncBtn) syncBtn.classList.add("hidden");
- return; // وقف الدالة هنا لحد ما النت يرجع
- }
-
- // 2. لو فيه نت، هل هو رابط بالدرايف؟
- if(accessToken) {
- if(btn) { btn.innerHTML = t("btn_drive_connected"); btn.style.background = "#2ea44f"; }
- if(syncBtn) syncBtn.classList.remove("hidden");
- if(statusTxt) { 
- statusTxt.innerHTML = t("drive_online"); 
- statusTxt.style.color = "var(--success)"; 
- statusTxt.classList.add("pulse-active"); // شغل النبض (اللمبة تنور وتطفي)
- }
- } else {
- // فيه نت بس لسه مربوطش
- if(statusTxt) { 
- statusTxt.innerHTML = t("drive_offline"); 
- statusTxt.style.color = "#666"; 
- statusTxt.classList.remove("pulse-active");
- }
- if(btn) { btn.innerHTML = t("btn_drive_login"); btn.style.background = "#4285F4"; }
- }
-
- let lastTime = localStorage.getItem("last_cloud_sync_time");
- if(lastTime && lastSyncTxt) {
- lastSyncTxt.innerHTML = t("lbl_last_sync") + lastTime;
- }
- }
- updateDriveUI();
-
- // أوامر عشان السيستم يراقب النت لايف (لو فصل أو اشتغل يغير اللمبة فوراً)
- window.addEventListener('online', updateDriveUI);
- window.addEventListener('offline', updateDriveUI);
-
- on("driveLoginBtn", "click", function() {
- if (typeof google === 'undefined') {
- return showToast(currentLang === 'ar' ? "جاري تحميل مكتبات جوجل، جرب مرة تانية كمان ثانية..." : "Loading Google libraries...", "warning");
- }
- if (!tokenClient) {
- tokenClient = google.accounts.oauth2.initTokenClient({
- client_id: CLIENT_ID,
- scope: SCOPES,
- callback: (response) => {
- if (response.access_token) {
- accessToken = response.access_token;
- localStorage.setItem("drive_token", accessToken);
- updateDriveUI(); showToast(t("btn_drive_connected"), "success");
- }
- },
- });
- }
- tokenClient.requestAccessToken({ prompt: 'consent' });
- });
-
- // دالة الرفع المدمجة (يدوي أو تلقائي)
- async function backupToDrive(isManual = false) {
- if (!accessToken) return;
- 
- if (isManual) showToast(t("msg_sync_wait"), "warning");
-
- let backupData = {};
- // 1. Settings from localStorage
- for (let i = 0; i < localStorage.length; i++) {
- let key = localStorage.key(i);
- if (key.startsWith("ca_")) backupData[key] = localStorage.getItem(key);
- }
- 
- // 2. Add heavy data from memory (since they are in IndexedDB, not localStorage)
- backupData[K_STUDENTS] = JSON.stringify(students || {});
- backupData[K_ATT_BY_DATE] = JSON.stringify(attByDate || {});
- backupData[K_REVENUE] = JSON.stringify(revenueByDate || {});
- backupData[K_GROUP_FEES] = JSON.stringify(groupFees || {});
- backupData[K_EXPENSES] = JSON.stringify(expensesByDate || {});
- backupData[K_DELETED] = JSON.stringify(deletedStudents || {});
- backupData[K_SYLLABUS] = JSON.stringify(syllabusData || []);
- backupData[K_EVAL] = JSON.stringify(evalData || {});
- backupData[K_SESSION_STUDENTS] = JSON.stringify(sessionStudentsByDate || {});
- backupData[K_BOOKLETS] = JSON.stringify(bookletsStock || {});
- backupData[K_EXTRA_IDS] = JSON.stringify(extraIds || []);
-
- const fileContent = JSON.stringify(backupData);
- const metadata = { name: BACKUP_FILE_NAME, mimeType: 'application/json' };
-
- try {
- const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${BACKUP_FILE_NAME}' and trashed=false`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
- const data = await response.json();
- let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
- let method = 'POST';
-
- // منع التكرار: التحديث إذا كان موجوداً
- if (data.files && data.files.length > 0) {
- url = `https://www.googleapis.com/upload/drive/v3/files/${data.files[0].id}?uploadType=multipart`; method = 'PATCH';
- }
-
- const boundary = 'foo_bar_baz';
- const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${fileContent}\r\n--${boundary}--`;
-
- await fetch(url, { method: method, headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` }, body: body });
- 
- // تسجيل وقت المزامنة الناجحة
- let now = new Date();
- let timeString = now.toLocaleDateString('ar-EG') + " " + now.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
- localStorage.setItem("last_cloud_sync_time", timeString);
- localStorage.setItem("last_cloud_sync_date", nowDateStr()); // لضمان عدم التكرار في نفس اليوم
- updateDriveUI();
-
- if (isManual) {
- showToast(t("msg_sync_done"), "success");
- } else {
- showToast(t("msg_sync_auto"), "success");
- }
- } catch (err) { 
- console.error("Sync Error", err); 
- if (isManual) showToast(currentLang === 'ar' ? "فشل الرفع، تأكد من الاتصال بالنت" : "Upload failed, check connection", "err");
- }
- }
-
- // ربط زرار السهم بالرفع اليدوي
- on("syncNowBtn", "click", function() {
- backupToDrive(true);
- });
-
- on("restoreDriveBtn", "click", async function() {
- if (!accessToken) return showToast(currentLang === 'ar' ? "يرجى الربط بالدرايف أولاً ️" : "Please connect to Drive first ️", "err");
- const confirmRes = await Swal.fire({
- title: 'تحذير شديد',
- text: currentLang === 'ar' ? "️ تحذير شديد: سيتم مسح كل البيانات الحالية واستبدالها بنسخة السحابة، متأكد؟" : "️ WARNING: Current data will be replaced by cloud backup. Sure?",
- icon: 'error',
- showCancelButton: true,
- confirmButtonText: 'نعم، استرجع البيانات',
- cancelButtonText: 'إلغاء'
- });
- if (!confirmRes.isConfirmed) return;
-
- try {
- const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${BACKUP_FILE_NAME}'&fields=files(id)`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
- const data = await response.json();
-
- if (data.files && data.files.length > 0) {
- const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${data.files[0].id}?alt=media`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
- const backupData = await fileRes.json();
- 
- // Helper to fallback to older backup keys (e.g. v5)
- const safeGet = (keys) => {
- for(let k of keys) { if (backupData[k] !== undefined) return backupData[k]; }
- return undefined;
- };
- 
- const restoreMap = {
- [K_STUDENTS]: safeGet([K_STUDENTS, "ca_students_v5", "ca_students_v4"]),
- [K_EXTRA_IDS]: safeGet([K_EXTRA_IDS, "ca_extra_ids_v5"]),
- [K_ATT_BY_DATE]: safeGet([K_ATT_BY_DATE, "ca_att_by_date_v5"]),
- [K_REVENUE]: safeGet([K_REVENUE, "ca_revenue_v5"]),
- [K_DELETED]: safeGet([K_DELETED, "ca_deleted_v8", "ca_deleted_v7"]),
- [K_NOTEBOOK]: backupData[K_NOTEBOOK],
- [K_GROUP_FEES]: backupData[K_GROUP_FEES],
- [K_EXPENSES]: backupData[K_EXPENSES],
- [K_SYLLABUS]: backupData[K_SYLLABUS],
- [K_EVAL]: backupData[K_EVAL],
- [K_SESSION_STUDENTS]: backupData[K_SESSION_STUDENTS],
- [K_BOOKLETS]: backupData[K_BOOKLETS]
- };
-
- // Save data correctly (to IndexedDB for heavy data, localStorage for lightweight)
- for (const [key, value] of Object.entries(restoreMap)) {
- if (value !== undefined) {
- if (HEAVY_DATA_KEYS.includes(key)) {
- try {
- await secureSave(key, JSON.parse(value));
- } catch (e) { console.error("Restore parse err", key); }
- } else {
- localStorage.setItem(key, value);
- }
- }
- }
-
- // Push to Supabase if manager is logged in
- if (window.CURRENT_MANAGER_ID) {
-   if (typeof saveAll === 'function') await saveAll();
- }
- 
- showToast(currentLang === 'ar' ? "تم استرجاع البيانات بنجاح، سيتم إعادة التحميل..." : "Data restored successfully. Restarting...");
- setTimeout(() => location.reload(), 1500);
- } else { showToast(currentLang === 'ar' ? "لم يتم العثور على نسخة احتياطية في الدرايف" : "No backup found in Drive", "err"); }
- } catch (err) { console.error(err); showToast(currentLang === 'ar' ? "فشل الاسترجاع، تأكد من الاتصال بالنت" : "Restore failed, check connection", "err"); }
- });
-// ==========================================
  // 17.8. ASSISTANT MANAGEMENT (SAAS)
  // ==========================================
  let currentManager = localStorage.getItem("ca_current_username") || "المدير";
@@ -6228,8 +6014,7 @@ window.deleteAssistant = async function(asstKey) {
 
   if (localStorage.getItem("last_cloud_sync_date") !== nowDateStr()) {
     setTimeout(() => { 
-      if (typeof accessToken !== "undefined" && accessToken) backupToDrive(false); 
-    }, 8000);
+      }, 8000);
   }
  }
 
