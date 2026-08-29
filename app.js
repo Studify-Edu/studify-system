@@ -1636,24 +1636,44 @@ function applyPermissions() {
  }
  if($("toggleRevBtn")) $("toggleRevBtn").innerHTML = isRevHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
 
- const subjSelect = $("globalSubject");
- if (subjSelect) {
-     const currentVal = subjSelect.value;
+ window.currentGlobalSubject = "";
+
+ window.openSubjectSelectionModal = function() {
+     const modal = document.getElementById("subjectSelectionModal");
+     const list = document.getElementById("subjectSelectionList");
+     if (!modal || !list) return;
+     
      let subjects = new Set();
      Object.values(groupFees || {}).forEach(pkg => {
          if (pkg.subject) subjects.add(pkg.subject);
      });
      
-     let subjHtml = '<option value="">-- اختر مادة الحضور --</option>';
-     Array.from(subjects).sort().forEach(sub => {
-         subjHtml += `<option value="${sub}">${sub}</option>`;
-     });
-     
-     subjSelect.innerHTML = subjHtml;
-     if (subjects.has(currentVal)) {
-         subjSelect.value = currentVal;
+     let html = "";
+     if (subjects.size === 0) {
+         html = '<div class="mutedCenter">لا توجد مواد مسجلة في الباقات. قم بإضافة باقات أولاً.</div>';
+     } else {
+         Array.from(subjects).sort().forEach(sub => {
+             const isSelected = (sub === window.currentGlobalSubject);
+             html += `
+             <div style="padding:15px; border-radius:12px; background:var(--bg-inset); border:2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:all 0.2s;" onclick="selectGlobalSubject('${sub}')">
+                 <span style="font-weight:bold; font-size:1.1em; color:var(--text-primary);">${sub}</span>
+                 ${isSelected ? '<i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1.4em;"></i>' : '<i class="fa-regular fa-circle" style="color:var(--text-secondary); font-size:1.4em;"></i>'}
+             </div>`;
+         });
      }
- }
+     
+     list.innerHTML = html;
+     modal.classList.remove("hidden");
+ };
+
+ window.selectGlobalSubject = function(sub) {
+     window.currentGlobalSubject = sub;
+     const txt = document.getElementById("globalSubjectText");
+     if (txt) txt.textContent = sub || "-- مادة الحضور --";
+     document.getElementById("subjectSelectionModal").classList.add("hidden");
+ };
+
+ on("openSubjectModalBtn", "click", openSubjectSelectionModal);
  }
 
  function updateLiveFeed(st) {
@@ -1968,11 +1988,10 @@ function applyPermissions() {
  return { ok: false, msg: "Student not found" };
  }
  
- const subjSelect = document.getElementById("globalSubject");
- const selectedSubject = subjSelect ? subjSelect.value : "";
+ const selectedSubject = window.currentGlobalSubject || "";
  if (Object.keys(groupFees || {}).length > 0 && !selectedSubject) {
      showFullscreenFeedback(false, false);
-     triggerShake("globalSubject");
+     triggerShake("openSubjectModalBtn");
      return { ok: false, msg: "يرجى تحديد مادة الحضور من القائمة بالأعلى" };
  }
 

@@ -305,13 +305,11 @@
  <header class="topbar">
  <div class="topbar-start">
  <button id="mobileSidebarToggle" class="mobile-menu-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
- <div class="stat-pill" style="margin-inline-start:10px; max-width: 180px;">
-   <select id="globalSubject" style="background:transparent; border:none; outline:none; font-weight:bold; font-family: inherit; color:var(--text-primary); cursor:pointer; font-size:0.95em; text-overflow: ellipsis;">
-     <option value="">-- مادة الحضور --</option>
-   </select>
-   <i class="fa-solid fa-book" style="color:var(--primary); margin-inline-start:6px; font-size:1.1em;"></i>
- </div>
- </div>
+  <span class="stat-pill clickable" id="openSubjectModalBtn" style="margin-inline-start:10px;">
+    <span id="globalSubjectText" style="font-weight:bold; font-size:0.95em; color:var(--text-primary);">-- مادة الحضور --</span>
+    <i class="fa-solid fa-book" style="color:var(--primary); margin-inline-start:6px; font-size:1.1em;"></i>
+  </span>
+  </div>
  <div class="topbar-stats">
  <span class="stat-pill clickable" id="openAllStudentsBtn">
  <span data-i18n="stat_students"> مسجلين:</span> <b id="totalStudentsCount">0</b>
@@ -1783,7 +1781,23 @@
     </div>
   </div>
 
-
+   <!-- مودال اختيار مادة الحضور -->
+   <div id="subjectSelectionModal" class="modal hidden">
+     <div class="modal-content" style="max-width: 400px;">
+       <button class="close-btn" onclick="document.getElementById('subjectSelectionModal').classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>
+       <h3 style="margin-bottom:20px; color:var(--primary); font-family:'Cairo'; display:flex; align-items:center; justify-content:center; gap:8px;">
+         <i class="fa-solid fa-book"></i> اختر مادة الحضور
+       </h3>
+       
+       <div id="subjectSelectionList" style="display:flex; flex-direction:column; gap:12px; max-height:400px; overflow-y:auto; padding-right:5px;">
+         <!-- Subjects will be rendered here via JS -->
+       </div>
+       
+       <div style="margin-top:20px; text-align:center;">
+         <button class="btn secondary" onclick="document.getElementById('subjectSelectionModal').classList.add('hidden')" style="width:100%;">إغلاق</button>
+       </div>
+     </div>
+   </div>
 
 </body>
 </html>
