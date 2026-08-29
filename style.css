@@ -3287,3 +3287,13 @@ tr:hover td:first-child {
 .nav-item.locked-feature::before {
   display: none !important; /* Never show the giant hover text for sidebar items */
 }
+
+/* Smooth Login Transition */
+#appBox:not(.hidden), #manager-dashboard:not(.hidden) {
+  animation: fadeInZoom 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes fadeInZoom {
+  0% { opacity: 0; transform: scale(0.97); }
+  100% { opacity: 1; transform: scale(1); }
+}
