@@ -3585,29 +3585,6 @@ on("quickAttendId", "keypress", function(e) {
  on("themeSelector", "change", function(e) { switchThemeWithAnimation(e.target.value); });
  on("themeSelectorAdmin", "change", function(e) { switchThemeWithAnimation(e.target.value); });
 
- if($("bgInput")) {
- $("bgInput").addEventListener("change", function(e) {
- const file = e.target.files[0]; if(!file) return; 
- const reader = new FileReader();
- reader.onload = function(event) {
- const imgData = event.target.result;
- document.body.style.backgroundImage = `url('${imgData}')`;
- document.body.style.backgroundSize = "cover";
- document.body.style.backgroundAttachment = "fixed";
- localStorage.setItem(K_BG_IMAGE, imgData);
- showToast("تم تغيير خلفية السنتر ️");
- }; 
- reader.readAsDataURL(file);
- });
- }
-
- if($("removeBgBtn")) {
- $("removeBgBtn").addEventListener("click", function() {
- document.body.style.backgroundImage = "none";
- localStorage.removeItem(K_BG_IMAGE);
- showToast("تم إزالة الخلفية ️");
- });
- }
 
  on("reportBtn", "click", function() {
  if ($("reportDate")) renderReport($("reportDate").value);
