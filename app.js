@@ -1327,12 +1327,7 @@ async function loadAll() {
 
  applyTheme(localStorage.getItem(K_THEME) || "dark");
  
- const savedBg = localStorage.getItem(K_BG_IMAGE); 
- if(savedBg) { 
- document.body.style.backgroundImage = `url('${savedBg}')`; 
- document.body.style.backgroundSize = "cover"; 
- document.body.style.backgroundAttachment = "fixed"; 
- }
+
  if($("centerNotebook")) $("centerNotebook").value = localStorage.getItem(K_NOTEBOOK) || "";
  
  updateTopStats(); updateFinanceSummary(); renderCharts();
