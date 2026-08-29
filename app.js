@@ -1636,44 +1636,6 @@ function applyPermissions() {
  }
  if($("toggleRevBtn")) $("toggleRevBtn").innerHTML = isRevHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
 
- window.currentGlobalSubject = "";
-
- window.openSubjectSelectionModal = function() {
-     const modal = document.getElementById("subjectSelectionModal");
-     const list = document.getElementById("subjectSelectionList");
-     if (!modal || !list) return;
-     
-     let subjects = new Set();
-     Object.values(groupFees || {}).forEach(pkg => {
-         if (pkg.subject) subjects.add(pkg.subject);
-     });
-     
-     let html = "";
-     if (subjects.size === 0) {
-         html = '<div class="mutedCenter">لا توجد مواد مسجلة في الباقات. قم بإضافة باقات أولاً.</div>';
-     } else {
-         Array.from(subjects).sort().forEach(sub => {
-             const isSelected = (sub === window.currentGlobalSubject);
-             html += `
-             <div style="padding:15px; border-radius:12px; background:var(--bg-inset); border:2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:all 0.2s;" onclick="selectGlobalSubject('${sub}')">
-                 <span style="font-weight:bold; font-size:1.1em; color:var(--text-primary);">${sub}</span>
-                 ${isSelected ? '<i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1.4em;"></i>' : '<i class="fa-regular fa-circle" style="color:var(--text-secondary); font-size:1.4em;"></i>'}
-             </div>`;
-         });
-     }
-     
-     list.innerHTML = html;
-     modal.classList.remove("hidden");
- };
-
- window.selectGlobalSubject = function(sub) {
-     window.currentGlobalSubject = sub;
-     const txt = document.getElementById("globalSubjectText");
-     if (txt) txt.textContent = sub || "-- مادة الحضور --";
-     document.getElementById("subjectSelectionModal").classList.add("hidden");
- };
-
- on("openSubjectModalBtn", "click", openSubjectSelectionModal);
  }
 
  function updateLiveFeed(st) {
@@ -6468,6 +6430,45 @@ window.deleteAssistant = async function(asstKey) {
  }
  if ($("filterInstallmentsStatus")) on("filterInstallmentsStatus", "change", () => { if(typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard(); });
  if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", () => { if(typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard(); });
+
+ window.currentGlobalSubject = "";
+ 
+ window.openSubjectSelectionModal = function() {
+     const modal = document.getElementById("subjectSelectionModal");
+     const list = document.getElementById("subjectSelectionList");
+     if (!modal || !list) return;
+     
+     let subjects = new Set();
+     Object.values(groupFees || {}).forEach(pkg => {
+         if (pkg.subject) subjects.add(pkg.subject);
+     });
+     
+     let html = "";
+     if (subjects.size === 0) {
+         html = '<div class="mutedCenter">لا توجد مواد مسجلة في الباقات. قم بإضافة باقات أولاً.</div>';
+     } else {
+         Array.from(subjects).sort().forEach(sub => {
+             const isSelected = (sub === window.currentGlobalSubject);
+             html += `
+             <div style="padding:15px; border-radius:12px; background:var(--bg-inset); border:2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:all 0.2s;" onclick="selectGlobalSubject('${sub}')">
+                 <span style="font-weight:bold; font-size:1.1em; color:var(--text-primary);">${sub}</span>
+                 ${isSelected ? '<i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1.4em;"></i>' : '<i class="fa-regular fa-circle" style="color:var(--text-secondary); font-size:1.4em;"></i>'}
+             </div>`;
+         });
+     }
+     
+     list.innerHTML = html;
+     modal.classList.remove("hidden");
+ };
+ 
+ window.selectGlobalSubject = function(sub) {
+     window.currentGlobalSubject = sub;
+     const txt = document.getElementById("globalSubjectText");
+     if (txt) txt.textContent = sub || "-- مادة الحضور --";
+     document.getElementById("subjectSelectionModal").classList.add("hidden");
+ };
+ 
+ on("openSubjectModalBtn", "click", openSubjectSelectionModal);
 
 }); // END DOMContentLoaded
 
