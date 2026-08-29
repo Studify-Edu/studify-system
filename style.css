@@ -1205,9 +1205,23 @@ tr:hover td { background: var(--bg-hover); }
 
 .assistant-clean-login {
   background: var(--bg-surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--success);
+  box-shadow: 0 15px 35px rgba(16, 185, 129, 0.15), var(--shadow-lg);
 }
+.assistant-clean-login .lbl { color: var(--success); }
+.assistant-clean-login h1 {
+  background: linear-gradient(to right, #10b981, #059669);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.assistant-clean-login .inp {
+  background: var(--bg-inset);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--text-primary);
+}
+.assistant-clean-login .inp:focus { border-color: var(--success); }
+.assistant-clean-login .switch-link-btn:hover { color: var(--success); }
 /* switch-link with icon */
 .switch-link-btn {
   background: none; border: none; cursor: pointer;
