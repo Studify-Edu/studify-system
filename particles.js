@@ -67,13 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         update() {
-            if (this.x > width || this.x < 0) {
-                this.directionX = -this.directionX;
-            }
-            if (this.y > height || this.y < 0) {
-                this.directionY = -this.directionY;
-            }
-
             // Mouse interaction
             let dx = mouse.x - this.x;
             let dy = mouse.y - this.y;
@@ -106,8 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
             this.baseX += this.directionX * 0.5;
             this.baseY += this.directionY * 0.5;
             
-            if(this.baseX > width || this.baseX < 0) this.directionX = -this.directionX;
-            if(this.baseY > height || this.baseY < 0) this.directionY = -this.directionY;
+            if(this.baseX > width) { this.baseX = width; this.directionX = -Math.abs(this.directionX); }
+            if(this.baseX < 0) { this.baseX = 0; this.directionX = Math.abs(this.directionX); }
+            if(this.baseY > height) { this.baseY = height; this.directionY = -Math.abs(this.directionY); }
+            if(this.baseY < 0) { this.baseY = 0; this.directionY = Math.abs(this.directionY); }
+            
+            // Constrain actual X and Y to not drift infinitely
+            if (this.x > width + 100) this.x = width + 100;
+            if (this.x < -100) this.x = -100;
+            if (this.y > height + 100) this.y = height + 100;
+            if (this.y < -100) this.y = -100;
 
             this.draw();
         }
