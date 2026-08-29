@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('particlesCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         draw() {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.9)';
             ctx.fill();
         }
 
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (distance < (canvas.width / 7) * (canvas.height / 7)) {
                     opacityValue = 1 - (distance / 20000);
-                    ctx.strokeStyle = `rgba(59, 130, 246, ${opacityValue * 0.5})`;
+                    ctx.strokeStyle = `rgba(30, 58, 138, ${opacityValue * 0.8})`;
                     ctx.lineWidth = 1;
                     ctx.beginPath();
                     ctx.moveTo(particles[a].x, particles[a].y);
@@ -153,3 +153,4 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
     animate();
 });
+
