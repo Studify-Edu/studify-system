@@ -1635,6 +1635,25 @@ function applyPermissions() {
     }
  }
  if($("toggleRevBtn")) $("toggleRevBtn").innerHTML = isRevHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+
+ const subjSelect = $("globalSubject");
+ if (subjSelect) {
+     const currentVal = subjSelect.value;
+     let subjects = new Set();
+     Object.values(groupFees || {}).forEach(pkg => {
+         if (pkg.subject) subjects.add(pkg.subject);
+     });
+     
+     let subjHtml = '<option value="">-- اختر مادة الحضور --</option>';
+     Array.from(subjects).sort().forEach(sub => {
+         subjHtml += `<option value="${sub}">${sub}</option>`;
+     });
+     
+     subjSelect.innerHTML = subjHtml;
+     if (subjects.has(currentVal)) {
+         subjSelect.value = currentVal;
+     }
+ }
  }
 
  function updateLiveFeed(st) {
@@ -1720,6 +1739,19 @@ function applyPermissions() {
  }
  }
 
+ window.toggleStudentPackage = function(stId, pkgName, isChecked) {
+    const st = students[stId];
+    if (!st) return;
+    if (!st.packages) st.packages = [];
+    if (isChecked && !st.packages.includes(pkgName)) {
+        st.packages.push(pkgName);
+    } else if (!isChecked) {
+        st.packages = st.packages.filter(p => p !== pkgName);
+    }
+    saveAll();
+    updateStudentUI(stId);
+ }
+
  function updateStudentUI(id) {
  currentId = id; const st = students[id]; 
  if (!st) {
@@ -1733,44 +1765,77 @@ function applyPermissions() {
  
  if($("studentIdPill")) $("studentIdPill").textContent = `ID: ${id}`;
  if($("stName")) $("stName").value = st.name || ""; 
- if($("stClass")) $("stClass").value = st.className || ""; 
  if($("stPhone")) $("stPhone").value = st.phone || ""; 
  
- const paid = st.paid || 0; 
- let stClassName = st.className ? st.className.trim() : "";
- 
-    let req = 0;
-    if (stClassName && groupFees[stClassName] !== undefined) {
-       const pkg = groupFees[stClassName];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
-       }
-    }
+  let pkgsHtml = '';
+  const allPkgs = Object.keys(groupFees || {});
+  let totalReq = 0;
+  let totalPaid = 0;
+  let totalRemain = 0;
+  
+  if (allPkgs.length === 0) {
+      pkgsHtml = '<div class="mutedCenter">لا توجد باقات معرفة بالنظام</div>';
+  } else {
+      if (!st.packages) st.packages = [];
+      allPkgs.forEach(pkgName => {
+          const isSubscribed = st.packages.includes(pkgName);
+          const pkgDetails = groupFees[pkgName];
+          const req = toInt(pkgDetails.price);
+          
+          let pkgPaid = 0;
+          if (st.payments) {
+              st.payments.forEach(p => {
+                  if (p.pkgName === pkgName) pkgPaid += toInt(p.amount);
+              });
+          }
+          
+          const pkgRemain = req - pkgPaid;
+          if (isSubscribed) {
+              totalReq += req;
+              totalPaid += pkgPaid;
+              totalRemain += (pkgRemain > 0 ? pkgRemain : 0);
+          }
+          
+          pkgsHtml += `
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:5px;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                  <input type="checkbox" style="width:16px; height:16px; cursor:pointer;" value="${pkgName}" ${isSubscribed ? 'checked' : ''} onchange="toggleStudentPackage('${id}', '${pkgName}', this.checked)">
+                  <span style="font-weight:bold; color:var(--text-primary);">${pkgName}</span>
+                  <span class="badge" style="background:#dbeafe; color:#1e40af;">${pkgDetails.subject || 'عام'}</span>
+              </label>
+              ${isSubscribed ? `<div style="font-size:0.85em;">
+                  مدفوع: <span style="color:var(--success); font-weight:bold;">${pkgPaid}</span> | 
+                  متبقي: <span style="color:var(--danger); font-weight:bold;">${pkgRemain > 0 ? pkgRemain : 0}</span>
+              </div>` : `<div style="font-size:0.85em; color:var(--text-secondary);">غير مشترك</div>`}
+          </div>`;
+      });
+  }
+  if ($("stPackagesContainer")) $("stPackagesContainer").innerHTML = pkgsHtml;
+
+  let payPkgOpts = '<option value="">-- اختر الباقة --</option>';
+  if (st.packages && st.packages.length > 0) {
+      st.packages.forEach(pkgName => {
+          payPkgOpts += `<option value="${pkgName}">${pkgName}</option>`;
+      });
+  }
+  if ($("newPaymentPackage")) $("newPaymentPackage").innerHTML = payPkgOpts;
 
  
- let remain = req - paid;
- let percent = req > 0 ? Math.min((paid/req)*100, 100) : 0;
+ let remain = totalRemain;
  
  const card = document.querySelector(".studentCard");
  if(card) {
  card.classList.remove("status-border-green", "status-border-yellow", "status-border-red");
- if(req > 0) {
- if(paid >= req) card.classList.add("status-border-green");
- else if(paid > 0) card.classList.add("status-border-yellow");
+ if(totalReq > 0) {
+ if(totalPaid >= totalReq) card.classList.add("status-border-green");
+ else if(totalPaid > 0) card.classList.add("status-border-yellow");
  else card.classList.add("status-border-red");
  }
  }
 
- if($("stTotalPaid")) {
- $("stTotalPaid").value = paid + " ج";
- $("stTotalPaid").style.background = req > 0 ? `linear-gradient(to left, #d4edda ${percent}%, #f0f2f5 ${percent}%)` : "#f0f2f5";
- }
-
  let remBox = $("remainingBox");
  if (remBox) {
- if(req === 0) {
+ if(totalReq === 0) {
  remBox.className = "remain-box remain-green";
  remBox.innerHTML = ` ${t("txt_free")}`;
  } else if(remain <= 0) {
@@ -1778,7 +1843,7 @@ function applyPermissions() {
  remBox.innerHTML = ` ${t("txt_paid_full")}`;
  } else {
  remBox.className = "remain-box remain-red";
- remBox.innerHTML = `${t("lbl_remaining")} <span id="stRemainingAmt">${remain}</span> ج`;
+ remBox.innerHTML = `إجمالي المديونيات: <span id="stRemainingAmt">${remain}</span> ج`;
  }
  }
 
@@ -1860,11 +1925,14 @@ function applyPermissions() {
  
  let delBtn = isAdmin ? `<button class="btn danger smallBtn iconOnly" style="padding:2px 6px; font-size:11px;" onclick="window.deleteStudentPayment(${i})" title="${t('btn_del_payment')}"><i class="fa-solid fa-trash-can"></i></button>` : "";
  
+ const pkgBadge = p.pkgName ? `<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.8em; margin-inline-start:8px;"><i class="fa-solid fa-cube"></i> ${p.pkgName}</span>` : "";
+
  payHtml += `
  <div class="item flexBetween" style="margin-bottom:8px; font-size:0.9em; padding:8px 10px; background:var(--bg-surface); border-radius:6px; border:1px solid var(--border);">
  <div>
  <span style="font-weight:bold; color:var(--success);">+ ${p.amount} ج</span>
  <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:8px;">${mBadge}</span>
+ ${pkgBadge}
  </div>
  <div class="row" style="width:auto; gap:10px;">
  <span style="font-size:0.85em; color:var(--text-secondary);">${prettyDate(p.date)}</span>
@@ -1900,6 +1968,60 @@ function applyPermissions() {
  return { ok: false, msg: "Student not found" };
  }
  
+ const subjSelect = document.getElementById("globalSubject");
+ const selectedSubject = subjSelect ? subjSelect.value : "";
+ if (Object.keys(groupFees || {}).length > 0 && !selectedSubject) {
+     showFullscreenFeedback(false, false);
+     triggerShake("globalSubject");
+     return { ok: false, msg: "يرجى تحديد مادة الحضور من القائمة بالأعلى" };
+ }
+
+ if (selectedSubject) {
+     let validPkgName = null;
+     let pkgError = `الطالب غير مشترك في باقة تخص مادة (${selectedSubject})`;
+     
+     if (s.packages && s.packages.length > 0) {
+         for (let i = 0; i < s.packages.length; i++) {
+             const pName = s.packages[i];
+             const pkgDetails = groupFees[pName];
+             if (pkgDetails && pkgDetails.subject === selectedSubject) {
+                 let pPaid = 0;
+                 if (s.payments) {
+                     s.payments.forEach(p => { if (p.pkgName === pName) pPaid += toInt(p.amount); });
+                 }
+                 const pPrice = toInt(pkgDetails.price);
+                 if (pPrice > 0 && pPaid < pPrice) {
+                     pkgError = `الطالب لم يسدد ثمن باقة (${pName}) بالكامل`;
+                     continue;
+                 }
+                 
+                 if (pkgDetails.expiryType === 'time') {
+                     const todayDate = new Date().setHours(0,0,0,0);
+                     const start = pkgDetails.startDate ? new Date(pkgDetails.startDate).setHours(0,0,0,0) : null;
+                     const end = pkgDetails.endDate ? new Date(pkgDetails.endDate).setHours(0,0,0,0) : null;
+                     
+                     if (start && todayDate < start) {
+                         pkgError = `باقة (${pName}) لم تبدأ بعد`;
+                         continue;
+                     }
+                     if (end && todayDate > end) {
+                         pkgError = `باقة (${pName}) منتهية الصلاحية`;
+                         continue;
+                     }
+                 }
+                 
+                 validPkgName = pName;
+                 break;
+             }
+         }
+     }
+     
+     if (!validPkgName) {
+         showFullscreenFeedback(false, false);
+         return { ok: false, msg: pkgError };
+     }
+ }
+ 
  if(!s.attendanceDates.includes(d)) {
  s.attendanceDates.push(d); 
  if(!attByDate[d]) attByDate[d] = []; 
@@ -1908,7 +2030,7 @@ function applyPermissions() {
  saveAttendanceOnly(); 
  updateLiveFeed(s);
  playSound("success");
- triggerEdgeFlash(); // تشغيل الفلاش الأخضر للنجاح
+ triggerEdgeFlash(); 
  showFullscreenFeedback(true, false);
  return { ok: true, msg: t("msg_att_ok") };
  }
@@ -2984,34 +3106,42 @@ on("quickAttendId", "keypress", function(e) {
  if (method === "instapay") methodName = "إنستاباي ";
  if (method === "wallet") methodName = "فودافون كاش ";
  
+ const pkgSelector = $("newPaymentPackage");
+ const pkgName = pkgSelector ? pkgSelector.value : "";
+ 
+ if (!pkgName) {
+     showToast("يرجى اختيار الباقة المراد الدفع لها", "err");
+     triggerShake("newPaymentPackage");
+     return;
+ }
+
  const st = students[currentId];
  if ($("stName")) st.name = $("stName").value; 
- if ($("stClass")) st.className = $("stClass").value; 
  if ($("stPhone")) st.phone = $("stPhone").value;
  
  st.paid = (st.paid || 0) + v;
  if (!st.payments) st.payments = [];
- st.payments.push({ date: nowDateStr(), amount: v, method: method });
+ st.payments.push({ date: nowDateStr(), amount: v, method: method, pkgName: pkgName });
  const today = nowDateStr();
  if (!revenueByDate[today]) revenueByDate[today] = 0;
  revenueByDate[today] += v;
  
  saveAll(); updateStudentUI(currentId);
  
- let sClass = st.className ? st.className.trim() : "";
- 
-    let req = 0;
-    if (sClass && groupFees[sClass] !== undefined) {
-       const pkg = groupFees[sClass];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
-       }
+ let req = 0;
+ let pkgPaid = 0;
+ if (pkgName && groupFees[pkgName] !== undefined) {
+    const pkg = groupFees[pkgName];
+    req = toInt(pkg.price);
+    
+    if (st.payments) {
+        st.payments.forEach(p => {
+            if (p.pkgName === pkgName) pkgPaid += toInt(p.amount);
+        });
     }
+ }
 
- 
- if(req > 0 && st.paid >= req) fireConfetti();
+ if(req > 0 && pkgPaid >= req) fireConfetti();
  playSound("money"); showToast(t("msg_deposit"));
  
  if(st.phone) {
@@ -3019,7 +3149,7 @@ on("quickAttendId", "keypress", function(e) {
  showToast(t("err_no_manager"), "err");
  return; // يمنع فتح الواتساب
  }
- let msg = `مرحباً ${st.name}،\r\nتم إيداع مبلغ ${v} ج (${methodName}) \r\nإجمالي المدفوع: ${st.paid} ج.\r\n\r\nمع تحيات: أ/ ${currentManager}`;
+ let msg = `مرحباً ${st.name}،\r\nتم إيداع مبلغ ${v} ج (${methodName}) لباقة (${pkgName}).\r\n\r\nمع تحيات: أ/ ${currentManager}`;
  setTimeout(function() { 
  window.open(`https://wa.me/20${st.phone}?text=${encodeURIComponent(msg)}`, '_blank'); 
  }, 1000);
@@ -3314,27 +3444,30 @@ on("quickAttendId", "keypress", function(e) {
        <i class="fa-solid fa-square-plus"></i> إضافة / تعديل باقة جديدة
      </h4>
      <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-        <input type="text" id="newPkgName" class="inp" placeholder="اسم الباقة (مثال: سبتمبر / ترم)" style="flex:2; min-width:140px;">
+        <input type="text" id="newPkgName" class="inp" placeholder="اسم الباقة (مثال: باقة سبتمبر)" style="flex:2; min-width:140px;">
+        <input type="text" id="newPkgSubject" class="inp" placeholder="المادة (مثال: فيزياء)" style="flex:2; min-width:140px;">
         <input type="number" id="newPkgPrice" class="inp" placeholder="السعر (ج.م)" style="flex:1; min-width:90px;">
       </div>
      
      <div style="margin-bottom:12px;">
        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">نظام الصلاحية وتنبيهات الانتهاء:</label>
        <select id="newPkgExpiryType" class="inp" style="margin-bottom:8px;">
-         <option value="none">بدون انتهاء (دائمة)</option>
-         <option value="time">بالمدة الزمنية (شهر / ترم / سنة / عدد أيام)</option>
+         <option value="time">بالمدة الزمنية (من تاريخ إلى تاريخ)</option>
          <option value="sessions">بعدد الحصص (مثال: 8 حصص)</option>
-         <option value="both">مزدوج (أيهما أقرب: المدة أو عدد الحصص)</option>
        </select>
      </div>
 
-     <div id="pkgTimeOpts" style="display:none; margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
-       <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">المدة الزمنية للباقة (بالأيام):</label>
+     <div id="pkgTimeOpts" style="margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
+       <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">المدة الزمنية للباقة:</label>
        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-         <input type="number" id="newPkgDays" class="inp" placeholder="عدد الأيام (مثال: 30)" value="30" style="flex:1; min-width:120px;">
-         <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgDays')) document.getElementById('newPkgDays').value=30;">30 يوم</button>
-         <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgDays')) document.getElementById('newPkgDays').value=120;">120 يوم (ترم)</button>
-         <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgDays')) document.getElementById('newPkgDays').value=365;">سنة</button>
+         <div style="flex:1; min-width:140px;">
+           <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">تاريخ البداية:</label>
+           <input type="date" id="newPkgStartDate" class="inp" style="width:100%;">
+         </div>
+         <div style="flex:1; min-width:140px;">
+           <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">تاريخ النهاية:</label>
+           <input type="date" id="newPkgEndDate" class="inp" style="width:100%;">
+         </div>
        </div>
      </div>
 
@@ -3390,18 +3523,19 @@ on("quickAttendId", "keypress", function(e) {
        
        let badgeInfo = `<span class="badge" style="background:#e0f2fe; color:#0369a1;"><i class="fa-solid fa-infinity"></i> دائم</span>`;
        if (details.expiryType === 'time') {
-         badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e;"><i class="fa-solid fa-calendar-days"></i> ${details.durationDays} يوم</span>`;
+         badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate || '?'} إلي ${details.endDate || '?'}</span>`;
        } else if (details.expiryType === 'sessions') {
          badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} حصص</span>`;
-       } else if (details.expiryType === 'both') {
-         badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e;"><i class="fa-solid fa-calendar-days"></i> ${details.durationDays}د</span> <span class="badge" style="background:#fce7f3; color:#9d174d;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit}ح</span>`;
        }
+
+       const subjBadge = details.subject ? `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;"><i class="fa-solid fa-book"></i> ${details.subject}</span>` : '';
 
        h += `
        <div class="pkg-item-card" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
          <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
            <div style="display:flex; align-items:center; gap:8px;">
              <strong style="font-size:1em; color:var(--text-primary);">${g}</strong>
+             ${subjBadge}
              ${badgeInfo}
            </div>
            <div style="font-size:0.8em; color:var(--text-secondary);">
@@ -3422,15 +3556,15 @@ on("quickAttendId", "keypress", function(e) {
 
     if ($("groupFeesList")) $("groupFeesList").innerHTML = h;
 
-   if ($("newPkgExpiryType")) {
-     const handleExpiryTypeChange = () => {
-       const val = $("newPkgExpiryType").value;
-       if ($("pkgTimeOpts")) $("pkgTimeOpts").style.display = (val === 'time' || val === 'both') ? 'block' : 'none';
-       if ($("pkgSessionsOpts")) $("pkgSessionsOpts").style.display = (val === 'sessions' || val === 'both') ? 'block' : 'none';
-     };
-     $("newPkgExpiryType").onchange = handleExpiryTypeChange;
-     handleExpiryTypeChange();
-   }
+    if ($("newPkgExpiryType")) {
+      const handleExpiryTypeChange = () => {
+        const val = $("newPkgExpiryType").value;
+        if ($("pkgTimeOpts")) $("pkgTimeOpts").style.display = (val === 'time') ? 'block' : 'none';
+        if ($("pkgSessionsOpts")) $("pkgSessionsOpts").style.display = (val === 'sessions') ? 'block' : 'none';
+      };
+      $("newPkgExpiryType").onchange = handleExpiryTypeChange;
+      handleExpiryTypeChange();
+    }
 
    
     if ($("newPkgHasInstallments")) {
@@ -3457,9 +3591,11 @@ on("quickAttendId", "keypress", function(e) {
     if ($("addNewPkgBtn")) {
      $("addNewPkgBtn").onclick = function() {
        const n = $("newPkgName").value.trim();
+       const subject = $("newPkgSubject").value.trim();
        const p = toInt($("newPkgPrice").value);
-       const expType = $("newPkgExpiryType") ? $("newPkgExpiryType").value : "none";
-       const days = $("newPkgDays") ? toInt($("newPkgDays").value) : 0;
+       const expType = $("newPkgExpiryType") ? $("newPkgExpiryType").value : "time";
+       const startDate = $("newPkgStartDate") ? $("newPkgStartDate").value : "";
+       const endDate = $("newPkgEndDate") ? $("newPkgEndDate").value : "";
        const sessions = $("newPkgSessions") ? toInt($("newPkgSessions").value) : 0;
 
         const hasInst = $("newPkgHasInstallments") ? $("newPkgHasInstallments").checked : false;
@@ -3482,11 +3618,21 @@ on("quickAttendId", "keypress", function(e) {
          if (typeof showToast === "function") showToast("يرجى كتابة اسم الباقة", "err");
          return;
        }
+       if (!subject) {
+         if (typeof showToast === "function") showToast("يرجى كتابة المادة", "err");
+         return;
+       }
+       if (expType === 'time' && (!startDate || !endDate)) {
+         if (typeof showToast === "function") showToast("يرجى تحديد تاريخ البداية والنهاية", "err");
+         return;
+       }
 
        groupFees[n] = {
+         subject: subject,
          price: p,
          expiryType: expType,
-         durationDays: days,
+         startDate: startDate,
+         endDate: endDate,
          sessionLimit: sessions,
          updatedAt: nowDateStr()
        };

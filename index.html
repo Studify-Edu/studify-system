@@ -307,6 +307,12 @@
  <button id="mobileSidebarToggle" class="mobile-menu-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
  </div>
  <div class="topbar-stats">
+ <div style="display:flex; align-items:center; background:var(--bg-surface); border:1px solid var(--border); border-radius:20px; padding:2px 10px; margin-inline-end:10px;">
+   <i class="fa-solid fa-book" style="color:var(--primary); margin-inline-end:6px; font-size:0.9em;"></i>
+   <select id="globalSubject" style="background:transparent; border:none; outline:none; font-weight:bold; color:var(--text-primary); cursor:pointer; font-size:0.95em;">
+     <option value="">-- اختر مادة الحضور --</option>
+   </select>
+ </div>
  <span class="stat-pill clickable" id="openAllStudentsBtn">
  <span data-i18n="stat_students"> مسجلين:</span> <b id="totalStudentsCount">0</b>
  </span>
@@ -456,11 +462,10 @@
  <label class="lbl" data-i18n="lbl_name">الاسم</label>
  <input id="stName" class="inp">
  
- <label class="lbl" data-i18n="lbl_class">الصف / الباقة</label>
- <select id="stClass" class="inp">
- <option value="">-- اختر الباقة / المجموعة --</option>
- <option value="عام">عام</option>
- </select>
+ <label class="lbl">الباقات المشترك بها الطالب</label>
+ <div id="stPackagesContainer" style="background:var(--bg-inset); border:1px solid var(--border); border-radius:8px; padding:10px; max-height:150px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+    <!-- Checkboxes will be populated here by JS -->
+ </div>
 
  <label class="lbl" data-i18n="lbl_phone">رقم الموبايل</label>
  <div class="row">
@@ -470,22 +475,24 @@
 
  <label class="lbl" style="margin-top:20px; border-top:1px dashed var(--border); padding-top:10px;" data-i18n="lbl_finance">نظام المصاريف</label>
  <div class="paymentBox">
- <div class="payRow">
- <span class="payLabel" data-i18n="lbl_total_paid"> إجمالي المدفوع:</span>
- <input id="stTotalPaid" class="inp blurTarget" readonly style="font-weight:bold; color:var(--primary); max-width:120px; flex:1; text-align:center;">
- <button id="correctPayBtn" class="btn warning smallBtn adminOnly" data-i18n="btn_discount">خصم</button>
+ 
+ <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+   <span class="payLabel" style="white-space:nowrap;">دفع لباقة:</span>
+   <select id="newPaymentPackage" class="inp" style="flex:1;">
+     <option value="">-- اختر الباقة --</option>
+   </select>
  </div>
-
- <div class="payRow" style="margin-top:10px;">
- <span class="payLabel" data-i18n="lbl_new_pay"> دفعة جديدة:</span>
- <div class="row" style="flex:1;">
- <input id="newPaymentInput" type="number" class="inp" placeholder="المبلغ" data-i18n-placeholder="plc_amount">
+ 
+ <div class="payRow">
+ <span class="payLabel" data-i18n="lbl_new_pay"> إيداع جديد:</span>
+ <div class="row" style="flex:1; gap:6px;">
+ <input id="newPaymentInput" type="number" class="inp" placeholder="المبلغ" style="min-width:70px;">
  <select id="newPaymentMethod" class="inp" style="width:auto; font-size:0.88em;">
- <option value="cash" data-i18n="opt_cash"> كاش</option>
- <option value="instapay" data-i18n="opt_instapay"> إنستاباي</option>
- <option value="wallet" data-i18n="opt_wallet"> فودافون كاش</option>
+ <option value="cash">كاش</option>
+ <option value="instapay">إنستاباي</option>
+ <option value="wallet">فودافون كاش</option>
  </select>
- <button id="addPaymentBtn" class="btn success" data-i18n="btn_deposit">إيداع</button>
+ <button id="addPaymentBtn" class="btn success" style="padding:0 12px;"><i class="fa-solid fa-money-bill-1-wave"></i> إيداع</button>
  </div>
  </div>
  
