@@ -1054,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const mid = window.CURRENT_MANAGER_ID;
 
       // 1. Prepare Students array
-      const allStudentsList = Object.values(students || {}).concat(Object.values(deletedStudents || {})).filter(s => s && s.id);
+      const allStudentsList = Object.values(students || {}).concat(Object.values(deletedStudents || {})).filter(s => s && s.id && (s.name || s.phone || s.parentPhone || s.className || (s.packages && s.packages.length > 0) || (s.attendanceDates && s.attendanceDates.length > 0)));
       const studentRows = allStudentsList.map(st => ({
         id: String(st.id),
         
@@ -1155,7 +1155,7 @@ async function saveAttendanceOnly() {
       updateSyncUI('syncing', 'جاري المزامنة...');
       const mid = window.CURRENT_MANAGER_ID;
 
-      const studentRows = Object.values(students || {}).filter(s => s && s.id).map(st => ({
+      const studentRows = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.parentPhone || s.className || (s.packages && s.packages.length > 0) || (s.attendanceDates && s.attendanceDates.length > 0))).map(st => ({
         id: String(st.id),
         
         name: st.name || '',
