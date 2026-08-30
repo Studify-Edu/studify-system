@@ -1105,7 +1105,11 @@ document.addEventListener('DOMContentLoaded', function() {
         window.supabaseClient.from('centers').upsert({
           id: mid,
           settings: { lastModified: Date.now() },
-          eval_data: evalData || {}
+          eval_data: evalData || {},
+          revenue_by_date: revenueByDate || {},
+          expenses_by_date: expensesByDate || {},
+          session_students_by_date: sessionStudentsByDate || {},
+          att_by_date: attByDate || {}
         })
       ];
 
@@ -1168,16 +1172,30 @@ async function saveAttendanceOnly() {
         last_modified: Date.now()
       }));
 
+            const attendancePromises = [
+        window.supabaseClient.from('centers').upsert({
+          id: mid,
+          settings: { lastModified: Date.now() },
+          revenue_by_date: revenueByDate || {},
+          att_by_date: attByDate || {},
+          session_students_by_date: sessionStudentsByDate || {}
+        })
+      ];
+
       if (studentRows.length > 0) {
-        window.supabaseClient.from('students').upsert(studentRows, { onConflict: 'id' })
-          .then(() => {
-            hasUnsavedChanges = false;
-            updateSyncUI('online', 'متصل ومتزامن ');
-          }).catch(e => {
-            console.error("Supabase attendance sync error:", e);
-            updateSyncUI('pending', 'تغييرات محلية لم تتم مزامنتها');
-          });
+        attendancePromises.push(
+          window.supabaseClient.from('students').upsert(studentRows, { onConflict: 'id' })
+        );
       }
+
+      Promise.all(attendancePromises)
+        .then(() => {
+          hasUnsavedChanges = false;
+          updateSyncUI('online', 'متصل ومتزامن ');
+        }).catch(e => {
+          console.error("Supabase attendance sync error:", e);
+          updateSyncUI('pending', 'تغييرات محلية لم تتم مزامنتها');
+        });
     }
   } catch(e) {
     console.error("saveAttendanceOnly error:", e);
@@ -1213,7 +1231,7 @@ async function loadAll() {
           window.supabaseClient.from('students').select('*').not('id', 'is', null),
           window.supabaseClient.from('packages').select('*'),
           window.supabaseClient.from('booklets').select('*').not('id', 'is', null),
-          window.supabaseClient.from('settings').select('*').eq('id', 1).maybeSingle()
+          window.supabaseClient.from('centers').select('*').eq('id', mid).maybeSingle()
         ]);
 
         if (!stRes.error && stRes.data) {
@@ -1277,7 +1295,28 @@ async function loadAll() {
         }
 
         if (!centerRes.error && centerRes.data) {
-          if (centerRes.data.eval_data) evalData = centerRes.data.eval_data;
+          const cd = centerRes.data;
+          if (cd.eval_data) evalData = cd.eval_data;
+          if (cd.revenue_by_date) {
+            for (const d in cd.revenue_by_date) {
+              if (!revenueByDate[d] || cd.revenue_by_date[d] > revenueByDate[d]) {
+                revenueByDate[d] = cd.revenue_by_date[d];
+              }
+            }
+          }
+          if (cd.expenses_by_date) {
+            for (const d in cd.expenses_by_date) {
+              if (!expensesByDate[d]) expensesByDate[d] = cd.expenses_by_date[d];
+            }
+          }
+          if (cd.att_by_date) {
+            for (const d in cd.att_by_date) {
+              if (!attByDate[d]) attByDate[d] = [];
+              cd.att_by_date[d].forEach(id => {
+                if (!attByDate[d].includes(String(id))) attByDate[d].push(String(id));
+              });
+            }
+          }
         }
 
         // Cache the merged data back to IndexedDB
@@ -1778,19 +1817,19 @@ function applyPermissions() {
               totalRemain += (pkgRemain > 0 ? pkgRemain : 0);
           }
           
-          pkgsHtml += `
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:5px;">
-              <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                  <input type="checkbox" style="width:16px; height:16px; cursor:pointer;" value="${pkgName}" ${isSubscribed ? 'checked' : ''} onchange="toggleStudentPackage('${id}', '${pkgName}', this.checked)">
-                  <span style="font-weight:bold; color:var(--text-primary);">${pkgName}</span>
-                  <span class="badge" style="background:#dbeafe; color:#1e40af;">${pkgDetails.subject || 'عام'}</span>
-              </label>
-              ${isSubscribed ? `<div style="font-size:0.85em;">
-                  مدفوع: <span style="color:var(--success); font-weight:bold;">${pkgPaid}</span> | 
-                  متبقي: <span style="color:var(--danger); font-weight:bold;">${pkgRemain > 0 ? pkgRemain : 0}</span>
-              </div>` : `<div style="font-size:0.85em; color:var(--text-secondary);">غير مشترك</div>`}
-          </div>`;
+          
+          if (isSubscribed) {
+              const tagStatus = (pkgRemain > 0) ? 'has-debt' : 'paid-full';
+              const icon = (pkgRemain > 0) ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i>' : '<i class="fa-solid fa-check-circle" style="color:#10b981"></i>';
+              pkgsHtml += `<div class="pkg-summary-tag ${tagStatus}">
+                  ${icon}
+                  <span>${pkgName}</span>
+              </div>`;
+          }
       });
+      if (st.packages.length === 0) {
+          pkgsHtml = '<div style="color:var(--text-secondary); font-size:0.85em; width:100%; text-align:center;">لا توجد باقات محددة للطالب</div>';
+      }
   }
   if ($("stPackagesContainer")) $("stPackagesContainer").innerHTML = pkgsHtml;
 
@@ -2704,6 +2743,12 @@ function applyPermissions() {
         return triggerShake("managerLoginBtn");
       }
 
+      // CRITICAL FIX: Store manager ID for cloud sync
+      const managerRow = data[0];
+      const managerId = (managerRow.manager_id || managerRow.center_id || String(managerRow.id || rawU)).replace(/[@.]/g, '_');
+      window.CURRENT_MANAGER_ID = managerId;
+      localStorage.setItem('ca_manager_id', managerId);
+
       localStorage.setItem(K_AUTH, "1");
       localStorage.setItem(K_ROLE, "admin");
       localStorage.setItem("ca_current_username", "المدير");
@@ -2743,9 +2788,17 @@ if($("assistantLoginBtn")) {
         return triggerShake("assistantLoginBtn");
       }
 
+      // CRITICAL FIX: Fetch and store the manager_id that owns this assistant
+      // so that saveAll() can sync data to the correct center in Supabase.
+      const asstRow = data[0];
+      const fetchedManagerId = asstRow.manager_id || localStorage.getItem("ca_manager_id") || "ahmedqutb11232_gmail_com";
+      window.CURRENT_MANAGER_ID = fetchedManagerId;
+      localStorage.setItem("ca_manager_id", fetchedManagerId);
+
       localStorage.setItem(K_AUTH, "1");
       localStorage.setItem(K_ROLE, "assistant");
-      localStorage.setItem("ca_current_username", data[0].username);
+      localStorage.setItem("ca_current_username", asstRow.username || rawU);
+      localStorage.setItem("ca_asst_email", rawU);
       window.CURRENT_ROLE = "assistant";
       
       // Load settings to get permissions
@@ -6950,3 +7003,110 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
+
+// ==========================================
+// PACKAGE SELECTION MODAL LOGIC
+// ==========================================
+
+window.tempSelectedPackages = new Set();
+window.tempSelectedStudentId = null;
+
+window.openPackageSelectionModal = function(studentId) {
+    window.tempSelectedStudentId = studentId;
+    const st = students[studentId];
+    if (!st) return;
+
+    // Reset temp state
+    window.tempSelectedPackages.clear();
+    if (st.packages) {
+        st.packages.forEach(p => window.tempSelectedPackages.add(p));
+    }
+
+    if ($('psmStudentName')) $('psmStudentName').textContent = st.name || '';
+    renderPackageSelectionGrid();
+
+    const modal = document.getElementById('packageSelectionModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+};
+
+window.closePackageSelectionModal = function() {
+    const modal = document.getElementById('packageSelectionModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        setTimeout(() => modal.style.display = '', 300);
+    }
+};
+
+window.renderPackageSelectionGrid = function() {
+    const grid = $('psmGrid');
+    if (!grid) return;
+
+    let html = '';
+    let totalCost = 0;
+    
+    Object.keys(groupFees || {}).forEach(pkgName => {
+        const pkgDetails = groupFees[pkgName];
+        const isSelected = window.tempSelectedPackages.has(pkgName);
+        const price = toInt(pkgDetails.price);
+        
+        if (isSelected) totalCost += price;
+
+        html += `
+        <div class="pkg-card ${isSelected ? 'selected' : ''}" onclick="togglePackageSelection('${pkgName}')">
+            <i class="fa-solid fa-circle-check check-icon"></i>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div class="pkg-card-title">${pkgName}</div>
+                <div class="pkg-card-subject">${pkgDetails.subject || 'عام'}</div>
+            </div>
+            <div class="pkg-card-price">${price} <small>جنيهاً</small></div>
+            <div style="font-size:0.8em; color:var(--text-secondary); margin-top:auto;">
+                ${pkgDetails.hasInstallments ? '<i class="fa-solid fa-calendar-alt"></i> متاح تقسيط' : '<i class="fa-solid fa-money-bill-1"></i> كاش فقط'}
+            </div>
+        </div>
+        `;
+    });
+
+    if (Object.keys(groupFees || {}).length === 0) {
+        html = '<div class="mutedCenter">لا توجد باقات معرفة بالنظام</div>';
+    }
+
+    grid.innerHTML = html;
+    if ($('psmTotalCost')) $('psmTotalCost').textContent = totalCost;
+};
+
+window.togglePackageSelection = function(pkgName) {
+    if (window.tempSelectedPackages.has(pkgName)) {
+        window.tempSelectedPackages.delete(pkgName);
+    } else {
+        window.tempSelectedPackages.add(pkgName);
+    }
+    renderPackageSelectionGrid(); // Re-render grid to update styles and total cost
+};
+
+window.savePackageSelection = function() {
+    const stId = window.tempSelectedStudentId;
+    if (!stId || !students[stId]) return;
+
+    students[stId].packages = Array.from(window.tempSelectedPackages);
+    students[stId].lastModified = Date.now();
+    
+    saveAll();
+    updateStudentUI(stId);
+    closePackageSelectionModal();
+    if(typeof showToast === 'function') showToast("تم تحديث باقات الطالب بنجاح");
+};
+
+// Bind the button in index.html
+document.addEventListener('DOMContentLoaded', () => {
+    // Need to use event delegation since button is static but studentId changes
+    document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('#managePackagesBtn');
+        if (btn && currentId) {
+            openPackageSelectionModal(currentId);
+        }
+    });
+});
