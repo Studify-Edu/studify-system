@@ -1109,7 +1109,8 @@ document.addEventListener('DOMContentLoaded', function() {
           revenue_by_date: revenueByDate || {},
           expenses_by_date: expensesByDate || {},
           session_students_by_date: sessionStudentsByDate || {},
-          att_by_date: attByDate || {}
+          att_by_date: attByDate || {},
+          syllabus_data: syllabusData || []
         })
       ];
 
@@ -1297,6 +1298,7 @@ async function loadAll() {
         if (!centerRes.error && centerRes.data) {
           const cd = centerRes.data;
           if (cd.eval_data) evalData = cd.eval_data;
+          if (cd.syllabus_data && Array.isArray(cd.syllabus_data)) syllabusData = cd.syllabus_data;
           if (cd.revenue_by_date) {
             for (const d in cd.revenue_by_date) {
               if (!revenueByDate[d] || cd.revenue_by_date[d] > revenueByDate[d]) {
