@@ -1884,7 +1884,7 @@ function applyPermissions() {
 
  const rBtn = $("showReceiptBtn");
  if (rBtn) {
- if (req > 0 && remain <= 0) {
+ if (totalReq > 0 && remain <= 0) {
  rBtn.disabled = false;
  rBtn.style.cursor = "pointer";
  rBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
@@ -1989,7 +1989,12 @@ function applyPermissions() {
  if(!s) {
  showFullscreenFeedback(false, false);
  return { ok: false, msg: "Student not found" };
- }
+  }
+  if(!s.name || s.name.trim() === "") {
+      showFullscreenFeedback(false, false);
+      return { ok: false, msg: "هذا الطالب ليس له اسم مسجل ولا يمكن تحضيره" };
+  }
+
  
  const selectedSubject = window.currentGlobalSubject || "";
  if (Object.keys(groupFees || {}).length > 0 && !selectedSubject) {
@@ -6520,7 +6525,8 @@ window.deleteAssistant = async function(asstKey) {
      window.currentGlobalSubject = sub;
      const txt = document.getElementById("globalSubjectText");
      if (txt) txt.textContent = sub || "-- مادة الحضور --";
-     document.getElementById("subjectSelectionModal").classList.add("hidden");
+     if (document.getElementById("subjectSelectionModal")) document.getElementById("subjectSelectionModal").classList.add("hidden");
+     if (window.updateAttendanceUIState) window.updateAttendanceUIState();
  };
  
  on("openSubjectModalBtn", "click", openSubjectSelectionModal);
@@ -7112,3 +7118,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+
+window.updateAttendanceUIState = function() {
+    const btn = document.getElementById("quickAttendBtn");
+    const input = document.getElementById("quickAttendInput");
+    if (!btn) return;
+    const hasSubjects = Object.keys(window.groupFees || {}).length > 0;
+    const hasSelected = !!window.currentGlobalSubject;
+    
+    if (hasSubjects && !hasSelected) {
+        btn.disabled = true;
+        btn.style.opacity = "0.4";
+        btn.style.cursor = "not-allowed";
+        if(input) { input.disabled = true; input.placeholder = "اختر مادة الحضور أولاً"; }
+    } else {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+        if(input) { input.disabled = false; input.placeholder = "ID (ex: 601)"; }
+    }
+};
+
+setTimeout(() => { if(window.updateAttendanceUIState) window.updateAttendanceUIState(); }, 1000);
