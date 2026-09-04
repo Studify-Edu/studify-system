@@ -15,7 +15,7 @@
 
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V62">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V63">
  <link rel="stylesheet" href="icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME FLASH -->
@@ -91,6 +91,28 @@
  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.5) !important;
  }
  </style>
+
+  <style>
+  /* Instant visual gray styling for pending attendance button */
+  #quickAttendBtn.btn-attend-pending,
+  .btn.primary#quickAttendBtn.btn-attend-pending {
+    background: #334155 !important;
+    background-image: none !important;
+    color: #94a3b8 !important;
+    box-shadow: none !important;
+    border: 1px solid #475569 !important;
+    cursor: pointer !important;
+    filter: none !important;
+    opacity: 0.9 !important;
+  }
+  #quickAttendBtn.btn-attend-pending:hover,
+  .btn.primary#quickAttendBtn.btn-attend-pending:hover {
+    background: #3f4e65 !important;
+    background-image: none !important;
+    color: #f1f5f9 !important;
+    border-color: #64748b !important;
+  }
+  </style>
 </head>
 <body>
 
@@ -402,7 +424,7 @@
  <h2 data-i18n="quick_title">سريع (QR)</h2>
  <div class="row">
  <input id="quickAttendId" class="inp" inputmode="numeric" placeholder="ID">
- <button id="quickAttendBtn" class="btn primary btn-attend-pending" data-i18n="btn_record">سجل حضور</button>
+ <button id="quickAttendBtn" class="btn primary btn-attend-pending" style="background: #334155 !important; background-image: none !important; color: #94a3b8 !important; box-shadow: none !important; border: 1px solid #475569 !important;" data-i18n="btn_record">سجل حضور</button>
  </div>
  <div class="live-feed-section">
  <label class="lbl" data-i18n="lbl_last_scan">آخر حضور تم تسجيله </label>
@@ -1732,7 +1754,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V104"></script>
+ <script type="module" src="app.js?v=STUDIFY_V105"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

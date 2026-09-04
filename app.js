@@ -1280,6 +1280,7 @@ async function loadAll() {
         if (!pkgRes.error && pkgRes.data && pkgRes.data.length > 0) {
           pkgRes.data.forEach(p => {
             groupFees[p.name] = {
+              subject: p.subject || (groupFees[p.name] ? groupFees[p.name].subject : '') || p.name || '',
               price: Number(p.price) || 0,
               hasInstallments: !!p.has_installments,
               installmentPrice: Number(p.installment_price) || 0
@@ -1990,22 +1991,14 @@ function applyPermissions() {
 
  function addAttendance(id, d) {
     const selectedSubject = window.currentGlobalSubject || "";
-    const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
-    let hasConfiguredSubjects = false;
-    for (let k in feesObj) {
-        if (feesObj[k] && feesObj[k].subject) {
-            hasConfiguredSubjects = true;
-            break;
-        }
-    }
-    if (hasConfiguredSubjects && !selectedSubject) {
-        if(typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
-        if(typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
+    if (!selectedSubject || !String(selectedSubject).trim()) {
+        if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+        if (typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
         return { ok: false, msg: "يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً" };
     }
     const s = students[String(id)];
-    if(!s) {
-        if(typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+    if (!s) {
+        if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
         return { ok: false, msg: "الطالب غير مسجل" };
     }
   if(!s.name || s.name.trim() === "") {
@@ -2945,31 +2938,26 @@ window.logout = async function() {
  });
 // quickAttendId Enter handled by global keydown to prevent double-firing
  on("quickAttendBtn", "click", function() {
- const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
- let hasConfiguredSubjects = false;
- for (let k in feesObj) {
-   if (feesObj[k] && feesObj[k].subject) {
-     hasConfiguredSubjects = true;
-     break;
-   }
- }
- if (hasConfiguredSubjects && !window.currentGlobalSubject) {
+ // 1. Check subject selection first
+ if (!window.currentGlobalSubject || !String(window.currentGlobalSubject).trim()) {
    showToast("يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً", "warning");
    if (typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
    if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
    return;
  }
 
+ // 2. Check student ID
  const idInp = $("quickAttendId");
  if (!idInp) return;
  const id = toInt(idInp.value); 
- if(!id || !students[String(id)]) { 
+ if (!id || !students[String(id)]) { 
    showToast("الطالب غير مسجل", "err"); 
    triggerShake("quickAttendId");
    showFullscreenFeedback(false, false);
    return; 
  }
  
+ // 3. addAttendance handles student name, package, payments
  const res = addAttendance(id, nowDateStr());
  if (res.ok) playSound("pop"); else playSound("error");
  showToast(res.msg, res.ok ? "success" : "warning");
@@ -6520,32 +6508,54 @@ window.deleteAssistant = async function(asstKey) {
  window.currentGlobalSubject = "";
  
  window.openSubjectSelectionModal = function() {
-     const modal = document.getElementById("subjectSelectionModal");
-     const list = document.getElementById("subjectSelectionList");
-     if (!modal || !list) return;
-     
-     let subjects = new Set();
-     Object.values(groupFees || {}).forEach(pkg => {
-         if (pkg.subject) subjects.add(pkg.subject);
-     });
-     
-     let html = "";
-     if (subjects.size === 0) {
-         html = '<div class="mutedCenter">لا توجد مواد مسجلة في الباقات. قم بإضافة باقات أولاً.</div>';
-     } else {
-         Array.from(subjects).sort().forEach(sub => {
-             const isSelected = (sub === window.currentGlobalSubject);
-             html += `
-             <div style="padding:15px; border-radius:12px; background:var(--bg-inset); border:2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:all 0.2s;" onclick="selectGlobalSubject('${sub}')">
-                 <span style="font-weight:bold; font-size:1.1em; color:var(--text-primary);">${sub}</span>
-                 ${isSelected ? '<i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1.4em;"></i>' : '<i class="fa-regular fa-circle" style="color:var(--text-secondary); font-size:1.4em;"></i>'}
-             </div>`;
-         });
-     }
-     
-     list.innerHTML = html;
-     modal.classList.remove("hidden");
- };
+    const modal = document.getElementById("subjectSelectionModal");
+    const list = document.getElementById("subjectSelectionList");
+    if (!modal || !list) return;
+    
+    let subjects = new Set();
+    const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
+    Object.keys(feesObj).forEach(pkgName => {
+        const pkg = feesObj[pkgName];
+        if (pkg && pkg.subject && String(pkg.subject).trim()) {
+            subjects.add(String(pkg.subject).trim());
+        } else if (pkgName && String(pkgName).trim()) {
+            subjects.add(String(pkgName).trim());
+        }
+    });
+    if (Array.isArray(syllabusData)) {
+        syllabusData.forEach(syll => {
+            if (syll && syll.subject && String(syll.subject).trim()) {
+                subjects.add(String(syll.subject).trim());
+            }
+        });
+    }
+    
+    // Default common subjects if none configured
+    if (subjects.size === 0) {
+        ["عام", "فيزياء", "كيمياء", "أحياء", "رياضيات", "لغة عربية", "لغة إنجليزية"].forEach(s => subjects.add(s));
+    }
+    
+    let html = "";
+    Array.from(subjects).forEach(sub => {
+        const isSelected = (sub === window.currentGlobalSubject);
+        html += `
+        <div style="padding:14px 18px; border-radius:12px; background:var(--bg-inset); border:2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:all 0.2s;" onclick="selectGlobalSubject('${sub}')">
+            <span style="font-weight:bold; font-size:1.05em; color:var(--text-primary);">${sub}</span>
+            ${isSelected ? '<i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1.3em;"></i>' : '<i class="fa-regular fa-circle" style="color:var(--text-secondary); font-size:1.3em;"></i>'}
+        </div>`;
+    });
+    
+    // Reset/Clear option if a subject is currently selected
+    if (window.currentGlobalSubject) {
+        html += `
+        <div style="padding:10px 14px; border-radius:10px; background:rgba(239,68,68,0.1); border:1px dashed #ef4444; color:#ef4444; text-align:center; cursor:pointer; font-size:0.9em; font-weight:600; margin-top:8px;" onclick="selectGlobalSubject('')">
+            <i class="fa-solid fa-rotate-left"></i> إلغاء تحديد المادة
+        </div>`;
+    }
+    
+    list.innerHTML = html;
+    modal.classList.remove("hidden");
+};
  
  window.selectGlobalSubject = function(sub) {
      window.currentGlobalSubject = sub;
@@ -7151,30 +7161,26 @@ window.updateAttendanceUIState = function() {
     const input = document.getElementById("quickAttendId");
     if (!btn) return;
     
-    const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
-    let hasConfiguredSubjects = false;
-    for (let k in feesObj) {
-        if (feesObj[k] && feesObj[k].subject) {
-            hasConfiguredSubjects = true;
-            break;
-        }
-    }
     const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
     
-    if (hasConfiguredSubjects && !hasSelected) {
+    if (!hasSelected) {
         btn.classList.add("btn-attend-pending");
-        btn.style.background = "";
-        btn.style.color = "";
-        btn.style.boxShadow = "";
-        if(input) { 
+        btn.style.setProperty("background", "#334155", "important");
+        btn.style.setProperty("background-image", "none", "important");
+        btn.style.setProperty("color", "#94a3b8", "important");
+        btn.style.setProperty("box-shadow", "none", "important");
+        btn.style.setProperty("border", "1px solid #475569", "important");
+        if (input) { 
             input.placeholder = "⚠️ اختر المادة أولاً";
         }
     } else {
         btn.classList.remove("btn-attend-pending");
-        btn.style.background = "";
-        btn.style.color = "";
-        btn.style.boxShadow = "";
-        if(input) { 
+        btn.style.removeProperty("background");
+        btn.style.removeProperty("background-image");
+        btn.style.removeProperty("color");
+        btn.style.removeProperty("box-shadow");
+        btn.style.removeProperty("border");
+        if (input) { 
             input.placeholder = "ID (ex: 601)";
         }
     }
