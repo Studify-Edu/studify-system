@@ -972,22 +972,34 @@ function showToast(msg, type = "success") {
  window.switchTab = function(tabId) {
  // Hard Security Guard: Block locked tabs for assistants
  if (currentUserRole !== "admin" && typeof currentPermissions !== "undefined") {
- if (tabId === "Packages" && !currentPermissions.can_manage_packages) {
- showToast("عفواً، قسم الباقات والأسعار مقفل من المدير", "err");
- return;
- }
- if (tabId === "Reports" && !currentPermissions.can_view_reports) {
- showToast("عفواً، قسم التقارير مقفل من المدير ", "err");
- return;
- }
- if (tabId === "Marketing" && !currentPermissions.can_access_marketing) {
- showToast("عفواً، قسم أدوات التسويق مقفل من المدير ", "err");
- return;
- }
- if (tabId === "SessionStudents" && !currentPermissions.can_access_session_students) {
- showToast("عفواً، قسم طلاب الحصة مقفل من المدير ", "err");
- return;
- }
+   if (tabId === "Packages" && currentPermissions.can_manage_packages === false) {
+     showToast("عفواً، قسم الباقات والأسعار مقفل من المدير", "err");
+     return;
+   }
+   if (tabId === "Syllabus" && currentPermissions.can_access_syllabus === false) {
+     showToast("عفواً، قسم المنهج مقفل من المدير", "err");
+     return;
+   }
+   if (tabId === "Reports" && currentPermissions.can_view_reports === false) {
+     showToast("عفواً، قسم التقارير مقفل من المدير", "err");
+     return;
+   }
+   if (tabId === "Marketing" && currentPermissions.can_access_marketing === false) {
+     showToast("عفواً، قسم أدوات التسويق مقفل من المدير", "err");
+     return;
+   }
+   if (tabId === "SessionStudents" && currentPermissions.can_access_session_students === false) {
+     showToast("عفواً، قسم طلاب الحصة مقفل من المدير", "err");
+     return;
+   }
+   if (tabId === "Booklets" && currentPermissions.can_access_booklets === false) {
+     showToast("عفواً، قسم مخزون المذكرات مقفل من المدير", "err");
+     return;
+   }
+   if ((tabId === "Settings" || tabId === "Admin") && currentPermissions.can_access_settings === false) {
+     showToast("عفواً، قسم الإعدادات مقفل من المدير", "err");
+     return;
+   }
  }
 
  document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
@@ -1418,16 +1430,9 @@ async function loadAll() {
     $("loginBox").classList.add("hidden");
     
     if(currentUserRole === 'admin') {
-      if ($("manager-dashboard")) $("manager-dashboard").classList.remove("hidden");
-      $("appBox").classList.add("hidden");
-      if(sidebar) sidebar.style.display = "none";
-      
-      if (typeof window.switchManagerTab === 'function') {
-        window.switchManagerTab('dailyReport');
-      }
-      
-      if ($("managerTopName")) $("managerTopName").innerText = localStorage.getItem("ca_current_username") || "المدير العام";
-      
+      // Manager has a dedicated standalone portal at admin.html
+      window.location.href = "admin.html";
+      return;
     } else {
       $("appBox").classList.remove("hidden");
       if ($("manager-dashboard")) $("manager-dashboard").classList.add("hidden");
@@ -1535,44 +1540,76 @@ function applyPermissionsToAssistantUI() {
   
   // Revenue
   const revPill = document.getElementById('openRevenueModalBtn');
-  if (p.show_revenue) {
-    if (revPill) revPill.classList.remove('locked-feature');
-    if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.remove('hidden');
+  const revToggle = document.getElementById('toggleRevBtn');
+  if (p.show_revenue !== false) {
+    if (revPill) {
+      revPill.style.display = "";
+      revPill.classList.remove('locked-feature');
+    }
+    if (revToggle) {
+      revToggle.style.display = "";
+      revToggle.classList.remove('hidden');
+    }
   } else {
-    if (revPill) revPill.classList.add('locked-feature');
-    if (document.getElementById('toggleRevBtn')) document.getElementById('toggleRevBtn').classList.add('hidden');
+    if (revPill) {
+      revPill.style.display = "none";
+      revPill.classList.add('locked-feature');
+    }
+    if (revToggle) {
+      revToggle.style.display = "none";
+      revToggle.classList.add('hidden');
+    }
     if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "---";
   }
 
   // Add student
+  const addNavBtn = document.getElementById('openAddModalBtn');
+  const addNewBtnEl = document.getElementById('addNewBtn');
+  const addCard = document.getElementById('addStudentCard') || (addNewBtnEl ? addNewBtnEl.closest('.card') : null);
+  const newIdInput = document.getElementById('newId');
+
   if (p.can_add_student === false) {
-    const addNavBtn = document.getElementById('openAddModalBtn');
     if (addNavBtn) addNavBtn.classList.add('locked-feature');
-    
-    const addNewBtnEl = document.getElementById('addNewBtn');
+    if (addCard) addCard.classList.add('locked-feature');
     if (addNewBtnEl) {
-      const addCard = addNewBtnEl.closest('.card');
-      if (addCard) addCard.classList.add('locked-feature');
       addNewBtnEl.classList.add('locked-feature');
+      addNewBtnEl.disabled = true;
     }
-    
-    const newIdInput = document.getElementById('newId');
     if (newIdInput) {
       newIdInput.disabled = true;
       newIdInput.placeholder = '🔒 مقفول من قِبَل المدير';
     }
+  } else {
+    if (addNavBtn) addNavBtn.classList.remove('locked-feature');
+    if (addCard) addCard.classList.remove('locked-feature');
+    if (addNewBtnEl) {
+      addNewBtnEl.classList.remove('locked-feature');
+      addNewBtnEl.disabled = false;
+    }
+    if (newIdInput) {
+      newIdInput.disabled = false;
+      newIdInput.placeholder = 'ID (ex: 601)';
+    }
   }
 
   // Packages
-  if (p.can_manage_packages) {
+  if (p.can_manage_packages !== false) {
     if(document.getElementById('btnTabPackages')) document.getElementById('btnTabPackages').classList.remove('locked-feature');
     if(document.getElementById('btnManagerPackages')) document.getElementById('btnManagerPackages').classList.remove('locked-feature');
   } else {
     if(document.getElementById('btnTabPackages')) document.getElementById('btnTabPackages').classList.add('locked-feature');
   }
 
+  // Syllabus / المنهج
+  const btnSyllabus = document.getElementById('btnTabSyllabus');
+  if (p.can_access_syllabus !== false) {
+    if (btnSyllabus) btnSyllabus.classList.remove('locked-feature');
+  } else {
+    if (btnSyllabus) btnSyllabus.classList.add('locked-feature');
+  }
+
   // Reports
-  if (p.can_view_reports) {
+  if (p.can_view_reports !== false) {
     if(document.getElementById('btnTabReports')) document.getElementById('btnTabReports').classList.remove('locked-feature');
     if(document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.remove('locked-feature');
     if(document.getElementById('btnManagerDailyReport')) document.getElementById('btnManagerDailyReport').classList.remove('locked-feature');
@@ -1583,41 +1620,42 @@ function applyPermissionsToAssistantUI() {
   }
 
   // Marketing
-  if (p.can_access_marketing) {
+  if (p.can_access_marketing !== false) {
     if(document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.remove('locked-feature');
   } else {
     if(document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.add('locked-feature');
   }
 
   // Session Students
-  if (p.can_access_session_students) {
+  if (p.can_access_session_students !== false) {
     if(document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.remove('locked-feature');
   } else {
     if(document.getElementById('btnTabSessionStudents')) document.getElementById('btnTabSessionStudents').classList.add('locked-feature');
   }
 
   // Request Discount
-  if (p.can_request_discount) {
-    if (document.getElementById('correctPayBtn')) {
-      document.getElementById('correctPayBtn').classList.remove('hidden');
-      document.getElementById('correctPayBtn').classList.remove('locked-feature');
+  const discBtn = document.getElementById('correctPayBtn');
+  if (p.can_request_discount !== false) {
+    if (discBtn) {
+      discBtn.classList.remove('hidden');
+      discBtn.classList.remove('locked-feature');
     }
   } else {
-    if (document.getElementById('correctPayBtn')) {
-      document.getElementById('correctPayBtn').classList.remove('hidden');
-      document.getElementById('correctPayBtn').classList.add('locked-feature');
+    if (discBtn) {
+      discBtn.classList.add('hidden');
+      discBtn.classList.add('locked-feature');
     }
   }
 
   // Booklets
-  if (p.can_access_booklets) {
+  if (p.can_access_booklets !== false) {
     if(document.getElementById('btnTabBooklets')) document.getElementById('btnTabBooklets').classList.remove('locked-feature');
   } else {
     if(document.getElementById('btnTabBooklets')) document.getElementById('btnTabBooklets').classList.add('locked-feature');
   }
 
   // Settings / Admin Dashboard
-  if (p.can_access_settings) {
+  if (p.can_access_settings !== false) {
     if(document.getElementById('btnTabAdmin')) document.getElementById('btnTabAdmin').classList.remove('locked-feature');
     if(document.getElementById('btnManagerSettings')) document.getElementById('btnManagerSettings').classList.remove('locked-feature');
   } else {
@@ -1631,6 +1669,8 @@ function applyPermissionsToAssistantUI() {
   document.querySelectorAll('.nav-group').forEach(group => {
     group.style.display = 'block';
   });
+
+  if (typeof updateTopStats === 'function') updateTopStats();
 }
 function applyPermissions() {
  const isAdmin = (currentUserRole === "admin");
@@ -1678,14 +1718,23 @@ function applyPermissions() {
  if($("totalStudentsCount")) $("totalStudentsCount").textContent = filledCount;
  if($("todayCountTop")) $("todayCountTop").textContent = todayCount;
  
- if($("todayRevenue")) {
-    if (currentUserRole !== 'admin' && currentPermissions && currentPermissions.show_revenue === false) {
-      $("todayRevenue").textContent = "---";
-    } else {
-      $("todayRevenue").textContent = isRevHidden ? "****** ج" : revenue + " ج";
-    }
+ const revPill = $("openRevenueModalBtn");
+ const revToggle = $("toggleRevBtn");
+ const canShowRev = (currentUserRole === 'admin' || !currentPermissions || currentPermissions.show_revenue !== false);
+ if (!canShowRev) {
+   if (revPill) revPill.style.display = "none";
+   if (revToggle) revToggle.style.display = "none";
+   if ($("todayRevenue")) $("todayRevenue").textContent = "---";
+ } else {
+   if (revPill) revPill.style.display = "";
+   if (revToggle) {
+     revToggle.style.display = "";
+     revToggle.innerHTML = isRevHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+   }
+   if ($("todayRevenue")) {
+     $("todayRevenue").textContent = isRevHidden ? "****** ج" : revenue + " ج";
+   }
  }
- if($("toggleRevBtn")) $("toggleRevBtn").innerHTML = isRevHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
 
  }
 
@@ -2771,10 +2820,15 @@ function applyPermissions() {
       localStorage.setItem(K_ROLE, "admin");
       localStorage.setItem("ca_current_username", "المدير");
       window.CURRENT_ROLE = "admin";
+
+      // Dedicated Admin Session
+      localStorage.setItem("ca_admin_session", "1");
+      localStorage.setItem("ca_admin_username", managerRow.name || managerRow.username || rawU || "المدير");
       
-      await loadAll();
-      await loadPermissions();
-      checkAuth();
+      showToast("تم تسجيل الدخول بنجاح! جاري التوجيه إلى لوحة الإدارة...", "success");
+      setTimeout(() => {
+        window.location.href = "admin.html";
+      }, 500);
     } catch (err) {
       console.error(err);
       showToast("فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.", "err");
@@ -4818,6 +4872,7 @@ window.deleteAssistant = async function(asstKey) {
   { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يعرض رقم إيراد الوردية الحالي في الشريط العلوي للمساعد" },
   { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح بفتح كارت 'إضافة طالب جديد' وتسجيل البيانات" },
   { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "إتاحة فتح صفحة إدارة الباقات والأسعار من القائمة الجانبية" },
+  { key: "can_access_syllabus", label: "المنهج الدراسي", desc: "السماح بفتح وعرض خريطة سير المنهج من القائمة الجانبية" },
   { key: "can_view_reports", label: "الوصول لصفحة التقارير", desc: "السماح للمساعد بفتح قسم الحسابات والتقارير" },
   { key: "can_access_marketing", label: "أدوات التسويق", desc: "إتاحة فتح صفحة التسويق وإرسال رسائل للطلاب" },
   { key: "can_access_session_students", label: "طلاب الحصة", desc: "السماح بعرض قائمة الحضور المخصصة للحصة الحالية" },
@@ -4826,9 +4881,51 @@ window.deleteAssistant = async function(asstKey) {
   { key: "can_access_settings", label: "إعدادات النظام", desc: "السماح بفتح لوحة الإعدادات المتقدمة (نسخ احتياطي - تصفير - إلخ)" }
 ];
 
- // Default: all permissions ON
- let currentPermissions = {};
- PERMISSIONS_DEFS.forEach(p => currentPermissions[p.key] = true);
+// Default permissions initialized from local cache immediately
+let currentPermissions = {};
+PERMISSIONS_DEFS.forEach(p => currentPermissions[p.key] = true);
+try {
+  const cached = localStorage.getItem("ca_asst_permissions");
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    PERMISSIONS_DEFS.forEach(p => {
+      if (parsed[p.key] !== undefined) currentPermissions[p.key] = parsed[p.key];
+    });
+  }
+} catch(e) {}
+
+// Instant Real-time sync with Admin via BroadcastChannel (< 5ms response across tabs)
+if ('BroadcastChannel' in window) {
+  const permChannel = new BroadcastChannel('studify_permissions_sync');
+  permChannel.onmessage = (e) => {
+    const msg = e.data;
+    if (!msg) return;
+    const currentU = localStorage.getItem("ca_current_username") || "";
+    if (msg.type === 'PERMISSIONS_UPDATED') {
+      if (!msg.username || msg.username.toLowerCase() === currentU.toLowerCase()) {
+        currentPermissions = msg.permissions || {};
+        localStorage.setItem("ca_asst_permissions", JSON.stringify(currentPermissions));
+        if (typeof applyPermissionsToAssistantUI === 'function') {
+          applyPermissionsToAssistantUI();
+        }
+        if (typeof showToast === 'function') {
+          showToast("⚡ تم تحديث الصلاحيات من قِبل المدير فورياً", "info");
+        }
+      }
+    } else if (msg.type === 'DAILY_SHIFT_APPROVED') {
+      const overlay = document.getElementById("assistantHardLockOverlay");
+      if (overlay) overlay.classList.add("hidden");
+      if (typeof showToast === 'function') showToast("✅ تم اعتماد الوردية من قِبل المدير", "success");
+    } else if (msg.type === 'DAILY_SHIFT_REJECTED') {
+      const overlay = document.getElementById("assistantHardLockOverlay");
+      if (overlay) {
+        overlay.classList.remove("hidden");
+        const msgEl = document.getElementById("assistantHardLockMsg");
+        if (msgEl) msgEl.textContent = "تم تعليق الوردية من قِبل المدير: " + (msg.reason || "");
+      }
+    }
+  };
+}
 
  async function loadPermissions() {
   if (!window.supabaseClient) return;
@@ -4854,6 +4951,10 @@ window.deleteAssistant = async function(asstKey) {
       PERMISSIONS_DEFS.forEach(p => {
         if (saved[p.key] !== undefined) currentPermissions[p.key] = saved[p.key];
       });
+      localStorage.setItem("ca_asst_permissions", JSON.stringify(currentPermissions));
+      if (typeof applyPermissionsToAssistantUI === 'function') {
+        applyPermissionsToAssistantUI();
+      }
     }
   } catch(e) { console.error("Load permissions error:", e); }
 }
@@ -6397,7 +6498,9 @@ window.deleteAssistant = async function(asstKey) {
   await initStorageMigration();
   await loadAll(); 
   ensureBase500(); 
+  await loadPermissions();
   checkAuth();
+  applyPermissions();
   applyLanguage(); 
   setTimeout(checkQR, 500);
 

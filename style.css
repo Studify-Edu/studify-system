@@ -4146,17 +4146,87 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
   font-weight: 700 !important;
 }
 
-/* Quick Attend Button Pending State */
+/* Quick Attend Button Pending State - Original Sleek Grey */
+#quickAttendBtn.btn-attend-pending,
+.btn.primary#quickAttendBtn.btn-attend-pending,
 .btn-attend-pending {
-  background: #e2e8f0 !important;
+  background: #334155 !important;
+  background-image: none !important;
   color: #94a3b8 !important;
   box-shadow: none !important;
-  border: 1px solid #cbd5e1 !important;
-  min-width: 105px !important;
+  border: 1px solid #475569 !important;
+  cursor: pointer !important;
+  filter: none !important;
+  opacity: 0.95 !important;
+  transition: all 0.25s ease !important;
 }
 
-[data-theme="dark"] .btn-attend-pending {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #64748b !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+#quickAttendBtn.btn-attend-pending:hover,
+.btn.primary#quickAttendBtn.btn-attend-pending:hover,
+.btn-attend-pending:hover {
+  background: #3f4e65 !important;
+  background-image: none !important;
+  color: #f1f5f9 !important;
+  border-color: #64748b !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   LOCKED FEATURES STYLING (FOR ASSISTANT PERMISSIONS)
+   ========================================================================== */
+.locked-feature {
+  position: relative !important;
+  opacity: 0.45 !important;
+  filter: grayscale(85%) !important;
+  cursor: not-allowed !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  transition: all 0.25s ease !important;
+}
+
+.locked-feature::after {
+  content: "\f023";
+  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome" !important;
+  font-weight: 900 !important;
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  background: rgba(239, 68, 68, 0.95) !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+  z-index: 10 !important;
+  pointer-events: none !important;
+}
+
+/* For buttons and nav items, smaller lock badge */
+.nav-item.locked-feature::after,
+.btn.locked-feature::after {
+  top: 4px !important;
+  left: 4px !important;
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 9px !important;
+}
+
+.card.locked-feature {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  background: rgba(239, 68, 68, 0.04) !important;
+}
+
+.locked-clicked {
+  animation: lockedShake 0.4s ease-in-out !important;
+}
+
+@keyframes lockedShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
 }
