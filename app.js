@@ -7209,17 +7209,23 @@ window.updateAttendanceUIState = function() {
     const input = document.getElementById("quickAttendId");
     if (!btn) return;
     
-    // Clean any lingering inline styles
-    btn.classList.remove("btn-attend-pending");
-    btn.style.removeProperty("background");
-    btn.style.removeProperty("background-image");
-    btn.style.removeProperty("color");
-    btn.style.removeProperty("box-shadow");
-    btn.style.removeProperty("border");
-    
     const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
     if (input) {
         input.placeholder = hasSelected ? "ID (ex: 601)" : "اختر مادة أولاً";
+    }
+
+    if (!hasSelected) {
+        btn.classList.add("btn-attend-pending");
+        btn.innerHTML = '<i class="fa-solid fa-lock" style="margin-inline-end: 6px;"></i> اختر مادة';
+    } else {
+        btn.classList.remove("btn-attend-pending");
+        btn.innerHTML = 'سجل حضور';
+        // Clean any lingering inline styles
+        btn.style.removeProperty("background");
+        btn.style.removeProperty("background-image");
+        btn.style.removeProperty("color");
+        btn.style.removeProperty("box-shadow");
+        btn.style.removeProperty("border");
     }
 };
 
