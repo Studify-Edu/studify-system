@@ -7216,7 +7216,7 @@ window.updateAttendanceUIState = function() {
 
     if (!hasSelected) {
         btn.classList.add("btn-attend-pending");
-        btn.innerHTML = '<i class="fa-solid fa-lock" style="margin-inline-end: 6px;"></i> اختر مادة';
+        btn.innerHTML = '<i class="fa-solid fa-lock" style="margin-inline-end: 6px;"></i> سجل حضور';
     } else {
         btn.classList.remove("btn-attend-pending");
         btn.innerHTML = 'سجل حضور';
