@@ -71,7 +71,10 @@ body {
   direction: rtl;
   overflow-x: hidden;
   line-height: 1.5;
+}.hidden {
+  display: none !important;
 }
+
 
 /* ── LOGIN SCREEN ── */
 .admin-login-wrapper {
