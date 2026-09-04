@@ -796,6 +796,7 @@ function showToast(msg, type = "success") {
  if (_now - _lastToastTime < 350 && _lastToastMsg === msg) return;
  _lastToastMsg = msg; _lastToastTime = _now;
  let container = $("toastContainer"); if(!container) return;
+ container.innerHTML = "";
  const toast = document.createElement("div");
  toast.className = `toast toast-${type}`;
  const icons = { success: '<i class="fa-solid fa-circle-check"></i>', err: '<i class="fa-solid fa-circle-xmark"></i>', warning: '<i class="fa-solid fa-triangle-exclamation"></i>', info: '<i class="fa-solid fa-circle-info"></i>' };
@@ -2941,7 +2942,11 @@ window.logout = async function() {
  updateTopStats();
  });
 // quickAttendId Enter handled by global keydown to prevent double-firing
- on("quickAttendBtn", "click", function() {
+ let _quickAttendLock = false;
+on("quickAttendBtn", "click", function() {
+  if (_quickAttendLock) return;
+  _quickAttendLock = true;
+  setTimeout(() => { _quickAttendLock = false; }, 600);
  // 1. Check subject selection first
  if (!window.currentGlobalSubject || !String(window.currentGlobalSubject).trim()) {
    showToast("يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً", "warning");
@@ -7204,28 +7209,17 @@ window.updateAttendanceUIState = function() {
     const input = document.getElementById("quickAttendId");
     if (!btn) return;
     
-    const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
+    // Clean any lingering inline styles
+    btn.classList.remove("btn-attend-pending");
+    btn.style.removeProperty("background");
+    btn.style.removeProperty("background-image");
+    btn.style.removeProperty("color");
+    btn.style.removeProperty("box-shadow");
+    btn.style.removeProperty("border");
     
-    if (!hasSelected) {
-        btn.classList.add("btn-attend-pending");
-        btn.style.setProperty("background", "#334155", "important");
-        btn.style.setProperty("background-image", "none", "important");
-        btn.style.setProperty("color", "#94a3b8", "important");
-        btn.style.setProperty("box-shadow", "none", "important");
-        btn.style.setProperty("border", "1px solid #475569", "important");
-        if (input) { 
-            input.placeholder = "اختر مادة أولاً";
-        }
-    } else {
-        btn.classList.remove("btn-attend-pending");
-        btn.style.removeProperty("background");
-        btn.style.removeProperty("background-image");
-        btn.style.removeProperty("color");
-        btn.style.removeProperty("box-shadow");
-        btn.style.removeProperty("border");
-        if (input) { 
-            input.placeholder = "ID (ex: 601)";
-        }
+    const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
+    if (input) {
+        input.placeholder = hasSelected ? "ID (ex: 601)" : "اختر مادة أولاً";
     }
 };
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="dark">
 <head>
  <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -41,10 +41,12 @@
  });
  }
  </script>
+ <!-- SWEETALERT2 STYLING -->
  <style>
- /* Premium SweetAlert2 Theme Overrides */
  div:where(.swal2-container) {
- z-index: 100000;
+ z-index: 99999 !important;
+ backdrop-filter: blur(8px) !important;
+ -webkit-backdrop-filter: blur(8px) !important;
  }
  div:where(.swal2-popup) {
  background: rgba(15, 23, 42, 0.85) !important;
@@ -91,28 +93,6 @@
  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.5) !important;
  }
  </style>
-
-  <style>
-  /* Instant visual gray styling for pending attendance button */
-  #quickAttendBtn.btn-attend-pending,
-  .btn.primary#quickAttendBtn.btn-attend-pending {
-    background: #334155 !important;
-    background-image: none !important;
-    color: #94a3b8 !important;
-    box-shadow: none !important;
-    border: 1px solid #475569 !important;
-    cursor: pointer !important;
-    filter: none !important;
-    opacity: 0.9 !important;
-  }
-  #quickAttendBtn.btn-attend-pending:hover,
-  .btn.primary#quickAttendBtn.btn-attend-pending:hover {
-    background: #3f4e65 !important;
-    background-image: none !important;
-    color: #f1f5f9 !important;
-    border-color: #64748b !important;
-  }
-  </style>
 </head>
 <body>
 
@@ -430,7 +410,7 @@
        <label class="bento-input-lbl"><i class="fa-solid fa-id-card"></i> معرّف الطالب (ID)</label>
        <div class="bento-input-action-row">
          <input id="quickAttendId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)">
-         <button id="quickAttendBtn" class="btn primary btn-attend-pending" style="background: #334155 !important; background-image: none !important; color: #94a3b8 !important; box-shadow: none !important; border: 1px solid #475569 !important; min-width: 105px;" data-i18n="btn_record">سجل حضور</button>
+         <button id="quickAttendBtn" class="btn primary" style="min-width: 105px;" data-i18n="btn_record">سجل حضور</button>
        </div>
      </div>
    </div>
@@ -1795,7 +1775,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V107"></script>
+ <script type="module" src="app.js?v=STUDIFY_V108"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
