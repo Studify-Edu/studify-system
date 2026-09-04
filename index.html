@@ -15,7 +15,7 @@
 
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V63">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V64">
  <link rel="stylesheet" href="icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME FLASH -->
@@ -330,8 +330,10 @@
  <button id="mobileSidebarToggle" class="mobile-menu-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
   </div>
  <div class="topbar-stats">
-  <span class="stat-pill clickable" id="openSubjectModalBtn">
-    <span id="globalSubjectText" style="font-weight:bold; font-size:0.95em; color:var(--text-primary);">-- مادة الحضور --</span>
+  <span class="stat-pill clickable" id="openSubjectModalBtn" title="تحديد مادة الحضور">
+ <i class="fa-solid fa-book-bookmark subject-pill-icon"></i>
+ <span id="globalSubjectText" style="font-weight:bold; font-size:0.95em;">-- مادة الحضور --</span>
+ </span>
     <i class="fa-solid fa-book" style="color:var(--primary); margin-inline-start:6px; font-size:1.1em;"></i>
   </span>
  <span class="stat-pill clickable" id="openAllStudentsBtn">
@@ -420,36 +422,77 @@
  <!-- ====== HOME ====== -->
  <section id="secHome" class="tab-section">
  <div class="bento-grid">
+ <!-- بطاقة سريع (QR) -->
  <div class="card bento-sm">
- <h2 data-i18n="quick_title">سريع (QR)</h2>
- <div class="row">
- <input id="quickAttendId" class="inp" inputmode="numeric" placeholder="ID">
- <button id="quickAttendBtn" class="btn primary btn-attend-pending" style="background: #334155 !important; background-image: none !important; color: #94a3b8 !important; box-shadow: none !important; border: 1px solid #475569 !important;" data-i18n="btn_record">سجل حضور</button>
- </div>
- <div class="live-feed-section">
- <label class="lbl" data-i18n="lbl_last_scan">آخر حضور تم تسجيله </label>
- <div id="liveFeedBox" class="feed-list" data-i18n="wait_scan">بانتظار مسح كود...</div>
- </div>
+   <div>
+     <h2 class="bento-card-title"><span data-i18n="quick_title">سريع (QR)</span></h2>
+     <span class="bento-card-subtitle">تسجيل الحضور الفوري بالـ ID أو الباركود</span>
+     
+     <div class="bento-field-group">
+       <label class="bento-input-lbl"><i class="fa-solid fa-id-card"></i> معرّف الطالب (ID)</label>
+       <div class="bento-input-action-row">
+         <input id="quickAttendId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)">
+         <button id="quickAttendBtn" class="btn primary btn-attend-pending" style="background: #334155 !important; background-image: none !important; color: #94a3b8 !important; box-shadow: none !important; border: 1px solid #475569 !important; min-width: 105px;" data-i18n="btn_record">سجل حضور</button>
+       </div>
+     </div>
+   </div>
+   
+   <div>
+     <div class="bento-divider"></div>
+     <div class="live-feed-section">
+       <label class="bento-input-lbl" data-i18n="lbl_last_scan"><i class="fa-solid fa-clock-rotate-left"></i> آخر حضور تم تسجيله</label>
+       <div id="liveFeedBox" class="feed-list" data-i18n="wait_scan">بانتظار مسح كود...</div>
+     </div>
+   </div>
  </div>
 
+ <!-- بطاقة بحث شامل -->
  <div class="card bento-sm">
- <h2 data-i18n="search_title">بحث شامل</h2>
- <div class="row">
- <input id="openId" class="inp" inputmode="numeric" placeholder="ID">
- <button id="openBtn" class="btn" data-i18n="btn_open">فتح</button>
- </div>
- <div class="row">
- <input id="searchAny" class="inp" placeholder="الاسم / الرقم / الكود..." data-i18n-placeholder="search_plc">
- </div>
- <div id="searchMsg" class="msg"></div>
+   <div>
+     <h2 class="bento-card-title"><span data-i18n="search_title">بحث شامل</span></h2>
+     <span class="bento-card-subtitle">الوصول السريع لملفات وبيانات الطلاب</span>
+     
+     <div class="bento-field-group">
+       <label class="bento-input-lbl"><i class="fa-solid fa-hashtag"></i> فتح مباشر برقم الـ ID</label>
+       <div class="bento-input-action-row">
+         <input id="openId" class="inp" inputmode="numeric" placeholder="ID (ex: 101)">
+         <button id="openBtn" class="btn primary" style="min-width: 80px;" data-i18n="btn_open">فتح</button>
+       </div>
+     </div>
+   </div>
+   
+   <div>
+     <div class="bento-divider"></div>
+     <div class="bento-field-group" style="margin-bottom:0;">
+       <label class="bento-input-lbl"><i class="fa-solid fa-magnifying-glass"></i> بحث ذكي متعدد</label>
+       <input id="searchAny" class="inp" placeholder="الاسم / الرقم / الكود..." data-i18n-placeholder="search_plc">
+       <div id="searchMsg" class="msg"></div>
+     </div>
+   </div>
  </div>
 
+ <!-- بطاقة إضافة طالب جديد -->
  <div class="card bento-sm">
- <h2 data-i18n="add_title">+ إضافة طالب جديد</h2>
- <div class="row">
- <input id="newId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)">
- <button id="addNewBtn" class="btn" data-i18n="btn_add_open">إضافة وفتح</button>
- </div>
+   <div>
+     <h2 class="bento-card-title"><span data-i18n="add_title">+ إضافة طالب جديد</span></h2>
+     <span class="bento-card-subtitle">تسجيل طالب جديد وفتح ملفه فوراً</span>
+     
+     <div class="bento-field-group">
+       <label class="bento-input-lbl"><i class="fa-solid fa-user-plus"></i> رقم الـ ID للطالب الجديد</label>
+       <div class="bento-input-action-row">
+         <input id="newId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)">
+         <button id="addNewBtn" class="btn success" style="min-width: 110px;" data-i18n="btn_add_open">إضافة وفتح</button>
+       </div>
+     </div>
+   </div>
+   
+   <div>
+     <div class="bento-divider"></div>
+     <div class="bento-info-box">
+       <i class="fa-solid fa-circle-info"></i>
+       <span>أدخل رقم الـ ID واضغط إضافة لفتح الملف واستكمال الاسم والباقات.</span>
+     </div>
+   </div>
  </div>
 
  <div class="card bento-full studentCard">
@@ -1754,7 +1797,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V105"></script>
+ <script type="module" src="app.js?v=STUDIFY_V106"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
@@ -1807,23 +1850,39 @@
     </div>
   </div>
 
-   <!-- مودال اختيار مادة الحضور -->
-   <div id="subjectSelectionModal" class="modal hidden">
-     <div class="modal-content" style="max-width: 400px;">
-       <button class="close-btn" onclick="document.getElementById('subjectSelectionModal').classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>
-       <h3 style="margin-bottom:20px; color:var(--primary); font-family:'Cairo'; display:flex; align-items:center; justify-content:center; gap:8px;">
-         <i class="fa-solid fa-book"></i> اختر مادة الحضور
-       </h3>
-       
-       <div id="subjectSelectionList" style="display:flex; flex-direction:column; gap:12px; max-height:400px; overflow-y:auto; padding-right:5px;">
-         <!-- Subjects will be rendered here via JS -->
-       </div>
-       
-       <div style="margin-top:20px; text-align:center;">
-         <button class="btn secondary" onclick="document.getElementById('subjectSelectionModal').classList.add('hidden')" style="width:100%;">إغلاق</button>
-       </div>
-     </div>
-   </div>
+   <!-- مودال اختيار مادة الحضور الحديث بالعرض -->
+    <div id="subjectSelectionModal" class="modal hidden" style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(0,0,0,0.65); z-index: 10001; align-items:center; justify-content:center;">
+      <div class="modal-content subject-modal-wide">
+        <!-- Header -->
+        <div class="subject-modal-header">
+          <div class="subject-modal-title-wrap">
+            <div class="subject-modal-icon-badge">
+              <i class="fa-solid fa-book-bookmark"></i>
+            </div>
+            <div>
+              <h3 class="subject-modal-title">اختر مادة الحضور</h3>
+              <p class="subject-modal-subtitle">حدد المادة الدراسية لتسجيل الحضور ومتابعة الحصص للطلاب</p>
+            </div>
+          </div>
+          <button class="subject-modal-close-btn" onclick="document.getElementById('subjectSelectionModal').classList.add('hidden')" title="إغلاق">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        
+        <!-- Grid Container for Subjects (Horizontal / Multi-column) -->
+        <div id="subjectSelectionList" class="subject-grid-container">
+          <!-- Subjects will be dynamically rendered here as interactive grid cards -->
+        </div>
+        
+        <!-- Footer with Clear / Reset & Close -->
+        <div class="subject-modal-footer">
+          <div id="subjectSelectionClearWrap"></div>
+          <button class="btn secondary subject-modal-cancel-btn" onclick="document.getElementById('subjectSelectionModal').classList.add('hidden')">
+            إغلاق النافذة
+          </button>
+        </div>
+      </div>
+    </div>
 
 
    <!-- Package Selection Modal -->

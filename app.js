@@ -6510,10 +6510,13 @@ window.deleteAssistant = async function(asstKey) {
  window.openSubjectSelectionModal = function() {
     const modal = document.getElementById("subjectSelectionModal");
     const list = document.getElementById("subjectSelectionList");
+    const clearWrap = document.getElementById("subjectSelectionClearWrap");
     if (!modal || !list) return;
     
+    // Extract real subjects ONLY from the user's actual database (packages and syllabus)
     let subjects = new Set();
     const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
+    
     Object.keys(feesObj).forEach(pkgName => {
         const pkg = feesObj[pkgName];
         if (pkg && pkg.subject && String(pkg.subject).trim()) {
@@ -6522,6 +6525,7 @@ window.deleteAssistant = async function(asstKey) {
             subjects.add(String(pkgName).trim());
         }
     });
+    
     if (Array.isArray(syllabusData)) {
         syllabusData.forEach(syll => {
             if (syll && syll.subject && String(syll.subject).trim()) {
@@ -6530,30 +6534,49 @@ window.deleteAssistant = async function(asstKey) {
         });
     }
     
-    // Default common subjects if none configured
-    if (subjects.size === 0) {
-        ["عام", "فيزياء", "كيمياء", "أحياء", "رياضيات", "لغة عربية", "لغة إنجليزية"].forEach(s => subjects.add(s));
-    }
+    // Sort subjects alphabetically
+    const subjectList = Array.from(subjects).sort((a, b) => a.localeCompare(b, 'ar'));
     
     let html = "";
-    Array.from(subjects).forEach(sub => {
-        const isSelected = (sub === window.currentGlobalSubject);
-        html += `
-        <div style="padding:14px 18px; border-radius:12px; background:var(--bg-inset); border:2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:all 0.2s;" onclick="selectGlobalSubject('${sub}')">
-            <span style="font-weight:bold; font-size:1.05em; color:var(--text-primary);">${sub}</span>
-            ${isSelected ? '<i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1.3em;"></i>' : '<i class="fa-regular fa-circle" style="color:var(--text-secondary); font-size:1.3em;"></i>'}
+    if (subjectList.length === 0) {
+        html = `
+        <div class="subject-empty-state">
+            <div class="subject-empty-icon"><i class="fa-solid fa-folder-open"></i></div>
+            <div class="subject-empty-title">لا توجد مواد أو باقات مسجلة حالياً</div>
+            <div class="subject-empty-desc">يمكنك إضافة المواد والصفوف الدراسية والأسعار بسهولة من قسم الباقات.</div>
+            <button class="btn primary" onclick="if(typeof window.switchTab === 'function') window.switchTab('Packages'); document.getElementById('subjectSelectionModal').classList.add('hidden');">
+                <i class="fa-solid fa-arrow-left"></i> الانتقال إلى قسم الباقات
+            </button>
         </div>`;
-    });
-    
-    // Reset/Clear option if a subject is currently selected
-    if (window.currentGlobalSubject) {
-        html += `
-        <div style="padding:10px 14px; border-radius:10px; background:rgba(239,68,68,0.1); border:1px dashed #ef4444; color:#ef4444; text-align:center; cursor:pointer; font-size:0.9em; font-weight:600; margin-top:8px;" onclick="selectGlobalSubject('')">
-            <i class="fa-solid fa-rotate-left"></i> إلغاء تحديد المادة
-        </div>`;
+    } else {
+        subjectList.forEach(sub => {
+            const isSelected = (sub === window.currentGlobalSubject);
+            html += `
+            <div class="subject-tile-card ${isSelected ? 'selected' : ''}" onclick="selectGlobalSubject('${sub.replace(/'/g, "\\'")}')">
+                <div class="subject-tile-content">
+                    <div class="subject-tile-icon"><i class="fa-solid fa-book-open"></i></div>
+                    <span class="subject-tile-name" title="${sub}">${sub}</span>
+                </div>
+                <div class="subject-tile-indicator">
+                    ${isSelected ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-regular fa-circle"></i>'}
+                </div>
+            </div>`;
+        });
     }
     
     list.innerHTML = html;
+    
+    // Clear/Reset selection button in footer
+    if (clearWrap) {
+        if (window.currentGlobalSubject) {
+            clearWrap.innerHTML = `<button class="subject-clear-btn" onclick="selectGlobalSubject('')">
+                <i class="fa-solid fa-rotate-left"></i> إلغاء تحديد المادة
+            </button>`;
+        } else {
+            clearWrap.innerHTML = "";
+        }
+    }
+    
     modal.classList.remove("hidden");
 };
  
