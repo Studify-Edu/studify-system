@@ -971,6 +971,10 @@ function showToast(msg, type = "success") {
  window.switchTab = function(tabId) {
  // Hard Security Guard: Block locked tabs for assistants
  if (currentUserRole !== "admin" && typeof currentPermissions !== "undefined") {
+ if (tabId === "Packages" && !currentPermissions.can_manage_packages) {
+ showToast("عفواً، قسم الباقات والأسعار مقفل من المدير", "err");
+ return;
+ }
  if (tabId === "Reports" && !currentPermissions.can_view_reports) {
  showToast("عفواً، قسم التقارير مقفل من المدير ", "err");
  return;
@@ -6507,7 +6511,19 @@ window.deleteAssistant = async function(asstKey) {
 
  window.currentGlobalSubject = "";
  
- window.openSubjectSelectionModal = function() {
+ 
+window.goToPackagesFromSubjectModal = function() {
+    if (currentUserRole !== "admin" && typeof currentPermissions !== "undefined" && !currentPermissions.can_manage_packages) {
+        showToast("عفواً، قسم الباقات والأسعار مقفل من قِبَل المدير", "err");
+        return;
+    }
+    const modal = document.getElementById("subjectSelectionModal");
+    if (modal) modal.classList.add("hidden");
+    window.switchTab('Packages');
+    if (typeof renderGroupFeesModal === 'function') renderGroupFeesModal();
+};
+
+window.openSubjectSelectionModal = function() {
     const modal = document.getElementById("subjectSelectionModal");
     const list = document.getElementById("subjectSelectionList");
     const clearWrap = document.getElementById("subjectSelectionClearWrap");
@@ -6544,9 +6560,13 @@ window.deleteAssistant = async function(asstKey) {
             <div class="subject-empty-icon"><i class="fa-solid fa-folder-open"></i></div>
             <div class="subject-empty-title">لا توجد مواد أو باقات مسجلة حالياً</div>
             <div class="subject-empty-desc">يمكنك إضافة المواد والصفوف الدراسية والأسعار بسهولة من قسم الباقات.</div>
-            <button class="btn primary" onclick="if(typeof window.switchTab === 'function') window.switchTab('Packages'); document.getElementById('subjectSelectionModal').classList.add('hidden');">
+            ${(currentUserRole === 'admin' || (typeof currentPermissions !== 'undefined' && currentPermissions.can_manage_packages)) ? `
+            <button class="btn primary" onclick="goToPackagesFromSubjectModal()">
                 <i class="fa-solid fa-arrow-left"></i> الانتقال إلى قسم الباقات
-            </button>
+            </button>` : `
+            <div style="font-size:0.85em; color:var(--text-secondary); margin-top:8px;">
+                <i class="fa-solid fa-lock"></i> يرجى مراجعة إدارة المركز لإضافة باقات ومواد دراسية.
+            </div>`}
         </div>`;
     } else {
         subjectList.forEach(sub => {
@@ -7194,7 +7214,7 @@ window.updateAttendanceUIState = function() {
         btn.style.setProperty("box-shadow", "none", "important");
         btn.style.setProperty("border", "1px solid #475569", "important");
         if (input) { 
-            input.placeholder = "⚠️ اختر المادة أولاً";
+            input.placeholder = "اختر مادة أولاً";
         }
     } else {
         btn.classList.remove("btn-attend-pending");
