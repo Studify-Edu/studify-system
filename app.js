@@ -1985,7 +1985,13 @@ function applyPermissions() {
  }
 
  function addAttendance(id, d) {
- const s = students[String(id)];
+    const selectedSubject = window.currentGlobalSubject || "";
+    if (Object.keys(window.groupFees || {}).length > 0 && !selectedSubject) {
+        if(typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+        if(typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
+        return { ok: false, msg: "يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً" };
+    }
+    const s = students[String(id)];
  if(!s) {
  showFullscreenFeedback(false, false);
  return { ok: false, msg: "Student not found" };
@@ -1996,12 +2002,7 @@ function applyPermissions() {
   }
 
  
- const selectedSubject = window.currentGlobalSubject || "";
- if (Object.keys(groupFees || {}).length > 0 && !selectedSubject) {
-     showFullscreenFeedback(false, false);
-     triggerShake("openSubjectModalBtn");
-     return { ok: false, msg: "يرجى تحديد مادة الحضور من القائمة بالأعلى" };
- }
+ 
 
  if (selectedSubject) {
      let validPkgName = null;
@@ -7122,21 +7123,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.updateAttendanceUIState = function() {
     const btn = document.getElementById("quickAttendBtn");
-    const input = document.getElementById("quickAttendInput");
+    const input = document.getElementById("quickAttendId");
     if (!btn) return;
     const hasSubjects = Object.keys(window.groupFees || {}).length > 0;
     const hasSelected = !!window.currentGlobalSubject;
     
     if (hasSubjects && !hasSelected) {
-        btn.disabled = true;
-        btn.style.opacity = "0.4";
-        btn.style.cursor = "not-allowed";
-        if(input) { input.disabled = true; input.placeholder = "اختر مادة الحضور أولاً"; }
-    } else {
+        btn.style.background = "#334155";
+        btn.style.color = "#94a3b8";
+        btn.style.boxShadow = "none";
         btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.style.cursor = "pointer";
-        if(input) { input.disabled = false; input.placeholder = "ID (ex: 601)"; }
+        if(input) { 
+            input.style.border = "1px solid #ef4444"; 
+            input.placeholder = "⚠️ اختر المادة أولاً";
+        }
+    } else {
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.style.boxShadow = "";
+        if(input) { 
+            input.style.border = ""; 
+            input.placeholder = "ID (ex: 601)";
+        }
     }
 };
 
