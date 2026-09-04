@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="dark">
 <head>
+  <!-- PREVENT THEME FLASH -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ca_theme') || localStorage.getItem('studify_admin_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة الإدارة والتحكم — Studify</title>
@@ -22,7 +29,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V2">
 </head>
 <body>
 
@@ -33,6 +40,7 @@
   <!-- 1. ADMIN LOGIN SCREEN (When Not Authenticated) -->
   <!-- ======================================================== -->
   <div id="adminLoginWrapper" class="admin-login-wrapper hidden">
+    <canvas id="adminParticlesCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: auto;"></canvas>
     <div class="admin-login-card">
       <img src="icon-192.png" alt="Studify" class="admin-login-logo">
       <h1 class="admin-login-title">لوحة تحكم الإدارة</h1>
@@ -57,9 +65,11 @@
           <i class="fa-solid fa-right-to-bracket"></i> دخول إلى لوحة الإدارة
         </button>
 
-        <div style="margin-top: 18px; text-align: center;">
-          <a href="index.html" style="color: var(--primary-cyan); font-size: 0.88em; text-decoration: none; font-weight: 600;">
-            <i class="fa-solid fa-arrow-right"></i> الانتقال لبوابة المساعد وتسجيل الحضور
+        <div style="margin-top: 24px; text-align: center;">
+          <a href="index.html" class="portal-switch-btn" id="toAssistantPortalBtn">
+            <i class="fa-solid fa-users" style="color: var(--primary);"></i>
+            <span>الانتقال لبوابة المساعد وتسجيل الحضور</span>
+            <i class="fa-solid fa-arrow-left"></i>
           </a>
         </div>
       </form>
@@ -111,20 +121,18 @@
           <span>خريطة سير المنهج</span>
         </button>
 
-        <div class="admin-nav-section">النظام والمزامنة</div>
-        <button id="navBtnCloudMonitor" class="admin-nav-item" onclick="window.switchAdminTab('cloudMonitor')">
-          <i class="fa-solid fa-cloud-arrow-up"></i>
-          <span>مراقب المزامنة السحابية</span>
-        </button>
+        <div class="admin-nav-section">إعدادات النظام</div>
         <button id="navBtnSettings" class="admin-nav-item" onclick="window.switchAdminTab('settings')">
           <i class="fa-solid fa-sliders"></i>
-          <span>الإعدادات المتقدمة</span>
+          <span>الإعدادات المتقدمة والنسخ الاحتياطي</span>
         </button>
       </nav>
 
       <div class="admin-sidebar-footer">
-        <a href="index.html" class="btn secondary smallBtn full-btn" style="text-decoration: none;">
-          <i class="fa-solid fa-users"></i> بوابة المساعد (الحضور)
+        <a href="index.html" class="portal-switch-btn" style="width: 100%; justify-content: center; font-size: 0.85em; padding: 10px 14px;">
+          <i class="fa-solid fa-users"></i>
+          <span>بوابة المساعد (الحضور)</span>
+          <i class="fa-solid fa-arrow-left"></i>
         </a>
         <button id="adminLogoutBtn" class="btn danger smallBtn full-btn" onclick="window.handleAdminLogout()">
           <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
@@ -163,22 +171,23 @@
         <div id="viewDailyReport" class="admin-view">
           
           <!-- Daily Approval Widget -->
-          <div id="dailyApprovalWidget" class="approval-banner pending">
-            <div>
-              <h3 style="margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-file-circle-check" style="color: var(--warning);"></i>
-                مراجعة واعتماد اليومية
-              </h3>
-              <p style="font-size: 0.88em; color: var(--text-secondary); margin: 0;">
-                الرجاء مراجعة بيانات الحضور والإيرادات. إذا كان خيار الاعتماد مفعلاً، يتوقف عمل المساعدين حتى تعتمد اليومية.
+          <div id="dailyApprovalWidget" class="approval-card pending">
+            <div class="approval-card-info">
+              <div class="approval-card-title">
+                <i class="fa-solid fa-clock" style="color: var(--warning); font-size: 1.25em;"></i>
+                <span>حالة اعتماد اليومية</span>
+                <span class="approval-badge-pill pending">
+                  <i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / معلقة
+                </span>
+              </div>
+              <p class="approval-card-desc">
+                العمليات متوقفة ومقيدة لدى المساعدين حتى تقوم بمراجعة الحضور واعتماد اليومية.
               </p>
             </div>
-            <div style="display: flex; gap: 10px;">
-              <button class="btn success smallBtn" onclick="window.approveDailyShift()">
-                <i class="fa-solid fa-check"></i> اعتماد اليومية
-              </button>
-              <button class="btn danger smallBtn" onclick="window.toggleRejectBox()">
-                <i class="fa-solid fa-xmark"></i> رفض / تعليق
+            <div class="approval-card-actions">
+              <button class="btn-toggle-shift inactive" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || nowDateStr(), true)">
+                <i class="fa-solid fa-lock-open"></i>
+                <span>اعتماد اليومية وفتح النظام</span>
               </button>
             </div>
           </div>
@@ -441,32 +450,6 @@
         </div>
 
         <!-- ==================================================== -->
-        <!-- VIEW 7: CLOUD DATA MONITOR -->
-        <!-- ==================================================== -->
-        <div id="viewCloudMonitor" class="admin-view hidden">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">
-                  <i class="fa-solid fa-server" style="color: var(--primary-cyan);"></i>
-                  مراقب البيانات السحابية (Cloud Data Monitor)
-                </div>
-                <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: 4px;">
-                  التحقق من تطابق البيانات المحلية على هذا الجهاز مع البيانات المرفوعة على السحابة (Supabase)
-                </p>
-              </div>
-              <button class="btn primary smallBtn" onclick="window.runCloudMonitorCheck()">
-                <i class="fa-solid fa-arrows-rotate"></i> فحص المزامنة الآن
-              </button>
-            </div>
-
-            <div id="cloudMonitorGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
-              <!-- Dynamically populated -->
-            </div>
-          </div>
-        </div>
-
-        <!-- ==================================================== -->
         <!-- VIEW 8: ADVANCED SETTINGS & BACKUP -->
         <!-- ==================================================== -->
         <div id="viewSettings" class="admin-view hidden">
@@ -489,27 +472,6 @@
             </div>
           </div>
 
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">
-                <i class="fa-solid fa-key" style="color: var(--warning);"></i>
-                تغيير كلمة مرور المدير
-              </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; max-width: 600px;">
-              <div>
-                <label class="lbl">كلمة المرور الجديدة</label>
-                <input type="password" id="newManagerPasswordInput" class="inp" placeholder="أدخل كلمة المرور الجديدة">
-              </div>
-              <div style="display: flex; align-items: flex-end;">
-                <button class="btn primary" onclick="window.updateManagerPassword()">
-                  <i class="fa-solid fa-check"></i> حفظ كلمة المرور
-                </button>
-              </div>
-            </div>
-          </div>
-
           <div class="card" style="border-color: var(--danger);">
             <div class="card-title" style="color: var(--danger); margin-bottom: 8px;">
               <i class="fa-solid fa-triangle-exclamation"></i>
@@ -518,9 +480,12 @@
             <p style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 16px;">
               تصفير بيانات الحضور أو إعادة تعيين النظام بالكامل. هذه الخطوة لا يمكن التراجع عنها إلا باسترجاع نسخة احتياطية.
             </p>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <button class="btn danger" onclick="window.resetDailyAttendance()">
-                <i class="fa-solid fa-trash-can"></i> تصفير حضور اليوم الحالي فقط
+            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+              <button class="btn danger" onclick="window.resetTermData()">
+                <i class="fa-solid fa-rotate-left"></i> تصفير حضور ومصاريف الترم بالكامل
+              </button>
+              <button class="btn danger" style="background: linear-gradient(135deg, #b91c1c, #991b1b); box-shadow: 0 4px 14px rgba(185, 28, 28, 0.4);" onclick="window.factoryResetSystem()">
+                <i class="fa-solid fa-triangle-exclamation"></i> إعادة تهيئة النظام بالكامل (ضبط المصنع)
               </button>
             </div>
           </div>
@@ -560,6 +525,6 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V2"></script>
 </body>
 </html>

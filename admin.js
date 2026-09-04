@@ -92,6 +92,13 @@ export async function checkAdminAuth() {
   const nameEl = document.getElementById("adminTopName");
   if (nameEl) nameEl.textContent = adminName;
 
+  const today = nowDateStr();
+  const dateInput = document.getElementById("adminDailyDateInput");
+  if (dateInput && !dateInput.value) dateInput.value = today;
+  if (typeof window.renderDailyApprovalWidget === 'function') {
+    window.renderDailyApprovalWidget(today);
+  }
+
   return true;
 }
 
@@ -173,6 +180,7 @@ window.toggleAdminTheme = function() {
   const next = cur === "dark" ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", next);
   localStorage.setItem("studify_admin_theme", next);
+  localStorage.setItem("ca_theme", next);
   const icon = document.getElementById("adminThemeIcon");
   if (icon) icon.className = next === "dark" ? "fa-solid fa-moon" : "fa-solid fa-sun";
 };
@@ -238,21 +246,20 @@ async function loadAllAdminData() {
       revenueByDate = c.revenue_by_date || {};
       expensesByDate = c.expenses_by_date || [];
       syllabusList = c.syllabus || [];
+      dailyApprovalMap = c.daily_approval_status || {};
     }
-
-    // Initial renders
+  } catch(e) {
+    console.error("Admin Load Data Error:", e);
+    showToast("تحذير: فشل مزامنة بعض البيانات من السحابة", "warning");
+  } finally {
     const today = nowDateStr();
     const dateInput = document.getElementById("adminDailyDateInput");
-    if (dateInput) dateInput.value = today;
-    window.loadDailyReport(today);
+    if (dateInput && !dateInput.value) dateInput.value = today;
+    window.loadDailyReport(dateInput ? dateInput.value : today);
     window.renderTermTable();
     window.renderAdminPackages();
     window.renderAdminSyllabus();
     fetchDecisionsCount();
-
-  } catch(e) {
-    console.error("Admin Load Data Error:", e);
-    showToast("تحذير: فشل مزامنة بعض البيانات من السحابة", "warning");
   }
 }
 
@@ -271,7 +278,6 @@ window.switchAdminTab = function(tabKey) {
     decisions: { view: "viewDecisions", btn: "navBtnDecisions", title: "صندوق طلبات القرارات", icon: "fa-bell" },
     packages: { view: "viewPackages", btn: "navBtnPackages", title: "إدارة الباقات والمصاريف", icon: "fa-box-archive" },
     syllabus: { view: "viewSyllabus", btn: "navBtnSyllabus", title: "خريطة سير المنهج الدراسي", icon: "fa-book-open" },
-    cloudMonitor: { view: "viewCloudMonitor", btn: "navBtnCloudMonitor", title: "مراقب البيانات السحابية (Cloud Monitor)", icon: "fa-cloud-arrow-up" },
     settings: { view: "viewSettings", btn: "navBtnSettings", title: "الإعدادات المتقدمة والنسخ الاحتياطي", icon: "fa-sliders" }
   };
 
@@ -289,14 +295,111 @@ window.switchAdminTab = function(tabKey) {
   // Tab specific refreshes
   if (tabKey === "assistants") window.fetchAssistants();
   if (tabKey === "decisions") window.fetchDecisions();
-  if (tabKey === "cloudMonitor") window.runCloudMonitorCheck();
 };
 
 // ========================================================
+window.renderDailyApprovalWidget = function(dateStr) {
+  const d = dateStr || nowDateStr();
+  const widget = document.getElementById("dailyApprovalWidget");
+  if (!widget) return;
+
+  const info = dailyApprovalMap[d];
+  const isApproved = info && (info.status === 'approved' || info === 'approved' || info === true);
+
+  widget.className = `approval-card ${isApproved ? 'approved' : 'pending'}`;
+  widget.innerHTML = `
+    <div class="approval-card-info">
+      <div class="approval-card-title">
+        <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-clock'}" style="color: ${isApproved ? 'var(--success)' : 'var(--warning)'}; font-size: 1.25em;"></i>
+        <span>حالة اعتماد يومية (${d})</span>
+        <span class="approval-badge-pill ${isApproved ? 'approved' : 'pending'}">
+          ${isApproved ? '<i class="fa-solid fa-check"></i> معتمدة ومفعلة' : '<i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / معلقة'}
+        </span>
+      </div>
+      <p class="approval-card-desc">
+        ${isApproved 
+          ? 'النظام مفعل بالكامل لدى المساعدين ويمكنهم تسجيل الحضور والعمليات. يمكنك إيقاف اليومية في أي وقت لتعليق عمل المساعدين.' 
+          : 'العمليات متوقفة ومقيدة لدى المساعدين حتى تقوم بمراجعة الحضور واعتماد اليومية.'}
+      </p>
+    </div>
+    <div class="approval-card-actions">
+      <button class="btn-toggle-shift ${isApproved ? 'active' : 'inactive'}" onclick="window.toggleDailyApproval('${d}', ${!isApproved})">
+        <i class="fa-solid ${isApproved ? 'fa-lock' : 'fa-lock-open'}"></i>
+        <span>${isApproved ? 'إيقاف اليومية / تعليق المساعدين' : 'اعتماد اليومية وفتح النظام'}</span>
+      </button>
+    </div>
+  `;
+};
+
+window.toggleDailyApproval = async function(dateStr, toActive) {
+  const d = dateStr || nowDateStr();
+
+  if (toActive) {
+    const res = await Swal.fire({
+      title: 'اعتماد اليومية',
+      text: `هل تريد اعتماد يومية (${d}) وتفعيل النظام بالكامل للمساعدين؟`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، اعتمد اليومية',
+      confirmButtonColor: '#10B981',
+      cancelButtonText: 'إلغاء'
+    });
+    if (!res.isConfirmed) return;
+
+    dailyApprovalMap[d] = { status: 'approved', approved_at: new Date().toISOString() };
+    try {
+      if (supabase) {
+        await supabase.from('centers').upsert({
+          id: currentCenterId,
+          daily_approval_status: dailyApprovalMap
+        });
+      }
+      if (permChannel) {
+        permChannel.postMessage({ type: 'DAILY_SHIFT_APPROVED', date: d });
+      }
+      showToast(`تم اعتماد يومية (${d}) وتفعيل النظام للمساعدين بنجاح!`, "success");
+      window.renderDailyApprovalWidget(d);
+    } catch(e) {
+      console.error(e);
+      showToast("فشل حفظ الاعتماد في السحابة", "err");
+    }
+  } else {
+    const res = await Swal.fire({
+      title: 'إيقاف / تعليق اليومية',
+      text: `هل أنت متأكد من إيقاف اعتماد يومية (${d})؟ سيتوقف عمل المساعدين فوراً.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، أوقف اليومية',
+      confirmButtonColor: '#EF4444',
+      cancelButtonText: 'إلغاء'
+    });
+    if (!res.isConfirmed) return;
+
+    dailyApprovalMap[d] = { status: 'pending', locked_at: new Date().toISOString() };
+    try {
+      if (supabase) {
+        await supabase.from('centers').upsert({
+          id: currentCenterId,
+          daily_approval_status: dailyApprovalMap
+        });
+      }
+      if (permChannel) {
+        permChannel.postMessage({ type: 'DAILY_SHIFT_LOCKED', date: d });
+      }
+      showToast(`تم إيقاف يومية (${d}) وتعليق العمليات لدى المساعدين.`, "warning");
+      window.renderDailyApprovalWidget(d);
+    } catch(e) {
+      console.error(e);
+      showToast("فشل حفظ الحالة في السحابة", "err");
+    }
+  }
+};
+
 // 4. DAILY REPORT & APPROVAL
 // ========================================================
 window.loadDailyReport = function(dateStr) {
   const d = dateStr || nowDateStr();
+  window.renderDailyApprovalWidget(d);
   const ids = attByDate[d] || [];
   const rev = revenueByDate[d] || 0;
   const expArr = expensesByDate.filter(e => e.date === d);
@@ -374,65 +477,7 @@ window.loadDailyReport = function(dateStr) {
   }
 };
 
-window.approveDailyShift = async function() {
-  const d = document.getElementById("adminDailyDateInput").value || nowDateStr();
-  try {
-    if (!supabase) return;
-    await supabase.from('centers').upsert({
-      id: currentCenterId,
-      daily_approval_status: { [d]: { status: 'approved', approved_at: new Date().toISOString() } }
-    });
 
-    const banner = document.getElementById("dailyApprovalWidget");
-    if (banner) {
-      banner.className = "approval-banner approved";
-      banner.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px; color: var(--success); font-weight: 700;">
-          <i class="fa-solid fa-circle-check" style="font-size: 1.4em;"></i>
-          <span>تم اعتماد يومية (${d}) بنجاح والنظام مفعل بالكامل لدى المساعدين.</span>
-        </div>
-      `;
-    }
-
-    if (permChannel) {
-      permChannel.postMessage({ type: 'DAILY_SHIFT_APPROVED', date: d });
-    }
-
-    showToast("تم اعتماد اليومية بنجاح! تم رفع التعليق عن المساعدين.", "success");
-  } catch(e) {
-    console.error(e);
-    showToast("فشل حفظ الاعتماد في السحابة", "err");
-  }
-};
-
-window.toggleRejectBox = function() {
-  const box = document.getElementById("rejectNoteBox");
-  if (box) box.classList.toggle("hidden");
-};
-
-window.confirmRejectDailyShift = async function() {
-  const reason = document.getElementById("dailyRejectReasonInput").value.trim();
-  if (!reason) return showToast("يرجى كتابة سبب التعليق أو الرفض", "warning");
-
-  const d = document.getElementById("adminDailyDateInput").value || nowDateStr();
-  try {
-    if (!supabase) return;
-    await supabase.from('centers').upsert({
-      id: currentCenterId,
-      daily_approval_status: { [d]: { status: 'rejected', reason: reason, rejected_at: new Date().toISOString() } }
-    });
-
-    if (permChannel) {
-      permChannel.postMessage({ type: 'DAILY_SHIFT_REJECTED', date: d, reason: reason });
-    }
-
-    showToast("تم إرسال قرار التعليق للمساعدين بنجاح", "info");
-    document.getElementById("rejectNoteBox").classList.add("hidden");
-  } catch(e) {
-    console.error(e);
-    showToast("فشل حفظ القرار في السحابة", "err");
-  }
-};
 
 // ========================================================
 // 5. TERM FINANCIAL REPORT
@@ -1050,63 +1095,6 @@ window.deleteSyllabusLesson = async function(idx) {
 };
 
 // ========================================================
-// 10. CLOUD DATA MONITOR (Rule 2 Compliance)
-// ========================================================
-window.runCloudMonitorCheck = async function() {
-  const grid = document.getElementById("cloudMonitorGrid");
-  if (!grid) return;
-  grid.innerHTML = '<div style="color:var(--text-secondary); padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> جاري فحص ومطابقة البيانات مع السحابة...</div>';
-
-  try {
-    if (!supabase) return;
-
-    // Fetch counts from Supabase
-    const [stCnt, pkgCnt, asstCnt] = await Promise.all([
-      supabase.from('students').select('*', { count: 'exact', head: true }),
-      supabase.from('packages').select('*', { count: 'exact', head: true }),
-      supabase.from('assistants').select('*', { count: 'exact', head: true })
-    ]);
-
-    const localStCount = Object.keys(students).length;
-    const localPkgCount = Object.keys(packages).length;
-    const remoteStCount = stCnt.count || 0;
-    const remotePkgCount = pkgCnt.count || 0;
-    const remoteAsstCount = asstCnt.count || 0;
-
-    const items = [
-      { name: "الطلاب (Students)", local: localStCount, remote: remoteStCount, icon: "fa-user-graduate" },
-      { name: "الباقات والأسعار (Packages)", local: localPkgCount, remote: remotePkgCount, icon: "fa-boxes-stacked" },
-      { name: "حسابات المساعدين (Assistants)", local: remoteAsstCount, remote: remoteAsstCount, icon: "fa-users-gear" }
-    ];
-
-    let html = "";
-    items.forEach(it => {
-      const isSynced = it.local === it.remote;
-      html += `
-        <div style="background:var(--bg-surface); border:1px solid ${isSynced ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow-sm);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div style="font-weight:700; font-size:1em;"><i class="fa-solid ${it.icon}" style="color:var(--primary);"></i> ${it.name}</div>
-            <span style="background:${isSynced ? 'var(--bg-success-subtle)' : 'var(--bg-warning-subtle)'}; color:${isSynced ? 'var(--success)' : 'var(--warning)'}; font-size:0.78em; font-weight:800; padding:3px 8px; border-radius:12px;">
-              ${isSynced ? 'متطابق 100% ' : 'مزامنة معلقة ⚠️'}
-            </span>
-          </div>
-          <div style="display:flex; justify-content:space-between; font-size:0.9em; color:var(--text-secondary);">
-            <span>محلي: <b>${it.local}</b></span>
-            <span>سحابي: <b>${it.remote}</b></span>
-          </div>
-        </div>
-      `;
-    });
-
-    grid.innerHTML = html;
-
-  } catch(e) {
-    console.error(e);
-    grid.innerHTML = `<div style="color:var(--danger); padding:20px;">فشل فحص المزامنة: ${e.message}</div>`;
-  }
-};
-
-// ========================================================
 // 11. ADVANCED SETTINGS & BACKUP
 // ========================================================
 window.exportAllDataToExcel = function() {
@@ -1135,47 +1123,101 @@ window.exportAllDataToExcel = function() {
   }
 };
 
-window.updateManagerPassword = async function() {
-  const p = document.getElementById("newManagerPasswordInput")?.value.trim();
-  if (!p) return showToast("أدخل كلمة المرور الجديدة", "err");
-
-  try {
-    if (!supabase) return;
-    const u = localStorage.getItem("ca_admin_username") || "admin";
-    await supabase.from('manager_account').update({ password: p }).eq('username', u);
-    showToast("تم تحديث كلمة مرور المدير بنجاح!", "success");
-    document.getElementById("newManagerPasswordInput").value = "";
-  } catch(e) {
-    console.error(e);
-    showToast("فشل تحديث كلمة المرور في السحابة", "err");
-  }
-};
-
-window.resetDailyAttendance = async function() {
+window.resetTermData = async function() {
   const res = await Swal.fire({
-    title: 'تصفير حضور اليوم',
-    text: 'هل أنت متأكد من تصفير حضور اليوم بالكامل؟',
+    title: 'تأكيد تصفير الترم',
+    text: 'هل أنت متأكد من تصفير حضور ومصاريف وإيرادات الترم بالكامل لجميع الطلاب؟ لا يمكن التراجع عن هذه الخطوة إلا بنسخة احتياطية!',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'نعم، تصفير',
+    confirmButtonText: 'نعم، صفر بيانات الترم',
     confirmButtonColor: '#EF4444',
     cancelButtonText: 'إلغاء'
   });
 
-  if (res.isConfirmed) {
-    const today = nowDateStr();
-    attByDate[today] = [];
-    revenueByDate[today] = 0;
-    try {
-      if (!supabase) return;
+  if (!res.isConfirmed) return;
+
+  try {
+    for (const k in students) {
+      students[k].paid = 0;
+      students[k].attendanceDates = [];
+    }
+    attByDate = {};
+    revenueByDate = {};
+    expensesByDate = [];
+
+    if (supabase) {
       await supabase.from('centers').upsert({
         id: currentCenterId,
-        attendance_by_date: attByDate,
-        revenue_by_date: revenueByDate
+        attendance_by_date: {},
+        revenue_by_date: {},
+        expenses_by_date: []
       });
-      showToast("تم تصفير حضور اليوم بنجاح", "info");
-      window.loadDailyReport(today);
-    } catch(e) { console.error(e); }
+      await supabase.from('students').update({ paid: 0, attendance_dates: [] }).not('id', 'is', null);
+    }
+
+    showToast("تم تصفير حضور ومصاريف الترم بالكامل بنجاح", "success");
+    const today = nowDateStr();
+    window.loadDailyReport(today);
+    window.renderTermTable();
+  } catch(e) {
+    console.error(e);
+    showToast("حدث خطأ أثناء التصفير: " + e.message, "err");
+  }
+};
+
+window.factoryResetSystem = async function() {
+  const res = await Swal.fire({
+    title: 'إعادة تهيئة النظام وضبط المصنع',
+    text: 'تحذير شديد الخطورة: سيتم مسح كافة بيانات الطلاب والباقات والحضور والمصروفات بالكامل. اكتب "مسح" للتأكيد:',
+    input: 'text',
+    inputPlaceholder: 'اكتب كلمة: مسح',
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonText: 'تأكيد الحذف الشامل',
+    confirmButtonColor: '#991B1B',
+    cancelButtonText: 'إلغاء',
+    preConfirm: (val) => {
+      if (val !== 'مسح') {
+        Swal.showValidationMessage('يجب كتابة كلمة "مسح" لتأكيد ضبط المصنع');
+      }
+      return val === 'مسح';
+    }
+  });
+
+  if (!res.isConfirmed) return;
+
+  try {
+    if (supabase) {
+      await Promise.all([
+        supabase.from('students').delete().neq('id', '0'),
+        supabase.from('packages').delete().neq('id', '0'),
+        supabase.from('booklets').delete().neq('id', '0'),
+        supabase.from('assistants').delete().neq('id', '0'),
+        supabase.from('decision_requests').delete().neq('id', '0'),
+        supabase.from('centers').upsert({
+          id: currentCenterId,
+          attendance_by_date: {},
+          revenue_by_date: {},
+          expenses_by_date: [],
+          syllabus: [],
+          daily_approval_status: {}
+        })
+      ]);
+    }
+
+    localStorage.clear();
+    if (window.localforage) await localforage.clear();
+
+    await Swal.fire({
+      title: 'تم ضبط المصنع',
+      text: 'تم مسح كافة البيانات بنجاح وإعادة تشغيل النظام.',
+      icon: 'success'
+    });
+
+    location.href = 'admin.html';
+  } catch(e) {
+    console.error(e);
+    showToast("فشل ضبط المصنع: " + e.message, "err");
   }
 };
 
@@ -1183,14 +1225,124 @@ window.resetDailyAttendance = async function() {
 // 12. INITIALIZATION
 // ========================================================
 document.addEventListener("DOMContentLoaded", async () => {
-  // Theme check
-  const savedTheme = localStorage.getItem("studify_admin_theme") || "dark";
+  // Theme check (supporting both ca_theme and studify_admin_theme)
+  const savedTheme = localStorage.getItem("ca_theme") || localStorage.getItem("studify_admin_theme") || "dark";
   document.documentElement.setAttribute("data-theme", savedTheme);
   const icon = document.getElementById("adminThemeIcon");
   if (icon) icon.className = savedTheme === "dark" ? "fa-solid fa-moon" : "fa-solid fa-sun";
+
+  initAdminParticles();
 
   const isAuth = await checkAdminAuth();
   if (isAuth) {
     await loadAllAdminData();
   }
 });
+
+
+/* --- PARTICLES BACKGROUND FOR ADMIN LOGIN --- */
+function initAdminParticles() {
+  const canvas = document.getElementById('adminParticlesCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  let particles = [];
+  const mouse = { x: null, y: null, radius: 150 };
+
+  const loginWrapper = document.getElementById('adminLoginWrapper');
+  if (loginWrapper) {
+    loginWrapper.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+    loginWrapper.addEventListener('mouseout', () => {
+      mouse.x = undefined;
+      mouse.y = undefined;
+    });
+  }
+
+  function init() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    particles = [];
+    let numberOfParticles = (width * height) / 9000;
+    if (numberOfParticles > 90) numberOfParticles = 90;
+
+    for (let i = 0; i < numberOfParticles; i++) {
+      const size = (Math.random() * 2) + 1;
+      const x = Math.random() * (width - size * 4) + size * 2;
+      const y = Math.random() * (height - size * 4) + size * 2;
+      const directionX = (Math.random() * 1) - 0.5;
+      const directionY = (Math.random() * 1) - 0.5;
+      particles.push({
+        x, y, baseX: x, baseY: y,
+        directionX, directionY, size,
+        density: (Math.random() * 20) + 1
+      });
+    }
+  }
+
+  function update() {
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      let dx = mouse.x - p.x;
+      let dy = mouse.y - p.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < mouse.radius) {
+        let force = (mouse.radius - distance) / mouse.radius;
+        p.x -= (dx / distance) * force * p.density;
+        p.y -= (dy / distance) * force * p.density;
+      } else {
+        if (p.x !== p.baseX) p.x -= (p.x - p.baseX) / 20;
+        if (p.y !== p.baseY) p.y -= (p.y - p.baseY) / 20;
+      }
+
+      p.x += p.directionX * 0.5;
+      p.y += p.directionY * 0.5;
+      p.baseX += p.directionX * 0.5;
+      p.baseY += p.directionY * 0.5;
+
+      if (p.baseX > width) { p.baseX = width; p.directionX = -Math.abs(p.directionX); }
+      if (p.baseX < 0) { p.baseX = 0; p.directionX = Math.abs(p.directionX); }
+      if (p.baseY > height) { p.baseY = height; p.directionY = -Math.abs(p.directionY); }
+      if (p.baseY < 0) { p.baseY = 0; p.directionY = Math.abs(p.directionY); }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.85)';
+      ctx.fill();
+    }
+    for (let a = 0; a < particles.length; a++) {
+      for (let b = a + 1; b < particles.length; b++) {
+        let dist = ((particles[a].x - particles[b].x) ** 2) + ((particles[a].y - particles[b].y) ** 2);
+        if (dist < (width / 7) * (height / 7)) {
+          let opacity = 1 - (dist / 20000);
+          ctx.strokeStyle = `rgba(37, 99, 235, ${opacity * 0.7})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(particles[a].x, particles[a].y);
+          ctx.lineTo(particles[b].x, particles[b].y);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', () => { init(); });
+  init();
+  loop();
+}
+

@@ -43,23 +43,23 @@
 }
 
 [data-theme="light"] {
-  --bg-body: #F1F5F9;
+  --bg-body: #F8FAFC;
   --bg-surface: #FFFFFF;
   --bg-sidebar: #FFFFFF;
-  --bg-inset: #F8FAFC;
-  --bg-hover: #F1F5F9;
+  --bg-inset: #F1F5F9;
+  --bg-hover: #E2E8F0;
   --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  --text-muted: #94A3B8;
-  --border: #E2E8F0;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --border: #CBD5E1;
 
   --bg-danger-subtle: rgba(239, 68, 68, 0.08);
   --bg-warning-subtle: rgba(245, 158, 11, 0.08);
   --bg-success-subtle: rgba(16, 185, 129, 0.08);
 
-  --shadow-sm: 0 2px 8px -2px rgba(15,23,42,0.04);
-  --shadow-md: 0 8px 30px -8px rgba(15,23,42,0.06);
-  --shadow-lg: 0 20px 50px -12px rgba(15,23,42,0.08);
+  --shadow-sm: 0 2px 8px -2px rgba(15,23,42,0.06);
+  --shadow-md: 0 8px 30px -8px rgba(15,23,42,0.1);
+  --shadow-lg: 0 20px 50px -12px rgba(15,23,42,0.12);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -83,9 +83,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at center, #1E293B 0%, #0B1120 100%);
+  background: var(--bg-body);
   z-index: 9999;
   padding: 20px;
+  overflow: hidden;
+}
+[data-theme="dark"] .admin-login-wrapper {
+  background: radial-gradient(circle at center, #1E293B 0%, #0B1120 100%);
+}
+[data-theme="light"] .admin-login-wrapper {
+  background: linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%);
 }
 .admin-login-card {
   width: 100%;
@@ -99,6 +106,7 @@ body {
   overflow: hidden;
   text-align: center;
   backdrop-filter: blur(12px);
+  z-index: 2;
 }
 .admin-login-card::before {
   content: '';
@@ -466,25 +474,103 @@ body {
   font-weight: 600;
 }
 
-/* ── DAILY APPROVAL BANNER ── */
-.approval-banner {
+/* ── DAILY APPROVAL INTERACTIVE CARD ── */
+.approval-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px 22px;
+  padding: 20px 24px;
   margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.approval-card.approved {
+  border-inline-start: 5px solid var(--success);
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-success-subtle) 100%);
+}
+.approval-card.pending {
+  border-inline-start: 5px solid var(--warning);
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-warning-subtle) 100%);
+}
+.approval-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.approval-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1em;
+  font-weight: 800;
+}
+.approval-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: 700;
+}
+.approval-badge-pill.approved {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.approval-badge-pill.pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.approval-card-desc {
+  font-size: 0.88em;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 600px;
+}
+.approval-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.btn-toggle-shift {
+  padding: 10px 22px;
+  font-size: 0.95em;
+  font-weight: 800;
+  border-radius: 30px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
   box-shadow: var(--shadow-sm);
 }
-.approval-banner.pending {
-  border-inline-start: 4px solid var(--warning);
+.btn-toggle-shift.active {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
 }
-.approval-banner.approved {
-  border-inline-start: 4px solid var(--success);
+.btn-toggle-shift.active:hover {
+  background: linear-gradient(135deg, #DC2626, #B91C1C);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+}
+.btn-toggle-shift.inactive {
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+}
+.btn-toggle-shift.inactive:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
 }
 
 /* ── CARDS & TABLES ── */
@@ -817,4 +903,40 @@ body {
 @media (max-width: 900px) {
   .admin-layout { flex-direction: column; }
   .admin-sidebar { width: 100%; height: auto; position: static; }
+}
+
+/* Switch portal button between Assistant & Admin */
+.portal-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 24px;
+  border-radius: 30px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.92em;
+  font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.portal-switch-btn:hover {
+  background: var(--gradient-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.portal-switch-btn i {
+  font-size: 1.05em;
+  transition: transform 0.2s ease;
+}
+.portal-switch-btn:hover i.fa-arrow-left {
+  transform: translateX(-4px);
+}
+.portal-switch-btn:hover i.fa-arrow-right {
+  transform: translateX(4px);
 }
