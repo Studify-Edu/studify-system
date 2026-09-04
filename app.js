@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
  const target = e.target;
  if (target.id === 'searchAny') document.getElementById("searchBtn")?.click();
  else if (target.id === 'openId') document.getElementById("openIdBtn")?.click();
- else if (target.id === 'quickAttendId') document.getElementById("quickAttendBtn")?.click();
+ else if (target.id === 'quickAttendId') { e.preventDefault(); document.getElementById("quickAttendBtn")?.click(); }
  else if (target.id === 'newId') document.getElementById("addNewBtn")?.click();
  else if (target.id === 'stName' || target.id === 'stPhone') document.getElementById("saveStudentBtn")?.click();
  else if (target.id === 'newPaymentInput') document.getElementById("addPaymentBtn")?.click();
@@ -790,7 +790,11 @@ document.addEventListener('DOMContentLoaded', function() {
  setTimeout(() => { box.classList.add("hidden"); }, 400);
  }
 
- function showToast(msg, type = "success") {
+ let _lastToastMsg = "", _lastToastTime = 0;
+function showToast(msg, type = "success") {
+ const _now = Date.now();
+ if (_now - _lastToastTime < 350 && _lastToastMsg === msg) return;
+ _lastToastMsg = msg; _lastToastTime = _now;
  let container = $("toastContainer"); if(!container) return;
  const toast = document.createElement("div");
  toast.className = `toast toast-${type}`;
@@ -1371,7 +1375,7 @@ async function loadAll() {
 
  if($("centerNotebook")) $("centerNotebook").value = localStorage.getItem(K_NOTEBOOK) || "";
  
- updateTopStats(); updateFinanceSummary(); renderCharts();
+ updateTopStats(); updateFinanceSummary(); renderCharts(); if (typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState();
  } catch(e) { console.error("Data Load Error", e); }
  }
 
@@ -1986,16 +1990,24 @@ function applyPermissions() {
 
  function addAttendance(id, d) {
     const selectedSubject = window.currentGlobalSubject || "";
-    if (Object.keys(window.groupFees || {}).length > 0 && !selectedSubject) {
+    const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
+    let hasConfiguredSubjects = false;
+    for (let k in feesObj) {
+        if (feesObj[k] && feesObj[k].subject) {
+            hasConfiguredSubjects = true;
+            break;
+        }
+    }
+    if (hasConfiguredSubjects && !selectedSubject) {
         if(typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
         if(typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
         return { ok: false, msg: "يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً" };
     }
     const s = students[String(id)];
- if(!s) {
- showFullscreenFeedback(false, false);
- return { ok: false, msg: "Student not found" };
-  }
+    if(!s) {
+        if(typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+        return { ok: false, msg: "الطالب غير مسجل" };
+    }
   if(!s.name || s.name.trim() === "") {
       showFullscreenFeedback(false, false);
       return { ok: false, msg: "هذا الطالب ليس له اسم مسجل ولا يمكن تحضيره" };
@@ -2931,18 +2943,31 @@ window.logout = async function() {
  isRevHidden = !isRevHidden;
  updateTopStats();
  });
-on("quickAttendId", "keypress", function(e) {
- if (e.key === "Enter") { e.preventDefault(); $("quickAttendBtn").click(); }
- });
+// quickAttendId Enter handled by global keydown to prevent double-firing
  on("quickAttendBtn", "click", function() {
+ const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
+ let hasConfiguredSubjects = false;
+ for (let k in feesObj) {
+   if (feesObj[k] && feesObj[k].subject) {
+     hasConfiguredSubjects = true;
+     break;
+   }
+ }
+ if (hasConfiguredSubjects && !window.currentGlobalSubject) {
+   showToast("يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً", "warning");
+   if (typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
+   if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+   return;
+ }
+
  const idInp = $("quickAttendId");
  if (!idInp) return;
  const id = toInt(idInp.value); 
  if(!id || !students[String(id)]) { 
- showToast("الطالب غير مسجل", "err"); 
- triggerShake("quickAttendId"); // الاهتزاز عند الخطأ
- showFullscreenFeedback(false, false);
- return; 
+   showToast("الطالب غير مسجل", "err"); 
+   triggerShake("quickAttendId");
+   showFullscreenFeedback(false, false);
+   return; 
  }
  
  const res = addAttendance(id, nowDateStr());
@@ -7125,27 +7150,38 @@ window.updateAttendanceUIState = function() {
     const btn = document.getElementById("quickAttendBtn");
     const input = document.getElementById("quickAttendId");
     if (!btn) return;
-    const hasSubjects = Object.keys(window.groupFees || {}).length > 0;
-    const hasSelected = !!window.currentGlobalSubject;
     
-    if (hasSubjects && !hasSelected) {
-        btn.style.background = "#334155";
-        btn.style.color = "#94a3b8";
-        btn.style.boxShadow = "none";
-        btn.disabled = false;
-        if(input) { 
-            input.style.border = "1px solid #ef4444"; 
-            input.placeholder = "⚠️ اختر المادة أولاً";
+    const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
+    let hasConfiguredSubjects = false;
+    for (let k in feesObj) {
+        if (feesObj[k] && feesObj[k].subject) {
+            hasConfiguredSubjects = true;
+            break;
         }
-    } else {
+    }
+    const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
+    
+    if (hasConfiguredSubjects && !hasSelected) {
+        btn.classList.add("btn-attend-pending");
         btn.style.background = "";
         btn.style.color = "";
         btn.style.boxShadow = "";
         if(input) { 
-            input.style.border = ""; 
+            input.placeholder = "⚠️ اختر المادة أولاً";
+        }
+    } else {
+        btn.classList.remove("btn-attend-pending");
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.style.boxShadow = "";
+        if(input) { 
             input.placeholder = "ID (ex: 601)";
         }
     }
 };
 
-setTimeout(() => { if(window.updateAttendanceUIState) window.updateAttendanceUIState(); }, 1000);
+if (typeof window.updateAttendanceUIState === 'function') {
+    window.updateAttendanceUIState();
+}
+setTimeout(() => { if(typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState(); }, 300);
+setTimeout(() => { if(typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState(); }, 1200);

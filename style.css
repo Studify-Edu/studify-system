@@ -1,4 +1,4 @@
-﻿/* ==============================================
+/* ==============================================
    STUDIFY — Premium SaaS Design System v3.0
    Architecture: Sidebar + Bento Grid
    Aesthetic: Cinematic Minimalist
@@ -765,6 +765,30 @@ select.inp option {
 .btn.danger { background: var(--danger); color: #fff; }
 .btn.danger:hover { background: var(--danger-hover); }
 .btn.secondary { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border); }
+
+/* Quick Attend Button - Pending Subject State */
+#quickAttendBtn.btn-attend-pending,
+.btn.primary#quickAttendBtn.btn-attend-pending {
+  background: #334155 !important;
+  background-image: none !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+  border: 1px solid #475569 !important;
+  cursor: pointer !important;
+  filter: none !important;
+  opacity: 0.9 !important;
+  transition: all 0.25s ease !important;
+}
+
+#quickAttendBtn.btn-attend-pending:hover,
+.btn.primary#quickAttendBtn.btn-attend-pending:hover {
+  background: #3f4e65 !important;
+  background-image: none !important;
+  color: #f1f5f9 !important;
+  border-color: #64748b !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+  transform: translateY(-1px) !important;
+}
 
 .full-btn { width: 100%; margin-top: 12px; }
 .w100 { width: 100%; }
