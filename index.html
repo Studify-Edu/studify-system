@@ -15,7 +15,7 @@
 
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V68">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V69">
  <link rel="stylesheet" href="icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME FLASH -->
@@ -113,65 +113,38 @@
  <div id="themeSwitchText" class="theme-switch-text">جاري تبديل المظهر...</div>
  </div>
 
- <!-- ============ LOGIN ============ -->
- <div id="loginBox" class="login-wrapper perspective-container hidden">
-  <canvas id="particlesCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: auto;"></canvas>
-  <div class="login-flip-container" id="loginFlipContainer">
- 
- <!-- FRONT: MANAGER LOGIN -->
- <div class="login-card flip-front premium-manager-login">
- <div class="login-logo-area">
- <img src="icon-192.png" alt="Studify" class="login-logo">
- <h1 data-i18n="login_title_manager">لوحة التحكم</h1>
- <p class="muted" data-i18n="login_desc_manager">نظام متكامل لإدارة المركز</p>
- </div>
- <div id="managerLoginForm" class="login-form-area active">
- <label class="lbl">البريد الإلكتروني (المدير)</label>
- <input id="managerUser" class="inp" type="text" placeholder="Manager Email / ID">
- <label class="lbl">كلمة المرور</label>
- <div class="passWrap">
- <input id="managerPass" class="inp" type="password" placeholder="Password">
- <button id="toggleManagerPass" class="eyeBtn" type="button" onclick="togglePassword('managerPass')"><i class="fa-solid fa-eye"></i></button>
- </div>
- <button id="managerLoginBtn" class="btn primary full-btn" style="font-weight: bold; font-size: 1.05em; margin-top: 6px;">تسجيل الدخول</button>
- <a href="admin.html" class="btn secondary full-btn" style="margin-top: 8px; text-decoration: none; font-size: 0.88em; display: flex; align-items: center; justify-content: center; gap: 8px;">
-   <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> فتح صفحة الإدارة المستقلة (Admin)
- </a>
- </div>
- <div class="switch-login-type" style="text-align: center; margin-top: 20px;">
- <button type="button" class="switch-link-btn" onclick="document.getElementById('loginFlipContainer').classList.add('flipped')">
- <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
- الدخول كمساعد
- </button>
- </div>
- </div>
+  <!-- ============ LOGIN ============ -->
+  <div id="loginBox" class="login-wrapper hidden">
+    <canvas id="particlesCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: auto;"></canvas>
+    
+    <!-- ASSISTANT LOGIN CARD (ONLY LOGIN IN INDEX.HTML) -->
+    <div class="login-card assistant-clean-login">
+      <div class="login-logo-area">
+        <img src="icon-192.png" alt="Studify" class="login-logo">
+        <h1 data-i18n="login_title_assistant">بوابة المساعد</h1>
+        <p class="muted" data-i18n="login_desc_assistant">تسجيل الحضور والعمليات اليومية</p>
+      </div>
 
- <!-- BACK: ASSISTANT LOGIN -->
- <div class="login-card flip-back assistant-clean-login">
- <div class="login-logo-area">
- <h1 data-i18n="login_title_assistant">بوابة المساعد</h1>
- <p class="muted" data-i18n="login_desc_assistant">تسجيل الحضور والعمليات اليومية</p>
- </div>
- <div id="assistantLoginForm" class="login-form-area active">
- <label class="lbl">اسم المستخدم</label>
- <input id="assistantUser" class="inp" type="text" placeholder="Assistant Username">
- <label class="lbl">كلمة المرور</label>
- <div class="passWrap">
- <input id="assistantPass" class="inp" type="password" placeholder="Password">
- <button id="toggleAssistantPass" class="eyeBtn" type="button" onclick="togglePassword('assistantPass')"><i class="fa-solid fa-eye"></i></button>
- </div>
- <button id="assistantLoginBtn" class="btn success full-btn" style="font-size: 1.05em; font-weight: bold; margin-top: 15px;">تسجيل الدخول</button>
- </div>
- <div class="switch-login-type" style="text-align: center; margin-top: 20px;">
- <button type="button" class="switch-link-btn" onclick="document.getElementById('loginFlipContainer').classList.remove('flipped')">
- <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
- الرجوع للمدير
- </button>
- </div>
- </div>
+      <div id="assistantLoginForm" class="login-form-area active">
+        <label class="lbl">اسم المستخدم</label>
+        <input id="assistantUser" class="inp" type="text" placeholder="Assistant Username" autocomplete="username">
+        <label class="lbl">كلمة المرور</label>
+        <div class="passWrap">
+          <input id="assistantPass" class="inp" type="password" placeholder="Password" autocomplete="current-password">
+          <button id="toggleAssistantPass" class="eyeBtn" type="button" onclick="togglePassword('assistantPass')"><i class="fa-solid fa-eye"></i></button>
+        </div>
+        <button id="assistantLoginBtn" class="btn success full-btn" style="font-size: 1.05em; font-weight: bold; margin-top: 15px;">تسجيل الدخول</button>
+      </div>
 
- </div>
- </div>
+      <div class="switch-login-type" style="text-align: center; margin-top: 22px;">
+        <a href="admin.html" class="switch-link-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i>
+          <span>لوحة تحكم الإدارة (المدير)</span>
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+      </div>
+    </div>
+  </div>
 
  <!-- ============ APP SHELL ============ -->
  <div id="appBox" class="app-shell hidden">
@@ -1460,7 +1433,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V109"></script>
+ <script type="module" src="app.js?v=STUDIFY_V110"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

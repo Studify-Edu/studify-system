@@ -1178,31 +1178,18 @@ tr:hover td { background: var(--bg-hover); }
   transform-style: preserve-3d;
 }
 
-.login-flip-container.flipped {
-  transform: rotateY(180deg);
-}
-
 .login-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 40px 36px;
   width: 100%;
+  max-width: 440px;
   box-shadow: var(--shadow-lg);
-  backface-visibility: hidden;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.flip-front {
   position: relative;
   z-index: 2;
-  transform: rotateY(0deg);
-}
-
-.flip-back {
-  transform: rotateY(180deg);
+  margin: 0 auto;
+  backdrop-filter: blur(12px);
 }
 
 .premium-manager-login {
