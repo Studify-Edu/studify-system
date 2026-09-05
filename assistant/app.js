@@ -1431,7 +1431,7 @@ async function loadAll() {
     
     if(currentUserRole === 'admin') {
       // Manager has a dedicated standalone portal at admin.html
-      window.location.href = "admin.html";
+      window.location.href = "../admin/admin.html";
       return;
     } else {
       $("appBox").classList.remove("hidden");
@@ -2827,7 +2827,7 @@ function applyPermissions() {
       
       showToast("تم تسجيل الدخول بنجاح! جاري التوجيه إلى لوحة الإدارة...", "success");
       setTimeout(() => {
-        window.location.href = "admin.html";
+        window.location.href = "../admin/admin.html";
       }, 500);
     } catch (err) {
       console.error(err);

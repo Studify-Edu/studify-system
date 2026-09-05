@@ -113,14 +113,14 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 ::selection { background: var(--primary); color: #fff; }
 
-html::-webkit-scrollbar { width: 8px; height: 8px; }
-html::-webkit-scrollbar-track { background: transparent; }
-html::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
-html::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+html::-webkit-scrollbar { width: 14px; height: 14px; }
+html::-webkit-scrollbar-track { background: var(--bg-body); }
+html::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; border: 3px solid var(--bg-body); }
+html::-webkit-scrollbar-thumb:hover { background: var(--hover); }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--bg-body); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; border: 3px solid var(--bg-body); }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
 body {

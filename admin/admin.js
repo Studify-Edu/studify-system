@@ -545,7 +545,7 @@ window.renderTermTable = function() {
         <td style="color:${debt > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${debt > 0 ? debt + " ج" : "خالص"}</td>
         <td style="font-weight:700;">${attCount}</td>
         <td>
-          <a href="index.html" style="text-decoration:none;" class="btn secondary smallBtn">
+          <a href="../assistant/index.html" style="text-decoration:none;" class="btn secondary smallBtn">
             <i class="fa-solid fa-folder-open"></i> ملف الطالب
           </a>
         </td>

@@ -2,7 +2,7 @@
   "name": "Studify",
   "short_name": "Studify",
   "description": "Premium SaaS student management and analytics platform.",
-  "start_url": "./index.html",
+  "start_url": "./assistant/index.html",
   "display": "standalone",
   "background_color": "#0B1120",
   "theme_color": "#0B1120",
