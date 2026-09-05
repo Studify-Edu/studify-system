@@ -1284,7 +1284,7 @@ tr:hover td { background: var(--bg-hover); }
 }
 .assistant-portal-logo:hover {
   transform: scale(1.08) translateY(-2px);
-  filter: drop-shadow(0 12px 20px rgba(16, 185, 129, 0.5));
+  filter: hue-rotate(290deg) drop-shadow(0 12px 20px rgba(16, 185, 129, 0.5));
 }
 
 /* Identity Badges */
