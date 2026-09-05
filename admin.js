@@ -102,6 +102,20 @@ export async function checkAdminAuth() {
   return true;
 }
 
+window.navigateWithTransition = function(url) {
+  const card = document.querySelector('.admin-login-card');
+  if (card) {
+    card.classList.add('card-exit-transition');
+  }
+  const overlay = document.getElementById('pageTransitionOverlay');
+  if (overlay) {
+    overlay.classList.add('active');
+  }
+  setTimeout(() => {
+    window.location.href = url;
+  }, 280);
+};
+
 window.handleAdminLogin = async function() {
   const u = document.getElementById("adminLoginUser").value.trim();
   const p = document.getElementById("adminLoginPass").value.trim();

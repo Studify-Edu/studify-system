@@ -29,12 +29,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V2">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V3">
 </head>
 <body>
 
   <!-- Toast Container -->
   <div id="toastContainer"></div>
+
+  <!-- ======================================================== -->
+  <!-- Page Transition Overlay -->
+  <div id="pageTransitionOverlay" class="page-transition-overlay">
+    <div class="transition-spinner"></div>
+    <div class="transition-text">جاري الانتقال...</div>
+  </div>
 
   <!-- ======================================================== -->
   <!-- 1. ADMIN LOGIN SCREEN (When Not Authenticated) -->
@@ -43,8 +50,12 @@
     <canvas id="adminParticlesCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: auto;"></canvas>
     <div class="admin-login-card">
       <img src="icon-192.png" alt="Studify" class="admin-login-logo">
+      <div class="portal-type-badge manager-badge">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>الإدارة العليا والتحكم المركزي</span>
+      </div>
       <h1 class="admin-login-title">لوحة تحكم الإدارة</h1>
-      <p class="admin-login-desc">تسجيل الدخول المخصص لمدير النظام</p>
+      <p class="admin-login-desc">تسجيل الدخول المخصص لمدير المركز</p>
 
       <form id="adminLoginForm" class="admin-login-form" onsubmit="event.preventDefault(); window.handleAdminLogin();">
         <div>
@@ -61,16 +72,23 @@
           </div>
         </div>
 
-        <button type="submit" id="adminLoginSubmitBtn" class="btn primary full-btn" style="margin-top: 6px;">
-          <i class="fa-solid fa-right-to-bracket"></i> دخول إلى لوحة الإدارة
+        <button type="submit" id="adminLoginSubmitBtn" class="btn primary full-btn" style="margin-top: 6px; font-size: 1.05em; padding: 13px;">
+          <i class="fa-solid fa-key"></i> دخول مدير النظام
         </button>
 
-        <div style="margin-top: 24px; text-align: center;">
-          <a href="index.html" class="portal-switch-btn" id="toAssistantPortalBtn">
-            <i class="fa-solid fa-users" style="color: var(--primary);"></i>
-            <span>الانتقال لبوابة المساعد وتسجيل الحضور</span>
-            <i class="fa-solid fa-arrow-left"></i>
-          </a>
+        <div class="portal-switch-container">
+          <button type="button" class="modern-portal-switch" onclick="window.navigateWithTransition('index.html')" id="toAssistantPortalBtn">
+            <div class="switch-icon-circle">
+              <i class="fa-solid fa-users-gear"></i>
+            </div>
+            <div class="switch-text-group">
+              <span class="switch-prompt">هل أنت مساعد بالمركز؟</span>
+              <span class="switch-action">الانتقال لبوابة المساعد وتسجيل الحضور</span>
+            </div>
+            <div class="switch-arrow-circle">
+              <i class="fa-solid fa-arrow-left"></i>
+            </div>
+          </button>
         </div>
       </form>
     </div>
@@ -129,11 +147,6 @@
       </nav>
 
       <div class="admin-sidebar-footer">
-        <a href="index.html" class="portal-switch-btn" style="width: 100%; justify-content: center; font-size: 0.85em; padding: 10px 14px;">
-          <i class="fa-solid fa-users"></i>
-          <span>بوابة المساعد (الحضور)</span>
-          <i class="fa-solid fa-arrow-left"></i>
-        </a>
         <button id="adminLogoutBtn" class="btn danger smallBtn full-btn" onclick="window.handleAdminLogout()">
           <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
         </button>
@@ -525,6 +538,6 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V2"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V3"></script>
 </body>
 </html>

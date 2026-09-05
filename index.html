@@ -15,7 +15,7 @@
 
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V70">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V71">
  <link rel="stylesheet" href="icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME FLASH -->
@@ -113,35 +113,55 @@
  <div id="themeSwitchText" class="theme-switch-text">جاري تبديل المظهر...</div>
  </div>
 
+ <!-- ============ PAGE TRANSITION OVERLAY ============ -->
+ <div id="pageTransitionOverlay" class="page-transition-overlay">
+   <div class="transition-spinner"></div>
+   <div class="transition-text">جاري الانتقال...</div>
+ </div>
+
   <!-- ============ LOGIN ============ -->
   <div id="loginBox" class="login-wrapper hidden">
     <canvas id="particlesCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: auto;"></canvas>
     
     <!-- ASSISTANT LOGIN CARD (ONLY LOGIN IN INDEX.HTML) -->
     <div class="login-card assistant-clean-login">
+      <div class="portal-type-badge assistant-badge">
+        <i class="fa-solid fa-clipboard-user"></i>
+        <span>بوابة العمليات والمساعدين</span>
+      </div>
+
       <div class="login-logo-area">
-        <img src="icon-192.png" alt="Studify" class="login-logo">
-        <h1 data-i18n="login_title_assistant">بوابة المساعد</h1>
-        <p class="muted" data-i18n="login_desc_assistant">تسجيل الحضور والعمليات اليومية</p>
+        <img src="icon-192.png" alt="Studify" class="login-logo assistant-portal-logo">
+        <h1 data-i18n="login_title_assistant">بوابة المساعد والعمليات</h1>
+        <p class="muted" data-i18n="login_desc_assistant">تسجيل الحضور اليومي والمهام الميدانية</p>
       </div>
 
       <div id="assistantLoginForm" class="login-form-area active">
-        <label class="lbl">اسم المستخدم</label>
+        <label class="lbl">اسم المستخدم (المساعد)</label>
         <input id="assistantUser" class="inp" type="text" placeholder="Assistant Username" autocomplete="username">
         <label class="lbl">كلمة المرور</label>
         <div class="passWrap">
           <input id="assistantPass" class="inp" type="password" placeholder="Password" autocomplete="current-password">
           <button id="toggleAssistantPass" class="eyeBtn" type="button" onclick="togglePassword('assistantPass')"><i class="fa-solid fa-eye"></i></button>
         </div>
-        <button id="assistantLoginBtn" class="btn primary full-btn" style="font-size: 1.05em; font-weight: bold; margin-top: 15px;">تسجيل الدخول</button>
+        <button id="assistantLoginBtn" class="btn assistant-action-btn full-btn" style="font-size: 1.05em; font-weight: bold; margin-top: 15px;">
+          <i class="fa-solid fa-right-to-bracket"></i> دخول إلى بوابة المساعد
+        </button>
       </div>
 
-      <div class="switch-login-type" style="text-align: center; margin-top: 24px;">
-        <a href="admin.html" class="portal-switch-btn" id="toAdminPortalBtn">
-          <i class="fa-solid fa-shield-halved"></i>
-          <span>لوحة تحكم الإدارة (المدير)</span>
-          <i class="fa-solid fa-arrow-left"></i>
-        </a>
+      <div class="portal-switch-container">
+        <button type="button" class="modern-portal-switch assistant-side-switch" onclick="window.navigateWithTransition('admin.html')" id="toAdminPortalBtn">
+          <div class="switch-icon-circle">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div class="switch-text-group">
+            <span class="switch-prompt">هل أنت مدير النظام؟</span>
+            <span class="switch-action">الانتقال للوحة تحكم الإدارة العليا</span>
+          </div>
+          <div class="switch-arrow-circle">
+            <i class="fa-solid fa-arrow-left"></i>
+          </div>
+        </button>
       </div>
     </div>
   </div>
@@ -1433,7 +1453,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V110"></script>
+ <script type="module" src="app.js?v=STUDIFY_V111"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

@@ -2836,6 +2836,20 @@ function applyPermissions() {
   });
 }
 
+window.navigateWithTransition = function(url) {
+  const card = document.querySelector('.login-card') || document.getElementById('loginBox');
+  if (card) {
+    card.classList.add('card-exit-transition');
+  }
+  const overlay = document.getElementById('pageTransitionOverlay');
+  if (overlay) {
+    overlay.classList.add('active');
+  }
+  setTimeout(() => {
+    window.location.href = url;
+  }, 280);
+};
+
 if($("assistantLoginBtn")) {
   on("assistantLoginBtn", "click", async function() {
     if ($("loginBox") && $("loginBox").classList.contains("hidden")) return;

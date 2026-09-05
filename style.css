@@ -1182,14 +1182,22 @@ tr:hover td { background: var(--bg-hover); }
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 40px 36px;
+  padding: 38px 34px;
   width: 100%;
   max-width: 440px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25), var(--shadow-lg);
   position: relative;
   z-index: 2;
   margin: 0 auto;
   backdrop-filter: blur(12px);
+  animation: portalCardEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, filter 0.3s ease;
+}
+
+.login-card.card-exit-transition {
+  opacity: 0;
+  transform: scale(0.94) translateY(-14px);
+  filter: blur(4px);
 }
 
 .premium-manager-login {
@@ -1213,32 +1221,125 @@ tr:hover td { background: var(--bg-hover); }
 .premium-manager-login .inp:focus { border-color: var(--primary); }
 .premium-manager-login .text-btn { color: var(--primary) !important; }
 
+/* Dedicated Assistant Operations Login Screen (Emerald / Teal Identity) */
 .assistant-clean-login {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  box-shadow: 0 15px 35px rgba(37, 99, 235, 0.08), var(--shadow-lg);
-  border-top: 4px solid var(--primary);
+  box-shadow: 0 20px 45px -12px rgba(16, 185, 129, 0.15), var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+.assistant-clean-login::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #06b6d4, #3b82f6);
 }
 .assistant-clean-login .lbl {
   color: var(--text-secondary);
   font-weight: 700;
+  text-align: right;
+  display: block;
 }
 .assistant-clean-login h1 {
-  background: var(--gradient);
+  background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #0284c7 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-weight: 900;
+  font-weight: 800;
+  font-size: 1.55em;
+  margin-bottom: 4px;
 }
 .assistant-clean-login .inp {
   background: var(--bg-inset);
   border: 1px solid var(--border);
   color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-family: var(--font);
+  font-size: 0.95em;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .assistant-clean-login .inp:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  border-color: #10b981;
+  box-shadow: 0 0 0 3.5px rgba(16, 185, 129, 0.22);
 }
+
+.assistant-portal-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  border: none;
+  box-shadow: none;
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.assistant-portal-logo:hover {
+  transform: scale(1.06);
+}
+
+/* Identity Badges */
+.portal-type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82em;
+  font-weight: 700;
+  margin-bottom: 14px;
+  letter-spacing: 0.3px;
+  user-select: none;
+}
+.portal-type-badge.assistant-badge {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
+}
+.portal-type-badge.assistant-badge i {
+  font-size: 0.95em;
+  color: #10b981;
+}
+[data-theme="dark"] .portal-type-badge.assistant-badge {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.35);
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+}
+[data-theme="dark"] .portal-type-badge.assistant-badge i {
+  color: #6ee7b7;
+}
+
+/* Assistant Action Button */
+.btn.assistant-action-btn {
+  background: linear-gradient(135deg, #10b981 0%, #0d9488 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px;
+  font-size: 1.05em;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn.assistant-action-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #0f766e 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
+
 /* switch-link with icon */
 .switch-link-btn {
   background: none; border: none; cursor: pointer;
@@ -1248,40 +1349,196 @@ tr:hover td { background: var(--bg-hover); }
 }
 .switch-link-btn:hover { color: var(--primary); }
 .switch-link-btn svg { flex-shrink: 0; }
-/* Switch portal button between Assistant & Admin */
-.portal-switch-btn {
-  display: inline-flex;
+
+/* ==========================================
+   MODERN PORTAL SWITCH COMPONENT
+   ========================================== */
+.portal-switch-container {
+  width: 100%;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+[data-theme="light"] .portal-switch-container {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+.modern-portal-switch {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 11px 24px;
-  border-radius: 30px;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 16px;
   background: var(--bg-inset);
   border: 1px solid var(--border);
   color: var(--text-primary);
   text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.modern-portal-switch::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modern-portal-switch:hover {
+  transform: translateY(-2px);
+  border-color: #3b82f6;
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.18);
+  background: var(--bg-surface);
+}
+
+.modern-portal-switch:hover::before {
+  opacity: 1;
+}
+
+.switch-icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15em;
+  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* In assistant page (switch towards manager): Sapphire themed icon circle */
+.assistant-side-switch .switch-icon-circle {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+}
+[data-theme="dark"] .assistant-side-switch .switch-icon-circle {
+  background: rgba(37, 99, 235, 0.18);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.modern-portal-switch:hover .switch-icon-circle {
+  transform: scale(1.1) rotate(6deg);
+}
+
+.switch-text-group {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  flex-grow: 1;
+  margin: 0 14px;
+}
+
+.switch-prompt {
+  font-size: 0.76em;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.2px;
+}
+
+.switch-action {
+  font-size: 0.88em;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
+  transition: color 0.2s;
+}
+
+.assistant-side-switch:hover .switch-action {
+  color: #2563eb;
+}
+[data-theme="dark"] .assistant-side-switch:hover .switch-action {
+  color: #60a5fa;
+}
+
+.switch-arrow-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82em;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.modern-portal-switch:hover .switch-arrow-circle {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  transform: translateX(-4px);
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);
+}
+
+/* ==========================================
+   PAGE TRANSITION OVERLAY & KEYFRAMES
+   ========================================== */
+.page-transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 17, 32, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-transition-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.transition-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3.5px solid rgba(255, 255, 255, 0.12);
+  border-top-color: #3b82f6;
+  border-right-color: #10b981;
+  border-radius: 50%;
+  animation: portalSpin 0.75s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.25);
+}
+
+.transition-text {
+  margin-top: 16px;
+  color: #f8fafc;
   font-size: 0.92em;
   font-weight: 700;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
+  letter-spacing: 0.4px;
 }
-.portal-switch-btn:hover {
-  background: var(--gradient-subtle);
-  border-color: var(--primary);
-  color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+
+@keyframes portalSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-.portal-switch-btn i {
-  font-size: 1.05em;
-  transition: transform 0.2s ease;
-}
-.portal-switch-btn:hover i.fa-arrow-left {
-  transform: translateX(-4px);
-}
-.portal-switch-btn:hover i.fa-arrow-right {
-  transform: translateX(4px);
+
+@keyframes portalCardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .login-logo-area {
