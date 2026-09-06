@@ -88,15 +88,13 @@ body {
 
 /* ── LOGIN SCREEN ── */
 .admin-login-wrapper {
-  position: fixed;
-  inset: 0;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-body);
   z-index: 9999;
   padding: 20px;
-  overflow: hidden;
 }
 [data-theme="dark"] .admin-login-wrapper {
   background: radial-gradient(circle at center, #1E293B 0%, #0B1120 100%);
@@ -329,6 +327,7 @@ body {
   border: 2px solid var(--primary);
 }
 .admin-brand {
+  font-family: 'Outfit', sans-serif;
   font-size: 1.2em;
   font-weight: 800;
   background: var(--gradient);

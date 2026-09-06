@@ -563,13 +563,11 @@ a { color: var(--primary); text-decoration: none; }
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  height: var(--topbar-h);
   min-height: var(--topbar-h);
-  max-height: var(--topbar-h);
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   gap: 10px;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap;
   box-sizing: border-box;
 }
 
@@ -3157,7 +3155,7 @@ body::after {
 
 /* ── IDEA #1: LOGIN HERO — خلفية اللوجين المتحركة ── */
 .login-wrapper {
-  overflow: hidden;
+  /* Removed overflow: hidden to allow scrolling */
 }
   
 .login-flip-container { position: relative; z-index: 2; }
