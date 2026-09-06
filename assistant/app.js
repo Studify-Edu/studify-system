@@ -2184,13 +2184,8 @@ const st = students[id];
        currentSelectedPkg = "";
    } else {
        st.packages.forEach(pkgName => {
-           const stats = pkgStatsMap[pkgName];
-           let statusText = "";
-           if (stats) {
-               statusText = stats.isPaidFull ? " (مسددة بالكامل ✔)" : (" (متبقي: " + stats.remain + " ج)");
-           }
-           payPkgOpts += '<option value="' + pkgName + '" ' + (pkgName === currentSelectedPkg ? 'selected' : '') + '>' + pkgName + statusText + '</option>';
-       });
+            payPkgOpts += '<option value="' + pkgName + '" ' + (pkgName === currentSelectedPkg ? 'selected' : '') + '>' + pkgName + '</option>';
+        });
    }
    if (pkgSelect) {
        pkgSelect.innerHTML = payPkgOpts;
