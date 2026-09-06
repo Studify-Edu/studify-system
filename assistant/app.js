@@ -1516,7 +1516,7 @@ async function loadAll() {
   }
 
   if(isLoggedIn || localStorage.getItem(K_AUTH) === "1") {
-    currentUserRole = localStorage.getItem(K_ROLE) || "admin";
+    currentUserRole = localStorage.getItem(K_ROLE) || "assistant";
     
     // Sync Global Variables
     window.CURRENT_ROLE = currentUserRole;
@@ -1932,7 +1932,9 @@ function applyPermissions() {
  }
 
  function updateStudentUI(id) {
- currentId = id; const st = students[id]; 
+currentId = id;
+window.currentId = id;
+const st = students[id]; 
  if (!st) {
  if ($("notesLockOverlay")) $("notesLockOverlay").style.display = "flex";
  if ($("stNotesListContainer")) $("stNotesListContainer").innerHTML = '<div class="mutedCenter" style="font-size:0.85em;">لا توجد ملاحظات مسجلة لهذا الطالب</div>';
@@ -6866,6 +6868,114 @@ window.openSubjectSelectionModal = function() {
  
  on("openSubjectModalBtn", "click", openSubjectSelectionModal);
 
+
+  // ==========================================
+  // PACKAGE SELECTION MODAL LOGIC (IN SCOPE)
+  // ==========================================
+  window.tempSelectedPackages = new Set();
+  window.tempSelectedStudentId = null;
+
+  window.openPackageSelectionModal = function(studentId) {
+      window.tempSelectedStudentId = studentId;
+      const st = students[studentId];
+      if (!st) return;
+
+      // Reset temp state
+      window.tempSelectedPackages.clear();
+      if (st.packages) {
+          st.packages.forEach(p => window.tempSelectedPackages.add(p));
+      }
+
+      if ($('psmStudentName')) $('psmStudentName').textContent = st.name || '';
+      renderPackageSelectionGrid();
+
+      const modal = document.getElementById('packageSelectionModal');
+      if (modal) {
+          modal.classList.remove('hidden');
+          modal.style.display = 'flex';
+      }
+  };
+
+  window.closePackageSelectionModal = function() {
+      const modal = document.getElementById('packageSelectionModal');
+      if (modal) {
+          modal.classList.add('hidden');
+          setTimeout(() => modal.style.display = '', 300);
+      }
+  };
+
+  window.renderPackageSelectionGrid = function() {
+      const grid = $('psmGrid');
+      if (!grid) return;
+
+      let html = '';
+      let totalCost = 0;
+      
+      Object.keys(groupFees || {}).forEach(pkgName => {
+          const pkgDetails = groupFees[pkgName];
+          const isSelected = window.tempSelectedPackages.has(pkgName);
+          const price = toInt(pkgDetails.price);
+          
+          if (isSelected) totalCost += price;
+
+          html += `
+          <div class="pkg-card ${isSelected ? 'selected' : ''}" onclick="togglePackageSelection('${pkgName}')">
+              <i class="fa-solid fa-circle-check check-icon"></i>
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                  <div class="pkg-card-title">${pkgName}</div>
+                  <div class="pkg-card-subject">${pkgDetails.subject || 'عام'}</div>
+              </div>
+              <div class="pkg-card-price">${price} <small>جنيهاً</small></div>
+              <div style="font-size:0.8em; color:var(--text-secondary); margin-top:auto;">
+                  ${pkgDetails.hasInstallments ? '<i class="fa-solid fa-calendar-alt"></i> متاح تقسيط' : '<i class="fa-solid fa-money-bill-1"></i> كاش فقط'}
+              </div>
+          </div>
+          `;
+      });
+
+      if (Object.keys(groupFees || {}).length === 0) {
+          html = '<div class="mutedCenter">لا توجد باقات معرفة بالنظام</div>';
+      }
+
+      grid.innerHTML = html;
+      if ($('psmTotalCost')) $('psmTotalCost').textContent = totalCost;
+  };
+
+  window.togglePackageSelection = function(pkgName) {
+      if (window.tempSelectedPackages.has(pkgName)) {
+          window.tempSelectedPackages.delete(pkgName);
+      } else {
+          window.tempSelectedPackages.add(pkgName);
+      }
+      renderPackageSelectionGrid();
+  };
+
+  window.savePackageSelection = function() {
+      const stId = window.tempSelectedStudentId;
+      if (!stId || !students[stId]) return;
+
+      students[stId].packages = Array.from(window.tempSelectedPackages);
+      students[stId].lastModified = Date.now();
+      
+      saveAll();
+      updateStudentUI(stId);
+      closePackageSelectionModal();
+      if(typeof showToast === 'function') showToast("تم تحديث باقات الطالب بنجاح");
+  };
+
+  // Event delegation for managePackagesBtn inside main DOMContentLoaded
+  document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('#managePackagesBtn');
+      if (btn) {
+          const activeId = currentId || window.currentId;
+          if (activeId) {
+              window.openPackageSelectionModal(activeId);
+          } else {
+              if (typeof showToast === 'function') showToast("يرجى اختيار أو فتح ملف طالب أولاً", "err");
+          }
+      }
+  });
+
 }); // END DOMContentLoaded
 
 
@@ -7347,112 +7457,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-// ==========================================
-// PACKAGE SELECTION MODAL LOGIC
-// ==========================================
-
-window.tempSelectedPackages = new Set();
-window.tempSelectedStudentId = null;
-
-window.openPackageSelectionModal = function(studentId) {
-    window.tempSelectedStudentId = studentId;
-    const st = students[studentId];
-    if (!st) return;
-
-    // Reset temp state
-    window.tempSelectedPackages.clear();
-    if (st.packages) {
-        st.packages.forEach(p => window.tempSelectedPackages.add(p));
-    }
-
-    if ($('psmStudentName')) $('psmStudentName').textContent = st.name || '';
-    renderPackageSelectionGrid();
-
-    const modal = document.getElementById('packageSelectionModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-    }
-};
-
-window.closePackageSelectionModal = function() {
-    const modal = document.getElementById('packageSelectionModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        setTimeout(() => modal.style.display = '', 300);
-    }
-};
-
-window.renderPackageSelectionGrid = function() {
-    const grid = $('psmGrid');
-    if (!grid) return;
-
-    let html = '';
-    let totalCost = 0;
-    
-    Object.keys(groupFees || {}).forEach(pkgName => {
-        const pkgDetails = groupFees[pkgName];
-        const isSelected = window.tempSelectedPackages.has(pkgName);
-        const price = toInt(pkgDetails.price);
-        
-        if (isSelected) totalCost += price;
-
-        html += `
-        <div class="pkg-card ${isSelected ? 'selected' : ''}" onclick="togglePackageSelection('${pkgName}')">
-            <i class="fa-solid fa-circle-check check-icon"></i>
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <div class="pkg-card-title">${pkgName}</div>
-                <div class="pkg-card-subject">${pkgDetails.subject || 'عام'}</div>
-            </div>
-            <div class="pkg-card-price">${price} <small>جنيهاً</small></div>
-            <div style="font-size:0.8em; color:var(--text-secondary); margin-top:auto;">
-                ${pkgDetails.hasInstallments ? '<i class="fa-solid fa-calendar-alt"></i> متاح تقسيط' : '<i class="fa-solid fa-money-bill-1"></i> كاش فقط'}
-            </div>
-        </div>
-        `;
-    });
-
-    if (Object.keys(groupFees || {}).length === 0) {
-        html = '<div class="mutedCenter">لا توجد باقات معرفة بالنظام</div>';
-    }
-
-    grid.innerHTML = html;
-    if ($('psmTotalCost')) $('psmTotalCost').textContent = totalCost;
-};
-
-window.togglePackageSelection = function(pkgName) {
-    if (window.tempSelectedPackages.has(pkgName)) {
-        window.tempSelectedPackages.delete(pkgName);
-    } else {
-        window.tempSelectedPackages.add(pkgName);
-    }
-    renderPackageSelectionGrid(); // Re-render grid to update styles and total cost
-};
-
-window.savePackageSelection = function() {
-    const stId = window.tempSelectedStudentId;
-    if (!stId || !students[stId]) return;
-
-    students[stId].packages = Array.from(window.tempSelectedPackages);
-    students[stId].lastModified = Date.now();
-    
-    saveAll();
-    updateStudentUI(stId);
-    closePackageSelectionModal();
-    if(typeof showToast === 'function') showToast("تم تحديث باقات الطالب بنجاح");
-};
-
-// Bind the button in index.html
-document.addEventListener('DOMContentLoaded', () => {
-    // Need to use event delegation since button is static but studentId changes
-    document.body.addEventListener('click', (e) => {
-        const btn = e.target.closest('#managePackagesBtn');
-        if (btn && currentId) {
-            openPackageSelectionModal(currentId);
-        }
-    });
-});
 
 
 window.updateAttendanceUIState = function() {
