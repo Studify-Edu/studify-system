@@ -2543,12 +2543,25 @@ const st = students[id];
  if (filterAttendEl) fAttend = filterAttendEl.value;
  
  if(filterClassEl && filterClassEl.options.length <= 1) { 
- const classes = Object.keys(groupFees);
- if(classes.length === 0) classes.push("عام");
- classes.forEach(function(c) { 
- const opt = document.createElement("option"); opt.value = c; opt.innerText = c; filterClassEl.appendChild(opt); 
- });
- }
+  filterClassEl.innerHTML = '<option value="all" data-i18n="flt_all_classes">كل الصفوف والمجموعات</option>';
+  const classesSet = new Set();
+  Object.values(students).forEach(st => {
+      if (st && st.className && st.className.trim()) classesSet.add(st.className.trim());
+  });
+  classesSet.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = "class:" + c;
+      opt.innerText = "الصف: " + c;
+      filterClassEl.appendChild(opt);
+  });
+  const pkgsSet = new Set(Object.keys(groupFees || {}));
+  pkgsSet.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = "pkg:" + p;
+      opt.innerText = "باقة: " + p;
+      filterClassEl.appendChild(opt);
+  });
+}
 
  let filled = [];
  const allStudents = Object.values(students);
@@ -2563,27 +2576,37 @@ const st = students[id];
  let s = filled[i];
  let isValid = true;
  
- if(fClass !== "all" && s.className !== fClass) isValid = false;
+ if(fClass !== "all") {
+    if (fClass.startsWith("class:")) {
+        const targetClass = fClass.replace("class:", "");
+        if (s.className !== targetClass) isValid = false;
+    } else if (fClass.startsWith("pkg:")) {
+        const targetPkg = fClass.replace("pkg:", "");
+        if (!s.packages || !s.packages.includes(targetPkg)) isValid = false;
+    } else {
+        if (s.className !== fClass && (!s.packages || !s.packages.includes(fClass))) isValid = false;
+    }
+  }
  
  let sClass = s.className ? s.className.trim() : "";
- 
-    let req = 0;
-    if (sClass && groupFees[sClass] !== undefined) {
-       const pkg = groupFees[sClass];
-       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
-       }
-    }
+     let totalReq = 0;
+     if (s.packages && s.packages.length > 0) {
+        s.packages.forEach(pkgName => {
+            const pDetails = window.getPkgDetails(pkgName);
+            totalReq += toInt(pDetails.price);
+        });
+     } else if (sClass && groupFees[sClass] !== undefined) {
+        totalReq = toInt(groupFees[sClass].price || groupFees[sClass]);
+     }
 
- let p = s.paid || 0;
- 
- if(fStatus !== "all") {
- if(fStatus === "paid" && (p < req || req === 0)) isValid = false;
- if(fStatus === "partial" && (p === 0 || p >= req)) isValid = false;
- if(fStatus === "unpaid" && p > 0) isValid = false;
- }
+     let totalPaid = s.paid || 0;
+     let remainAmt = Math.max(0, totalReq - totalPaid);
+
+     if(fStatus !== "all") {
+        if(fStatus === "paid" && (remainAmt > 0 || totalReq === 0)) isValid = false;
+        if(fStatus === "partial" && (remainAmt === 0 || totalPaid === 0 || totalReq === 0)) isValid = false;
+        if(fStatus === "unpaid" && totalPaid > 0) isValid = false;
+     }
  
  let isP = (s.attendanceDates && s.attendanceDates.includes(today));
  if(fAttend === "present" && !isP) isValid = false;
@@ -2628,34 +2651,60 @@ const st = students[id];
  const tr = document.createElement("tr");
  
  let sClass = s.className ? s.className.trim() : "";
- 
-    let req = 0;
-    if (sClass && groupFees[sClass] !== undefined) {
-       const pkg = groupFees[sClass];
-       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
-       }
-    }
+     let totalReq = 0;
+     if (s.packages && s.packages.length > 0) {
+        s.packages.forEach(pkgName => {
+            const pDetails = window.getPkgDetails(pkgName);
+            totalReq += toInt(pDetails.price);
+        });
+     } else if (sClass && groupFees[sClass] !== undefined) {
+        totalReq = toInt(groupFees[sClass].price || groupFees[sClass]);
+     }
 
- let percent = req > 0 ? Math.min((s.paid/req)*100, 100) : 0;
- let pBar = `<div style="width:100%; background:#eee; height:5px; border-radius:3px; margin-top:3px;"><div style="width:${percent}%; height:100%; background:var(--success); border-radius:3px;"></div></div>`;
- 
- let isAttended = (s.attendanceDates && s.attendanceDates.includes(today));
- let attendTxt = isAttended ? "" : "";
- let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ️' : '');
- let gColor = getTagColor(sClass);
- let remainAmt = req > 0 ? (req - (s.paid || 0)) : 0;
- if (remainAmt < 0) remainAmt = 0;
- tr.innerHTML = `
- <td><input type="checkbox" class="stCheckbox" data-id="${s.id}"></td>
- <td>${s.id}</td>
- <td><b>${s.name}</b>${rankIcon}</td>
- <td><span class="badge" style="background:${gColor}; border-color:${gColor}; color:#fff;">${s.className || 'عام'}</span></td>
- <td>${s.paid} ج ${pBar}</td>
- <td>${remainAmt} ج</td>
- <td>${attendTxt}</td>`;
+     let totalPaid = s.paid || 0;
+     let remainAmt = Math.max(0, totalReq - totalPaid);
+
+     let percent = totalReq > 0 ? Math.min((totalPaid / totalReq) * 100, 100) : (totalPaid > 0 ? 100 : 0);
+     let pBarColor = (remainAmt === 0 && totalReq > 0) ? "var(--success)" : "var(--primary)";
+     let pBar = totalReq > 0 ? `<div style="width:100%; background:var(--bg-inset); height:5px; border-radius:3px; margin-top:4px; overflow:hidden; border:1px solid var(--border);"><div style="width:${percent}%; height:100%; background:${pBarColor}; border-radius:3px;"></div></div>` : '';
+
+     let isAttended = (s.attendanceDates && s.attendanceDates.includes(today));
+     let attendTxt = isAttended 
+        ? `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check"></i> حاضر</span>` 
+        : `<span style="color:var(--text-secondary); font-size:0.85em;">—</span>`;
+     let rankIcon = s.rank === 'vip' ? ' 👑' : (s.rank === 'warn' ? ' ⚠️' : '');
+     let gColor = getTagColor(sClass || 'عام');
+     let classBadge = sClass 
+        ? `<span class="badge" style="background:${gColor}; border-color:${gColor}; color:#fff; font-weight:600; font-size:0.82em;">${sClass}</span>` 
+        : `<span style="color:var(--text-secondary); font-size:0.82em;">—</span>`;
+
+     let pkgsBadgeHtml = "";
+     if (s.packages && s.packages.length > 0) {
+        pkgsBadgeHtml = s.packages.map(pName => {
+            return `<span class="badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:0.78em; margin:2px; display:inline-flex; align-items:center; gap:3px;"><i class="fa-solid fa-cube" style="font-size:0.85em;"></i> ${pName}</span>`;
+        }).join(" ");
+     } else {
+        pkgsBadgeHtml = `<span style="color:var(--text-secondary); font-size:0.8em;">بدون باقات</span>`;
+     }
+
+     let remainDisplay = "";
+     if (totalReq === 0) {
+        remainDisplay = `<span style="color:var(--text-secondary); font-size:0.85em;">0 ج</span>`;
+     } else if (remainAmt === 0) {
+        remainDisplay = `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-circle-check"></i> خالص</span>`;
+     } else {
+        remainDisplay = `<span style="color:var(--danger); font-weight:bold; font-size:0.95em;">${remainAmt} ج</span>`;
+     }
+
+     tr.innerHTML = `
+     <td><input type="checkbox" class="stCheckbox" data-id="${s.id}"></td>
+     <td style="font-weight:bold; color:var(--text-secondary); font-size:0.9em;">${s.id}</td>
+     <td><b>${s.name}</b>${rankIcon}</td>
+     <td>${classBadge}</td>
+     <td>${pkgsBadgeHtml}</td>
+     <td><span style="font-weight:600; color:var(--text-primary);">${totalPaid} ج</span>${pBar}</td>
+     <td>${remainDisplay}</td>
+     <td>${attendTxt}</td>`;
  tr.onclick = function(e) { 
  if(e.target.type !== "checkbox") window.extOpen(s.id); 
  };
