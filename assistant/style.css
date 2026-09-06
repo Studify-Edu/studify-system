@@ -113,6 +113,10 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 ::selection { background: var(--primary); color: #fff; }
 
+html {
+  overflow-y: auto;
+}
+
 html::-webkit-scrollbar { width: 14px; height: 14px; }
 html::-webkit-scrollbar-track { background: var(--bg-body); }
 html::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; border: 3px solid var(--bg-body); }
@@ -122,6 +126,47 @@ html::-webkit-scrollbar-thumb:hover { background: var(--hover); }
 ::-webkit-scrollbar-track { background: var(--bg-body); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; border: 3px solid var(--bg-body); }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+/* ── DEDICATED ASSISTANT LOGIN SCREEN SCROLLBAR (EMERALD GREEN THEME) ── */
+html.login-active,
+body.login-active,
+html:has(#loginBox:not(.hidden)),
+html:has(.assistant-clean-login) {
+  scrollbar-width: thin;
+  scrollbar-color: #10B981 var(--bg-body);
+}
+
+html.login-active::-webkit-scrollbar,
+body.login-active::-webkit-scrollbar,
+html:has(#loginBox:not(.hidden))::-webkit-scrollbar,
+html:has(.assistant-clean-login)::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+html.login-active::-webkit-scrollbar-track,
+body.login-active::-webkit-scrollbar-track,
+html:has(#loginBox:not(.hidden))::-webkit-scrollbar-track,
+html:has(.assistant-clean-login)::-webkit-scrollbar-track {
+  background: var(--bg-body);
+}
+
+html.login-active::-webkit-scrollbar-thumb,
+body.login-active::-webkit-scrollbar-thumb,
+html:has(#loginBox:not(.hidden))::-webkit-scrollbar-thumb,
+html:has(.assistant-clean-login)::-webkit-scrollbar-thumb {
+  background: #10B981;
+  border-radius: 10px;
+  border: 3px solid var(--bg-body);
+  transition: background 0.2s ease;
+}
+
+html.login-active::-webkit-scrollbar-thumb:hover,
+body.login-active::-webkit-scrollbar-thumb:hover,
+html:has(#loginBox:not(.hidden))::-webkit-scrollbar-thumb:hover,
+html:has(.assistant-clean-login)::-webkit-scrollbar-thumb:hover {
+  background: #059669;
+}
 
 body {
   font-family: var(--font);
@@ -1161,11 +1206,13 @@ tr:hover td { background: var(--bg-hover); }
 
 .login-wrapper {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-body);
-  padding: 20px;
+  padding: 40px 20px;
+  box-sizing: border-box;
 }
 
 .login-flip-container {
@@ -1186,7 +1233,7 @@ tr:hover td { background: var(--bg-hover); }
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25), var(--shadow-lg);
   position: relative;
   z-index: 2;
-  margin: 0 auto;
+  margin: auto;
   backdrop-filter: blur(12px);
   animation: portalCardEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, filter 0.3s ease;
@@ -3533,11 +3580,37 @@ tr:hover td:first-child {
 }
 
 /* ── GENERAL POLISH ── */
-/* Better scrollbar for dark theme */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(37,99,235,0.3); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(37,99,235,0.6); }
+/* Better scrollbar for inner containers */
+.modalContent::-webkit-scrollbar,
+.tableWrap::-webkit-scrollbar,
+.sidebar-menu::-webkit-scrollbar,
+.dropdown-menu::-webkit-scrollbar,
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.modalContent::-webkit-scrollbar-track,
+.tableWrap::-webkit-scrollbar-track,
+.sidebar-menu::-webkit-scrollbar-track,
+.dropdown-menu::-webkit-scrollbar-track,
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modalContent::-webkit-scrollbar-thumb,
+.tableWrap::-webkit-scrollbar-thumb,
+.sidebar-menu::-webkit-scrollbar-thumb,
+.dropdown-menu::-webkit-scrollbar-thumb,
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.35);
+  border-radius: 10px;
+}
+.modalContent::-webkit-scrollbar-thumb:hover,
+.tableWrap::-webkit-scrollbar-thumb:hover,
+.sidebar-menu::-webkit-scrollbar-thumb:hover,
+.dropdown-menu::-webkit-scrollbar-thumb:hover,
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.7);
+}
 
 /* Smooth button press */
 .btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; }

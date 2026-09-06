@@ -1428,6 +1428,8 @@ async function loadAll() {
     // Sync Global Variables
     window.CURRENT_ROLE = currentUserRole;
     $("loginBox").classList.add("hidden");
+    document.documentElement.classList.remove("login-active");
+    document.body.classList.remove("login-active");
     
     if(currentUserRole === 'admin') {
       // Manager has a dedicated standalone portal at admin.html
@@ -1442,6 +1444,8 @@ async function loadAll() {
   } else {
     $("loginBox").classList.remove("hidden"); 
     $("appBox").classList.add("hidden");
+    document.documentElement.classList.add("login-active");
+    document.body.classList.add("login-active");
     if ($("manager-dashboard")) $("manager-dashboard").classList.add("hidden");
     if(sidebar) sidebar.style.display = "none";
   }
