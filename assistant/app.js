@@ -634,27 +634,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
  window.getPkgDetails = function(pkgName) {
-   if (!pkgName || !groupFees || !groupFees[pkgName]) {
-     return { name: pkgName || "عام", price: 0, expiryType: "none", durationDays: 0, sessionLimit: 0 };
-   }
-   const val = groupFees[pkgName];
-   if (typeof val === "object" && val !== null) {
-     return {
-       name: pkgName,
-       price: toInt(val.price || 0),
-       expiryType: val.expiryType || "none",
-       durationDays: toInt(val.durationDays || 0),
-       sessionLimit: toInt(val.sessionLimit || 0)
-     };
-   }
-   return {
-     name: pkgName,
-     price: toInt(val || 0),
-     expiryType: "none",
-     durationDays: 0,
-     sessionLimit: 0
-   };
- };
+    if (!pkgName || !groupFees || !groupFees[pkgName]) {
+      return { name: pkgName || "عام", price: 0, expiryType: "time", durationDays: 0, sessionLimit: 0, startDate: "", endDate: "", subject: "" };
+    }
+    const val = groupFees[pkgName];
+    if (typeof val === "object" && val !== null) {
+      return {
+        name: pkgName,
+        price: toInt(val.price || 0),
+        subject: val.subject || "",
+        expiryType: val.expiryType || "time",
+        startDate: val.startDate || "",
+        endDate: val.endDate || "",
+        durationDays: toInt(val.durationDays || 0),
+        sessionLimit: toInt(val.sessionLimit || 0)
+      };
+    }
+    return {
+      name: pkgName,
+      price: toInt(val || 0),
+      subject: "",
+      expiryType: "time",
+      durationDays: 0,
+      sessionLimit: 0,
+      startDate: "",
+      endDate: ""
+    };
+  };
 
  window.getPkgPrice = function(pkgName) {
    return window.getPkgDetails(pkgName).price;
@@ -1931,7 +1937,164 @@ function applyPermissions() {
     updateStudentUI(stId);
  }
 
- function updateStudentUI(id) {
+ 
+  window.currentPayFilterMode = 'package';
+
+  window.updatePkgFinanceCardUI = function(st, selectedPkg) {
+      const cardTitle = $("pkgCardNameTitle");
+      const cardStatus = $("pkgCardStatusBadge");
+      const cardPrice = $("pkgCardPrice");
+      const cardPaid = $("pkgCardPaid");
+      const cardRemain = $("pkgCardRemain");
+      const progressBar = $("pkgProgressBar");
+
+      if (!st || !selectedPkg || !groupFees || !groupFees[selectedPkg]) {
+          if (cardTitle) cardTitle.innerHTML = '<i class="fa-solid fa-receipt"></i> حساب الباقة';
+          if (cardStatus) {
+              cardStatus.style.background = "#e2e8f0";
+              cardStatus.style.color = "#475569";
+              cardStatus.textContent = "لا توجد باقة محددة";
+          }
+          if (cardPrice) cardPrice.textContent = "0 ج";
+          if (cardPaid) cardPaid.textContent = "0 ج";
+          if (cardRemain) {
+              cardRemain.textContent = "0 ج";
+              cardRemain.style.color = "var(--text-secondary)";
+          }
+          if (progressBar) progressBar.style.width = "0%";
+          return;
+      }
+
+      const pDetails = window.getPkgDetails(selectedPkg);
+      const req = toInt(pDetails.price);
+      let paid = 0;
+      if (st.payments) {
+          st.payments.forEach(p => {
+              if (p.pkgName === selectedPkg) paid += toInt(p.amount);
+          });
+      }
+      const rem = Math.max(0, req - paid);
+      const pct = req > 0 ? Math.min(100, Math.round((paid / req) * 100)) : 100;
+
+      if (cardTitle) cardTitle.innerHTML = '<i class="fa-solid fa-cube" style="color:var(--primary);"></i> حساب باقة: <b>' + selectedPkg + '</b>';
+      if (cardStatus) {
+          if (req === 0) {
+              cardStatus.style.background = "#dcfce7";
+              cardStatus.style.color = "#15803d";
+              cardStatus.innerHTML = '<i class="fa-solid fa-check"></i> باقة مجانية';
+          } else if (rem === 0) {
+              cardStatus.style.background = "#dcfce7";
+              cardStatus.style.color = "#15803d";
+              cardStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> مسددة بالكامل';
+          } else {
+              cardStatus.style.background = "#fee2e2";
+              cardStatus.style.color = "#b91c1c";
+              cardStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> باقي: ' + rem + ' ج';
+          }
+      }
+      if (cardPrice) cardPrice.textContent = req + " ج";
+      if (cardPaid) cardPaid.textContent = paid + " ج";
+      if (cardRemain) {
+          cardRemain.textContent = rem + " ج";
+          cardRemain.style.color = (rem > 0) ? "var(--danger)" : "var(--success)";
+      }
+      if (progressBar) {
+          progressBar.style.width = pct + "%";
+          progressBar.style.background = (rem === 0) ? "var(--success)" : "var(--primary)";
+      }
+  };
+
+  window.renderStudentPaymentsUI = function(st, selectedPkg) {
+      const listEl = $("stPaymentsList");
+      if (!listEl) return;
+
+      const filterMode = window.currentPayFilterMode || 'package';
+      const titleEl = $("stPayHistoryTitle");
+      if (titleEl) {
+          if (filterMode === 'all') {
+              titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> سجل كافة دفعات الطالب:';
+          } else {
+              titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> سجل دفعات: <b>' + (selectedPkg || 'الباقة') + '</b>';
+          }
+      }
+
+      if ($("btnPayFilterPkg")) {
+          if (filterMode === 'package') $("btnPayFilterPkg").classList.add("active");
+          else $("btnPayFilterPkg").classList.remove("active");
+      }
+      if ($("btnPayFilterAll")) {
+          if (filterMode === 'all') $("btnPayFilterAll").classList.add("active");
+          else $("btnPayFilterAll").classList.remove("active");
+      }
+
+      const isAdmin = (currentUserRole === "admin");
+      let paymentsToShow = [];
+
+      if (st && st.payments && st.payments.length > 0) {
+          st.payments.forEach((p, idx) => {
+              if (filterMode === 'all' || !selectedPkg || p.pkgName === selectedPkg) {
+                  paymentsToShow.push({ ...p, originalIndex: idx });
+              }
+          });
+      }
+
+      if (paymentsToShow.length === 0) {
+          const msg = (filterMode === 'package' && selectedPkg)
+              ? 'لم يتم تسجيل أي دفعات لباقة (' + selectedPkg + ') حتى الآن'
+              : (st && st.paid > 0 ? 'المدفوع القديم: +' + st.paid + ' ج (كاش)' : 'لا توجد دفعات مسجلة حتى الآن');
+          listEl.innerHTML = '<div class="mutedCenter" style="padding:15px; font-size:0.88em; color:var(--text-secondary);">' + msg + '</div>';
+          return;
+      }
+
+      paymentsToShow.reverse();
+
+      let html = "";
+      paymentsToShow.forEach(p => {
+          const m = p.method || "cash";
+          let mLabel = "كاش";
+          let mIcon = "fa-money-bill-wave";
+          let badgeStyle = "background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;";
+          
+          if (m === "instapay") {
+              mLabel = "إنستاباي";
+              mIcon = "fa-bolt";
+              badgeStyle = "background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff;";
+          } else if (m === "wallet") {
+              mLabel = "محفظة إلكترونية";
+              mIcon = "fa-mobile-screen";
+              badgeStyle = "background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;";
+          }
+
+          const delBtn = isAdmin 
+              ? '<button type="button" class="btn danger smallBtn iconOnly" style="padding:4px 7px; font-size:11px; border-radius:6px;" onclick="window.deleteStudentPayment(' + p.originalIndex + ')" title="حذف الدفعة"><i class="fa-solid fa-trash-can"></i></button>' 
+              : "";
+
+          const pkgBadge = (filterMode === 'all' && p.pkgName) 
+              ? '<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.78em; border:1px solid #bae6fd;"><i class="fa-solid fa-cube"></i> ' + p.pkgName + '</span>' 
+              : "";
+
+          html += `
+          <div class="payment-record-card" style="display:flex; justify-content:space-between; align-items:center; padding:9px 12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.02); transition:all 0.2s ease;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-weight:bold; font-size:1.05em; color:var(--success); min-width:65px;">+ ${p.amount} ج</span>
+                  <span class="badge" style="${badgeStyle}; font-size:0.8em; display:inline-flex; align-items:center; gap:4px;">
+                      <i class="fa-solid ${mIcon}"></i> ${mLabel}
+                  </span>
+                  ${pkgBadge}
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:0.82em; color:var(--text-secondary); display:flex; align-items:center; gap:4px;">
+                      <i class="fa-regular fa-calendar" style="font-size:0.9em;"></i> ${prettyDate(p.date)}
+                  </span>
+                  ${delBtn}
+              </div>
+          </div>`;
+      });
+
+      listEl.innerHTML = html;
+  };
+
+function updateStudentUI(id) {
 currentId = id;
 window.currentId = id;
 const st = students[id]; 
@@ -1962,57 +2125,76 @@ const st = students[id];
  } 
  
   let pkgsHtml = '';
-  const allPkgs = Object.keys(groupFees || {});
-  let totalReq = 0;
-  let totalPaid = 0;
-  let totalRemain = 0;
-  
-  if (allPkgs.length === 0) {
-      pkgsHtml = '<div class="mutedCenter">لا توجد باقات معرفة بالنظام</div>';
-  } else {
-      if (!st.packages) st.packages = [];
-      allPkgs.forEach(pkgName => {
-          const isSubscribed = st.packages.includes(pkgName);
-          const pkgDetails = groupFees[pkgName];
-          const req = toInt(pkgDetails.price);
-          
-          let pkgPaid = 0;
-          if (st.payments) {
-              st.payments.forEach(p => {
-                  if (p.pkgName === pkgName) pkgPaid += toInt(p.amount);
-              });
-          }
-          
-          const pkgRemain = req - pkgPaid;
-          if (isSubscribed) {
-              totalReq += req;
-              totalPaid += pkgPaid;
-              totalRemain += (pkgRemain > 0 ? pkgRemain : 0);
-          }
-          
-          
-          if (isSubscribed) {
-              const tagStatus = (pkgRemain > 0) ? 'has-debt' : 'paid-full';
-              const icon = (pkgRemain > 0) ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i>' : '<i class="fa-solid fa-check-circle" style="color:#10b981"></i>';
-              pkgsHtml += `<div class="pkg-summary-tag ${tagStatus}">
-                  ${icon}
-                  <span>${pkgName}</span>
-              </div>`;
-          }
-      });
-      if (st.packages.length === 0) {
-          pkgsHtml = '<div style="color:var(--text-secondary); font-size:0.85em; width:100%; text-align:center;">لا توجد باقات محددة للطالب</div>';
-      }
-  }
-  if ($("stPackagesContainer")) $("stPackagesContainer").innerHTML = pkgsHtml;
+   const allPkgs = Object.keys(groupFees || {});
+   let totalReq = 0;
+   let totalPaid = 0;
+   let totalRemain = 0;
+   const pkgStatsMap = {};
 
-  let payPkgOpts = '<option value="">-- اختر الباقة --</option>';
-  if (st.packages && st.packages.length > 0) {
-      st.packages.forEach(pkgName => {
-          payPkgOpts += `<option value="${pkgName}">${pkgName}</option>`;
-      });
-  }
-  if ($("newPaymentPackage")) $("newPaymentPackage").innerHTML = payPkgOpts;
+   if (!st.packages) st.packages = [];
+   
+   if (allPkgs.length === 0) {
+       pkgsHtml = '<div class="mutedCenter">لا توجد باقات معرفة بالنظام</div>';
+   } else {
+       allPkgs.forEach(pkgName => {
+           const isSubscribed = st.packages.includes(pkgName);
+           const pkgDetails = window.getPkgDetails(pkgName);
+           const req = toInt(pkgDetails.price);
+           
+           let pkgPaid = 0;
+           if (st.payments) {
+               st.payments.forEach(p => {
+                   if (p.pkgName === pkgName) pkgPaid += toInt(p.amount);
+               });
+           }
+           
+           const pkgRemain = Math.max(0, req - pkgPaid);
+           pkgStatsMap[pkgName] = { req, paid: pkgPaid, remain: pkgRemain, isPaidFull: (pkgPaid >= req && req > 0) };
+
+           if (isSubscribed) {
+               totalReq += req;
+               totalPaid += pkgPaid;
+               totalRemain += pkgRemain;
+               const tagStatus = (pkgRemain > 0) ? 'has-debt' : 'paid-full';
+               const icon = (pkgRemain > 0) ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i>' : '<i class="fa-solid fa-check-circle" style="color:#10b981"></i>';
+               pkgsHtml += `<div class="pkg-summary-tag ${tagStatus}">
+                   ${icon}
+                   <span>${pkgName}</span>
+               </div>`;
+           }
+       });
+       if (st.packages.length === 0) {
+           pkgsHtml = '<div style="color:var(--text-secondary); font-size:0.85em; width:100%; text-align:center;">لا توجد باقات محددة للطالب</div>';
+       }
+   }
+   if ($("stPackagesContainer")) $("stPackagesContainer").innerHTML = pkgsHtml;
+
+   const pkgSelect = $("newPaymentPackage");
+   let currentSelectedPkg = pkgSelect ? pkgSelect.value : "";
+   if (!currentSelectedPkg || !st.packages.includes(currentSelectedPkg)) {
+       currentSelectedPkg = st.packages[0] || "";
+   }
+
+   let payPkgOpts = "";
+   if (st.packages.length === 0) {
+       payPkgOpts = '<option value="">-- لم يتم تحديد باقات للطالب --</option>';
+       currentSelectedPkg = "";
+   } else {
+       st.packages.forEach(pkgName => {
+           const stats = pkgStatsMap[pkgName];
+           let statusText = "";
+           if (stats) {
+               statusText = stats.isPaidFull ? " (مسددة بالكامل ✔)" : (" (متبقي: " + stats.remain + " ج)");
+           }
+           payPkgOpts += '<option value="' + pkgName + '" ' + (pkgName === currentSelectedPkg ? 'selected' : '') + '>' + pkgName + statusText + '</option>';
+       });
+   }
+   if (pkgSelect) {
+       pkgSelect.innerHTML = payPkgOpts;
+       pkgSelect.value = currentSelectedPkg;
+   }
+
+   window.updatePkgFinanceCardUI(st, currentSelectedPkg);
 
  
  let remain = totalRemain;
@@ -2104,50 +2286,7 @@ const st = students[id];
  $("attList").innerHTML = datesHtml;
  }
 
- if($("stPaymentsList")) {
- let payHtml = "";
- const isAdmin = (currentUserRole === "admin");
- if (st.payments && st.payments.length > 0) {
- for (let i = st.payments.length - 1; i >= 0; i--) {
- let p = st.payments[i];
- let m = p.method || "cash";
- let mBadge = t("badge_cash");
- let badgeBg = "#e8f5e9";
- let badgeColor = "#1b5e20";
- if (m === "instapay") { mBadge = t("badge_instapay"); badgeBg = "#f3e8ff"; badgeColor = "#6b21a8"; }
- if (m === "wallet") { mBadge = t("badge_wallet"); badgeBg = "#fee2e2"; badgeColor = "#991b1b"; }
- 
- let delBtn = isAdmin ? `<button class="btn danger smallBtn iconOnly" style="padding:2px 6px; font-size:11px;" onclick="window.deleteStudentPayment(${i})" title="${t('btn_del_payment')}"><i class="fa-solid fa-trash-can"></i></button>` : "";
- 
- const pkgBadge = p.pkgName ? `<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.8em; margin-inline-start:8px;"><i class="fa-solid fa-cube"></i> ${p.pkgName}</span>` : "";
-
- payHtml += `
- <div class="item flexBetween" style="margin-bottom:8px; font-size:0.9em; padding:8px 10px; background:var(--bg-surface); border-radius:6px; border:1px solid var(--border);">
- <div>
- <span style="font-weight:bold; color:var(--success);">+ ${p.amount} ج</span>
- <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:8px;">${mBadge}</span>
- ${pkgBadge}
- </div>
- <div class="row" style="width:auto; gap:10px;">
- <span style="font-size:0.85em; color:var(--text-secondary);">${prettyDate(p.date)}</span>
- ${delBtn}
- </div>
- </div>`;
- }
- } else if (st.paid > 0) {
- payHtml = `
- <div class="item flexBetween" style="margin-bottom:8px; font-size:0.9em; padding:8px 10px; background:var(--bg-surface); border-radius:6px; border:1px solid var(--border);">
- <div>
- <span style="font-weight:bold; color:var(--success);">+ ${st.paid} ج</span>
- <span class="badge" style="background:#eef2f5; color:#333; font-size:0.8em; margin-inline-start:8px;">${t("txt_cash_old")}</span>
- </div>
- <span style="font-size:0.85em; color:var(--text-secondary);">—</span>
- </div>`;
- } else {
- payHtml = `<div class="mutedCenter" style="font-size:0.85em;">${t("txt_no_payments")}</div>`;
- }
- $("stPaymentsList").innerHTML = payHtml;
- }
+ window.renderStudentPaymentsUI(st, currentSelectedPkg);
  
  if($("newBadge")) {
  if(dates.length === 0 && st.name) $("newBadge").classList.remove("hidden"); 
@@ -3341,67 +3480,100 @@ on("quickAttendBtn", "click", function() {
  fireConfetti(); playSound("money"); showToast("تم سداد المديونية بالكامل ");
  });
 
- on("addPaymentBtn", "click", function() {
- if(!currentId) return;
- const payInp = $("newPaymentInput"); if (!payInp) return;
- const v = toInt(payInp.value); if(!v) return;
  
- const methodInp = $("newPaymentMethod");
- const method = methodInp ? methodInp.value : "cash";
- let methodName = "كاش ";
- if (method === "instapay") methodName = "إنستاباي ";
- if (method === "wallet") methodName = "فودافون كاش ";
- 
- const pkgSelector = $("newPaymentPackage");
- const pkgName = pkgSelector ? pkgSelector.value : "";
- 
- if (!pkgName) {
-     showToast("يرجى اختيار الباقة المراد الدفع لها", "err");
-     triggerShake("newPaymentPackage");
-     return;
- }
+  // Listeners for Package-Specific Payments Filter and Select
+  const newPayPkgEl = document.getElementById("newPaymentPackage");
+  if (newPayPkgEl) {
+      newPayPkgEl.addEventListener("change", function() {
+          if (!currentId || !students[currentId]) return;
+          const st = students[currentId];
+          window.updatePkgFinanceCardUI(st, this.value);
+          window.renderStudentPaymentsUI(st, this.value);
+      });
+  }
+  const btnPkgFilter = document.getElementById("btnPayFilterPkg");
+  if (btnPkgFilter) {
+      btnPkgFilter.addEventListener("click", function() {
+          window.currentPayFilterMode = 'package';
+          if (!currentId || !students[currentId]) return;
+          const st = students[currentId];
+          const selPkg = document.getElementById("newPaymentPackage") ? document.getElementById("newPaymentPackage").value : "";
+          window.renderStudentPaymentsUI(st, selPkg);
+      });
+  }
+  const btnAllFilter = document.getElementById("btnPayFilterAll");
+  if (btnAllFilter) {
+      btnAllFilter.addEventListener("click", function() {
+          window.currentPayFilterMode = 'all';
+          if (!currentId || !students[currentId]) return;
+          const st = students[currentId];
+          const selPkg = document.getElementById("newPaymentPackage") ? document.getElementById("newPaymentPackage").value : "";
+          window.renderStudentPaymentsUI(st, selPkg);
+      });
+  }
 
- const st = students[currentId];
- if ($("stName")) st.name = $("stName").value; 
- if ($("stPhone")) st.phone = $("stPhone").value;
- 
- st.paid = (st.paid || 0) + v;
- if (!st.payments) st.payments = [];
- st.payments.push({ date: nowDateStr(), amount: v, method: method, pkgName: pkgName });
- const today = nowDateStr();
- if (!revenueByDate[today]) revenueByDate[today] = 0;
- revenueByDate[today] += v;
- 
- saveAll(); updateStudentUI(currentId);
- 
- let req = 0;
- let pkgPaid = 0;
- if (pkgName && groupFees[pkgName] !== undefined) {
-    const pkg = groupFees[pkgName];
-    req = toInt(pkg.price);
-    
-    if (st.payments) {
-        st.payments.forEach(p => {
-            if (p.pkgName === pkgName) pkgPaid += toInt(p.amount);
-        });
-    }
- }
+  on("addPaymentBtn", "click", function() {
+  if(!currentId) return;
+  const payInp = $("newPaymentInput"); if (!payInp) return;
+  const v = toInt(payInp.value); if(!v) return;
+  
+  const methodInp = $("newPaymentMethod");
+  const method = methodInp ? methodInp.value : "cash";
+  let methodName = "كاش";
+  if (method === "instapay") methodName = "إنستاباي";
+  if (method === "wallet") methodName = "فودافون كاش";
+  
+  const pkgSelector = $("newPaymentPackage");
+  const pkgName = pkgSelector ? pkgSelector.value : "";
+  
+  if (!pkgName) {
+      showToast("يرجى اختيار الباقة المراد الدفع لها", "err");
+      triggerShake("newPaymentPackage");
+      return;
+  }
 
- if(req > 0 && pkgPaid >= req) fireConfetti();
- playSound("money"); showToast(t("msg_deposit"));
- 
- if(st.phone) {
- if(!currentManager) {
- showToast(t("err_no_manager"), "err");
- return; // يمنع فتح الواتساب
- }
- let msg = `مرحباً ${st.name}،\r\nتم إيداع مبلغ ${v} ج (${methodName}) لباقة (${pkgName}).\r\n\r\nمع تحيات: أ/ ${currentManager}`;
- setTimeout(function() { 
- window.open(`https://wa.me/20${st.phone}?text=${encodeURIComponent(msg)}`, '_blank'); 
- }, 1000);
- }
- payInp.value = "";
- });
+  const st = students[currentId];
+  if ($("stName")) st.name = $("stName").value; 
+  if ($("stPhone")) st.phone = $("stPhone").value;
+  
+  st.paid = (st.paid || 0) + v;
+  if (!st.payments) st.payments = [];
+  st.payments.push({ date: nowDateStr(), amount: v, method: method, pkgName: pkgName });
+  const today = nowDateStr();
+  if (!revenueByDate[today]) revenueByDate[today] = 0;
+  revenueByDate[today] += v;
+  
+  const pDetails = window.getPkgDetails(pkgName);
+  const req = toInt(pDetails.price);
+  let pkgPaid = 0;
+  st.payments.forEach(p => {
+      if (p.pkgName === pkgName) pkgPaid += toInt(p.amount);
+  });
+  const pkgRemain = Math.max(0, req - pkgPaid);
+
+  saveAll();
+  updateStudentUI(currentId);
+  
+  if(req > 0 && pkgPaid >= req) fireConfetti();
+  playSound("money");
+  showToast(t("msg_deposit"));
+  
+  if(st.phone) {
+      if(!currentManager) {
+          showToast(t("err_no_manager"), "err");
+          payInp.value = "";
+          return;
+      }
+      let remainMsg = (pkgRemain === 0) 
+          ? "🎉 تم سداد مصاريف الباقة بالكامل." 
+          : ("المتبقي للباقة: " + pkgRemain + " ج.");
+      let msg = "مرحباً " + st.name + "،\r\nتم استلام دفعة بقيمة " + v + " ج (" + methodName + ") لباقة (" + pkgName + ").\r\n" + remainMsg + "\r\n\r\nمع تحيات: أ/ " + currentManager;
+      setTimeout(function() { 
+          window.open("https://wa.me/20" + st.phone + "?text=" + encodeURIComponent(msg), '_blank'); 
+      }, 1000);
+  }
+  payInp.value = "";
+});
 
  window.deleteStudentPayment = function(index) {
  if(!currentId) return;
@@ -3676,10 +3848,12 @@ on("quickAttendBtn", "click", function() {
    let h = "";
    keys.forEach(k => {
      const details = window.getPkgDetails(k);
-     let ruleBadge = `<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:11px;"><i class="fa-solid fa-infinity"></i> دائم</span>`;
-     if (details.expiryType === 'time') ruleBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:11px;"><i class="fa-solid fa-calendar-days"></i> ${details.durationDays} يوم</span>`;
-     else if (details.expiryType === 'sessions') ruleBadge = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:11px;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} حصص</span>`;
-     else if (details.expiryType === 'both') ruleBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:11px;">${details.durationDays}د / ${details.sessionLimit}ح</span>`;
+     let ruleBadge = "";
+      if (details.expiryType === 'time' && details.startDate && details.endDate) {
+        ruleBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:11px;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} إلي ${details.endDate}</span>`;
+      } else if (details.expiryType === 'sessions' && details.sessionLimit > 0) {
+        ruleBadge = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:11px;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} حصص</span>`;
+      }
 
      h += `
      <div style="display:flex; flex-direction:column; gap:6px; padding:10px 12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
@@ -3696,126 +3870,102 @@ on("quickAttendBtn", "click", function() {
  };
 
  window.renderGroupFeesModal = function() {
-   const counts = {};
-   Object.values(students).forEach(st => { if(!st) return; const pName = st.className || "عام";
-     counts[pName] = (counts[pName] || 0) + 1;
-   });
+    const counts = {};
+    Object.values(students).forEach(st => { if(!st) return; const pName = st.className || "عام";
+      counts[pName] = (counts[pName] || 0) + 1;
+    });
 
-   let h = `
-   <div class="pkg-builder-card" style="background:var(--bg-inset); border:1.5px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
-     <h4 style="color:var(--primary); margin:0 0 12px 0; font-weight:bold; display:flex; align-items:center; gap:8px;">
-       <i class="fa-solid fa-square-plus"></i> إضافة / تعديل باقة جديدة
-     </h4>
-     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-        <input type="text" id="newPkgName" class="inp" placeholder="اسم الباقة (مثال: باقة سبتمبر)" style="flex:2; min-width:140px;">
-        <input type="text" id="newPkgSubject" class="inp" placeholder="المادة (مثال: فيزياء)" style="flex:2; min-width:140px;">
-        <input type="number" id="newPkgPrice" class="inp" placeholder="السعر (ج.م)" style="flex:1; min-width:90px;">
+    let h = `
+    <div class="pkg-builder-card" style="background:var(--bg-inset); border:1.5px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
+      <h4 style="color:var(--primary); margin:0 0 12px 0; font-weight:bold; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-square-plus"></i> إضافة / تعديل باقة جديدة
+      </h4>
+      <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+         <input type="text" id="newPkgName" class="inp" placeholder="اسم الباقة (مثال: باقة سبتمبر)" style="flex:2; min-width:140px;">
+         <input type="text" id="newPkgSubject" class="inp" placeholder="المادة (مثال: فيزياء)" style="flex:2; min-width:140px;">
+         <input type="number" id="newPkgPrice" class="inp" placeholder="السعر (ج.م)" style="flex:1; min-width:90px;">
+       </div>
+      
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">نظام الصلاحية وتنبيهات الانتهاء:</label>
+        <select id="newPkgExpiryType" class="inp" style="margin-bottom:8px;">
+          <option value="time">بالمدة الزمنية (من تاريخ إلى تاريخ)</option>
+          <option value="sessions">بعدد الحصص (مثال: 8 حصص)</option>
+        </select>
       </div>
-     
-     <div style="margin-bottom:12px;">
-       <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">نظام الصلاحية وتنبيهات الانتهاء:</label>
-       <select id="newPkgExpiryType" class="inp" style="margin-bottom:8px;">
-         <option value="time">بالمدة الزمنية (من تاريخ إلى تاريخ)</option>
-         <option value="sessions">بعدد الحصص (مثال: 8 حصص)</option>
-       </select>
-     </div>
 
-     <div id="pkgTimeOpts" style="margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
-       <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">المدة الزمنية للباقة:</label>
-       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-         <div style="flex:1; min-width:140px;">
-           <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">تاريخ البداية:</label>
-           <input type="date" id="newPkgStartDate" class="inp" style="width:100%;">
-         </div>
-         <div style="flex:1; min-width:140px;">
-           <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">تاريخ النهاية:</label>
-           <input type="date" id="newPkgEndDate" class="inp" style="width:100%;">
-         </div>
-       </div>
-     </div>
-
-     <div id="pkgSessionsOpts" style="display:none; margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
-       <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">عدد الحصص المسموحة للمشترك:</label>
-       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-         <input type="number" id="newPkgSessions" class="inp" placeholder="عدد الحصص (مثال: 8)" value="8" style="flex:1; min-width:120px;">
-         <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=8;">8 حصص</button>
-         <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=12;">12 حصة</button>
-       </div>
-     
-     <div style="margin-bottom:12px; margin-top:15px; border-top:1px dashed var(--border); padding-top:15px;">
-       <label style="display:flex; align-items:center; gap:8px; font-weight:bold; cursor:pointer; color:var(--primary);">
-         <input type="checkbox" id="newPkgHasInstallments" style="width:18px; height:18px; cursor:pointer;">
-         تفعيل نظام التقسيط لهذه الباقة
-       </label>
-     </div>
-     
-     <div id="pkgInstallmentsOpts" style="display:none; margin-bottom:15px; background:#f0fdf4; padding:12px; border-radius:8px; border:1px solid #bbf7d0;">
-       <label style="font-size:0.85em; font-weight:bold; color:var(--success); display:block; margin-bottom:6px;">السعر الإجمالي في حالة التقسيط (ج.م):</label>
-       <input type="number" id="newPkgInstallmentPrice" class="inp" placeholder="السعر الإجمالي (مثال: 600)" style="margin-bottom:12px;">
-       
-       <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">جدول الأقساط المتاح لهذه الباقة:</label>
-       <div id="pkgInstallmentsList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
-          <!-- Default Installment Row -->
-          <div class="inst-row" style="display:flex; gap:6px; align-items:center;">
-             <input type="text" class="inp inst-name" placeholder="اسم القسط (مثال: القسط الأول)" value="القسط الأول" style="flex:2;">
-             <input type="number" class="inp inst-amount" placeholder="المبلغ" style="flex:1;">
-             <input type="number" class="inp inst-days" placeholder="يستحق بعد (أيام)" value="0" title="0 يعني يستحق فور الاشتراك" style="flex:1;">
-             <button type="button" class="btn danger smallBtn iconOnly" onclick="this.parentElement.remove()" title="حذف القسط"><i class="fa-solid fa-xmark"></i></button>
+      <div id="pkgTimeOpts" style="margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">المدة الزمنية للباقة:</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <div style="flex:1; min-width:140px;">
+            <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">تاريخ البداية:</label>
+            <input type="date" id="newPkgStartDate" class="inp" style="width:100%;">
           </div>
-       </div>
-       <button type="button" class="btn secondary smallBtn w100" id="addInstRowBtn"><i class="fa-solid fa-plus"></i> إضافة قسط جديد</button>
-     </div>
+          <div style="flex:1; min-width:140px;">
+            <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">تاريخ النهاية:</label>
+            <input type="date" id="newPkgEndDate" class="inp" style="width:100%;">
+          </div>
+        </div>
+      </div>
 
+      <div id="pkgSessionsOpts" style="display:none; margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">عدد الحصص المسموحة للمشترك:</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="number" id="newPkgSessions" class="inp" placeholder="عدد الحصص (مثال: 8)" value="8" style="flex:1; min-width:120px;">
+          <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=8;">8 حصص</button>
+          <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=12;">12 حصة</button>
+        </div>
+      </div>
 
-     <button class="btn primary w100" id="addNewPkgBtn" style="padding:10px; font-weight:bold;"><i class="fa-solid fa-plus-circle"></i> حفظ الباقة في النظام</button>
-   </div>
+      <button class="btn primary w100" id="addNewPkgBtn" style="padding:11px; font-weight:bold; font-size:1em; margin-top:10px;"><i class="fa-solid fa-plus-circle"></i> حفظ وتحديث الباقة في النظام</button>
+    </div>
 
-   <h4 style="color:var(--text-primary); margin:0 0 10px 0; font-size:0.95em; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
-     <span><i class="fa-solid fa-list-check"></i> الباقات الحالية المُعرفة بالنظام</span>
-   </h4>
-   `;
+    <h4 style="color:var(--text-primary); margin:0 0 10px 0; font-size:0.95em; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+      <span><i class="fa-solid fa-list-check"></i> الباقات الحالية المُعرفة بالنظام</span>
+    </h4>
+    `;
 
-   const keys = Object.keys(groupFees || {});
-   if (keys.length === 0) {
-     h += `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.9em;">لا توجد باقات معرفة بعد. أضف باقة جديدة أعلاه.</div>`;
-   } else {
-      h += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">`;
-      keys.forEach(g => {
-       const details = window.getPkgDetails(g);
-       const stCount = counts[g] || 0;
-       
-       let badgeInfo = `<span class="badge" style="background:#e0f2fe; color:#0369a1;"><i class="fa-solid fa-infinity"></i> دائم</span>`;
-       if (details.expiryType === 'time') {
-         badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate || '?'} إلي ${details.endDate || '?'}</span>`;
-       } else if (details.expiryType === 'sessions') {
-         badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} حصص</span>`;
-       }
+    const keys = Object.keys(groupFees || {});
+    if (keys.length === 0) {
+      h += `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.9em;">لا توجد باقات معرفة بعد. أضف باقة جديدة أعلاه.</div>`;
+    } else {
+       h += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">`;
+       keys.forEach(g => {
+        const details = window.getPkgDetails(g);
+        const stCount = counts[g] || 0;
+        
+        let badgeInfo = "";
+        if (details.expiryType === 'time' && details.startDate && details.endDate) {
+          badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.8em;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} إلي ${details.endDate}</span>`;
+        } else if (details.expiryType === 'sessions' && details.sessionLimit > 0) {
+          badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:0.8em;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} حصص</span>`;
+        }
 
-       const subjBadge = details.subject ? `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;"><i class="fa-solid fa-book"></i> ${details.subject}</span>` : '';
+        const subjBadge = details.subject ? `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;"><i class="fa-solid fa-book"></i> ${details.subject}</span>` : '';
 
-       h += `
-       <div class="pkg-item-card" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
-         <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
-           <div style="display:flex; align-items:center; gap:8px;">
-             <strong style="font-size:1em; color:var(--text-primary);">${g}</strong>
-             ${subjBadge}
-             ${badgeInfo}
-           </div>
-           <div style="font-size:0.8em; color:var(--text-secondary);">
-             <i class="fa-solid fa-users" style="margin-inline-end:3px;"></i> المشتركين: <b>${stCount}</b> طالب
-           </div>
-         </div>
-         
-         <div style="display:flex; align-items:center; gap:8px;">
-           <div style="font-size:1.05em; font-weight:bold; color:var(--success); background:var(--bg-inset); padding:4px 10px; border-radius:6px; border:1px solid var(--border);">
-             ${details.price} ج
-           </div>
-           <button class="btn danger smallBtn iconOnly delete-pkg-btn" data-group="${g}" title="حذف الباقة"><i class="fa-solid fa-trash-can"></i></button>
-         </div>
-       </div>`;
-      });
-      h += `</div>`;
-    }
+        h += `
+        <div class="pkg-item-card" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+          <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <strong style="font-size:1em; color:var(--text-primary);">${g}</strong>
+              ${subjBadge}
+              ${badgeInfo}
+            </div>
+            <div style="font-size:0.8em; color:var(--text-secondary);">
+              <i class="fa-solid fa-users" style="margin-inline-end:3px;"></i> المشتركين: <b>${stCount}</b> طالب
+            </div>
+          </div>
+          
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="font-size:1.05em; font-weight:bold; color:var(--success); background:var(--bg-inset); padding:4px 10px; border-radius:6px; border:1px solid var(--border);">
+              ${details.price} ج
+            </div>
+            <button class="btn danger smallBtn iconOnly delete-pkg-btn" data-group="${g}" title="حذف الباقة"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>`;
+       });
+       h += `</div>`;
+     }
 
     if ($("groupFeesList")) $("groupFeesList").innerHTML = h;
 
@@ -3829,28 +3979,6 @@ on("quickAttendBtn", "click", function() {
       handleExpiryTypeChange();
     }
 
-   
-    if ($("newPkgHasInstallments")) {
-      $("newPkgHasInstallments").onchange = function() {
-        if ($("pkgInstallmentsOpts")) $("pkgInstallmentsOpts").style.display = this.checked ? 'block' : 'none';
-      };
-    }
-    
-    if ($("addInstRowBtn")) {
-      $("addInstRowBtn").onclick = function() {
-        const div = document.createElement("div");
-        div.className = "inst-row";
-        div.style.cssText = "display:flex; gap:6px; align-items:center;";
-        div.innerHTML = `
-             <input type="text" class="inp inst-name" placeholder="اسم القسط" style="flex:2;">
-             <input type="number" class="inp inst-amount" placeholder="المبلغ" style="flex:1;">
-             <input type="number" class="inp inst-days" placeholder="يستحق بعد (أيام)" value="30" style="flex:1;">
-             <button type="button" class="btn danger smallBtn iconOnly" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>
-        `;
-        $("pkgInstallmentsList").appendChild(div);
-      };
-    }
-
     if ($("addNewPkgBtn")) {
      $("addNewPkgBtn").onclick = function() {
        const n = $("newPkgName").value.trim();
@@ -3860,22 +3988,6 @@ on("quickAttendBtn", "click", function() {
        const startDate = $("newPkgStartDate") ? $("newPkgStartDate").value : "";
        const endDate = $("newPkgEndDate") ? $("newPkgEndDate").value : "";
        const sessions = $("newPkgSessions") ? toInt($("newPkgSessions").value) : 0;
-
-        const hasInst = $("newPkgHasInstallments") ? $("newPkgHasInstallments").checked : false;
-        const instPrice = $("newPkgInstallmentPrice") ? toInt($("newPkgInstallmentPrice").value) : 0;
-        let installments = [];
-        if (hasInst) {
-            const rows = document.querySelectorAll("#pkgInstallmentsList .inst-row");
-            rows.forEach(r => {
-                const name = r.querySelector(".inst-name").value.trim();
-                const amt = toInt(r.querySelector(".inst-amount").value);
-                const days = toInt(r.querySelector(".inst-days").value);
-                if (name && amt > 0) {
-                    installments.push({ name, amount: amt, daysOffset: days });
-                }
-            });
-        }
-
 
        if (!n) {
          if (typeof showToast === "function") showToast("يرجى كتابة اسم الباقة", "err");
@@ -3906,9 +4018,9 @@ on("quickAttendBtn", "click", function() {
        if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
        if (typeof showToast === "function") showToast("تم حفظ وتحديث الباقة بنجاح");
      };
-   }
+    }
 
-   document.querySelectorAll(".delete-pkg-btn").forEach(btn => {
+    document.querySelectorAll(".delete-pkg-btn").forEach(btn => {
      btn.onclick = function() {
        const g = this.getAttribute("data-group");
        Swal.fire({
@@ -6927,7 +7039,7 @@ window.openSubjectSelectionModal = function() {
               </div>
               <div class="pkg-card-price">${price} <small>جنيهاً</small></div>
               <div style="font-size:0.8em; color:var(--text-secondary); margin-top:auto;">
-                  ${pkgDetails.hasInstallments ? '<i class="fa-solid fa-calendar-alt"></i> متاح تقسيط' : '<i class="fa-solid fa-money-bill-1"></i> كاش فقط'}
+                  <i class="fa-solid fa-layer-group" style="color:var(--primary); margin-inline-end:4px;"></i> باقة اشتراك
               </div>
           </div>
           `;

@@ -566,42 +566,74 @@
     <datalist id="stClassList"></datalist>
   </div>
 
- <label class="lbl" style="margin-top:20px; border-top:1px dashed var(--border); padding-top:10px;" data-i18n="lbl_finance">نظام المصاريف</label>
- <div class="paymentBox">
- 
- <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px;">
-   <span class="payLabel" style="white-space:nowrap;">دفع لباقة:</span>
-   <select id="newPaymentPackage" class="inp" style="flex:1;">
-     <option value="">-- اختر الباقة --</option>
-   </select>
- </div>
- 
- <div class="payRow">
- <span class="payLabel" data-i18n="lbl_new_pay"> إيداع جديد:</span>
- <div class="row" style="flex:1; gap:6px;">
- <input id="newPaymentInput" type="number" class="inp" placeholder="المبلغ" style="min-width:70px;">
- <select id="newPaymentMethod" class="inp" style="width:auto; font-size:0.88em;">
- <option value="cash">كاش</option>
- <option value="instapay">إنستاباي</option>
- <option value="wallet">فودافون كاش</option>
- </select>
- <button id="addPaymentBtn" class="btn success" style="padding:0 12px;"><i class="fa-solid fa-money-bill-1-wave"></i> إيداع</button>
- </div>
- </div>
- 
- <div id="remainingBox" class="remain-box remain-red">
- <span data-i18n="lbl_remaining"> المتبقي:</span> <span id="stRemainingAmt">0</span> ج
- </div>
- <div id="pkgStatusBoxContainer" class="pkg-status-alert hidden"></div>
- </div>
+  <label class="lbl" style="margin-top:20px; border-top:1px dashed var(--border); padding-top:10px;" data-i18n="lbl_finance"><i class="fa-solid fa-wallet" style="margin-inline-end:6px;"></i> نظام المصاريف والباقات</label>
+  <div class="paymentBox">
+  
+    <div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+      <span class="payLabel" style="white-space:nowrap; font-weight:bold;"><i class="fa-solid fa-cube" style="color:var(--primary);"></i> باقة الدفع:</span>
+      <select id="newPaymentPackage" class="inp" style="flex:1; font-weight:bold;">
+        <option value="">-- اختر الباقة --</option>
+      </select>
+    </div>
 
- <!-- تفاصيل الدفعات السابقة للطالب -->
- <div class="st-payments-history" style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 12px;">
- <h4 style="font-size:0.9em; color:var(--text-secondary); margin-bottom:8px;" data-i18n="lbl_pay_history"> سجل دفعات الطالب المفصل:</h4>
- <div id="stPaymentsList" class="list" style="max-height: 150px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px;">
- <div class="mutedCenter" style="font-size:0.85em;" data-i18n="txt_no_payments">لا توجد دفعات مسجلة حتى الآن</div>
- </div>
- </div>
+    <!-- كارت الحساب المالي للباقة المحددة -->
+    <div id="pkgFinanceCard" style="background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span id="pkgCardNameTitle" style="font-size:0.9em; font-weight:bold; color:var(--text-primary);"><i class="fa-solid fa-receipt"></i> حساب الباقة</span>
+        <span id="pkgCardStatusBadge" class="badge" style="font-size:0.8em; background:#e0f2fe; color:#0369a1;">--</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; text-align:center; margin-bottom:8px;">
+        <div style="background:var(--bg-inset); padding:6px 4px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:0.75em; color:var(--text-secondary);">سعر الباقة</div>
+          <div id="pkgCardPrice" style="font-weight:bold; color:var(--text-primary); font-size:0.95em;">0 ج</div>
+        </div>
+        <div style="background:var(--bg-inset); padding:6px 4px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:0.75em; color:var(--text-secondary);">المدفوع</div>
+          <div id="pkgCardPaid" style="font-weight:bold; color:var(--success); font-size:0.95em;">0 ج</div>
+        </div>
+        <div style="background:var(--bg-inset); padding:6px 4px; border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:0.75em; color:var(--text-secondary);">المتبقي</div>
+          <div id="pkgCardRemain" style="font-weight:bold; color:var(--danger); font-size:0.95em;">0 ج</div>
+        </div>
+      </div>
+      <!-- شريط تقدم الدفع -->
+      <div style="background:var(--bg-inset); height:6px; border-radius:3px; overflow:hidden; border:1px solid var(--border);">
+        <div id="pkgProgressBar" style="background:var(--primary); height:100%; width:0%; transition:width 0.4s ease;"></div>
+      </div>
+    </div>
+    
+    <div class="payRow">
+      <span class="payLabel" data-i18n="lbl_new_pay"> إيداع جديد:</span>
+      <div class="row" style="flex:1; gap:6px;">
+        <input id="newPaymentInput" type="number" class="inp" placeholder="المبلغ" style="min-width:70px;">
+        <select id="newPaymentMethod" class="inp" style="width:auto; font-size:0.88em;">
+          <option value="cash">كاش</option>
+          <option value="instapay">إنستاباي</option>
+          <option value="wallet">فودافون كاش</option>
+        </select>
+        <button id="addPaymentBtn" class="btn success" style="padding:0 12px;"><i class="fa-solid fa-money-bill-1-wave"></i> إيداع</button>
+      </div>
+    </div>
+    
+    <div id="remainingBox" class="remain-box remain-red" style="display:none;">
+      <span data-i18n="lbl_remaining"> المتبقي:</span> <span id="stRemainingAmt">0</span> ج
+    </div>
+    <div id="pkgStatusBoxContainer" class="pkg-status-alert hidden"></div>
+  </div>
+
+  <!-- تفاصيل الدفعات السابقة للطالب -->
+  <div class="st-payments-history" style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <h4 id="stPayHistoryTitle" style="font-size:0.9em; color:var(--text-secondary); margin:0;" data-i18n="lbl_pay_history"><i class="fa-solid fa-clock-rotate-left"></i> سجل دفعات الباقة:</h4>
+      <div style="display:flex; gap:4px;">
+        <button id="btnPayFilterPkg" type="button" class="btn secondary smallBtn active" style="font-size:0.75em; padding:2px 8px; cursor:pointer;">هذه الباقة</button>
+        <button id="btnPayFilterAll" type="button" class="btn secondary smallBtn" style="font-size:0.75em; padding:2px 8px; cursor:pointer;">كل الدفعات</button>
+      </div>
+    </div>
+    <div id="stPaymentsList" class="list" style="max-height: 200px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px; display:flex; flex-direction:column; gap:8px;">
+      <div class="mutedCenter" style="font-size:0.85em;" data-i18n="txt_no_payments">لا توجد دفعات مسجلة حتى الآن</div>
+    </div>
+  </div>
 
  <!-- نظام الملاحظات المنفصلة الذكي -->
  <div id="notesContainerWrapper" style="position: relative; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 12px;">

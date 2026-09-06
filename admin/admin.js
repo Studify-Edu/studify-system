@@ -1104,8 +1104,7 @@ window.renderAdminPackages = function() {
       <div style="background:var(--bg-inset); border:1px solid var(--border); border-radius:10px; padding:16px; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <h4 style="font-size:1.05em; font-weight:700; color:var(--primary);">${p.name}</h4>
-          <span style="font-size:0.85em; color:var(--text-secondary);">السعر الأساسي: <b>${p.price} ج</b></span>
-          ${p.hasInstallments ? `<div style="font-size:0.75em; color:var(--warning);">قسط: ${p.installmentPrice} ج</div>` : ''}
+          <span style="font-size:0.85em; color:var(--text-secondary);">السعر: <b>${p.price} ج</b></span>
         </div>
         <button class="btn secondary smallBtn" onclick="window.editPackagePrice('${p.name}', ${p.price})">
           <i class="fa-solid fa-pen-to-square"></i> تعديل
