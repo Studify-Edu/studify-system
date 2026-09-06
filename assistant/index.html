@@ -727,7 +727,15 @@
  <input id="tableSearchInp" class="inp" style="width: 250px;" placeholder=" ابحث في الجدول..." data-i18n-placeholder="search_tbl_plc">
  </div>
  
- <div class="row filters-row">
+   <!-- Quick Filter Pills -->
+  <div class="quick-filter-pills" style="display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0;">
+    <button type="button" class="btn secondary smallBtn quick-flt-btn active" data-flt="all" style="border-radius:20px; padding:6px 14px; font-weight:bold;"><i class="fa-solid fa-layer-group"></i> الكل</button>
+    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="debt" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> عليهم متبقي</button>
+    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="paid" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#10b981;"><i class="fa-solid fa-circle-check"></i> مسدد بالكامل</button>
+    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="present" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#3b82f6;"><i class="fa-solid fa-calendar-check"></i> حضروا اليوم</button>
+  </div>
+  
+  <div class="row filters-row">
  <select id="filterClass" class="inp" style="width:auto;"><option value="all" data-i18n="flt_all_classes">كل المجموعات</option></select>
  <select id="filterStatus" class="inp" style="width:auto;">
  <option value="all" data-i18n="flt_all_fin">كل الحالات المالية</option>
@@ -1478,7 +1486,27 @@
  </div>
  </div>
 
- <!-- التفاصيل المالية -->
+   <!-- تفاصيل الباقات والخدمات المسجلة -->
+  <div id="receiptPackagesContainer" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 25px;">
+    <h4 style="margin: 0 0 12px 0; font-size: 1.05em; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px; display:flex; align-items:center; gap:8px;">
+      <i class="fa-solid fa-list-check" style="color:var(--primary);"></i> تفاصيل الباقات والاشتراكات المقررة:
+    </h4>
+    <table style="width: 100%; border-collapse: collapse; text-align: right; font-size: 0.95em;">
+      <thead>
+        <tr style="border-bottom: 1.5px solid var(--border); color: var(--text-secondary); font-size: 0.9em;">
+          <th style="padding: 8px 6px;">الباقة / الخدمة</th>
+          <th style="padding: 8px 6px; text-align: center;">السعر المقرر</th>
+          <th style="padding: 8px 6px; text-align: center;">المدفوع</th>
+          <th style="padding: 8px 6px; text-align: center;">الحالة</th>
+        </tr>
+      </thead>
+      <tbody id="receiptPackagesTbody">
+        <!-- Dynamic Rows -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- التفاصيل المالية -->
  <div style="background: rgba(16, 185, 129, 0.05); border: 2px solid #10b981; border-radius: 12px; padding: 25px; margin-bottom: 30px; text-align: center;">
  <span style="font-size: 0.95em; color: #10b981; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;" data-i18n="receipt_lbl_total">المبلغ الكلي المدفوع</span>
  <div style="font-size: 2.8em; font-weight: 900; color: #10b981; margin: 10px 0;" id="receiptTotalPaid">0 ج</div>

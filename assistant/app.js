@@ -1085,7 +1085,7 @@ function showToast(msg, type = "success") {
         status: st.status || (deletedStudents[st.id] ? 'deleted' : 'active'),
         installments: st.installments || [],
         payments: st.payments || [],
-        attendance_dates: st.attendanceDates || [],
+        attendance_dates: Array.from(new Set(st.attendanceDates || [])),
         last_modified: st.lastModified || Date.now()
       }));
 
@@ -1221,7 +1221,7 @@ async function saveAttendanceOnly() {
         status: st.status || 'active',
         installments: st.installments || [],
         payments: st.payments || [],
-        attendance_dates: st.attendanceDates || [],
+        attendance_dates: Array.from(new Set(st.attendanceDates || [])),
         last_modified: Date.now()
       }));
 
@@ -1329,7 +1329,7 @@ async function loadAll() {
               packages: Array.isArray(restoredPackages) ? restoredPackages : [],
               installments: row.installments || (local ? local.installments : []),
               payments: row.payments || (local ? local.payments : []),
-              attendanceDates: row.attendance_dates || (local ? local.attendanceDates : []),
+              attendanceDates: Array.from(new Set(row.attendance_dates || (local ? local.attendanceDates : []))),
               lastModified: row.last_modified || (local ? local.lastModified : Date.now())
             };
 
@@ -2211,12 +2211,30 @@ const st = students[id];
  if (remBox) {
  if(totalReq === 0) {
  remBox.className = "remain-box remain-green";
+ remBox.style.background = "";
+ remBox.style.color = "";
+ remBox.style.border = "";
  remBox.innerHTML = ` ${t("txt_free")}`;
  } else if(remain <= 0) {
- remBox.className = "remain-box remain-green";
- remBox.innerHTML = ` ${t("txt_paid_full")}`;
+   const surplus = totalPaid - totalReq;
+   if (surplus > 0) {
+     remBox.className = "remain-box";
+     remBox.style.background = "rgba(14, 165, 233, 0.15)";
+     remBox.style.color = "#0284c7";
+     remBox.style.border = "1px solid #38bdf8";
+     remBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> مسدد بالكامل (رصيد دائن: +${surplus} ج)`;
+   } else {
+     remBox.className = "remain-box remain-green";
+     remBox.style.background = "";
+     remBox.style.color = "";
+     remBox.style.border = "";
+     remBox.innerHTML = ` ${t("txt_paid_full")}`;
+   }
  } else {
  remBox.className = "remain-box remain-red";
+ remBox.style.background = "";
+ remBox.style.color = "";
+ remBox.style.border = "";
  remBox.innerHTML = `إجمالي المديونيات: <span id="stRemainingAmt">${remain}</span> ج`;
  }
  }
@@ -2361,6 +2379,8 @@ const st = students[id];
      }
  }
  
+ if (!s.attendanceDates) s.attendanceDates = [];
+ s.attendanceDates = Array.from(new Set(s.attendanceDates));
  if(!s.attendanceDates.includes(d)) {
  s.attendanceDates.push(d); 
  if(!attByDate[d]) attByDate[d] = []; 
@@ -2601,6 +2621,7 @@ const st = students[id];
         if(fStatus === "paid" && (remainAmt > 0 || totalReq === 0)) isValid = false;
         if(fStatus === "partial" && (remainAmt === 0 || totalPaid === 0 || totalReq === 0)) isValid = false;
         if(fStatus === "unpaid" && totalPaid > 0) isValid = false;
+        if(fStatus === "debt" && (remainAmt === 0 || totalReq === 0)) isValid = false;
      }
  
  let isP = (s.attendanceDates && s.attendanceDates.includes(today));
@@ -2631,7 +2652,37 @@ const st = students[id];
  renderPage();
  }
 
- function renderPage() {
+ 
+  // Setup Quick Filter Buttons
+  function setupQuickFilterButtons() {
+    document.querySelectorAll(".quick-flt-btn").forEach(btn => {
+      btn.onclick = function() {
+        document.querySelectorAll(".quick-flt-btn").forEach(b => b.classList.remove("active"));
+        this.classList.add("active");
+        const flt = this.getAttribute("data-flt");
+        const fStatusEl = $("filterStatus");
+        const fAttendEl = $("filterAttend");
+        if (flt === "all") {
+          if (fStatusEl) fStatusEl.value = "all";
+          if (fAttendEl) fAttendEl.value = "all";
+        } else if (flt === "debt") {
+          if (fStatusEl) fStatusEl.value = "debt";
+          if (fAttendEl) fAttendEl.value = "all";
+        } else if (flt === "paid") {
+          if (fStatusEl) fStatusEl.value = "paid";
+          if (fAttendEl) fAttendEl.value = "all";
+        } else if (flt === "present") {
+          if (fStatusEl) fStatusEl.value = "all";
+          if (fAttendEl) fAttendEl.value = "present";
+        }
+        renderList(false);
+      };
+    });
+  }
+  setupQuickFilterButtons();
+  window.setupQuickFilterButtons = setupQuickFilterButtons;
+
+  function renderPage() {
  const tb = $("allStudentsTable"); if (!tb) return;
  const tbody = tb.querySelector("tbody"); if (!tbody) return;
  
@@ -3449,8 +3500,40 @@ on("quickAttendBtn", "click", function() {
  
  if ($("receiptStudentName")) $("receiptStudentName").textContent = st.name || "طالب بدون اسم";
  if ($("receiptStudentID")) $("receiptStudentID").textContent = `#${st.id}`;
- if ($("receiptStudentClass")) $("receiptStudentClass").textContent = st.className || "عام";
+ if ($("receiptStudentClass")) {
+   const pkgsStr = (st.packages && st.packages.length > 0) ? st.packages.join(" + ") : (st.className || "عام");
+   $("receiptStudentClass").textContent = pkgsStr;
+ }
  if ($("receiptStudentPhone")) $("receiptStudentPhone").textContent = st.phone ? `0${st.phone}` : "غير مسجل";
+
+ const recTbody = $("receiptPackagesTbody");
+ if (recTbody) {
+   let rRows = "";
+   const enrolledPkgs = (st.packages && st.packages.length > 0) ? st.packages : [st.className || "عام"];
+   enrolledPkgs.forEach(pName => {
+     const pDet = window.getPkgDetails(pName);
+     const reqPrice = toInt(pDet.price);
+     let pPaid = 0;
+     if (st.payments) {
+       st.payments.forEach(pay => {
+         const matchedPkg = pay.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
+         if (matchedPkg === pName) pPaid += toInt(pay.amount);
+       });
+     }
+     const isFull = (reqPrice > 0 && pPaid >= reqPrice);
+     const badgeHtml = isFull 
+       ? '<span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.85em; font-weight:bold;">مسددة بالكامل ✔</span>'
+       : `<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.85em; font-weight:bold;">متبقي: ${Math.max(0, reqPrice - pPaid)} ج</span>`;
+     rRows += `
+       <tr style="border-bottom: 1px solid var(--border);">
+         <td style="padding: 10px 8px; font-weight: bold; color: var(--text); font-size:1em;">${pName}</td>
+         <td style="padding: 10px 8px; text-align: center;">${reqPrice} ج</td>
+         <td style="padding: 10px 8px; text-align: center; color: var(--success); font-weight: bold;">${pPaid} ج</td>
+         <td style="padding: 10px 8px; text-align: center;">${badgeHtml}</td>
+       </tr>`;
+   });
+   recTbody.innerHTML = rRows;
+ }
  
  if ($("receiptTotalPaid")) $("receiptTotalPaid").textContent = `${st.paid || 0} ج`;
  
@@ -4057,21 +4140,32 @@ on("quickAttendBtn", "click", function() {
     document.querySelectorAll(".delete-pkg-btn").forEach(btn => {
      btn.onclick = function() {
        const g = this.getAttribute("data-group");
+       const enrolled = Object.values(students || {}).filter(st => st && st.packages && st.packages.includes(g));
+       let textWarning = `هل أنت متأكد من حذف باقة "${g}" من السيستم؟`;
+       if (enrolled.length > 0) {
+         textWarning = `⚠️ تنبيه: هناك (${enrolled.length}) طالب مسجلين حالياً في هذه الباقة!\nحذف الباقة سيقوم بإزالتها تلقائياً من باقات هؤلاء الطلاب لمنع بقاء باقات يتيمة بدون أسعار. هل تريد المتابعة؟`;
+       }
        Swal.fire({
-         title: 'تأكيد الحذف',
-         text: `هل أنت متأكد من حذف باقة "${g}" من السيستم؟`,
-         icon: 'warning',
+         title: 'تأكيد حذف الباقة',
+         text: textWarning,
+         icon: enrolled.length > 0 ? 'warning' : 'question',
          showCancelButton: true,
          confirmButtonText: 'نعم، احذف',
+         confirmButtonColor: '#ef4444',
          cancelButtonText: 'إلغاء'
        }).then((res) => {
          if (res.isConfirmed) {
+           if (enrolled.length > 0) {
+             enrolled.forEach(st => {
+               st.packages = (st.packages || []).filter(p => p !== g);
+             });
+           }
            delete groupFees[g];
            saveAll();
            renderGroupFeesModal();
            populatePackages();
            if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
-           if (typeof showToast === "function") showToast("تم حذف الباقة");
+           if (typeof showToast === "function") showToast("تم حذف الباقة وفك ارتباط الطلاب المسجلين بها بنجاح");
          }
        });
      };
@@ -6869,7 +6963,7 @@ if ('BroadcastChannel' in window) {
       status: st.status || (deletedStudents[st.id] ? 'deleted' : 'active'),
       installments: st.installments || [],
       payments: st.payments || [],
-      attendance_dates: st.attendanceDates || [],
+      attendance_dates: Array.from(new Set(st.attendanceDates || [])),
       last_modified: st.lastModified || Date.now()
     }));
     if (stRows.length > 0) {
