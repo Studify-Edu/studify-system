@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <!-- PREVENT THEME FLASH -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ca_theme') || localStorage.getItem('studify_admin_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>لوحة الإدارة والتحكم — Studify</title>
+  
+  <!-- PWA Manifest & App Metas -->
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
+  <link rel="apple-touch-icon" href="../icon-192.png">
+  <meta name="theme-color" content="#0B1120">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Studify">
+  <meta name="application-name" content="Studify">
+
+  <script>
+  // Service Worker Registration for Admin
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('../service-worker.js')
+        .then(reg => console.log('[SW Admin] Registered with scope:', reg.scope))
+        .catch(err => console.warn('[SW Admin] Registration error:', err));
+    });
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- SheetJS (Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- LocalForage (IndexedDB) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
+  <!-- Supabase Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Admin Styles -->
+  <link rel="stylesheet" href="../admin/admin.css?v=STUDIFY_V5">
+</head>
+<body>
+
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <!-- ======================================================== -->
+  <!-- Page Transition Overlay -->
+  <div id="pageTransitionOverlay" class="page-transition-overlay">
+    <div class="transition-spinner"></div>
+    <div class="transition-text">جاري الانتقال...</div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 1. ADMIN LOGIN SCREEN (When Not Authenticated) -->
+  <!-- ======================================================== -->
+  <div id="adminLoginWrapper" class="admin-login-wrapper hidden">
+    <canvas id="adminParticlesCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: auto;"></canvas>
+    <div class="admin-login-card">
+      <div class="portal-type-badge manager-badge">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>الإدارة العليا والتحكم المركزي</span>
+      </div>
+      <div class="login-logo-area">
+        <img src="../icon-192.png" alt="Studify" class="admin-login-logo">
+        <h1 class="admin-login-title">لوحة تحكم الإدارة</h1>
+        <p class="admin-login-desc">تسجيل الدخول المخصص لمدير المركز</p>
+      </div>
+
+      <form id="adminLoginForm" class="admin-login-form" onsubmit="event.preventDefault(); window.handleAdminLogin();">
+        <div>
+          <label class="lbl">اسم المستخدم أو البريد (المدير)</label>
+          <input type="text" id="adminLoginUser" class="inp" placeholder="Manager ID / Email" required autocomplete="username">
+        </div>
+        <div>
+          <label class="lbl">كلمة المرور</label>
+          <div class="pass-wrap">
+            <input type="password" id="adminLoginPass" class="inp" placeholder="Password" required autocomplete="current-password">
+            <button type="button" class="pass-toggle-btn" onclick="window.toggleAdminPass()">
+              <i class="fa-solid fa-eye" id="adminPassEye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="adminLoginSubmitBtn" class="btn primary full-btn" style="margin-top: 6px; font-size: 1.05em; padding: 13px;">
+          <i class="fa-solid fa-key"></i> دخول مدير النظام
+        </button>
+
+        <div class="portal-switch-container">
+          <button type="button" class="modern-portal-switch" onclick="window.navigateWithTransition('index.html')" id="toAssistantPortalBtn">
+            <div class="switch-icon-circle">
+              <i class="fa-solid fa-users-gear"></i>
+            </div>
+            <div class="switch-text-group">
+              <span class="switch-prompt">هل أنت مساعد بالمركز؟</span>
+              <span class="switch-action">الانتقال لبوابة المساعد وتسجيل الحضور</span>
+            </div>
+            <div class="switch-arrow-circle">
+              <i class="fa-solid fa-arrow-left"></i>
+            </div>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 2. ADMIN DASHBOARD LAYOUT -->
+  <!-- ======================================================== -->
+  <div id="adminDashboardLayout" class="admin-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <img src="../icon-192.png" alt="Studify" class="admin-logo">
+        <div>
+          <span class="admin-brand">Studify</span>
+          <span class="admin-brand-sub">لوحة الإدارة والتحكم</span>
+        </div>
+      </div>
+
+      <nav class="admin-menu">
+        <div class="admin-nav-section">التقارير المالية</div>
+        <button id="navBtnDailyReport" class="admin-nav-item active" onclick="window.switchAdminTab('dailyReport')">
+          <i class="fa-solid fa-calendar-day"></i>
+          <span>التقرير اليومي</span>
+        </button>
+        <button id="navBtnTermReport" class="admin-nav-item" onclick="window.switchAdminTab('termReport')">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>تقرير الترم المالي</span>
+        </button>
+
+        <div class="admin-nav-section">الإدارة والمساعدين</div>
+        <button id="navBtnAssistants" class="admin-nav-item" onclick="window.switchAdminTab('assistants')">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>إدارة المساعدين والصلاحيات</span>
+        </button>
+        <button id="navBtnDecisions" class="admin-nav-item" onclick="window.switchAdminTab('decisions')">
+          <i class="fa-solid fa-bell"></i>
+          <span>طلبات القرارات</span>
+          <span id="adminDecisionsBadge" class="admin-badge hidden">0</span>
+        </button>
+        <button id="navBtnPackages" class="admin-nav-item" onclick="window.switchAdminTab('packages')">
+          <i class="fa-solid fa-box-archive"></i>
+          <span>الباقات والمصاريف</span>
+        </button>
+        <button id="navBtnSyllabus" class="admin-nav-item" onclick="window.switchAdminTab('syllabus')">
+          <i class="fa-solid fa-book-open"></i>
+          <span>خريطة سير المنهج</span>
+        </button>
+
+        <div class="admin-nav-section">إعدادات النظام</div>
+        <button id="navBtnSettings" class="admin-nav-item" onclick="window.switchAdminTab('settings')">
+          <i class="fa-solid fa-sliders"></i>
+          <span>الإعدادات المتقدمة والنسخ الاحتياطي</span>
+        </button>
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <button id="adminLogoutBtn" class="btn danger smallBtn full-btn" onclick="window.handleAdminLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── CONTENT AREA ── -->
+    <main class="admin-content">
+
+      <!-- TOPBAR -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-title">
+          <i id="adminPageIcon" class="fa-solid fa-calendar-day" style="color: var(--primary);"></i>
+          <span id="adminPageTitle">التقرير اليومي</span>
+        </div>
+
+        <div class="admin-topbar-right">
+          <button id="adminThemeToggle" class="topbar-icon-btn" title="تبديل المظهر" onclick="window.toggleAdminTheme()">
+            <i class="fa-solid fa-moon" id="adminThemeIcon"></i>
+          </button>
+
+          <span class="admin-user-badge">
+            <i class="fa-solid fa-circle-user"></i>
+            <span id="adminTopName">المدير العام</span>
+          </span>
+        </div>
+      </header>
+
+      <!-- WORKSPACE -->
+      <div class="admin-workspace" id="adminWorkspace">
+
+        <!-- ==================================================== -->
+        <!-- VIEW 1: DAILY REPORT & APPROVAL -->
+        <!-- ==================================================== -->
+        <div id="viewDailyReport" class="admin-view">
+          
+          <!-- Daily Approval Widget -->
+          <div id="dailyApprovalWidget" class="approval-card pending">
+            <div class="approval-card-info">
+              <div class="approval-card-title">
+                <i class="fa-solid fa-clock" style="color: var(--warning); font-size: 1.25em;"></i>
+                <span>حالة اعتماد اليومية</span>
+                <span class="approval-badge-pill pending">
+                  <i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / مغلقة
+                </span>
+              </div>
+              <p class="approval-card-desc">
+                العمليات متوقفة ومقيدة لدى المساعدين. قم بتبديل السويتش إلى (ON) لفتح النظام واعتماد اليومية.
+              </p>
+            </div>
+            <div class="approval-card-actions">
+              <div class="approval-toggle-wrapper">
+                <div class="approval-toggle-status">
+                  <span class="toggle-status-badge badge-off">
+                    <span class="toggle-pulse-dot"></span>
+                    <span>معطل (OFF)</span>
+                  </span>
+                  <span class="toggle-sub-hint">انقر لتشغيل اليومية</span>
+                </div>
+                <button type="button" class="master-power-switch state-off" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || (window.nowDateStr ? window.nowDateStr() : ''), true)" title="اعتماد وتشغيل اليومية (Turn ON)" aria-label="سويتش تشغيل اليومية">
+                  <span class="switch-rail">
+                    <span class="rail-text-on">ON</span>
+                    <span class="rail-text-off">OFF</span>
+                    <span class="switch-knob">
+                      <i class="fa-solid fa-lock"></i>
+                    </span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reject Note Area -->
+          <div id="rejectNoteBox" class="card hidden" style="border-inline-start: 4px solid var(--danger);">
+            <label class="lbl">سبب التعليق أو الرفض (يظهر للمساعدين):</label>
+            <div style="display: flex; gap: 10px; margin-top: 6px;">
+              <input type="text" id="dailyRejectReasonInput" class="inp" placeholder="اكتب سبب الرفض أو التعليمات هنا..." style="flex: 1;">
+              <button class="btn danger" onclick="window.confirmRejectDailyShift()">تأكيد الرفض</button>
+            </div>
+          </div>
+
+          <!-- Daily Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card" style="--stat-color: var(--success); --stat-bg: var(--bg-success-subtle);">
+              <div class="stat-card-icon"><i class="fa-solid fa-user-check"></i></div>
+              <div class="stat-card-val" id="statDailyAttend">—</div>
+              <div class="stat-card-lbl">طلاب حضروا اليوم</div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: var(--primary);">
+              <div class="stat-card-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+              <div class="stat-card-val" id="statDailyRevenue">—</div>
+              <div class="stat-card-lbl">إيراد الوردية (ج)</div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: var(--danger); --stat-bg: var(--bg-danger-subtle);">
+              <div class="stat-card-icon"><i class="fa-solid fa-user-xmark"></i></div>
+              <div class="stat-card-val" id="statDailyAbsent">—</div>
+              <div class="stat-card-lbl">غياب اليوم</div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: var(--warning); --stat-bg: var(--bg-warning-subtle);">
+              <div class="stat-card-icon"><i class="fa-solid fa-receipt"></i></div>
+              <div class="stat-card-val" id="statDailyExpenses">—</div>
+              <div class="stat-card-lbl">مصروفات اليوم (ج)</div>
+            </div>
+          </div>
+
+          <!-- Date Selector & Details -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i>
+                تفاصيل الحضور والمجموعات ليوم:
+              </div>
+              <input type="date" id="adminDailyDateInput" class="inp" style="width: auto;" onchange="window.loadDailyReport(this.value)">
+            </div>
+            
+            <div id="dailyGroupsBreakdown">
+              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل البيانات...</div>
+            </div>
+
+            <div id="dailyExpensesBreakdown" style="margin-top: 20px;"></div>
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- VIEW 2: TERM FINANCIAL REPORT -->
+        <!-- ==================================================== -->
+        <div id="viewTermReport" class="admin-view hidden">
+          <div class="stats-grid">
+            <div class="stat-card" style="--stat-color: var(--primary);">
+              <div class="stat-card-icon"><i class="fa-solid fa-users"></i></div>
+              <div class="stat-card-val" id="statTermStudents">—</div>
+              <div class="stat-card-lbl">إجمالي الطلاب المسجلين</div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: var(--success); --stat-bg: var(--bg-success-subtle);">
+              <div class="stat-card-icon"><i class="fa-solid fa-wallet"></i></div>
+              <div class="stat-card-val" id="statTermRevenue">—</div>
+              <div class="stat-card-lbl">إجمالي الإيرادات المحصلة (ج)</div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: var(--danger); --stat-bg: var(--bg-danger-subtle);">
+              <div class="stat-card-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+              <div class="stat-card-val" id="statTermDebt">—</div>
+              <div class="stat-card-lbl">إجمالي المتبقي والديون (ج)</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i>
+                كشف حساب الطلاب التفصيلي
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="termSearchInput" class="inp" placeholder="بحث باسم الطالب..." style="width: 220px;" oninput="window.renderTermTable()">
+                <select id="termClassFilter" class="inp" style="width: 170px;" onchange="window.renderTermTable()">
+                  <option value="">جميع المجموعات</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>اسم الطالب</th>
+                    <th>المجموعة</th>
+                    <th>المطلوب</th>
+                    <th>المدفوع</th>
+                    <th>المتبقي</th>
+                    <th>مرات الحضور</th>
+                    <th>الإجراء</th>
+                  </tr>
+                </thead>
+                <tbody id="termReportTableBody">
+                  <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">جاري التحميل...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- VIEW 3: ASSISTANTS & PERMISSIONS -->
+        <!-- ==================================================== -->
+        <div id="viewAssistants" class="admin-view hidden">
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header" style="margin-bottom: 0;">
+              <div>
+                <h2 style="font-size: 1.25em; font-weight: 800; margin-bottom: 4px;">
+                  <i class="fa-solid fa-user-gear" style="color: var(--primary);"></i>
+                  إدارة المساعدين والتحكم في الصلاحيات
+                </h2>
+                <p style="font-size: 0.85em; color: var(--text-secondary);">
+                  تحكم بشكل مباشر في الميزات المتاحة لكل مساعد. أي تعديل يتم تطبيقه فورياً ولحظياً في صفحة المساعد المفتوحة.
+                </p>
+              </div>
+              <button class="btn primary" onclick="window.openAddAssistantModal()">
+                <i class="fa-solid fa-user-plus"></i> إضافة مساعد جديد
+              </button>
+            </div>
+          </div>
+
+          <div id="adminAssistantsList" class="assistant-grid">
+            <div style="text-align: center; color: var(--text-secondary); padding: 40px;">جاري تحميل قائمة المساعدين...</div>
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- VIEW 4: DECISION REQUESTS -->
+        <!-- ==================================================== -->
+        <div id="viewDecisions" class="admin-view hidden">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-inbox" style="color: var(--primary);"></i>
+                صندوق طلبات القرارات المعلقة (خصم / إعفاء)
+              </div>
+              <button class="btn secondary smallBtn" onclick="window.fetchDecisions()">
+                <i class="fa-solid fa-rotate-right"></i> تحديث
+              </button>
+            </div>
+
+            <div id="adminDecisionsList">
+              <div style="text-align: center; color: var(--text-secondary); padding: 30px;">لا توجد طلبات معلقة حالياً</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- VIEW 5: PACKAGES & EXPENSES -->
+        <!-- ==================================================== -->
+        <div id="viewPackages" class="admin-view hidden">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i>
+                إدارة باقات المجموعات والأسعار
+              </div>
+              <button class="btn primary smallBtn" onclick="window.openAddPackageModal()">
+                <i class="fa-solid fa-plus"></i> إضافة باقة جديدة
+              </button>
+            </div>
+
+            <div id="adminPackagesListContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل الباقات...</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-receipt" style="color: var(--danger);"></i>
+                تسجيل ومتابعة المصروفات
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+              <div>
+                <label class="lbl">بند المصروف / السبب</label>
+                <input type="text" id="expenseReasonInput" class="inp" placeholder="مثال: فواتير كهرباء / طباعة ورق">
+              </div>
+              <div>
+                <label class="lbl">المبلغ (ج)</label>
+                <input type="number" id="expenseAmountInput" class="inp" placeholder="0" min="1">
+              </div>
+              <div>
+                <label class="lbl">التاريخ</label>
+                <input type="date" id="expenseDateInput" class="inp">
+              </div>
+              <div style="display: flex; align-items: flex-end;">
+                <button class="btn danger full-btn" onclick="window.recordNewExpense()">
+                  <i class="fa-solid fa-plus-circle"></i> تسجيل المصروف
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- VIEW 6: SYLLABUS MAP -->
+        <!-- ==================================================== -->
+        <div id="viewSyllabus" class="admin-view hidden">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-book-bookmark" style="color: var(--primary);"></i>
+                إضافة وتحديث خطة سير المنهج الدراسي
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label class="lbl">اسم الفصل / الدرس</label>
+                <input type="text" id="syllabusLessonName" class="inp" placeholder="مثال: Chapter 2 - Electric Flux">
+              </div>
+              <div>
+                <label class="lbl">حالة الشرح</label>
+                <select id="syllabusLessonStatus" class="inp">
+                  <option value="not_started">لم يبدأ بعد</option>
+                  <option value="in_progress">جاري الشرح</option>
+                  <option value="completed">تم الانتهاء</option>
+                </select>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <label class="lbl">ملاحظات الحصة الأخيرة (تظهر للمساعدين)</label>
+                <input type="text" id="syllabusLessonNotes" class="inp" placeholder="مثال: تم إنهاء المسائل والواجب صفحة 45">
+              </div>
+            </div>
+
+            <button class="btn primary" onclick="window.saveSyllabusLesson()">
+              <i class="fa-solid fa-floppy-disk"></i> حفظ وإضافة للجدول
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="margin-bottom: 16px;">
+              <i class="fa-solid fa-timeline" style="color: var(--primary);"></i>
+              خريطة الدروس الحالية
+            </div>
+            <div id="adminSyllabusTimelineContainer">
+              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل المنهج...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- VIEW 8: ADVANCED SETTINGS & BACKUP -->
+        <!-- ==================================================== -->
+        <div id="viewSettings" class="admin-view hidden">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-database" style="color: var(--success);"></i>
+                النسخ الاحتياطي وتصدير البيانات
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button class="btn success" onclick="window.exportAllDataToExcel()">
+                <i class="fa-solid fa-file-excel"></i> تصدير قاعدة البيانات كاملة (Excel)
+              </button>
+              <button class="btn secondary" onclick="document.getElementById('importExcelInput').click()">
+                <i class="fa-solid fa-file-import"></i> استيراد بيانات من Excel
+              </button>
+              <input type="file" id="importExcelInput" accept=".xlsx, .xls" style="display: none;" onchange="window.importDataFromExcel(event)">
+            </div>
+          </div>
+
+          <div class="card" style="border-color: var(--danger);">
+            <div class="card-title" style="color: var(--danger); margin-bottom: 8px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              منطقة العمليات الحساسة (Danger Zone)
+            </div>
+            <p style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 16px;">
+              تصفير بيانات الحضور أو إعادة تعيين النظام بالكامل. هذه الخطوة لا يمكن التراجع عنها إلا باسترجاع نسخة احتياطية.
+            </p>
+            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+              <button class="btn danger" onclick="window.resetTermData()">
+                <i class="fa-solid fa-rotate-left"></i> تصفير حضور ومصاريف الترم بالكامل
+              </button>
+              <button class="btn danger" style="background: linear-gradient(135deg, #b91c1c, #991b1b); box-shadow: 0 4px 14px rgba(185, 28, 28, 0.4);" onclick="window.factoryResetSystem()">
+                <i class="fa-solid fa-triangle-exclamation"></i> إعادة تهيئة النظام بالكامل (ضبط المصنع)
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ADD NEW ASSISTANT -->
+  <!-- ======================================================== -->
+  <div id="addAssistantModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h3 style="font-size: 1.2em; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-user-plus" style="color: var(--primary);"></i>
+        إضافة حساب مساعد جديد
+      </h3>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label class="lbl">اسم المستخدم (إنجليزي بدون مسافات)</label>
+          <input type="text" id="newAsstUsernameInput" class="inp" placeholder="مثال: ahmed_assistant">
+        </div>
+        <div>
+          <label class="lbl">كلمة المرور</label>
+          <input type="password" id="newAsstPasswordInput" class="inp" placeholder="أدخل كلمة المرور للمساعد">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+          <button class="btn secondary" onclick="window.closeAddAssistantModal()">إلغاء</button>
+          <button class="btn primary" onclick="window.submitNewAssistant()">
+            <i class="fa-solid fa-check"></i> إنشاء الحساب
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Admin Logic -->
+  <script type="module" src="../admin/admin.js?v=STUDIFY_V5"></script>
+</body>
+</html>
