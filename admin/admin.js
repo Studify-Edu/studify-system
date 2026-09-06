@@ -164,7 +164,7 @@ window.handleAdminLogin = async function() {
     localStorage.setItem("ca_manager_id", managerId);
     currentCenterId = managerId;
 
-    showToast("تم تسجيل الدخول بنجاح! مرحباً بك.", "success");
+    showToast("تم تسجيل الدخول بنجاح. مرحباً بك.", "success");
     setTimeout(() => { location.reload(); }, 600);
 
   } catch(err) {
@@ -207,11 +207,15 @@ window.toggleAdminPass = function() {
 window.toggleAdminTheme = function() {
   const cur = document.documentElement.getAttribute("data-theme") || "dark";
   const next = cur === "dark" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", next);
-  localStorage.setItem("studify_admin_theme", next);
-  localStorage.setItem("ca_theme", next);
-  const icon = document.getElementById("adminThemeIcon");
-  if (icon) icon.className = next === "dark" ? "fa-solid fa-moon" : "fa-solid fa-sun";
+  if (typeof window.switchThemeWithAnimation === "function") {
+    window.switchThemeWithAnimation(next);
+  } else {
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("studify_admin_theme", next);
+    localStorage.setItem("ca_theme", next);
+    const icon = document.getElementById("adminThemeIcon");
+    if (icon) icon.className = next === "dark" ? "fa-solid fa-moon" : "fa-solid fa-sun";
+  }
 };
 
 // ========================================================
@@ -242,37 +246,61 @@ async function loadAllAdminData() {
       supabase.from('settings').select('*').eq('id', 1).maybeSingle()
     ]);
 
-    // Students
+    // Extract Settings Config first
+    const sRow = setRes && setRes.data ? setRes.data : {};
+    const cfg = sRow.config || {};
+    const stPkgsMap = cfg.student_packages || {};
+    const cfgGroupFees = cfg.group_fees || {};
+
+    // Students (with packages, payments, attendanceDates)
     if (stRes.data) {
       students = {};
       stRes.data.forEach(s => {
+        const pList = (Array.isArray(s.packages) && s.packages.length > 0) 
+          ? s.packages 
+          : (stPkgsMap[s.id] || (s.class_name ? ["باقة " + s.class_name] : []));
+
         students[String(s.id)] = {
           id: s.id,
           name: s.name || '',
           className: s.class_name || s.className || '',
           phone: s.phone || '',
           parentPhone: s.parent_phone || s.parentPhone || '',
-          paid: s.paid || 0,
-          paymentPlan: s.payment_plan || s.paymentPlan || 'term',
-          packages: s.packages || [],
+          paid: Number(s.paid) || 0,
+          paymentPlan: s.payment_plan || s.paymentPlan || 'cash',
+          packages: pList,
+          payments: s.payments || [],
+          attendanceDates: s.attendance_dates || [],
           status: s.status || 'active'
         };
       });
     }
 
-    // Packages
+    // Packages (Merged from packages table and settings config)
+    packages = {};
+    groupFees = {};
     if (pkgRes.data) {
-      packages = {};
-      groupFees = {};
       pkgRes.data.forEach(p => {
         packages[p.name] = {
           name: p.name,
-          price: p.price,
-          installmentPrice: p.installment_price || p.price,
+          price: Number(p.price) || 0,
+          installmentPrice: Number(p.installment_price) || Number(p.price) || 0,
           hasInstallments: !!p.has_installments
         };
-        groupFees[p.name] = p.price;
+        groupFees[p.name] = Number(p.price) || 0;
       });
+    }
+    for (const pName in cfgGroupFees) {
+      const p = cfgGroupFees[pName];
+      if (!packages[pName]) {
+        packages[pName] = {
+          name: pName,
+          price: Number(p.price) || 0,
+          installmentPrice: Number(p.price) || 0,
+          hasInstallments: false
+        };
+        groupFees[pName] = Number(p.price) || 0;
+      }
     }
 
     // Booklets
@@ -297,7 +325,7 @@ async function loadAllAdminData() {
       }
       localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
 
-      if (cfg.attendance_by_date) attByDate = cfg.attendance_by_date;
+      attByDate = cfg.att_by_date || cfg.attendance_by_date || {};
       if (cfg.revenue_by_date) revenueByDate = cfg.revenue_by_date;
       if (cfg.expenses_by_date) expensesByDate = cfg.expenses_by_date;
       const sylRaw = cfg.syllabus || cfg.syllabus_data || [];
@@ -356,6 +384,10 @@ window.switchAdminTab = function(tabKey) {
   if (iconEl) iconEl.className = `fa-solid ${c.icon}`;
 
   // Tab specific refreshes
+  if (tabKey === "dailyReport") window.loadDailyReport(document.getElementById("adminDailyDateInput")?.value || nowDateStr());
+  if (tabKey === "termReport") window.renderTermTable();
+  if (tabKey === "packages") window.renderAdminPackages();
+  if (tabKey === "syllabus") window.renderAdminSyllabus();
   if (tabKey === "assistants") window.fetchAssistants();
   if (tabKey === "decisions") window.fetchDecisions();
 };
@@ -429,7 +461,7 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
     
     // 2. Optimistic instant UI update (0ms)
     window.renderDailyApprovalWidget(d);
-    showToast(`تم تشغيل يومية (${d}) وفتح النظام للمساعدين بنجاح!`, "success");
+    showToast(`تم تشغيل يومية (${d}) وفتح النظام للمساعدين بنجاح.`, "success");
 
     try {
       // 3. Multi-tab broadcast (same device / browser profile)
@@ -676,13 +708,25 @@ window.renderTermTable = function() {
     if (clsFilter && cls !== clsFilter) return;
 
     matchCount++;
-    const pkg = packages[cls];
-    let req = pkg ? (pkg.price || 0) : 0;
-    const paid = st.paid || 0;
+    let req = 0;
+    const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (cls ? ["باقة " + cls, cls] : []);
+    stPkgs.forEach(pName => {
+      if (packages[pName]) req += (packages[pName].price || 0);
+      else if (groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
+    });
+    if (req === 0 && cls) {
+      const alt = "باقة " + cls;
+      if (packages[alt]) req += (packages[alt].price || 0);
+      else if (groupFees[alt]) req += (groupFees[alt].price || groupFees[alt] || 0);
+    }
+    
+    const paid = Number(st.paid) || 0;
     const debt = Math.max(0, req - paid);
     
     // Attendance count
-    const attCount = Object.values(attByDate).reduce((acc, list) => acc + (list.includes(String(st.id)) ? 1 : 0), 0);
+    const attCount = (st.attendanceDates && st.attendanceDates.length > 0) 
+      ? st.attendanceDates.length 
+      : Object.values(attByDate).reduce((acc, list) => acc + (list.includes(String(st.id)) ? 1 : 0), 0);
 
     totalRev += paid;
     totalDebt += debt;
@@ -851,6 +895,7 @@ window.togglePermission = async function(username, permKey, isAllowed) {
 
     // 4. Update local cache if this username is also active locally
     localStorage.setItem(`ca_asst_permissions_${username}`, JSON.stringify(perms));
+    localStorage.setItem("ca_asst_permissions", JSON.stringify(perms));
 
     showToast(`تم تحديث صلاحية (${permKey}) للمساعد ${username} بنجاح`, "success");
 
@@ -897,7 +942,7 @@ window.submitNewAssistant = async function() {
       throw error;
     }
 
-    showToast("تم إنشاء حساب المساعد بنجاح!", "success");
+    showToast("تم إنشاء حساب المساعد بنجاح.", "success");
     document.getElementById("newAsstUsernameInput").value = "";
     document.getElementById("newAsstPasswordInput").value = "";
     window.closeAddAssistantModal();
@@ -997,7 +1042,7 @@ window.fetchDecisions = async function() {
     fetchDecisionsCount();
 
     if (!reqs || reqs.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-secondary);">لا توجد طلبات قرارات معلقة حالياً. كل شيء مستقر!</div>';
+      listEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-secondary);">لا توجد طلبات قرارات معلقة حالياً. كل شيء مستقر.</div>';
       return;
     }
 
@@ -1274,7 +1319,7 @@ window.exportAllDataToExcel = function() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pkgData), "الباقات");
 
     XLSX.writeFile(wb, `Studify_Backup_${nowDateStr()}.xlsx`);
-    showToast("تم تصدير نسخة Excel بنجاح!", "success");
+    showToast("تم تصدير نسخة Excel بنجاح.", "success");
   } catch(e) {
     console.error(e);
     showToast("فشل تصدير البيانات إلى Excel", "err");
@@ -1284,7 +1329,7 @@ window.exportAllDataToExcel = function() {
 window.resetTermData = async function() {
   const res = await Swal.fire({
     title: 'تأكيد تصفير الترم',
-    text: 'هل أنت متأكد من تصفير حضور ومصاريف وإيرادات الترم بالكامل لجميع الطلاب؟ لا يمكن التراجع عن هذه الخطوة إلا بنسخة احتياطية!',
+    text: 'هل أنت متأكد من تصفير حضور ومصاريف وإيرادات الترم بالكامل لجميع الطلاب؟ لا يمكن التراجع عن هذه الخطوة إلا بنسخة احتياطية.',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'نعم، صفر بيانات الترم',
@@ -1506,3 +1551,53 @@ function initAdminParticles() {
   loop();
 }
 
+
+
+// ==========================================
+// THEME SWITCH WITH SMOOTH LOADER
+// ==========================================
+window.switchThemeWithAnimation = function(targetTheme) {
+  const overlay = document.getElementById("adminThemeSwitchOverlay");
+  const textEl = document.getElementById("adminThemeSwitchText");
+  const iconBox = document.getElementById("adminThemeSwitchIconBox");
+
+  if (overlay && iconBox && textEl) {
+    textEl.innerText = "جاري تبديل المظهر...";
+    iconBox.innerHTML = targetTheme === "dark"
+      ? '<i class="fa-solid fa-moon" style="font-size: 38px; color: #f59e0b;"></i>'
+      : '<i class="fa-solid fa-sun" style="font-size: 38px; color: #f59e0b;"></i>';
+    overlay.classList.add("active");
+
+    setTimeout(() => {
+      document.documentElement.setAttribute("data-theme", targetTheme);
+      localStorage.setItem("ca_theme", targetTheme);
+      localStorage.setItem("studify_admin_theme", targetTheme);
+      const icon = document.getElementById("adminThemeIcon");
+      if (icon) icon.className = targetTheme === "dark" ? "fa-solid fa-moon" : "fa-solid fa-sun";
+
+      setTimeout(() => {
+        overlay.classList.remove("active");
+      }, 350);
+    }, 550);
+  } else {
+    document.documentElement.setAttribute("data-theme", targetTheme);
+    localStorage.setItem("ca_theme", targetTheme);
+    localStorage.setItem("studify_admin_theme", targetTheme);
+    const icon = document.getElementById("adminThemeIcon");
+    if (icon) icon.className = targetTheme === "dark" ? "fa-solid fa-moon" : "fa-solid fa-sun";
+  }
+};
+
+window.toggleAdminMobileSidebar = function(open) {
+  const sb = document.querySelector(".admin-sidebar");
+  const overlay = document.getElementById("adminSidebarOverlay");
+  if (!sb) return;
+  const isOpen = (open !== undefined) ? open : !sb.classList.contains("open");
+  if (isOpen) {
+    sb.classList.add("open");
+    if (overlay) overlay.classList.add("active");
+  } else {
+    sb.classList.remove("open");
+    if (overlay) overlay.classList.remove("active");
+  }
+};

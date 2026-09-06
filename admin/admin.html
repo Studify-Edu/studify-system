@@ -13,9 +13,9 @@
   <title>لوحة الإدارة والتحكم — Studify</title>
   
   <!-- PWA Manifest & App Metas -->
-  <link rel="manifest" href="../manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
-  <link rel="apple-touch-icon" href="../icon-192.png">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
   <meta name="theme-color" content="#0B1120">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -27,7 +27,7 @@
   // Service Worker Registration for Admin
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('../service-worker.js')
+      navigator.serviceWorker.register('./service-worker.js')
         .then(reg => console.log('[SW Admin] Registered with scope:', reg.scope))
         .catch(err => console.warn('[SW Admin] Registration error:', err));
     });
@@ -60,12 +60,21 @@
 
   <!-- Toast Container -->
   <div id="toastContainer"></div>
+  <!-- Mobile Sidebar Overlay -->
+  <div id="adminSidebarOverlay" class="admin-sidebar-overlay" onclick="window.toggleAdminMobileSidebar(false)"></div>
+
+  <!-- Theme Switch Overlay -->
+  <div id="adminThemeSwitchOverlay" class="admin-theme-switch-overlay">
+    <div id="adminThemeSwitchIconBox" class="theme-switch-icon-box"></div>
+    <div id="adminThemeSwitchText" class="theme-switch-text">جاري تبديل المظهر..</div>
+  </div>
+
 
   <!-- ======================================================== -->
   <!-- Page Transition Overlay -->
   <div id="pageTransitionOverlay" class="page-transition-overlay">
     <div class="transition-spinner"></div>
-    <div class="transition-text">جاري الانتقال...</div>
+    <div class="transition-text">جاري الانتقال..</div>
   </div>
 
   <!-- ======================================================== -->
@@ -79,7 +88,7 @@
         <span>الإدارة العليا والتحكم المركزي</span>
       </div>
       <div class="login-logo-area">
-        <img src="../icon-192.png" alt="Studify" class="admin-login-logo">
+        <img src="./icon-192.png" alt="Studify" class="admin-login-logo">
         <h1 class="admin-login-title">لوحة تحكم الإدارة</h1>
         <p class="admin-login-desc">تسجيل الدخول المخصص لمدير المركز</p>
       </div>
@@ -104,7 +113,7 @@
         </button>
 
         <div class="portal-switch-container">
-          <button type="button" class="modern-portal-switch" onclick="window.navigateWithTransition('../assistant/index.html')" id="toAssistantPortalBtn">
+          <button type="button" class="modern-portal-switch" onclick="window.navigateWithTransition('./assistant/index.html')" id="toAssistantPortalBtn">
             <div class="switch-icon-circle">
               <i class="fa-solid fa-users-gear"></i>
             </div>
@@ -129,7 +138,7 @@
     <!-- ── SIDEBAR ── -->
     <aside class="admin-sidebar">
       <div class="admin-sidebar-header">
-        <img src="../icon-192.png" alt="Studify" class="admin-logo">
+        <img src="./icon-192.png" alt="Studify" class="admin-logo">
         <div>
           <span class="admin-brand">Studify</span>
           <span class="admin-brand-sub">لوحة الإدارة والتحكم</span>
@@ -185,7 +194,10 @@
 
       <!-- TOPBAR -->
       <header class="admin-topbar">
-        <div class="admin-topbar-title">
+              <button id="adminMobileToggle" class="admin-mobile-toggle" onclick="window.toggleAdminMobileSidebar(true)" title="القائمة">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="admin-topbar-title">
           <i id="adminPageIcon" class="fa-solid fa-calendar-day" style="color: var(--primary);"></i>
           <span id="adminPageTitle">التقرير اليومي</span>
         </div>
@@ -250,7 +262,7 @@
           <div id="rejectNoteBox" class="card hidden" style="border-inline-start: 4px solid var(--danger);">
             <label class="lbl">سبب التعليق أو الرفض (يظهر للمساعدين):</label>
             <div style="display: flex; gap: 10px; margin-top: 6px;">
-              <input type="text" id="dailyRejectReasonInput" class="inp" placeholder="اكتب سبب الرفض أو التعليمات هنا..." style="flex: 1;">
+              <input type="text" id="dailyRejectReasonInput" class="inp" placeholder="اكتب سبب الرفض أو التعليمات هنا.." style="flex: 1;">
               <button class="btn danger" onclick="window.confirmRejectDailyShift()">تأكيد الرفض</button>
             </div>
           </div>
@@ -293,7 +305,7 @@
             </div>
             
             <div id="dailyGroupsBreakdown">
-              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل البيانات...</div>
+              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل البيانات..</div>
             </div>
 
             <div id="dailyExpensesBreakdown" style="margin-top: 20px;"></div>
@@ -331,7 +343,7 @@
                 كشف حساب الطلاب التفصيلي
               </div>
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="text" id="termSearchInput" class="inp" placeholder="بحث باسم الطالب..." style="width: 220px;" oninput="window.renderTermTable()">
+                <input type="text" id="termSearchInput" class="inp" placeholder="بحث باسم الطالب.." style="width: 220px;" oninput="window.renderTermTable()">
                 <select id="termClassFilter" class="inp" style="width: 170px;" onchange="window.renderTermTable()">
                   <option value="">جميع المجموعات</option>
                 </select>
@@ -352,7 +364,7 @@
                   </tr>
                 </thead>
                 <tbody id="termReportTableBody">
-                  <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">جاري التحميل...</td></tr>
+                  <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">جاري التحميل..</td></tr>
                 </tbody>
               </table>
             </div>
@@ -381,7 +393,7 @@
           </div>
 
           <div id="adminAssistantsList" class="assistant-grid">
-            <div style="text-align: center; color: var(--text-secondary); padding: 40px;">جاري تحميل قائمة المساعدين...</div>
+            <div style="text-align: center; color: var(--text-secondary); padding: 40px;">جاري تحميل قائمة المساعدين..</div>
           </div>
         </div>
 
@@ -422,7 +434,7 @@
             </div>
 
             <div id="adminPackagesListContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
-              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل الباقات...</div>
+              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل الباقات..</div>
             </div>
           </div>
 
@@ -498,7 +510,7 @@
               خريطة الدروس الحالية
             </div>
             <div id="adminSyllabusTimelineContainer">
-              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل المنهج...</div>
+              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل المنهج..</div>
             </div>
           </div>
         </div>

@@ -1286,3 +1286,138 @@ body {
     transform: translateY(0) scale(1);
   }
 }
+
+
+/* =========================================================
+   COMPREHENSIVE RESPONSIVE STYLING FOR ADMIN PORTAL
+   ========================================================= */
+
+/* Mobile Hamburger Toggle */
+.admin-mobile-toggle {
+  display: none;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin-inline-end: 12px;
+  transition: all 0.2s ease;
+}
+.admin-mobile-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+/* Mobile Sidebar Backdrop Overlay */
+.admin-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.admin-sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Theme Switch Overlay */
+.admin-theme-switch-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 17, 32, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.admin-theme-switch-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.admin-theme-switch-overlay .theme-switch-icon-box {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseRotate 1.2s infinite ease-in-out;
+}
+.admin-theme-switch-overlay .theme-switch-text {
+  margin-top: 16px;
+  color: #f1f5f9;
+  font-size: 1.05em;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+}
+
+@keyframes pulseRotate {
+  0% { transform: scale(0.9) rotate(0deg); opacity: 0.8; }
+  50% { transform: scale(1.1) rotate(15deg); opacity: 1; }
+  100% { transform: scale(0.9) rotate(0deg); opacity: 0.8; }
+}
+
+/* Responsive Overrides (<= 900px) */
+@media (max-width: 900px) {
+  .admin-mobile-toggle {
+    display: flex !important;
+  }
+  .admin-sidebar-overlay {
+    display: block !important;
+  }
+  .admin-layout {
+    flex-direction: column !important;
+  }
+  .admin-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    transform: translateX(100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: -5px 0 25px rgba(0,0,0,0.5) !important;
+  }
+  .admin-sidebar.open {
+    transform: translateX(0) !important;
+  }
+  .admin-topbar {
+    padding: 0 14px !important;
+  }
+  .admin-topbar-title span {
+    font-size: 0.92em !important;
+  }
+  .admin-main-container {
+    padding: 16px 12px !important;
+  }
+  .admin-stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .admin-table-container, .table-wrap, .admin-table-wrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  table {
+    min-width: 600px !important;
+  }
+}

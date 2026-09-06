@@ -4783,3 +4783,23 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
   transform: translateY(-1px);
 }
 
+
+
+/* Quick QR Placeholder sizing */
+#quickAttendId::placeholder,
+.bento-input-action-row .inp::placeholder {
+  font-size: 0.82em !important;
+  color: var(--text-muted) !important;
+  letter-spacing: 0px !important;
+}
+
+/* Packages Grid Modern Layout */
+#secPackages .content-body {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 0 15px !important;
+}
+.pkg-builder-card {
+  max-width: 100% !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}

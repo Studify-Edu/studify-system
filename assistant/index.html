@@ -8,9 +8,9 @@
  <title>Studify</title>
  
  <!-- PWA Manifest & Icons -->
-  <link rel="manifest" href="../manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
-  <link rel="apple-touch-icon" href="../icon-192.png">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
  <meta name="theme-color" content="#0B1120">
  <meta name="mobile-web-app-capable" content="yes">
  <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,7 +23,7 @@
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
  <link rel="stylesheet" href="style.css?v=STUDIFY_V75">
- <link rel="stylesheet" href="../icons.css?v=STUDIFY_V52">
+ <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME FLASH -->
  <script>
@@ -33,7 +33,7 @@
  })();
  </script>
  
- <script src="../assets/xlsx.full.min.js"></script>
+ <script src="./assets/xlsx.full.min.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -42,7 +42,7 @@
  // Service Worker Registration
  if ('serviceWorker' in navigator) {
  window.addEventListener('load', () => {
- navigator.serviceWorker.register('../service-worker.js')
+ navigator.serviceWorker.register('./service-worker.js')
  .then(reg => console.log('[SW] Registered:', reg.scope))
  .catch(err => console.warn('[SW] Registration failed:', err));
  });
@@ -111,19 +111,19 @@
  <!-- ============ LANGUAGE SWITCH OVERLAY ============ -->
  <div id="langSwitchOverlay" class="lang-switch-overlay">
  <div class="lang-spinner"></div>
- <div id="langSwitchText" class="lang-switch-text">جاري تغيير اللغة...</div>
+ <div id="langSwitchText" class="lang-switch-text">جاري تغيير اللغة..</div>
  </div>
 
  <!-- ============ THEME SWITCH OVERLAY ============ -->
  <div id="themeSwitchOverlay" class="theme-switch-overlay">
  <div id="themeSwitchIconBox" class="theme-switch-icon-box"></div>
- <div id="themeSwitchText" class="theme-switch-text">جاري تبديل المظهر...</div>
+ <div id="themeSwitchText" class="theme-switch-text">جاري تبديل المظهر..</div>
  </div>
 
  <!-- ============ PAGE TRANSITION OVERLAY ============ -->
  <div id="pageTransitionOverlay" class="page-transition-overlay">
    <div class="transition-spinner"></div>
-   <div class="transition-text">جاري الانتقال...</div>
+   <div class="transition-text">جاري الانتقال..</div>
  </div>
 
   <!-- ============ LOGIN ============ -->
@@ -138,7 +138,7 @@
       </div>
 
       <div class="login-logo-area">
-        <img src="../icon-192.png" alt="Studify" class="assistant-portal-logo">
+        <img src="./icon-192.png" alt="Studify" class="assistant-portal-logo">
         <h1 data-i18n="login_title_assistant">بوابة المساعد والعمليات</h1>
         <p class="muted" data-i18n="login_desc_assistant">تسجيل الحضور اليومي والمهام الميدانية</p>
       </div>
@@ -179,7 +179,7 @@
  <!-- SIDEBAR -->
  <aside class="sidebar" id="sidebarNav">
  <div class="sidebar-header">
-      <img src="../icon-192.png" alt="Studify" class="sidebar-logo">
+      <img src="./icon-192.png" alt="Studify" class="sidebar-logo">
  <span class="sidebar-brand">Studify</span>
  </div>
 
@@ -352,7 +352,7 @@
  <span id="toggleRevBtn" style="cursor:pointer; font-size:1.1em; margin-inline-start:5px;"></span>
  </span>
  <span class="stat-pill" id="openShiftManagerBtn" style="cursor: default;">
- <span data-i18n="shift_manager">مسئول الشيفت:</span> <b id="currentShiftManagerName">....</b>
+ <span data-i18n="shift_manager">مسئول الشيفت:</span> <b id="currentShiftManagerName">..</b>
  </span>
  </div>
  <div class="topbar-end" style="position: relative;">
@@ -449,7 +449,7 @@
      <div class="bento-divider"></div>
      <div class="live-feed-section">
        <label class="bento-input-lbl" data-i18n="lbl_last_scan"><i class="fa-solid fa-clock-rotate-left"></i> آخر حضور تم تسجيله</label>
-       <div id="liveFeedBox" class="feed-list" data-i18n="wait_scan">بانتظار مسح كود...</div>
+       <div id="liveFeedBox" class="feed-list" data-i18n="wait_scan">بانتظار مسح كود..</div>
      </div>
    </div>
  </div>
@@ -473,7 +473,7 @@
      <div class="bento-divider"></div>
      <div class="bento-field-group" style="margin-bottom:0;">
        <label class="bento-input-lbl"><i class="fa-solid fa-magnifying-glass"></i> بحث ذكي متعدد</label>
-       <input id="searchAny" class="inp" placeholder="الاسم / الرقم / الكود..." data-i18n-placeholder="search_plc">
+       <input id="searchAny" class="inp" placeholder="الاسم / الرقم / الكود.." data-i18n-placeholder="search_plc">
        <div id="searchMsg" class="msg"></div>
      </div>
    </div>
@@ -562,7 +562,7 @@
 
   <div style="margin-top:10px;">
     <label class="lbl">الصف الدراسي / المجموعة</label>
-    <input id="stClass" list="stClassList" class="inp" placeholder="اختر أو اكتب الصف الدراسي أو المجموعة...">
+    <input id="stClass" list="stClassList" class="inp" placeholder="اختر أو اكتب الصف الدراسي أو المجموعة..">
     <datalist id="stClassList"></datalist>
   </div>
 
@@ -647,7 +647,7 @@
  <span></span> ملاحظات الطالب (منفصلة وقابلة للتعديل)
  </label>
  <div class="row">
- <input id="newNoteInp" class="inp" placeholder="اكتب ملحوظة جديدة هنا..." data-i18n-placeholder="note_plc">
+ <input id="newNoteInp" class="inp" placeholder="اكتب ملحوظة جديدة هنا.." data-i18n-placeholder="note_plc">
  <button id="addNoteBtn" class="btn primary" data-i18n="btn_add_note" style="padding: 0 20px; font-weight: bold;"> إضافة</button>
  </div>
 
@@ -675,7 +675,7 @@
  <h3 style="margin-top: 20px; font-size: 0.95em; color: var(--text-primary); display:flex; align-items:center; gap:8px;" data-i18n="lbl_history">
   <i class="fa-solid fa-calendar-check" style="color:var(--success);"></i> سجل حضور الطالب (التواريخ السابقة):
 </h3>
-<div id="attList" class="list" style="max-height: 140px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;">...</div>
+<div id="attList" class="list" style="max-height: 140px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;">..</div>
  </div>
  </div>
  </section>
@@ -724,7 +724,7 @@
  <div class="card">
  <div class="flexBetween">
  <h2 data-i18n="adv_search_title">قائمة البحث المتقدم</h2>
- <input id="tableSearchInp" class="inp" style="width: 250px;" placeholder=" ابحث في الجدول..." data-i18n-placeholder="search_tbl_plc">
+ <input id="tableSearchInp" class="inp" style="width: 250px;" placeholder=" ابحث في الجدول.." data-i18n-placeholder="search_tbl_plc">
  </div>
  
    <!-- Quick Filter Pills -->
@@ -894,7 +894,7 @@
  <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
  <div>
  <label class="lbl" data-i18n="booklet_name_lbl">اسم المذكرة / الورق</label>
- <input id="bookletNameInp" class="inp" placeholder="مثال: مذكرة مراجعة الباب الأول..." data-i18n-placeholder="booklet_name_plc">
+ <input id="bookletNameInp" class="inp" placeholder="مثال: مذكرة مراجعة الباب الأول.." data-i18n-placeholder="booklet_name_plc">
  </div>
  <div>
  <label class="lbl" data-i18n="booklet_qty_lbl">العدد الكلي المستلم (نسخة)</label>
@@ -963,7 +963,7 @@
 
  <div style="margin-top: 20px;">
  <label class="lbl" style="color: var(--primary); font-weight: bold;" data-i18n="mkt_msg_lbl"> نص الرسالة الإعلانية / التنبيه</label>
- <textarea id="marketingMsgBody" class="inp" rows="5" placeholder="اكتب هنا نص الإعلان أو التنبيه...&#10;يمكنك استخدام الوسوم الذكية [اسم_الطالب] و [المبلغ] وسيتم استبدالها تلقائياً لكل طالب." data-i18n-placeholder="mkt_msg_plc" style="background: var(--bg-inset); line-height: 1.6; font-size: 1em;"></textarea>
+ <textarea id="marketingMsgBody" class="inp" rows="5" placeholder="اكتب هنا نص الإعلان أو التنبيه..&#10;يمكنك استخدام الوسوم الذكية [اسم_الطالب] و [المبلغ] وسيتم استبدالها تلقائياً لكل طالب." data-i18n-placeholder="mkt_msg_plc" style="background: var(--bg-inset); line-height: 1.6; font-size: 1em;"></textarea>
  <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
  <span style="font-size: 0.85em; color: var(--text-secondary);" data-i18n="mkt_vars_tip"> المتغيرات الذكية المدعومة في الرسالة:</span>
  <span class="badge" style="background: #eef2f5; color: #0284c7; border: 1px solid #cbd5e1; font-weight: bold; cursor: pointer;" onclick="document.getElementById('marketingMsgBody').value += ' [اسم_الطالب] '"> [اسم_الطالب]</span>
@@ -991,7 +991,7 @@
  <div style="display: flex; align-items: center; gap: 12px;">
  <span id="broadcastPulseIcon" style="font-size: 2.2em; animation: pulse 1.5s infinite;"></span>
  <div>
- <h3 id="broadcastStatusTitle" style="margin: 0; font-size: 1.4em; color: #38bdf8;" data-i18n="mkt_broad_prep">جاري الاستعداد لبدء البث التلقائي...</h3>
+ <h3 id="broadcastStatusTitle" style="margin: 0; font-size: 1.4em; color: #38bdf8;" data-i18n="mkt_broad_prep">جاري الاستعداد لبدء البث التلقائي..</h3>
  <p id="broadcastStatusSub" style="margin: 5px 0 0 0; font-size: 0.95em; color: #94a3b8;" data-i18n="mkt_broad_sub">سيتم فتح نوافذ المحادثات تباعاً بفاصل زمني آمن لحماية حسابك من الحظر (Anti-Ban).</p>
  </div>
  </div>
@@ -1129,7 +1129,7 @@
  <span class="badge" style="color:var(--danger);"><span data-i18n="badge_exp">مصروف:</span> <span id="reportExpense">0</span></span>
  </div>
  
- <div id="reportList" class="report-list-box">...</div>
+ <div id="reportList" class="report-list-box">..</div>
  </div>
 
  <div class="card" style="margin-top: 20px;">
@@ -1164,7 +1164,7 @@
  <div class="card">
  <h2 data-i18n="syll_map_title"> خريطة سير المنهج</h2>
  <div id="syllabusTimeline" class="syllabus-timeline">
- <div class="mutedCenter">جاري تحميل المنهج...</div>
+ <div class="mutedCenter">جاري تحميل المنهج..</div>
  </div>
  </div>
  </section>
@@ -1176,7 +1176,7 @@
  
  <div class="card" style="margin-bottom:20px;">
  <h3 data-i18n="note_title"> مفكرة السنتر السريعة</h3>
- <textarea id="centerNotebook" class="inp" style="width:100%; height:120px; resize:none;" placeholder="اكتب ملاحظاتك..." data-i18n-placeholder="note_plc_main"></textarea>
+ <textarea id="centerNotebook" class="inp" style="width:100%; height:120px; resize:none;" placeholder="اكتب ملاحظاتك.." data-i18n-placeholder="note_plc_main"></textarea>
  </div>
 
  <div class="settings-grid">
@@ -1233,7 +1233,7 @@
       <h2><i class="fa-solid fa-boxes-packing"></i> الباقات والأسعار</h2>
       <p class="text-secondary">حدد اسم وسعر وصلاحية الباقات المتاحة للمركز مع قواعد التنبيه التلقائي.</p>
     </div>
-    <div class="content-body" style="max-width: 800px; margin: 0 auto;">
+    <div class="content-body" style="max-width: 1200px; margin: 0 auto;">
       <div id="groupFeesList" style="padding-bottom: 30px;"></div>
     </div>
   </section>
@@ -1441,7 +1441,7 @@
 
  <!-- تلميح وضع التصوير (للخروج منه) -->
  <div id="photoViewTip" class="no-print" style="display:none; background:#f59e0b; color:#000; padding:8px; border-radius:6px; font-size:0.9em; font-weight:bold; margin-bottom:20px; cursor:pointer;" onclick="togglePhotoView(false)" data-i18n="photo_mode_tip">
- الشاشة الآن في وضع التصوير الصافي للطالب .. اضغط هنا لإعادة إظهار أزرار الإغلاق والطباعة 
+ الشاشة الآن في وضع التصوير الصافي للطالب . اضغط هنا لإعادة إظهار أزرار الإغلاق والطباعة 
  </div>
 
  <!-- جسم الإيصال الرسمي -->
@@ -1554,7 +1554,7 @@
  <label class="lbl" style="margin-top:12px;">المبلغ المقترح (ج) — اتركه 0 للإعفاء الكامل</label>
  <input type="number" id="discReqAmount" class="inp" placeholder="0" min="0">
  <label class="lbl" style="margin-top:12px;">السبب</label>
- <input type="text" id="discReqReason" class="inp" placeholder="اكتب سبب الطلب...">
+ <input type="text" id="discReqReason" class="inp" placeholder="اكتب سبب الطلب..">
  <div class="row" style="margin-top:18px; justify-content:flex-end;">
  <button class="btn secondary" onclick="document.getElementById('discountRequestModal').classList.add('hidden')">إلغاء</button>
  <button id="submitDiscountRequestBtn" class="btn primary">إرسال الطلب للمدير</button>

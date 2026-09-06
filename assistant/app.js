@@ -71,7 +71,7 @@ function setupConnectionTracker() {
   window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges && !isCloudConnected) {
       e.preventDefault();
-      e.returnValue = 'تحذير: لا يوجد اتصال بالإنترنت، هناك بيانات لم يتم مزامنتها مع السحابة!';
+      e.returnValue = 'تحذير: لا يوجد اتصال بالإنترنت، هناك بيانات لم يتم مزامنتها مع السحابة.';
       return e.returnValue;
     }
   });
@@ -1582,7 +1582,8 @@ async function loadAll() {
  };
 
  function showApp() {
- applyPermissions();
+  applyPermissions();
+  if (typeof loadPermissions === "function" && currentUserRole !== "admin") loadPermissions();
  if($("reportDate")) $("reportDate").value = nowDateStr();
  
  // Fix for Shift Manager Display Name
@@ -3177,7 +3178,7 @@ const st = students[id];
       localStorage.setItem("ca_admin_session", "1");
       localStorage.setItem("ca_admin_username", managerRow.name || managerRow.username || rawU || "المدير");
       
-      showToast("تم تسجيل الدخول بنجاح! جاري التوجيه إلى لوحة الإدارة...", "success");
+      showToast("تم تسجيل الدخول بنجاح. جاري التوجيه إلى لوحة الإدارة...", "success");
       setTimeout(() => {
         window.location.replace("admin.html");
       }, 500);
@@ -3988,8 +3989,17 @@ on("quickAttendBtn", "click", function() {
 
  window.renderGroupFeesModal = function() {
     const counts = {};
-    Object.values(students).forEach(st => { if(!st) return; const pName = st.className || "عام";
-      counts[pName] = (counts[pName] || 0) + 1;
+    Object.values(students || {}).forEach(st => {
+      if(!st) return;
+      const pList = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : [st.className || "عام"];
+      pList.forEach(pName => {
+        counts[pName] = (counts[pName] || 0) + 1;
+      });
+      if (st.className && !pList.includes(st.className)) {
+        counts[st.className] = (counts[st.className] || 0) + 1;
+        const altName = "باقة " + st.className;
+        counts[altName] = (counts[altName] || 0) + 1;
+      }
     });
 
     let h = `
@@ -4143,7 +4153,7 @@ on("quickAttendBtn", "click", function() {
        const enrolled = Object.values(students || {}).filter(st => st && st.packages && st.packages.includes(g));
        let textWarning = `هل أنت متأكد من حذف باقة "${g}" من السيستم؟`;
        if (enrolled.length > 0) {
-         textWarning = `⚠️ تنبيه: هناك (${enrolled.length}) طالب مسجلين حالياً في هذه الباقة!\nحذف الباقة سيقوم بإزالتها تلقائياً من باقات هؤلاء الطلاب لمنع بقاء باقات يتيمة بدون أسعار. هل تريد المتابعة؟`;
+         textWarning = `⚠️ تنبيه: هناك (${enrolled.length}) طالب مسجلين حالياً في هذه الباقة.\nحذف الباقة سيقوم بإزالتها تلقائياً من باقات هؤلاء الطلاب لمنع بقاء باقات يتيمة بدون أسعار. هل تريد المتابعة؟`;
        }
        Swal.fire({
          title: 'تأكيد حذف الباقة',
@@ -4880,7 +4890,7 @@ function updateDriveUI() {
           throw dbErr;
       }
 
-      showToast("تم إضافة المساعد بنجاح!", "success");
+      showToast("تم إضافة المساعد بنجاح.", "success");
       
       if ($("newAsstUsername")) $("newAsstUsername").value = "";
       if ($("newAsstPassword")) $("newAsstPassword").value = "";
@@ -5315,15 +5325,16 @@ if ('BroadcastChannel' in window) {
       return;
   }
   
-  const currentUsername = localStorage.getItem("ca_current_username");
+  const currentUsername = localStorage.getItem("ca_current_username") || localStorage.getItem("ca_asst_email") || "";
   if (!currentUsername) return;
   
   try {
+    const cleanU = currentUsername.trim();
     const { data: asst } = await window.supabaseClient
       .from('assistants')
       .select('permissions')
-      .eq('username', currentUsername)
-      .single();
+      .or(`username.ilike.${cleanU},email.ilike.${cleanU}`)
+      .maybeSingle();
 
     if (asst && asst.permissions) {
       const saved = asst.permissions;
@@ -6603,7 +6614,7 @@ if ('BroadcastChannel' in window) {
       if (overlay && !overlay.classList.contains("hidden")) {
         overlay.classList.add("hidden");
         if (typeof showToast === 'function') {
-          showToast("⚡ تم اعتماد اليومية وفتح النظام بنجاح من قِبل المدير!", "success");
+          showToast("⚡ تم اعتماد اليومية وفتح النظام بنجاح من قِبل المدير.", "success");
         }
       }
     } else {
@@ -6986,7 +6997,7 @@ if ('BroadcastChannel' in window) {
       await window.supabaseClient.from('booklets').upsert(bRows, { onConflict: 'id' });
     }
 
-    showToast(" تم رفع جميع البيانات بنجاح إلى Supabase!", "success");
+    showToast(" تم رفع جميع البيانات بنجاح إلى Supabase.", "success");
     console.log("[Migration] Supabase migration complete!");
   } catch(e) {
     console.error("[Migration] Error:", e);
@@ -7460,7 +7471,7 @@ if (changeMyPasswordBtn) {
       cancelButtonText: 'إلغاء',
       inputValidator: (value) => {
         if (!value || value.length < 1) {
-          return 'يجب إدخال كلمة مرور!';
+          return 'يجب إدخال كلمة مرور.';
         }
       }
     });
@@ -7475,7 +7486,7 @@ if (changeMyPasswordBtn) {
         
         if (error) throw error;
         
-        if (typeof showToast === 'function') showToast('تم تغيير كلمة المرور بنجاح!', 'success');
+        if (typeof showToast === 'function') showToast('تم تغيير كلمة المرور بنجاح.', 'success');
       } catch (err) {
         console.error(err);
         Swal.fire('خطأ', err.message || 'حدث خطأ أثناء تغيير كلمة المرور.', 'error');
@@ -7510,7 +7521,7 @@ window.changeAssistantPassword = async function(userId, username) {
     cancelButtonText: 'إلغاء',
     inputValidator: (value) => {
       if (!value || value.trim().length < 1) {
-        return 'يجب إدخال كلمة مرور!';
+        return 'يجب إدخال كلمة مرور.';
       }
     }
   });
@@ -7526,7 +7537,7 @@ window.changeAssistantPassword = async function(userId, username) {
       if (error) {
          throw error;
       }
-      if (typeof showToast === 'function') showToast('تم تغيير كلمة المرور بنجاح!', 'success');
+      if (typeof showToast === 'function') showToast('تم تغيير كلمة المرور بنجاح.', 'success');
       
       // Optionally refresh to show any changes, though not strictly needed here
       if(typeof fetchManagerAssistants === 'function') fetchManagerAssistants();
@@ -7706,7 +7717,7 @@ window.updateAttendanceUIState = function() {
     
     const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
     if (input) {
-        input.placeholder = hasSelected ? "ID (ex: 601)" : "اختر مادة أولاً";
+        input.placeholder = hasSelected ? "ID (مثال: 101)" : "اختر مادة أولاً";
     }
 
     if (!hasSelected) {
