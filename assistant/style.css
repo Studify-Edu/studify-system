@@ -252,8 +252,10 @@ a { color: var(--primary); text-decoration: none; }
 }
 
 .sidebar-brand {
+  font-family: 'Poppins', 'Outfit', sans-serif;
   font-size: 1.35em;
   font-weight: 800;
+  letter-spacing: -0.4px;
   background: var(--gradient);
   -webkit-background-clip: text;
   background-clip: text;
@@ -261,6 +263,8 @@ a { color: var(--primary); text-decoration: none; }
   white-space: nowrap;
   transition: opacity 0.2s, width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  display: inline-block;
+  line-height: 1.1;
 }
 
 .app-shell.sidebar-collapsed .sidebar-brand { opacity: 0; width: 0; }

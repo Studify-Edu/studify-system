@@ -327,13 +327,16 @@ body {
   border: 2px solid var(--primary);
 }
 .admin-brand {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.2em;
+  font-family: 'Poppins', 'Outfit', sans-serif;
+  font-size: 1.3em;
   font-weight: 800;
+  letter-spacing: -0.4px;
   background: var(--gradient);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  display: inline-block;
+  line-height: 1.1;
 }
 .admin-brand-sub {
   font-size: 0.72em;
@@ -594,40 +597,175 @@ body {
 .approval-card-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
-.btn-toggle-shift {
-  padding: 10px 22px;
-  font-size: 0.95em;
-  font-weight: 800;
-  border-radius: 30px;
-  cursor: pointer;
+
+/* ── MASTER ON/OFF TOGGLE SWITCH ── */
+.approval-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.approval-toggle-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.toggle-status-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.88em;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  transition: all 0.3s ease;
+}
+
+.toggle-status-badge.badge-on {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.15);
+}
+
+.toggle-status-badge.badge-off {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+}
+
+.toggle-pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.badge-on .toggle-pulse-dot {
+  background: #10B981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulseGreen 1.8s infinite;
+}
+
+.badge-off .toggle-pulse-dot {
+  background: #EF4444;
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.toggle-sub-hint {
+  font-size: 0.76em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* The actual tactile master power switch */
+.master-power-switch {
+  position: relative;
+  width: 94px;
+  height: 44px;
+  border-radius: 26px;
   border: none;
-  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  padding: 4px;
+  background: transparent;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  direction: ltr; /* Ensure ON/OFF text and slider direction are consistent */
 }
-.btn-toggle-shift.active {
-  background: linear-gradient(135deg, #EF4444, #DC2626);
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+
+.master-power-switch .switch-rail {
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  position: relative;
+  transition: background 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  box-sizing: border-box;
 }
-.btn-toggle-shift.active:hover {
-  background: linear-gradient(135deg, #DC2626, #B91C1C);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+
+.master-power-switch.state-on .switch-rail {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4), inset 0 1px 2px rgba(255,255,255,0.25);
 }
-.btn-toggle-shift.inactive {
-  background: linear-gradient(135deg, #10B981, #059669);
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+
+.master-power-switch.state-off .switch-rail {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
-.btn-toggle-shift.inactive:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+
+[data-theme="light"] .master-power-switch.state-off .switch-rail {
+  background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.switch-rail .rail-text-on {
+  color: #ffffff;
+  transition: opacity 0.25s ease;
+  user-select: none;
+  margin-left: 2px;
+}
+
+.switch-rail .rail-text-off {
+  color: rgba(255, 255, 255, 0.85);
+  transition: opacity 0.25s ease;
+  user-select: none;
+  margin-right: 2px;
+}
+
+.master-power-switch.state-on .rail-text-off { opacity: 0; }
+.master-power-switch.state-off .rail-text-on { opacity: 0; }
+
+.switch-knob {
+  position: absolute;
+  top: 4px;
+  width: 36px;
+  height: 36px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, transform 0.2s ease;
+}
+
+.master-power-switch.state-off .switch-knob {
+  left: 4px;
+  color: #64748B;
+}
+
+.master-power-switch.state-on .switch-knob {
+  left: 54px;
+  color: #10B981;
+}
+
+.master-power-switch:hover .switch-knob {
+  transform: scale(1.08);
+}
+
+.master-power-switch:active .switch-knob {
+  transform: scale(0.95);
 }
 
 /* ── CARDS & TABLES ── */

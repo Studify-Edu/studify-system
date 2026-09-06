@@ -327,20 +327,34 @@ window.renderDailyApprovalWidget = function(dateStr) {
         <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-clock'}" style="color: ${isApproved ? 'var(--success)' : 'var(--warning)'}; font-size: 1.25em;"></i>
         <span>حالة اعتماد يومية (${d})</span>
         <span class="approval-badge-pill ${isApproved ? 'approved' : 'pending'}">
-          ${isApproved ? '<i class="fa-solid fa-check"></i> معتمدة ومفعلة' : '<i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / معلقة'}
+          ${isApproved ? '<i class="fa-solid fa-check"></i> معتمدة ومفتوحة' : '<i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / مغلقة'}
         </span>
       </div>
       <p class="approval-card-desc">
         ${isApproved 
-          ? 'النظام مفعل بالكامل لدى المساعدين ويمكنهم تسجيل الحضور والعمليات. يمكنك إيقاف اليومية في أي وقت لتعليق عمل المساعدين.' 
-          : 'العمليات متوقفة ومقيدة لدى المساعدين حتى تقوم بمراجعة الحضور واعتماد اليومية.'}
+          ? 'النظام يعمل حالياً بصلاحيات كاملة للمساعدين. يمكنك إيقاف وتشغيل اليومية بسهولة عبر سويتش (ON / OFF).' 
+          : 'العمليات متوقفة ومقيدة لدى المساعدين. قم بتبديل السويتش إلى (ON) لفتح النظام واعتماد اليومية.'}
       </p>
     </div>
     <div class="approval-card-actions">
-      <button class="btn-toggle-shift ${isApproved ? 'active' : 'inactive'}" onclick="window.toggleDailyApproval('${d}', ${!isApproved})">
-        <i class="fa-solid ${isApproved ? 'fa-lock' : 'fa-lock-open'}"></i>
-        <span>${isApproved ? 'إيقاف اليومية / تعليق المساعدين' : 'اعتماد اليومية وفتح النظام'}</span>
-      </button>
+      <div class="approval-toggle-wrapper">
+        <div class="approval-toggle-status">
+          <span class="toggle-status-badge ${isApproved ? 'badge-on' : 'badge-off'}">
+            <span class="toggle-pulse-dot"></span>
+            <span>${isApproved ? 'مفعل (ON)' : 'معطل (OFF)'}</span>
+          </span>
+          <span class="toggle-sub-hint">${isApproved ? 'انقر لإيقاف اليومية' : 'انقر لتشغيل اليومية'}</span>
+        </div>
+        <button type="button" class="master-power-switch ${isApproved ? 'state-on' : 'state-off'}" onclick="window.toggleDailyApproval('${d}', ${!isApproved})" title="${isApproved ? 'إيقاف اليومية (Turn OFF)' : 'اعتماد وتشغيل اليومية (Turn ON)'}" aria-label="سويتش تشغيل اليومية">
+          <span class="switch-rail">
+            <span class="rail-text-on">ON</span>
+            <span class="rail-text-off">OFF</span>
+            <span class="switch-knob">
+              <i class="fa-solid ${isApproved ? 'fa-lock-open' : 'fa-lock'}"></i>
+            </span>
+          </span>
+        </button>
+      </div>
     </div>
   `;
 };
@@ -350,11 +364,11 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
 
   if (toActive) {
     const res = await Swal.fire({
-      title: 'اعتماد اليومية',
-      text: `هل تريد اعتماد يومية (${d}) وتفعيل النظام بالكامل للمساعدين؟`,
+      title: 'تشغيل اليومية (Turn ON)',
+      text: `هل تريد تفعيل يومية (${d}) وفتح النظام فوراً لجميع المساعدين؟`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، اعتمد اليومية',
+      confirmButtonText: 'نعم، تشغيل اليومية (ON)',
       confirmButtonColor: '#10B981',
       cancelButtonText: 'إلغاء'
     });
@@ -371,7 +385,7 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
       if (permChannel) {
         permChannel.postMessage({ type: 'DAILY_SHIFT_APPROVED', date: d });
       }
-      showToast(`تم اعتماد يومية (${d}) وتفعيل النظام للمساعدين بنجاح!`, "success");
+      showToast(`تم تشغيل يومية (${d}) وفتح النظام للمساعدين بنجاح!`, "success");
       window.renderDailyApprovalWidget(d);
     } catch(e) {
       console.error(e);
@@ -379,11 +393,11 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
     }
   } else {
     const res = await Swal.fire({
-      title: 'إيقاف / تعليق اليومية',
-      text: `هل أنت متأكد من إيقاف اعتماد يومية (${d})؟ سيتوقف عمل المساعدين فوراً.`,
+      title: 'إيقاف وتعليق اليومية (Turn OFF)',
+      text: `هل أنت متأكد من إيقاف يومية (${d}) وتعليق عمليات المساعدين فوراً؟`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'نعم، أوقف اليومية',
+      confirmButtonText: 'نعم، إيقاف اليومية (OFF)',
       confirmButtonColor: '#EF4444',
       cancelButtonText: 'إلغاء'
     });

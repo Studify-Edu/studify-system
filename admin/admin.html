@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="../icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -32,7 +32,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V3">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V4">
 </head>
 <body>
 
@@ -195,18 +195,32 @@
                 <i class="fa-solid fa-clock" style="color: var(--warning); font-size: 1.25em;"></i>
                 <span>حالة اعتماد اليومية</span>
                 <span class="approval-badge-pill pending">
-                  <i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / معلقة
+                  <i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / مغلقة
                 </span>
               </div>
               <p class="approval-card-desc">
-                العمليات متوقفة ومقيدة لدى المساعدين حتى تقوم بمراجعة الحضور واعتماد اليومية.
+                العمليات متوقفة ومقيدة لدى المساعدين. قم بتبديل السويتش إلى (ON) لفتح النظام واعتماد اليومية.
               </p>
             </div>
             <div class="approval-card-actions">
-              <button class="btn-toggle-shift inactive" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || nowDateStr(), true)">
-                <i class="fa-solid fa-lock-open"></i>
-                <span>اعتماد اليومية وفتح النظام</span>
-              </button>
+              <div class="approval-toggle-wrapper">
+                <div class="approval-toggle-status">
+                  <span class="toggle-status-badge badge-off">
+                    <span class="toggle-pulse-dot"></span>
+                    <span>معطل (OFF)</span>
+                  </span>
+                  <span class="toggle-sub-hint">انقر لتشغيل اليومية</span>
+                </div>
+                <button type="button" class="master-power-switch state-off" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || nowDateStr(), true)" title="اعتماد وتشغيل اليومية (Turn ON)" aria-label="سويتش تشغيل اليومية">
+                  <span class="switch-rail">
+                    <span class="rail-text-on">ON</span>
+                    <span class="rail-text-off">OFF</span>
+                    <span class="switch-knob">
+                      <i class="fa-solid fa-lock"></i>
+                    </span>
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -543,6 +557,6 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V3"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V4"></script>
 </body>
 </html>
