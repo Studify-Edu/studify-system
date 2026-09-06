@@ -3205,10 +3205,6 @@ body::after {
 .app-shell, .login-wrapper, #loginBox { position: relative; z-index: 1; }
 
 /* ── IDEA #1: LOGIN HERO — خلفية اللوجين المتحركة ── */
-.login-wrapper {
-  /* Removed overflow: hidden to allow scrolling */
-}
-  
 .login-flip-container { position: relative; z-index: 2; }
 
 /* Login Logo Glow Ring */
