@@ -32,7 +32,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V4">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V5">
 </head>
 <body>
 
@@ -211,7 +211,7 @@
                   </span>
                   <span class="toggle-sub-hint">انقر لتشغيل اليومية</span>
                 </div>
-                <button type="button" class="master-power-switch state-off" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || nowDateStr(), true)" title="اعتماد وتشغيل اليومية (Turn ON)" aria-label="سويتش تشغيل اليومية">
+                <button type="button" class="master-power-switch state-off" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || (window.nowDateStr ? window.nowDateStr() : ''), true)" title="اعتماد وتشغيل اليومية (Turn ON)" aria-label="سويتش تشغيل اليومية">
                   <span class="switch-rail">
                     <span class="rail-text-on">ON</span>
                     <span class="rail-text-off">OFF</span>
@@ -557,6 +557,6 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V4"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V5"></script>
 </body>
 </html>

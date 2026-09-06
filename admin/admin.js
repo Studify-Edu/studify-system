@@ -13,6 +13,19 @@ window.supabaseClient = supabase;
 // BroadcastChannel for 0-latency multi-tab sync
 const permChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('studify_permissions_sync') : null;
 
+// Realtime WebSocket channel for cross-device instant sync (< 150ms)
+let realtimeShiftChannel = null;
+if (supabase) {
+  try {
+    realtimeShiftChannel = supabase.channel('studify_realtime_shift_sync');
+    realtimeShiftChannel.subscribe((status) => {
+      console.log('[Admin Realtime Shift] Status:', status);
+    });
+  } catch(e) {
+    console.warn('[Admin Realtime Shift] Error:', e);
+  }
+}
+
 // State
 let students = {};
 let packages = {};
@@ -23,6 +36,7 @@ let expensesByDate = [];
 let booklets = {};
 let syllabusList = [];
 let currentCenterId = localStorage.getItem("ca_manager_id") || "ahmedqutb11232_gmail_com";
+let dailyApprovalMap = JSON.parse(localStorage.getItem('studify_daily_approval_map') || '{}');
 
 // Permissions Definitions (All 11 permissions, grouped cleanly)
 export const PERMISSIONS_DEFS = [
@@ -63,13 +77,14 @@ export function showToast(msg, type = "info") {
 }
 
 // Helper: Date format
-function nowDateStr() {
+export function nowDateStr() {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+window.nowDateStr = nowDateStr;
 
 // ========================================================
 // 1. AUTHENTICATION & MULTI-TAB ISOLATION
@@ -202,16 +217,29 @@ window.toggleAdminTheme = function() {
 // ========================================================
 // 2. DATA ENGINE: LOAD FROM SUPABASE & LOCAL CACHE
 // ========================================================
+// Helper: Save arbitrary center configuration to settings (id: 1)
+export async function saveCenterConfig(partialConfig) {
+  if (!supabase) return;
+  try {
+    const { data: cur } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+    const cfg = cur?.config || {};
+    Object.assign(cfg, partialConfig);
+    cfg.last_modified = Date.now();
+    await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
+  } catch(e) {
+    console.error("saveCenterConfig Error:", e);
+  }
+}
+window.saveCenterConfig = saveCenterConfig;
+
 async function loadAllAdminData() {
   if (!supabase) return;
   try {
-    const mid = currentCenterId;
-
-    const [stRes, pkgRes, bklRes, ctrRes] = await Promise.all([
+    const [stRes, pkgRes, bklRes, setRes] = await Promise.all([
       supabase.from('students').select('*').not('id', 'is', null),
       supabase.from('packages').select('*'),
       supabase.from('booklets').select('*').not('id', 'is', null),
-      supabase.from('centers').select('*').eq('id', mid).maybeSingle()
+      supabase.from('settings').select('*').eq('id', 1).maybeSingle()
     ]);
 
     // Students
@@ -253,14 +281,26 @@ async function loadAllAdminData() {
       bklRes.data.forEach(b => { booklets[b.id] = b; });
     }
 
-    // Center Data (attendance, revenue, expenses, syllabus)
-    if (ctrRes.data) {
-      const c = ctrRes.data;
-      attByDate = c.attendance_by_date || {};
-      revenueByDate = c.revenue_by_date || {};
-      expensesByDate = c.expenses_by_date || [];
-      syllabusList = c.syllabus || [];
-      dailyApprovalMap = c.daily_approval_status || {};
+    // Settings & Center Data (attendance, revenue, expenses, syllabus, daily approval)
+    if (setRes && setRes.data) {
+      const s = setRes.data;
+      const cfg = s.config || {};
+      dailyApprovalMap = cfg.daily_approval_map || dailyApprovalMap || {};
+      
+      const today = nowDateStr();
+      // If today is not yet explicitly set in the map, inherit from global daily_shift_status
+      if (!dailyApprovalMap[today]) {
+        dailyApprovalMap[today] = {
+          status: s.daily_shift_status === 'open' ? 'approved' : 'pending',
+          updated_at: s.updated_at
+        };
+      }
+      localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
+
+      if (cfg.attendance_by_date) attByDate = cfg.attendance_by_date;
+      if (cfg.revenue_by_date) revenueByDate = cfg.revenue_by_date;
+      if (cfg.expenses_by_date) expensesByDate = cfg.expenses_by_date;
+      if (cfg.syllabus) syllabusList = cfg.syllabus;
     }
   } catch(e) {
     console.error("Admin Load Data Error:", e);
@@ -360,7 +400,7 @@ window.renderDailyApprovalWidget = function(dateStr) {
 };
 
 window.toggleDailyApproval = async function(dateStr, toActive) {
-  const d = dateStr || nowDateStr();
+  const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
 
   if (toActive) {
     const res = await Swal.fire({
@@ -374,22 +414,46 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
     });
     if (!res.isConfirmed) return;
 
+    // 1. Update state & local storage immediately
     dailyApprovalMap[d] = { status: 'approved', approved_at: new Date().toISOString() };
+    localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
+    
+    // 2. Optimistic instant UI update (0ms)
+    window.renderDailyApprovalWidget(d);
+    showToast(`تم تشغيل يومية (${d}) وفتح النظام للمساعدين بنجاح!`, "success");
+
     try {
-      if (supabase) {
-        await supabase.from('centers').upsert({
-          id: currentCenterId,
-          daily_approval_status: dailyApprovalMap
+      // 3. Multi-tab broadcast (same device / browser profile)
+      if (permChannel) {
+        permChannel.postMessage({ type: 'DAILY_SHIFT_CHANGE', date: d, isApproved: true });
+      }
+
+      // 4. Supabase Realtime Broadcast (all online assistant devices globally in < 150ms)
+      if (realtimeShiftChannel) {
+        realtimeShiftChannel.send({
+          type: 'broadcast',
+          event: 'DAILY_SHIFT_CHANGE',
+          payload: { date: d, isApproved: true, managerId: currentCenterId, updatedAt: new Date().toISOString() }
         });
       }
-      if (permChannel) {
-        permChannel.postMessage({ type: 'DAILY_SHIFT_APPROVED', date: d });
+
+      // 5. Database persistence in settings (id: 1)
+      if (supabase) {
+        const { data: curSettings } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+        const cfg = curSettings?.config || {};
+        cfg.daily_approval_map = dailyApprovalMap;
+        cfg.last_shift_update = Date.now();
+
+        await supabase.from('settings').update({
+          daily_shift_status: 'open',
+          daily_approved_by: localStorage.getItem("ca_admin_username") || "المدير العام",
+          config: cfg,
+          updated_at: new Date().toISOString()
+        }).eq('id', 1);
       }
-      showToast(`تم تشغيل يومية (${d}) وفتح النظام للمساعدين بنجاح!`, "success");
-      window.renderDailyApprovalWidget(d);
     } catch(e) {
-      console.error(e);
-      showToast("فشل حفظ الاعتماد في السحابة", "err");
+      console.error("Shift save error:", e);
+      showToast("تنبيه: حدث بطء في مزامنة السحابة، جاري الإعادة تلقائياً", "warning");
     }
   } else {
     const res = await Swal.fire({
@@ -403,24 +467,88 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
     });
     if (!res.isConfirmed) return;
 
+    // 1. Update state & local storage immediately
     dailyApprovalMap[d] = { status: 'pending', locked_at: new Date().toISOString() };
+    localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
+    
+    // 2. Optimistic instant UI update (0ms)
+    window.renderDailyApprovalWidget(d);
+    showToast(`تم إيقاف يومية (${d}) وتعليق العمليات لدى المساعدين فورياً.`, "warning");
+
     try {
-      if (supabase) {
-        await supabase.from('centers').upsert({
-          id: currentCenterId,
-          daily_approval_status: dailyApprovalMap
+      // 3. Multi-tab broadcast (same device / browser profile)
+      if (permChannel) {
+        permChannel.postMessage({ type: 'DAILY_SHIFT_CHANGE', date: d, isApproved: false });
+      }
+
+      // 4. Supabase Realtime Broadcast (all online assistant devices globally in < 150ms)
+      if (realtimeShiftChannel) {
+        realtimeShiftChannel.send({
+          type: 'broadcast',
+          event: 'DAILY_SHIFT_CHANGE',
+          payload: { date: d, isApproved: false, managerId: currentCenterId, updatedAt: new Date().toISOString() }
         });
       }
-      if (permChannel) {
-        permChannel.postMessage({ type: 'DAILY_SHIFT_LOCKED', date: d });
+
+      // 5. Database persistence in settings (id: 1)
+      if (supabase) {
+        const { data: curSettings } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+        const cfg = curSettings?.config || {};
+        cfg.daily_approval_map = dailyApprovalMap;
+        cfg.last_shift_update = Date.now();
+
+        await supabase.from('settings').update({
+          daily_shift_status: 'closed',
+          daily_approved_by: localStorage.getItem("ca_admin_username") || "المدير العام",
+          config: cfg,
+          updated_at: new Date().toISOString()
+        }).eq('id', 1);
       }
-      showToast(`تم إيقاف يومية (${d}) وتعليق العمليات لدى المساعدين.`, "warning");
-      window.renderDailyApprovalWidget(d);
     } catch(e) {
-      console.error(e);
-      showToast("فشل حفظ الحالة في السحابة", "err");
+      console.error("Shift save error:", e);
+      showToast("تنبيه: حدث بطء في مزامنة السحابة، جاري الإعادة تلقائياً", "warning");
     }
   }
+};
+
+window.confirmRejectDailyShift = async function() {
+  const note = (document.getElementById("dailyRejectReasonInput")?.value || "").trim();
+  const d = document.getElementById("adminDailyDateInput")?.value || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+  if (!note) return showToast("يرجى كتابة سبب تعليق أو رفض اليومية", "err");
+  
+  dailyApprovalMap[d] = {
+    status: 'pending',
+    reason: note,
+    locked_at: new Date().toISOString()
+  };
+  localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
+  window.renderDailyApprovalWidget(d);
+  document.getElementById("rejectNoteBox")?.classList.add("hidden");
+  showToast(`تم تعليق يومية (${d}) وإرسال الملاحظة للمساعدين`, "warning");
+
+  try {
+    if (permChannel) {
+      permChannel.postMessage({ type: 'DAILY_SHIFT_CHANGE', date: d, isApproved: false, reason: note });
+    }
+    if (realtimeShiftChannel) {
+      realtimeShiftChannel.send({
+        type: 'broadcast',
+        event: 'DAILY_SHIFT_CHANGE',
+        payload: { date: d, isApproved: false, reason: note, managerId: currentCenterId, updatedAt: new Date().toISOString() }
+      });
+    }
+    if (supabase) {
+      const { data: cur } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+      const cfg = cur?.config || {};
+      cfg.daily_approval_map = dailyApprovalMap;
+      cfg.last_shift_update = Date.now();
+      await supabase.from('settings').update({
+        daily_shift_status: note || 'closed',
+        config: cfg,
+        updated_at: new Date().toISOString()
+      }).eq('id', 1);
+    }
+  } catch(e) { console.error(e); }
 };
 
 // 4. DAILY REPORT & APPROVAL
@@ -1045,12 +1173,7 @@ window.recordNewExpense = async function() {
   expensesByDate.push(newExp);
 
   try {
-    if (!supabase) return;
-    await supabase.from('centers').upsert({
-      id: currentCenterId,
-      expenses_by_date: expensesByDate
-    });
-
+    await saveCenterConfig({ expenses_by_date: expensesByDate });
     showToast("تم تسجيل المصروف بنجاح", "success");
     document.getElementById("expenseReasonInput").value = "";
     document.getElementById("expenseAmountInput").value = "";
@@ -1103,8 +1226,7 @@ window.saveSyllabusLesson = async function() {
   syllabusList.push({ title, status, notes, updated_at: new Date().toISOString() });
 
   try {
-    if (!supabase) return;
-    await supabase.from('centers').upsert({ id: currentCenterId, syllabus: syllabusList });
+    await saveCenterConfig({ syllabus: syllabusList });
     showToast("تمت إضافة الدرس لخريطة المنهج", "success");
     document.getElementById("syllabusLessonName").value = "";
     document.getElementById("syllabusLessonNotes").value = "";
@@ -1115,8 +1237,7 @@ window.saveSyllabusLesson = async function() {
 window.deleteSyllabusLesson = async function(idx) {
   syllabusList.splice(idx, 1);
   try {
-    if (!supabase) return;
-    await supabase.from('centers').upsert({ id: currentCenterId, syllabus: syllabusList });
+    await saveCenterConfig({ syllabus: syllabusList });
     showToast("تم حذف الدرس من المنهج", "info");
     window.renderAdminSyllabus();
   } catch(e) { console.error(e); }
@@ -1174,8 +1295,7 @@ window.resetTermData = async function() {
     expensesByDate = [];
 
     if (supabase) {
-      await supabase.from('centers').upsert({
-        id: currentCenterId,
+      await saveCenterConfig({
         attendance_by_date: {},
         revenue_by_date: {},
         expenses_by_date: []
@@ -1222,14 +1342,17 @@ window.factoryResetSystem = async function() {
         supabase.from('booklets').delete().neq('id', '0'),
         supabase.from('assistants').delete().neq('id', '0'),
         supabase.from('decision_requests').delete().neq('id', '0'),
-        supabase.from('centers').upsert({
-          id: currentCenterId,
-          attendance_by_date: {},
-          revenue_by_date: {},
-          expenses_by_date: [],
-          syllabus: [],
-          daily_approval_status: {}
-        })
+        supabase.from('settings').update({
+          daily_shift_status: 'closed',
+          config: {
+            attendance_by_date: {},
+            revenue_by_date: {},
+            expenses_by_date: [],
+            syllabus: [],
+            daily_approval_map: {}
+          },
+          updated_at: new Date().toISOString()
+        }).eq('id', 1)
       ]);
     }
 

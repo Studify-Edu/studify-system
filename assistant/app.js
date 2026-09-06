@@ -1122,17 +1122,19 @@ function showToast(msg, type = "success") {
 
       // Execute upserts in parallel
       const promises = [
-        // Update center settings & evaluation
-        window.supabaseClient.from('centers').upsert({
-          id: mid,
-          settings: { lastModified: Date.now() },
-          eval_data: evalData || {},
-          revenue_by_date: revenueByDate || {},
-          expenses_by_date: expensesByDate || {},
-          session_students_by_date: sessionStudentsByDate || {},
-          att_by_date: attByDate || {},
-          syllabus_data: syllabusData || []
-        })
+        // Update center settings & evaluation in settings table
+        window.supabaseClient.from('settings').update({
+          config: {
+            settings: { lastModified: Date.now() },
+            eval_data: evalData || {},
+            revenue_by_date: revenueByDate || {},
+            expenses_by_date: expensesByDate || {},
+            session_students_by_date: sessionStudentsByDate || {},
+            att_by_date: attByDate || {},
+            syllabus_data: syllabusData || []
+          },
+          updated_at: new Date().toISOString()
+        }).eq('id', 1)
       ];
 
       if (studentRows.length > 0) {
@@ -1195,13 +1197,15 @@ async function saveAttendanceOnly() {
       }));
 
             const attendancePromises = [
-        window.supabaseClient.from('centers').upsert({
-          id: mid,
-          settings: { lastModified: Date.now() },
-          revenue_by_date: revenueByDate || {},
-          att_by_date: attByDate || {},
-          session_students_by_date: sessionStudentsByDate || {}
-        })
+        window.supabaseClient.from('settings').update({
+          config: {
+            settings: { lastModified: Date.now() },
+            revenue_by_date: revenueByDate || {},
+            att_by_date: attByDate || {},
+            session_students_by_date: sessionStudentsByDate || {}
+          },
+          updated_at: new Date().toISOString()
+        }).eq('id', 1)
       ];
 
       if (studentRows.length > 0) {
@@ -1248,12 +1252,12 @@ async function loadAll() {
         updateSyncUI('syncing', 'جاري جلب البيانات من السحابة...');
         const mid = window.CURRENT_MANAGER_ID;
 
-        // Fetch students, packages, booklets, center data in parallel
+        // Fetch students, packages, booklets, settings data in parallel
         const [stRes, pkgRes, bRes, centerRes] = await Promise.all([
           window.supabaseClient.from('students').select('*').not('id', 'is', null),
           window.supabaseClient.from('packages').select('*'),
           window.supabaseClient.from('booklets').select('*').not('id', 'is', null),
-          window.supabaseClient.from('centers').select('*').eq('id', mid).maybeSingle()
+          window.supabaseClient.from('settings').select('*').eq('id', 1).maybeSingle()
         ]);
 
         if (!stRes.error && stRes.data) {
@@ -1319,27 +1323,48 @@ async function loadAll() {
 
         if (!centerRes.error && centerRes.data) {
           const cd = centerRes.data;
-          if (cd.eval_data) evalData = cd.eval_data;
-          if (cd.syllabus_data && Array.isArray(cd.syllabus_data)) syllabusData = cd.syllabus_data;
-          if (cd.revenue_by_date) {
-            for (const d in cd.revenue_by_date) {
-              if (!revenueByDate[d] || cd.revenue_by_date[d] > revenueByDate[d]) {
-                revenueByDate[d] = cd.revenue_by_date[d];
+          const cfg = cd.config || {};
+          const evalSrc = cd.eval_data || cfg.eval_data;
+          if (evalSrc) evalData = evalSrc;
+          const sylSrc = cd.syllabus_data || cfg.syllabus_data || cfg.syllabus;
+          if (sylSrc && Array.isArray(sylSrc)) syllabusData = sylSrc;
+          
+          const revSrc = cd.revenue_by_date || cfg.revenue_by_date;
+          if (revSrc) {
+            for (const d in revSrc) {
+              if (!revenueByDate[d] || revSrc[d] > revenueByDate[d]) {
+                revenueByDate[d] = revSrc[d];
               }
             }
           }
-          if (cd.expenses_by_date) {
-            for (const d in cd.expenses_by_date) {
-              if (!expensesByDate[d]) expensesByDate[d] = cd.expenses_by_date[d];
+          const expSrc = cd.expenses_by_date || cfg.expenses_by_date;
+          if (expSrc) {
+            for (const d in expSrc) {
+              if (!expensesByDate[d]) expensesByDate[d] = expSrc[d];
             }
           }
-          if (cd.att_by_date) {
-            for (const d in cd.att_by_date) {
+          const attSrc = cd.att_by_date || cfg.att_by_date || cfg.attendance_by_date;
+          if (attSrc) {
+            for (const d in attSrc) {
               if (!attByDate[d]) attByDate[d] = [];
-              cd.att_by_date[d].forEach(id => {
+              attSrc[d].forEach(id => {
                 if (!attByDate[d].includes(String(id))) attByDate[d].push(String(id));
               });
             }
+          }
+
+          // Evaluate shift lock state immediately on load
+          const today = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+          const approvalMap = cfg.daily_approval_map || {};
+          const todayInfo = approvalMap[today];
+          let isApproved = false;
+          if (todayInfo) {
+            isApproved = todayInfo.status === 'approved' || todayInfo === 'approved' || todayInfo === true;
+          } else {
+            isApproved = cd.daily_shift_status === 'open';
+          }
+          if (typeof window.applyShiftLockState === 'function') {
+            window.applyShiftLockState(today, isApproved, todayInfo?.reason || cd.daily_shift_status);
           }
         }
 
@@ -4930,16 +4955,10 @@ if ('BroadcastChannel' in window) {
           showToast("⚡ تم تحديث الصلاحيات من قِبل المدير فورياً", "info");
         }
       }
-    } else if (msg.type === 'DAILY_SHIFT_APPROVED') {
-      const overlay = document.getElementById("assistantHardLockOverlay");
-      if (overlay) overlay.classList.add("hidden");
-      if (typeof showToast === 'function') showToast("✅ تم اعتماد الوردية من قِبل المدير", "success");
-    } else if (msg.type === 'DAILY_SHIFT_REJECTED') {
-      const overlay = document.getElementById("assistantHardLockOverlay");
-      if (overlay) {
-        overlay.classList.remove("hidden");
-        const msgEl = document.getElementById("assistantHardLockMsg");
-        if (msgEl) msgEl.textContent = "تم تعليق الوردية من قِبل المدير: " + (msg.reason || "");
+    } else if (msg.type === 'DAILY_SHIFT_CHANGE' || msg.type === 'DAILY_SHIFT_APPROVED' || msg.type === 'DAILY_SHIFT_REJECTED') {
+      const isApproved = msg.type === 'DAILY_SHIFT_APPROVED' || msg.isApproved === true;
+      if (typeof window.applyShiftLockState === 'function') {
+        window.applyShiftLockState(msg.date, isApproved, msg.reason);
       }
     }
   };
@@ -6222,115 +6241,126 @@ if ('BroadcastChannel' in window) {
 
  // ==========================================
  // DAILY ADMINISTRATIVE HARD-LOCK SYSTEM
- // ==========================================
- function initDailyApprovalSystem() {
-  const mgrSettingDailyApproval = document.getElementById("mgrSettingDailyApproval");
-  const assistantHardLockOverlay = document.getElementById("assistantHardLockOverlay");
-  const assistantHardLockTitle = document.getElementById("assistantHardLockTitle");
-  const assistantHardLockMsg = document.getElementById("assistantHardLockMsg");
-  const managerDailyApprovalWidget = document.getElementById("managerDailyApprovalWidget");
-  const btnApproveDaily = document.getElementById("btnApproveDaily");
-  const btnRejectDaily = document.getElementById("btnRejectDaily");
-  const btnConfirmRejectDaily = document.getElementById("btnConfirmRejectDaily");
-  const managerDailyRejectNoteContainer = document.getElementById("managerDailyRejectNoteContainer");
-  const managerDailyRejectNote = document.getElementById("managerDailyRejectNote");
+   // ==========================================
+  // DAILY ADMINISTRATIVE HARD-LOCK SYSTEM
+  // Real-Time Multi-Device Live Sync Engine
+  // ==========================================
+  window.applyShiftLockState = function(dateStr, isApproved, reason) {
+    const overlay = document.getElementById("assistantHardLockOverlay");
+    const titleEl = document.getElementById("assistantHardLockTitle");
+    const msgEl = document.getElementById("assistantHardLockMsg");
 
-  if(!mgrSettingDailyApproval || !managerDailyApprovalWidget || !assistantHardLockOverlay) return;
+    // Admin or manager session is NEVER locked
+    const role = window.CURRENT_ROLE || localStorage.getItem("ca_role") || "";
+    if (role === 'admin' || localStorage.getItem("ca_admin_session") || localStorage.getItem("ca_admin_username")) {
+      if (overlay) overlay.classList.add("hidden");
+      return;
+    }
 
-  let dailyApprovalEnabled = false;
-  let dailyStatusObj = null;
-  const getMid = () => localStorage.getItem("ca_manager_id") || window.CURRENT_MANAGER_ID;
-
-  async function loadDailyStatus() {
-    if (!window.supabaseClient) return;
-    try {
-      const { data } = await window.supabaseClient.from('settings').select('*').eq('id', 1).maybeSingle();
-      if (data) {
-        const config = data.config || {};
-        dailyApprovalEnabled = (data.daily_shift_status === 'open') || (config.dailyApprovalEnabled === true);
-        dailyStatusObj = {
-          status: data.daily_shift_status === 'open' ? 'Approved' : 'Pending',
-          managerNote: data.daily_shift_status === 'open' ? '' : data.daily_shift_status,
-          lastDate: data.updated_at ? data.updated_at.split('T')[0] : ''
-        };
-        if(window.CURRENT_ROLE === 'admin') {
-          mgrSettingDailyApproval.checked = config.dailyApprovalEnabled === true;
-          managerDailyApprovalWidget.classList.toggle("hidden", !config.dailyApprovalEnabled);
+    if (isApproved === true) {
+      if (overlay && !overlay.classList.contains("hidden")) {
+        overlay.classList.add("hidden");
+        if (typeof showToast === 'function') {
+          showToast("⚡ تم اعتماد اليومية وفتح النظام بنجاح من قِبل المدير!", "success");
         }
-        evaluateAssistantLock();
       }
-    } catch(e) {}
-  }
-  loadDailyStatus();
-
-  // Manager Side Logic
-  mgrSettingDailyApproval.addEventListener("change", async (e) => {
-    const isEnabled = e.target.checked;
-    if (!window.supabaseClient) return;
-    try {
-      const { data: current } = await window.supabaseClient.from('settings').select('config').eq('id', 1).maybeSingle();
-      const newConfig = current ? (current.config || {}) : {};
-      newConfig.dailyApprovalEnabled = isEnabled;
-      
-      await window.supabaseClient.from('settings').update({
-        config: newConfig
-      }).eq('id', 1);
-      if (typeof showToast === "function") showToast(isEnabled ? "تم تفعيل الاعتماد اليومي" : "تم إيقاف الاعتماد اليومي", "success");
-    } catch (err) { console.error(err); }
-  });
-
-  btnApproveDaily.addEventListener("click", async () => {
-    if (!window.supabaseClient) return;
-    try {
-      await window.supabaseClient.from('settings').update({
-        daily_shift_status: 'open',
-        daily_approved_by: localStorage.getItem("ca_current_username") || "المدير",
-        updated_at: new Date().toISOString()
-      }).eq('id', 1);
-      managerDailyRejectNoteContainer.classList.add("hidden");
-      if (typeof showToast === "function") showToast("تم اعتماد تقرير الأمس بنجاح. النظام مفتوح الآن للمساعدين.", "success");
-    } catch (err) { console.error(err); }
-  });
-
-  btnRejectDaily.addEventListener("click", () => {
-    managerDailyRejectNoteContainer.classList.remove("hidden");
-  });
-
-  btnConfirmRejectDaily.addEventListener("click", async () => {
-    const note = managerDailyRejectNote.value.trim();
-    if(!note) return showToast("برجاء كتابة سبب الرفض", "err");
-    if (!window.supabaseClient) return;
-    try {
-      await window.supabaseClient.from('settings').update({
-        daily_shift_status: note,
-        updated_at: new Date().toISOString()
-      }).eq('id', 1);
-      managerDailyRejectNoteContainer.classList.add("hidden");
-      managerDailyRejectNote.value = '';
-      showToast("تم إيقاف النظام وإرسال سبب الرفض للمساعدين.", "warning");
-    } catch (err) { console.error(err); }
-  });
-
-  function evaluateAssistantLock() {
-    if (window.CURRENT_ROLE === 'admin') {
-      assistantHardLockOverlay.classList.add("hidden");
-      return;
-    }
-    if (!dailyApprovalEnabled) {
-      assistantHardLockOverlay.classList.add("hidden");
-      return;
-    }
-    const isApproved = dailyStatusObj?.status === 'Approved';
-    if (isApproved) {
-      assistantHardLockOverlay.classList.add("hidden");
     } else {
-      assistantHardLockOverlay.classList.remove("hidden");
+      if (overlay) {
+        if (titleEl) titleEl.textContent = "اليومية معلقة ومغلقة من قِبل الإدارة";
+        if (msgEl) {
+          msgEl.textContent = reason || "تم إيقاف اليومية من قِبل المدير العام. تم تجميد كافة العمليات لحين فتح الشيفت مجدداً.";
+        }
+        overlay.classList.remove("hidden");
+      }
     }
-  }
- }
+  };
 
- // ==========================================
- // 25. NOTICE BOARD (Global Announcements)
+  window.checkDailyShiftHeartbeat = async function(isManual = false) {
+    if (!window.supabaseClient) return;
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('settings')
+        .select('daily_shift_status, config, updated_at')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (error || !data) return;
+
+      const today = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+      const cfg = data.config || {};
+      const approvalMap = cfg.daily_approval_map || {};
+      const todayInfo = approvalMap[today];
+
+      let isApproved = false;
+      if (todayInfo) {
+        isApproved = todayInfo.status === 'approved' || todayInfo === 'approved' || todayInfo === true;
+      } else {
+        isApproved = data.daily_shift_status === 'open';
+      }
+
+      const reason = (data.daily_shift_status && data.daily_shift_status !== 'open' && data.daily_shift_status !== 'closed')
+        ? data.daily_shift_status
+        : (todayInfo?.reason || '');
+
+      window.applyShiftLockState(today, isApproved, reason);
+
+      if (isManual && typeof showToast === 'function') {
+        if (isApproved) {
+          showToast("✅ اليومية معتمدة والنظام مفتوح للعمل", "success");
+        } else {
+          showToast("⏳ اليومية معلقة وفي انتظار اعتماد المدير", "warning");
+        }
+      }
+    } catch(err) {
+      console.warn('[Shift Heartbeat] Error:', err);
+    }
+  };
+
+  function initDailyApprovalSystem() {
+    const overlay = document.getElementById("assistantHardLockOverlay");
+    if (!overlay) return;
+
+    // 1. Check current status immediately on boot
+    window.checkDailyShiftHeartbeat(false);
+
+    // 2. Realtime WebSocket Broadcast subscription (< 150ms cross-device sync)
+    if (window.supabaseClient) {
+      try {
+        const realtimeShiftChannel = window.supabaseClient.channel('studify_realtime_shift_sync');
+        realtimeShiftChannel
+          .on('broadcast', { event: 'DAILY_SHIFT_CHANGE' }, (payload) => {
+            console.log('[Assistant Realtime Shift] Received broadcast:', payload);
+            const d = payload.payload;
+            if (d && typeof window.applyShiftLockState === 'function') {
+              window.applyShiftLockState(d.date, d.isApproved, d.reason);
+            }
+          })
+          .subscribe((status) => {
+            console.log('[Assistant Realtime Shift] Status:', status);
+          });
+      } catch (err) {
+        console.warn('[Assistant Realtime Shift] Channel error:', err);
+      }
+    }
+
+    // 3. Heartbeat polling every 8 seconds (re-verifies even if phone slept)
+    setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        window.checkDailyShiftHeartbeat(false);
+      }
+    }, 8000);
+
+    // 4. Instant verification on tab focus or screen wake
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        window.checkDailyShiftHeartbeat(false);
+      }
+    });
+    window.addEventListener('focus', () => {
+      window.checkDailyShiftHeartbeat(false);
+    });
+  }
+
  // ==========================================
  function initNoticeBoardSystem() {
   const getMid = () => window.CURRENT_MANAGER_ID || localStorage.getItem("ca_manager_id");

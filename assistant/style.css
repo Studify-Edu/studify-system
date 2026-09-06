@@ -4591,3 +4591,195 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
   20%, 60% { transform: translateX(-6px); }
   40%, 80% { transform: translateX(6px); }
 }
+
+/* ======================================================== */
+/* ASSISTANT HARD LOCK OVERLAY (REALTIME HARD LOCK SYSTEM) */
+/* ======================================================== */
+.assistant-hard-lock-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(10, 15, 30, 0.88) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  z-index: 9999999 !important;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s ease;
+  pointer-events: all !important;
+}
+
+.assistant-hard-lock-overlay.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.hard-lock-card {
+  background: var(--bg-card, #1e293b);
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.8), 0 0 50px rgba(239, 68, 68, 0.18);
+  border-radius: 28px;
+  max-width: 480px;
+  width: 100%;
+  padding: 38px 28px 30px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  animation: hardLockCardPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@keyframes hardLockCardPop {
+  0% { transform: scale(0.9) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.hard-lock-icon-container {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hard-lock-pulse-ring,
+.hard-lock-pulse-ring-2 {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(239, 68, 68, 0.5);
+  animation: hardLockPulse 2.4s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.hard-lock-pulse-ring-2 {
+  animation-delay: 1.2s;
+}
+
+@keyframes hardLockPulse {
+  0% { transform: scale(0.9); opacity: 0.9; }
+  70% { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.hard-lock-icon-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.15));
+  border: 2px solid rgba(239, 68, 68, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
+  z-index: 2;
+}
+
+.hard-lock-icon {
+  font-size: 32px;
+  color: #ef4444;
+  filter: drop-shadow(0 2px 8px rgba(239, 68, 68, 0.5));
+}
+
+.hard-lock-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  padding: 5px 14px;
+  border-radius: 30px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.hard-lock-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+  animation: hardLockDotBlink 1.5s infinite ease-in-out;
+}
+
+@keyframes hardLockDotBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
+}
+
+.hard-lock-title {
+  font-family: 'Cairo', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.hard-lock-desc {
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.92rem;
+  color: #cbd5e1;
+  line-height: 1.65;
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+
+.hard-lock-sync-info {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: #93c5fd;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: right;
+  line-height: 1.45;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.hard-lock-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.hard-lock-btn-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 12px 20px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hard-lock-btn-retry:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
