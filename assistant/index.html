@@ -524,12 +524,12 @@
  <div class="pill" id="daysCount">—</div>
  </div>
  
- <div id="debtWarningContainer" class="hidden" style="margin-top:15px; margin-bottom:15px; background: rgba(255, 69, 58, 0.1); border: 1px solid var(--danger); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
- <div style="color: var(--danger); font-weight: bold; font-size: 0.95em;">
- تنبيه: الطالب عليه مديونية متأخرة قدرها <span id="debtAmountDisplay">0</span> جنيه
- </div>
- <button id="payDebtBtn" class="btn danger" style="padding: 6px 12px; font-size: 0.85em; font-weight: bold;">سداد المديونية</button>
- </div>
+ <div id="debtWarningContainer" class="hidden" style="margin-top:15px; margin-bottom:15px; background: rgba(255, 69, 58, 0.1); border: 1px solid var(--danger); padding: 12px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+  <i class="fa-solid fa-triangle-exclamation" style="color: var(--danger); font-size: 1.2em;"></i>
+  <div style="color: var(--danger); font-weight: bold; font-size: 0.95em;">
+    تنبيه: الطالب عليه مديونية متأخرة قدرها <span id="debtAmountDisplay">0</span> جنيه
+  </div>
+</div>
  
  <label class="lbl" data-i18n="lbl_name">الاسم</label>
  <input id="stName" class="inp" placeholder="اسم الطالب بالكامل">
@@ -672,8 +672,10 @@
  </button>
  </div>
  
- <h3 style="margin-top: 20px; font-size: 0.9em; color: var(--text-secondary);" data-i18n="lbl_history">سجل التواريخ</h3>
- <div id="attList" class="list" style="max-height: 120px; overflow-y: auto;">...</div>
+ <h3 style="margin-top: 20px; font-size: 0.95em; color: var(--text-primary); display:flex; align-items:center; gap:8px;" data-i18n="lbl_history">
+  <i class="fa-solid fa-calendar-check" style="color:var(--success);"></i> سجل حضور الطالب (التواريخ السابقة):
+</h3>
+<div id="attList" class="list" style="max-height: 140px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;">...</div>
  </div>
  </div>
  </section>

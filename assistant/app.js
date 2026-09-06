@@ -1970,7 +1970,8 @@ function applyPermissions() {
       let paid = 0;
       if (st.payments) {
           st.payments.forEach(p => {
-              if (p.pkgName === selectedPkg) paid += toInt(p.amount);
+              const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
+              if (pPkg === selectedPkg) paid += toInt(p.amount);
           });
       }
       const rem = Math.max(0, req - paid);
@@ -2032,8 +2033,9 @@ function applyPermissions() {
 
       if (st && st.payments && st.payments.length > 0) {
           st.payments.forEach((p, idx) => {
-              if (filterMode === 'all' || !selectedPkg || p.pkgName === selectedPkg) {
-                  paymentsToShow.push({ ...p, originalIndex: idx });
+              const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
+              if (filterMode === 'all' || !selectedPkg || pPkg === selectedPkg) {
+                  paymentsToShow.push({ ...p, pkgName: pPkg, originalIndex: idx });
               }
           });
       }
@@ -2144,7 +2146,8 @@ const st = students[id];
            let pkgPaid = 0;
            if (st.payments) {
                st.payments.forEach(p => {
-                   if (p.pkgName === pkgName) pkgPaid += toInt(p.amount);
+                   const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
+                   if (pPkg === pkgName) pkgPaid += toInt(p.amount);
                });
            }
            
@@ -2278,13 +2281,16 @@ const st = students[id];
  if($("daysCount")) $("daysCount").innerHTML = ` ${streakCount} ${t("txt_streak")}`;
  
  if($("attList")) {
- let datesHtml = "";
- let reverseDates = dates.slice().reverse().slice(0,20);
- for(let i=0; i<reverseDates.length; i++) {
- datesHtml += `<div class="item">${prettyDate(reverseDates[i])}</div>`;
- }
- $("attList").innerHTML = datesHtml;
- }
+  let datesHtml = "";
+  let reverseDates = dates.slice().reverse().slice(0, 30);
+  for(let i=0; i<reverseDates.length; i++) {
+    datesHtml += '<div class="item" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:6px; font-size:0.85em; font-weight:500;"><i class="fa-regular fa-calendar-check" style="color:var(--success);"></i> ' + prettyDate(reverseDates[i]) + '</div>';
+  }
+  if (reverseDates.length === 0) {
+    datesHtml = '<div class="mutedCenter" style="width:100%; font-size:0.85em; color:var(--text-secondary); padding:10px;">لم يتم تسجيل أي أيام حضور لهذا الطالب بعد</div>';
+  }
+  $("attList").innerHTML = datesHtml;
+}
 
  window.renderStudentPaymentsUI(st, currentSelectedPkg);
  
@@ -3461,24 +3467,7 @@ on("quickAttendBtn", "click", function() {
  if(currentId) { removeAttendance(currentId, nowDateStr()); updateStudentUI(currentId); renderReport(nowDateStr()); }
  });
 
- on("payDebtBtn", "click", function() {
- if(!currentId) return;
- const st = students[currentId];
- if(!st || !st.debt) return;
- 
- let v = st.debt;
- st.paid = (st.paid || 0) + v;
- if (!st.payments) st.payments = [];
- st.payments.push({ date: nowDateStr(), amount: v, method: "cash" });
- 
- const today = nowDateStr();
- if (!revenueByDate[today]) revenueByDate[today] = 0;
- revenueByDate[today] += v;
- 
- st.debt = 0;
- saveAll(); updateStudentUI(currentId);
- fireConfetti(); playSound("money"); showToast("تم سداد المديونية بالكامل ");
- });
+ // payDebtBtn removed per user request
 
  
   // Listeners for Package-Specific Payments Filter and Select
@@ -3547,7 +3536,8 @@ on("quickAttendBtn", "click", function() {
   const req = toInt(pDetails.price);
   let pkgPaid = 0;
   st.payments.forEach(p => {
-      if (p.pkgName === pkgName) pkgPaid += toInt(p.amount);
+      const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
+      if (pPkg === pkgName) pkgPaid += toInt(p.amount);
   });
   const pkgRemain = Math.max(0, req - pkgPaid);
 
