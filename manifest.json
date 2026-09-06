@@ -1,24 +1,70 @@
 {
+  "id": "studify-app",
   "name": "Studify",
   "short_name": "Studify",
-  "description": "Premium SaaS student management and analytics platform.",
-  "start_url": "./assistant/index.html",
+  "description": "نظام Studify المتكامل لإدارة السناتر والمراكز التعليمية",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "fullscreen",
+    "window-controls-overlay",
+    "minimal-ui"
+  ],
   "background_color": "#0B1120",
   "theme_color": "#0B1120",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "لوحة الإدارة العليا",
+      "short_name": "الإدارة",
+      "description": "لوحة تحكم المدير والإدارة العليا والتقارير",
+      "url": "./admin/admin.html",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "بوابة المساعد",
+      "short_name": "المساعد",
+      "description": "بوابة العمليات وتسجيل حضور الطلاب",
+      "url": "./assistant/index.html",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

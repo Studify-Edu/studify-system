@@ -127,7 +127,7 @@ window.navigateWithTransition = function(url) {
     overlay.classList.add('active');
   }
   setTimeout(() => {
-    window.location.href = url;
+    window.location.replace(url);
   }, 280);
 };
 

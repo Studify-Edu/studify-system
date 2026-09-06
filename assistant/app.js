@@ -1526,7 +1526,7 @@ async function loadAll() {
     
     if(currentUserRole === 'admin') {
       // Manager has a dedicated standalone portal at admin.html
-      window.location.href = "../admin/admin.html";
+      window.location.replace("../admin/admin.html");
       return;
     } else {
       $("appBox").classList.remove("hidden");
@@ -2937,7 +2937,7 @@ function applyPermissions() {
       
       showToast("تم تسجيل الدخول بنجاح! جاري التوجيه إلى لوحة الإدارة...", "success");
       setTimeout(() => {
-        window.location.href = "../admin/admin.html";
+        window.location.replace("../admin/admin.html");
       }, 500);
     } catch (err) {
       console.error(err);
@@ -2956,7 +2956,7 @@ window.navigateWithTransition = function(url) {
     overlay.classList.add('active');
   }
   setTimeout(() => {
-    window.location.href = url;
+    window.location.replace(url);
   }, 280);
 };
 

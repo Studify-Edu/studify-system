@@ -1,14 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=./assistant/index.html">
-  <title>Redirecting...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Studify</title>
+  
+  <!-- PWA Manifest & App Metas -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <meta name="theme-color" content="#0B1120">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Studify">
+  <meta name="application-name" content="Studify">
+
   <script>
-    window.location.href = "./assistant/index.html";
+    // Smart PWA Router
+    try {
+      const role = localStorage.getItem("ca_role");
+      const isAuth = localStorage.getItem("ca_auth_v1");
+      if (isAuth === "1" && role === "admin") {
+        window.location.replace("./admin/admin.html");
+      } else {
+        window.location.replace("./assistant/index.html");
+      }
+    } catch(e) {
+      window.location.replace("./assistant/index.html");
+    }
   </script>
 </head>
-<body>
-  <p>If you are not redirected, <a href="./assistant/index.html">click here</a>.</p>
+<body style="background:#0B1120; margin:0; display:flex; align-items:center; justify-content:center; min-height:100vh; color:#94a3b8; font-family:sans-serif;">
+  <div style="text-align:center;">
+    <p>جاري تحميل التطبيق...</p>
+    <p><a href="./assistant/index.html" style="color:#38bdf8;">اضغط هنا إذا لم يتم التحويل تلقائياً</a></p>
+  </div>
 </body>
 </html>
