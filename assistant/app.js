@@ -261,20 +261,10 @@ document.addEventListener('DOMContentLoaded', function() {
  }
 
  // GLOBAL TENANT STATE
- window.CURRENT_MANAGER_ID = localStorage.getItem("ca_manager_id") || "";
+ window.CURRENT_MANAGER_ID = localStorage.getItem("ca_manager_id") || "ahmedqutb11232_gmail_com";
  window.CURRENT_ROLE = localStorage.getItem(K_ROLE) || "";
-
- // Self-healing: old sessions on mobile may not have ca_manager_id
- if (localStorage.getItem(K_AUTH) === "1" && !window.CURRENT_MANAGER_ID) {
- if (window.CURRENT_ROLE === "admin") {
- window.CURRENT_MANAGER_ID = "ahmedqutb11232_gmail_com";
- localStorage.setItem("ca_manager_id", window.CURRENT_MANAGER_ID);
- console.log("[Self-Heal] Restored missing ca_manager_id for admin.");
- } else {
- // Assistant without manager ID must re-login
- localStorage.removeItem(K_AUTH);
- console.log("[Self-Heal] Cleared invalid assistant session.");
- }
+ if (!localStorage.getItem("ca_manager_id")) {
+   localStorage.setItem("ca_manager_id", window.CURRENT_MANAGER_ID);
  }
 
  // ==========================================
@@ -1070,15 +1060,14 @@ function showToast(msg, type = "success") {
     if (typeof renderReportsPage === "function") renderReportsPage();
 
     // Push to Supabase
-    if (window.CURRENT_MANAGER_ID && window.supabaseClient && navigator.onLine) {
+    if (window.supabaseClient && navigator.onLine) {
       updateSyncUI('syncing', 'جاري المزامنة مع السحابة...');
-      const mid = window.CURRENT_MANAGER_ID;
+      const mid = window.CURRENT_MANAGER_ID || "ahmedqutb11232_gmail_com";
 
-      // 1. Prepare Students array
-      const allStudentsList = Object.values(students || {}).concat(Object.values(deletedStudents || {})).filter(s => s && s.id && (s.name || s.phone || s.parentPhone || s.className || (s.packages && s.packages.length > 0) || (s.attendanceDates && s.attendanceDates.length > 0)));
+      // 1. Prepare Students array (never skip students that have data or were modified)
+      const allStudentsList = Object.values(students || {}).concat(Object.values(deletedStudents || {})).filter(s => s && s.id && (s.name || s.phone || s.parentPhone || s.className || (s.packages && s.packages.length > 0) || (s.attendanceDates && s.attendanceDates.length > 0) || s.lastModified));
       const studentRows = allStudentsList.map(st => ({
         id: String(st.id),
-        
         name: st.name || '',
         phone: st.phone || '',
         parent_phone: st.parentPhone || '',
@@ -1099,7 +1088,6 @@ function showToast(msg, type = "success") {
         const p = groupFees[pkgName];
         const isObj = typeof p === 'object' && p !== null;
         return {
-          
           name: pkgName,
           price: toInt(isObj ? p.price : p) || 0,
           has_installments: isObj ? !!p.hasInstallments : false,
@@ -1112,7 +1100,6 @@ function showToast(msg, type = "success") {
         const b = bookletsStock[bId];
         return {
           id: String(bId),
-          
           name: b.name || '',
           price: toInt(b.price) || 0,
           stock: parseInt(b.stock) || 0,
@@ -1120,19 +1107,54 @@ function showToast(msg, type = "success") {
         };
       });
 
+      // 4. Map student packages to persist in settings.config
+      const studentPackagesMap = {};
+      Object.values(students || {}).forEach(st => {
+        if (st && st.id && Array.isArray(st.packages) && st.packages.length > 0) {
+          studentPackagesMap[String(st.id)] = st.packages;
+        }
+      });
+
+      // Fetch latest settings config to merge safely without overwriting other keys (like daily_approval_map)
+      let existingConfig = {};
+      try {
+        const { data: curSetting } = await window.supabaseClient.from('settings').select('config').eq('id', 1).maybeSingle();
+        if (curSetting && curSetting.config) existingConfig = curSetting.config;
+      } catch (err) {
+        console.warn("Could not fetch current config for merge:", err);
+      }
+
+      const mergedConfig = Object.assign({}, existingConfig, {
+        settings: { lastModified: Date.now() },
+        eval_data: evalData || {},
+        revenue_by_date: revenueByDate || {},
+        expenses_by_date: expensesByDate || {},
+        session_students_by_date: sessionStudentsByDate || {},
+        att_by_date: attByDate || {},
+        syllabus: (syllabusData || []).map(s => ({
+          title: s.title || s.name || '',
+          name: s.name || s.title || '',
+          status: s.status || 'not_started',
+          notes: s.notes || '',
+          date: s.date || s.updated_at || nowDateStr(),
+          updated_at: s.updated_at || new Date().toISOString()
+        })),
+        syllabus_data: (syllabusData || []).map(s => ({
+          title: s.title || s.name || '',
+          name: s.name || s.title || '',
+          status: s.status || 'not_started',
+          notes: s.notes || '',
+          date: s.date || s.updated_at || nowDateStr(),
+          updated_at: s.updated_at || new Date().toISOString()
+        })),
+        student_packages: Object.assign({}, existingConfig.student_packages || {}, studentPackagesMap),
+        group_fees: groupFees || {}
+      });
+
       // Execute upserts in parallel
       const promises = [
-        // Update center settings & evaluation in settings table
         window.supabaseClient.from('settings').update({
-          config: {
-            settings: { lastModified: Date.now() },
-            eval_data: evalData || {},
-            revenue_by_date: revenueByDate || {},
-            expenses_by_date: expensesByDate || {},
-            session_students_by_date: sessionStudentsByDate || {},
-            att_by_date: attByDate || {},
-            syllabus_data: syllabusData || []
-          },
+          config: mergedConfig,
           updated_at: new Date().toISOString()
         }).eq('id', 1)
       ];
@@ -1147,13 +1169,15 @@ function showToast(msg, type = "success") {
         promises.push(window.supabaseClient.from('booklets').upsert(bookletRows, { onConflict: 'id' }));
       }
 
-      Promise.all(promises).then(() => {
-        hasUnsavedChanges = false;
-        updateSyncUI('online', 'متصل ومتزامن ');
-      }).catch(e => {
-        console.error("Supabase saveAll error:", e);
-        updateSyncUI('pending', 'تغييرات محلية (ستتم المزامنة لاحقاً)');
-      });
+      const results = await Promise.all(promises);
+      for (const res of results) {
+        if (res && res.error) {
+          console.error("Supabase operation error:", res.error);
+          throw res.error;
+        }
+      }
+      hasUnsavedChanges = false;
+      updateSyncUI('online', 'متصل ومتزامن ');
     } else {
       updateSyncUI('pending', 'تم الحفظ محلياً');
     }
@@ -1174,13 +1198,12 @@ async function saveAttendanceOnly() {
     ]);
     updateTopStats();
 
-    if (window.CURRENT_MANAGER_ID && window.supabaseClient && navigator.onLine) {
+    if (window.supabaseClient && navigator.onLine) {
       updateSyncUI('syncing', 'جاري المزامنة...');
-      const mid = window.CURRENT_MANAGER_ID;
+      const mid = window.CURRENT_MANAGER_ID || "ahmedqutb11232_gmail_com";
 
-      const studentRows = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.parentPhone || s.className || (s.packages && s.packages.length > 0) || (s.attendanceDates && s.attendanceDates.length > 0))).map(st => ({
+      const studentRows = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.parentPhone || s.className || (s.packages && s.packages.length > 0) || (s.attendanceDates && s.attendanceDates.length > 0) || s.lastModified)).map(st => ({
         id: String(st.id),
-        
         name: st.name || '',
         phone: st.phone || '',
         parent_phone: st.parentPhone || '',
@@ -1196,14 +1219,23 @@ async function saveAttendanceOnly() {
         last_modified: Date.now()
       }));
 
-            const attendancePromises = [
+      // Fetch latest settings config to merge safely
+      let existingConfig = {};
+      try {
+        const { data: curSetting } = await window.supabaseClient.from('settings').select('config').eq('id', 1).maybeSingle();
+        if (curSetting && curSetting.config) existingConfig = curSetting.config;
+      } catch (err) {}
+
+      const mergedConfig = Object.assign({}, existingConfig, {
+        settings: { lastModified: Date.now() },
+        revenue_by_date: revenueByDate || {},
+        att_by_date: attByDate || {},
+        session_students_by_date: sessionStudentsByDate || {}
+      });
+
+      const attendancePromises = [
         window.supabaseClient.from('settings').update({
-          config: {
-            settings: { lastModified: Date.now() },
-            revenue_by_date: revenueByDate || {},
-            att_by_date: attByDate || {},
-            session_students_by_date: sessionStudentsByDate || {}
-          },
+          config: mergedConfig,
           updated_at: new Date().toISOString()
         }).eq('id', 1)
       ];
@@ -1214,14 +1246,12 @@ async function saveAttendanceOnly() {
         );
       }
 
-      Promise.all(attendancePromises)
-        .then(() => {
-          hasUnsavedChanges = false;
-          updateSyncUI('online', 'متصل ومتزامن ');
-        }).catch(e => {
-          console.error("Supabase attendance sync error:", e);
-          updateSyncUI('pending', 'تغييرات محلية لم تتم مزامنتها');
-        });
+      const attResults = await Promise.all(attendancePromises);
+      for (const res of attResults) {
+        if (res && res.error) throw res.error;
+      }
+      hasUnsavedChanges = false;
+      updateSyncUI('online', 'متصل ومتزامن ');
     }
   } catch(e) {
     console.error("saveAttendanceOnly error:", e);
@@ -1248,9 +1278,9 @@ async function loadAll() {
 
     // Step 2: Try to fetch from Supabase and merge
     try {
-      if (window.CURRENT_MANAGER_ID && window.supabaseClient && navigator.onLine) {
+      if (window.supabaseClient && navigator.onLine) {
         updateSyncUI('syncing', 'جاري جلب البيانات من السحابة...');
-        const mid = window.CURRENT_MANAGER_ID;
+        const mid = window.CURRENT_MANAGER_ID || "ahmedqutb11232_gmail_com";
 
         // Fetch students, packages, booklets, settings data in parallel
         const [stRes, pkgRes, bRes, centerRes] = await Promise.all([
@@ -1260,32 +1290,53 @@ async function loadAll() {
           window.supabaseClient.from('settings').select('*').eq('id', 1).maybeSingle()
         ]);
 
+        const cd = (centerRes && centerRes.data) ? centerRes.data : {};
+        const cfg = cd.config || {};
+        const studentPackagesMap = cfg.student_packages || {};
+
         if (!stRes.error && stRes.data) {
           stRes.data.forEach(row => {
+            const isCloudEmpty = (!row.name || row.name.trim() === '') && (!row.phone || row.phone.trim() === '');
+            const local = students[row.id];
+            const isLocalValid = local && local.name && local.name.trim() !== '';
+
+            // CRITICAL MERGE GUARD: An empty cloud row must NEVER overwrite a valid local student!
+            if (isCloudEmpty && isLocalValid) {
+              console.log(`[loadAll] Preserving valid local student #${row.id} (${local.name}) over empty cloud row`);
+              setTimeout(() => { if (typeof saveAll === 'function') saveAll(); }, 2000);
+              return;
+            }
+
+            const restoredPackages = (studentPackagesMap && studentPackagesMap[row.id]) || (local && local.packages) || row.packages || [];
+
             const stObj = {
               id: row.id,
-              name: row.name,
-              phone: row.phone,
-              parentPhone: row.parent_phone,
-              className: row.class_name,
-              paymentPlan: row.payment_plan,
-              paid: Number(row.paid) || 0,
-              discount: Number(row.discount) || 0,
-              notes: row.notes,
-              status: row.status,
-              installments: row.installments || [],
-              payments: row.payments || [],
-              attendanceDates: row.attendance_dates || [],
-              lastModified: row.last_modified || 0
+              name: row.name || (local ? local.name : ''),
+              phone: row.phone || (local ? local.phone : ''),
+              parentPhone: row.parent_phone || row.parentPhone || (local ? local.parentPhone : ''),
+              className: row.class_name || row.className || (local ? local.className : ''),
+              paymentPlan: row.payment_plan || (local ? local.paymentPlan : 'cash'),
+              paid: Number(row.paid) || (local ? local.paid : 0),
+              discount: Number(row.discount) || (local ? local.discount : 0),
+              notes: row.notes || (local ? local.notes : ''),
+              status: row.status || (local ? local.status : 'active'),
+              packages: Array.isArray(restoredPackages) ? restoredPackages : [],
+              installments: row.installments || (local ? local.installments : []),
+              payments: row.payments || (local ? local.payments : []),
+              attendanceDates: row.attendance_dates || (local ? local.attendanceDates : []),
+              lastModified: row.last_modified || (local ? local.lastModified : Date.now())
             };
 
             if (row.status === 'deleted') {
               deletedStudents[row.id] = stObj;
               delete students[row.id];
             } else {
-              // Merge: keep newest or set
-              const local = students[row.id];
-              if (!local || (row.last_modified >= (local.lastModified || 0))) {
+              // Merge: keep whichever is newer, but always prioritize non-empty data
+              if (!local) {
+                students[row.id] = stObj;
+              } else if (!isCloudEmpty && (row.last_modified >= (local.lastModified || 0))) {
+                students[row.id] = stObj;
+              } else if (!isLocalValid) {
                 students[row.id] = stObj;
               }
             }
@@ -1299,12 +1350,19 @@ async function loadAll() {
         }
 
         if (!pkgRes.error && pkgRes.data && pkgRes.data.length > 0) {
+          const cfgGroupFees = cfg.group_fees || {};
           pkgRes.data.forEach(p => {
+            const extra = cfgGroupFees[p.name] || {};
             groupFees[p.name] = {
-              subject: p.subject || (groupFees[p.name] ? groupFees[p.name].subject : '') || p.name || '',
+              name: p.name,
+              subject: p.subject || extra.subject || (groupFees[p.name] ? groupFees[p.name].subject : '') || p.name || '',
               price: Number(p.price) || 0,
               hasInstallments: !!p.has_installments,
-              installmentPrice: Number(p.installment_price) || 0
+              installmentPrice: Number(p.installment_price) || 0,
+              expiryType: extra.expiryType || 'none',
+              startDate: extra.startDate || '',
+              endDate: extra.endDate || '',
+              sessionLimit: extra.sessionLimit || 0
             };
           });
         }
@@ -1322,12 +1380,22 @@ async function loadAll() {
         }
 
         if (!centerRes.error && centerRes.data) {
-          const cd = centerRes.data;
-          const cfg = cd.config || {};
           const evalSrc = cd.eval_data || cfg.eval_data;
           if (evalSrc) evalData = evalSrc;
           const sylSrc = cd.syllabus_data || cfg.syllabus_data || cfg.syllabus;
-          if (sylSrc && Array.isArray(sylSrc)) syllabusData = sylSrc;
+          if (sylSrc && Array.isArray(sylSrc)) {
+            syllabusData = sylSrc.map(s => {
+              const lTitle = s.title || s.name || '';
+              return {
+                name: lTitle,
+                title: lTitle,
+                status: s.status || 'not_started',
+                notes: s.notes || '',
+                date: s.date || s.updated_at || nowDateStr(),
+                updated_at: s.updated_at || new Date().toISOString()
+              };
+            });
+          }
           
           const revSrc = cd.revenue_by_date || cfg.revenue_by_date;
           if (revSrc) {
@@ -1877,6 +1945,19 @@ function applyPermissions() {
  if($("studentIdPill")) $("studentIdPill").textContent = `ID: ${id}`;
  if($("stName")) $("stName").value = st.name || ""; 
  if($("stPhone")) $("stPhone").value = st.phone || ""; 
+ if($("stParentPhone")) $("stParentPhone").value = st.parentPhone || "";
+ if($("stClass")) $("stClass").value = st.className || "";
+
+ // Populate class datalist dynamically
+ const classListEl = $("stClassList");
+ if (classListEl) {
+   const classesSet = new Set();
+   Object.keys(groupFees || {}).forEach(g => classesSet.add(g));
+   Object.values(students || {}).forEach(s => { if (s && s.className) classesSet.add(s.className.trim()); });
+   let cOpts = '';
+   classesSet.forEach(c => { if (c) cOpts += `<option value="${c}"></option>`; });
+   classListEl.innerHTML = cOpts;
+ } 
  
   let pkgsHtml = '';
   const allPkgs = Object.keys(groupFees || {});
@@ -2724,7 +2805,7 @@ function applyPermissions() {
  html += `
  <div class="syll-card ${statusClass}">
  <div class="syll-header">
- <span>${s.name}</span>
+ <span>${s.name || s.title}</span>
  <div class="row" style="width:auto;">
  <span style="font-size:0.8em; font-weight:normal;">${statusIcon}</span>
  ${deleteBtnHtml}
@@ -2772,7 +2853,7 @@ function applyPermissions() {
  existing.notes = notes;
  existing.date = nowDateStr();
  } else {
- syllabusData.push({ name: name, status: status, notes: notes, date: nowDateStr() });
+ syllabusData.push({ name: name, title: name, status: status, notes: notes, date: nowDateStr(), updated_at: new Date().toISOString() });
  }
  
  saveAll();
@@ -3142,9 +3223,11 @@ on("quickAttendBtn", "click", function() {
  on("saveStudentBtn", "click", function() {
  if(!currentId) return;
  const s = students[currentId]; if (!s) return;
- if ($("stName")) s.name = $("stName").value; 
- if ($("stClass")) s.className = $("stClass").value; 
- if ($("stPhone")) s.phone = $("stPhone").value;
+ if ($("stName")) s.name = $("stName").value.trim(); 
+ if ($("stClass")) s.className = $("stClass").value.trim(); 
+ if ($("stPhone")) s.phone = $("stPhone").value.trim();
+ if ($("stParentPhone")) s.parentPhone = $("stParentPhone").value.trim();
+ s.lastModified = Date.now();
  playSound("click");
  saveAll(); showToast(t("msg_saved")); updateStudentUI(currentId);
  
@@ -3529,7 +3612,24 @@ on("quickAttendBtn", "click", function() {
 
  on("waBtn", "click", function() { 
  const phInp = $("stPhone");
- if (phInp && phInp.value) window.open(`https://wa.me/20${phInp.value}`, '_blank'); 
+ if (phInp && phInp.value) {
+   let ph = phInp.value.trim().replace(/\D/g, '');
+   if (ph.startsWith('0')) ph = ph.substring(1);
+   window.open(`https://wa.me/20${ph}`, '_blank'); 
+ } else {
+   showToast("يرجى إدخال رقم الطالب أولاً", "err");
+ }
+ });
+
+ on("waParentBtn", "click", function() { 
+ const phInp = $("stParentPhone");
+ if (phInp && phInp.value) {
+   let ph = phInp.value.trim().replace(/\D/g, '');
+   if (ph.startsWith('0')) ph = ph.substring(1);
+   window.open(`https://wa.me/20${ph}`, '_blank'); 
+ } else {
+   showToast("يرجى إدخال رقم ولي الأمر أولاً", "err");
+ }
  });
 
  
@@ -7385,3 +7485,39 @@ if (typeof window.updateAttendanceUIState === 'function') {
 }
 setTimeout(() => { if(typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState(); }, 300);
 setTimeout(() => { if(typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState(); }, 1200);
+
+// =============================================================================
+// CLOUD DATA MONITOR REGISTRY (Mandatory Data Integrity Architecture)
+// =============================================================================
+window.CLOUD_MONITOR_SECTIONS = [
+  {
+    id: "students",
+    label: "الطلاب المسجلين",
+    localCount: () => Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.className)).length,
+    cloudTable: "students"
+  },
+  {
+    id: "packages",
+    label: "باقات الأسعار",
+    localCount: () => Object.keys(groupFees || {}).length,
+    cloudTable: "packages"
+  },
+  {
+    id: "syllabus",
+    label: "مفردات المنهج",
+    localCount: () => (Array.isArray(syllabusData) ? syllabusData.length : 0),
+    cloudTable: "settings (config.syllabus)"
+  },
+  {
+    id: "booklets",
+    label: "المذكرات والمخزن",
+    localCount: () => Object.keys(bookletsStock || {}).length,
+    cloudTable: "booklets"
+  },
+  {
+    id: "attendance",
+    label: "سجلات الحضور",
+    localCount: () => Object.keys(attByDate || {}).length,
+    cloudTable: "settings (config.att_by_date)"
+  }
+];

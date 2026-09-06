@@ -300,7 +300,16 @@ async function loadAllAdminData() {
       if (cfg.attendance_by_date) attByDate = cfg.attendance_by_date;
       if (cfg.revenue_by_date) revenueByDate = cfg.revenue_by_date;
       if (cfg.expenses_by_date) expensesByDate = cfg.expenses_by_date;
-      if (cfg.syllabus) syllabusList = cfg.syllabus;
+      const sylRaw = cfg.syllabus || cfg.syllabus_data || [];
+      if (Array.isArray(sylRaw)) {
+        syllabusList = sylRaw.map(s => ({
+          title: s.title || s.name || '',
+          name: s.name || s.title || '',
+          status: s.status || 'not_started',
+          notes: s.notes || '',
+          updated_at: s.updated_at || s.date || new Date().toISOString()
+        }));
+      }
     }
   } catch(e) {
     console.error("Admin Load Data Error:", e);
@@ -1203,7 +1212,7 @@ window.renderAdminSyllabus = function() {
     html += `
       <div class="syllabus-item-card ${s.status}">
         <div style="flex:1;">
-          <div style="font-weight:700; font-size:1.05em;">${s.title}</div>
+          <div style="font-weight:700; font-size:1.05em;">${s.title || s.name}</div>
           <span style="font-size:0.82em; color:${badgeColor}; font-weight:700;">${statusBadge}</span>
           ${s.notes ? `<p style="font-size:0.82em; color:var(--text-secondary); margin-top:4px;">ملاحظات: ${s.notes}</p>` : ''}
         </div>
@@ -1223,10 +1232,11 @@ window.saveSyllabusLesson = async function() {
 
   if (!title) return showToast("يرجى إدخال اسم الدرس / الفصل", "err");
 
-  syllabusList.push({ title, status, notes, updated_at: new Date().toISOString() });
+  const newLesson = { title, name: title, status, notes, updated_at: new Date().toISOString() };
+  syllabusList.push(newLesson);
 
   try {
-    await saveCenterConfig({ syllabus: syllabusList });
+    await saveCenterConfig({ syllabus: syllabusList, syllabus_data: syllabusList });
     showToast("تمت إضافة الدرس لخريطة المنهج", "success");
     document.getElementById("syllabusLessonName").value = "";
     document.getElementById("syllabusLessonNotes").value = "";
@@ -1237,7 +1247,7 @@ window.saveSyllabusLesson = async function() {
 window.deleteSyllabusLesson = async function(idx) {
   syllabusList.splice(idx, 1);
   try {
-    await saveCenterConfig({ syllabus: syllabusList });
+    await saveCenterConfig({ syllabus: syllabusList, syllabus_data: syllabusList });
     showToast("تم حذف الدرس من المنهج", "info");
     window.renderAdminSyllabus();
   } catch(e) { console.error(e); }
