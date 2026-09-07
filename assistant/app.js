@@ -1652,18 +1652,19 @@ function applyPermissionsToAssistantUI() {
     }
     if (revToggle) {
       revToggle.style.display = "";
-      revToggle.classList.remove('hidden');
+      revToggle.classList.remove('locked-feature', 'hidden');
     }
   } else {
     if (revPill) {
-      revPill.style.display = "none";
+      revPill.style.display = "";
       revPill.classList.add('locked-feature');
     }
     if (revToggle) {
-      revToggle.style.display = "none";
-      revToggle.classList.add('hidden');
+      revToggle.style.display = "";
+      revToggle.classList.add('locked-feature');
+      revToggle.classList.remove('hidden');
     }
-    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "---";
+    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "🔒 مقفول";
   }
 
   // Add student
@@ -1706,10 +1707,13 @@ function applyPermissionsToAssistantUI() {
 
   // Syllabus / المنهج
   const btnSyllabus = document.getElementById('btnTabSyllabus');
+  const syllUpdateCard = document.querySelector('#secSyllabus .adminOnly');
   if (p.can_access_syllabus !== false) {
     if (btnSyllabus) btnSyllabus.classList.remove('locked-feature');
+    if (syllUpdateCard) syllUpdateCard.classList.remove('locked-feature'); // Unlock the update card as well
   } else {
     if (btnSyllabus) btnSyllabus.classList.add('locked-feature');
+    if (syllUpdateCard) syllUpdateCard.classList.add('locked-feature');
   }
 
   // Reports
@@ -1826,12 +1830,22 @@ function applyPermissions() {
  const revToggle = $("toggleRevBtn");
  const canShowRev = (currentUserRole === 'admin' || !currentPermissions || currentPermissions.show_revenue !== false);
  if (!canShowRev) {
-   if (revPill) revPill.style.display = "none";
-   if (revToggle) revToggle.style.display = "none";
-   if ($("todayRevenue")) $("todayRevenue").textContent = "---";
- } else {
-   if (revPill) revPill.style.display = "";
+   if (revPill) {
+     revPill.classList.add('locked-feature');
+     revPill.style.display = "";
+   }
    if (revToggle) {
+     revToggle.classList.add('locked-feature');
+     revToggle.style.display = "";
+   }
+   if ($("todayRevenue")) $("todayRevenue").textContent = "🔒 مقفول";
+ } else {
+   if (revPill) {
+     revPill.classList.remove('locked-feature');
+     revPill.style.display = "";
+   }
+   if (revToggle) {
+     revToggle.classList.remove('locked-feature');
      revToggle.style.display = "";
      revToggle.innerHTML = isRevHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
    }
