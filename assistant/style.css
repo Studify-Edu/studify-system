@@ -673,6 +673,11 @@ a { color: var(--primary); text-decoration: none; }
   border-color: var(--primary);
   transform: translateY(-1px);
 }
+.stat-pill.clickable.locked-feature:hover {
+  transform: none !important;
+  border-color: var(--border) !important;
+  background: var(--bg-inset) !important;
+}
 
 .topbar-icon-btn {
   width: 40px;
@@ -2510,17 +2515,17 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   position: relative !important;
   pointer-events: auto !important;
   cursor: not-allowed !important;
-  overflow: hidden !important;
+  /* Removed overflow: hidden to prevent flexbox baseline breakage */
 }
 .locked-feature > * {
-  filter: blur(2px) !important;
-  opacity: 0.55 !important;
+  filter: blur(1.5px) !important;
+  opacity: 0.65 !important;
   pointer-events: none !important;
   user-select: none !important;
   transition: all 0.3s ease;
 }
 
-/* Always-visible Lock Icon (Glassmorphic Circle) */
+/* Always-visible Lock Icon (Glassmorphic Circle - Red Danger Style) */
 .locked-feature::after {
   content: '\f023'; /* FontAwesome lock icon */
   font-family: 'Font Awesome 6 Free', var(--font);
@@ -2531,16 +2536,16 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   transform: translate(-50%, -50%);
   font-size: 1.6rem;
   color: #fff;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(239, 68, 68, 0.85); /* Danger Red */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   width: 54px;
   height: 54px;
   line-height: 54px;
   text-align: center;
   border-radius: 50%;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
   z-index: 9;
   pointer-events: none;
   transition: all 0.3s ease;
@@ -2552,20 +2557,21 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   font-family: var(--font);
   font-weight: 700;
   position: absolute;
-  top: calc(50% + 45px); /* Positioned below the lock circle */
+  top: calc(50% + 40px); /* Positioned below the lock circle */
   left: 50%;
   transform: translateX(-50%);
   padding: 6px 12px;
-  background: var(--glass-overlay);
+  background: rgba(239, 68, 68, 0.95);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-radius: 8px;
-  color: var(--text-primary);
+  color: #fff;
   font-size: 0.95rem;
   z-index: 10;
   opacity: 0;
   transition: all 0.3s ease;
   white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
 }
 
 .locked-feature:hover::before {
@@ -2583,24 +2589,20 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 
 .locked-feature.locked-clicked::after {
   animation: lockShake 0.4s ease;
-  color: #ff4d4f; /* Turn red on click */
-  border-color: rgba(255, 77, 79, 0.3);
+  background: rgba(220, 38, 38, 0.95); /* Darker red on click */
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.6);
 }
 
 /* Specific fix for the Revenue pill */
 #openRevenueModalBtn.locked-feature::before {
-  display: none !important; /* Hide hover text */
+  display: none !important; /* Hide hover text to prevent glitch */
+}
+#openRevenueModalBtn.locked-feature > span:first-child {
+  /* Keep the title 'إيراد' clearly readable */
+  filter: none !important;
+  opacity: 1 !important;
 }
 #openRevenueModalBtn.locked-feature::after {
-  font-size: 1.1rem;
-  width: 32px;
-  height: 32px;
-  line-height: 32px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 /* Decision / Request Cards */
