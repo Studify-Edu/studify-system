@@ -779,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
  if (isSuccess) {
  icon.innerHTML = "";
  } else if (isAlreadyPresent) {
- icon.innerHTML = "️";
+ icon.innerHTML = "";
  } else {
  icon.innerHTML = "";
  }
@@ -816,7 +816,7 @@ function showToast(msg, type = "success") {
  let container = $("toastContainer"); if(!container) return;
  const toast = document.createElement("div"); 
  toast.className = `toast toast-warning undo-toast`;
- const undoTxt = currentLang === 'ar' ? 'تراجع ↩️' : 'Undo ↩️';
+ const undoTxt = currentLang === 'ar' ? 'تراجع ' : 'Undo ';
  toast.innerHTML = `<span><i class="fa-solid fa-circle-info"></i> ${msg}</span> <button class="btn smallBtn" id="tempUndoBtn" style="margin-right:15px; padding:5px 10px;">${undoTxt}</button>`;
  container.appendChild(toast); 
  let isUndone = false;
@@ -1610,7 +1610,7 @@ if (!window._lockedFeatureListenerAdded) {
       void lockedEl.offsetWidth; // trigger reflow
       lockedEl.classList.add('locked-clicked');
       
-      showToast("🔒 هذه الميزة مقفولة من قِبَل المدير", "warning");
+      showToast(" هذه الميزة مقفولة من قِبَل المدير", "warning");
       
       setTimeout(() => lockedEl.classList.remove('locked-clicked'), 400);
     }
@@ -1660,11 +1660,10 @@ function applyPermissionsToAssistantUI() {
       revPill.classList.add('locked-feature');
     }
     if (revToggle) {
-      revToggle.style.display = "";
-      revToggle.classList.add('locked-feature');
-      revToggle.classList.remove('hidden');
+      revToggle.style.display = "none";
+      revToggle.classList.remove('locked-feature');
     }
-    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = "🔒 مقفول";
+    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = " مقفول";
   }
 
   // Add student
@@ -1682,7 +1681,7 @@ function applyPermissionsToAssistantUI() {
     }
     if (newIdInput) {
       newIdInput.disabled = true;
-      newIdInput.placeholder = '🔒 مقفول من قِبَل المدير';
+      newIdInput.placeholder = ' مقفول من قِبَل المدير';
     }
   } else {
     if (addNavBtn) addNavBtn.classList.remove('locked-feature');
@@ -1834,11 +1833,8 @@ function applyPermissions() {
      revPill.classList.add('locked-feature');
      revPill.style.display = "";
    }
-   if (revToggle) {
-     revToggle.classList.add('locked-feature');
-     revToggle.style.display = "";
-   }
-   if ($("todayRevenue")) $("todayRevenue").textContent = "🔒 مقفول";
+   if (revToggle) { revToggle.style.display = "none"; revToggle.classList.remove('locked-feature'); }
+   if ($("todayRevenue")) $("todayRevenue").textContent = " مقفول";
  } else {
    if (revPill) {
      revPill.classList.remove('locked-feature');
@@ -2274,7 +2270,7 @@ const st = students[id];
  rBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
  rBtn.style.color = "#ffffff";
  rBtn.style.boxShadow = "0 4px 12px rgba(16, 185, 129, 0.4)";
- if ($("receiptBtnIcon")) $("receiptBtnIcon").textContent = "️";
+ if ($("receiptBtnIcon")) $("receiptBtnIcon").textContent = "";
  if ($("receiptBtnText")) $("receiptBtnText").textContent = t("print_receipt_unlock");
  } else {
  rBtn.disabled = true;
@@ -2733,7 +2729,7 @@ const st = students[id];
      let attendTxt = isAttended 
         ? `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check"></i> حاضر</span>` 
         : `<span style="color:var(--text-secondary); font-size:0.85em;">—</span>`;
-     let rankIcon = s.rank === 'vip' ? ' 👑' : (s.rank === 'warn' ? ' ⚠️' : '');
+     let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
      let gColor = getTagColor(sClass || 'عام');
      let classBadge = sClass 
         ? `<span class="badge" style="background:${gColor}; border-color:${gColor}; color:#fff; font-weight:600; font-size:0.82em;">${sClass}</span>` 
@@ -2808,7 +2804,7 @@ const st = students[id];
  for (let i = start; i < end && i < simpleFilteredStuds.length; i++) {
  let s = simpleFilteredStuds[i];
  const tr = document.createElement("tr");
- let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ️' : '');
+ let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
  
  tr.innerHTML = `<td>${s.id}</td><td><b>${s.name}</b>${rankIcon}</td><td><span class="badge" style="background:#eef2f5; color:#333; font-weight:bold;">${s.className || 'عام'}</span></td>`;
  tr.style.cursor = "pointer";
@@ -2868,7 +2864,7 @@ const st = students[id];
  html += `
  <div class="group-revenue-card" style="border-right: 5px solid ${gColor};">
  <div class="group-revenue-details">
- <b style="color:${gColor}; font-size:1.1em;">️ ${g}</b>
+ <b style="color:${gColor}; font-size:1.1em;"> ${g}</b>
  </div>
  <div class="group-revenue-amount">
  العدد: ${groups[g].count} طالب
@@ -3077,7 +3073,7 @@ const st = students[id];
  }
 
  window.deleteSyllabus = function(index) {
- let confirmMsg = currentLang === 'ar' ? "️ متأكد من حذف هذا الدرس من المنهج؟" : "️ Are you sure you want to delete this lesson?";
+ let confirmMsg = currentLang === 'ar' ? " متأكد من حذف هذا الدرس من المنهج؟" : " Are you sure you want to delete this lesson?";
  Swal.fire({
  title: 'تأكيد الحذف',
  text: confirmMsg,
@@ -3463,7 +3459,7 @@ on("quickAttendBtn", "click", function() {
  
  if (hasName || hasPaid || hasPayments || hasAttendance || hasNotes || hasClassName) {
  triggerShake("newId");
- showToast("️ هذا الكود محجوز ومسجل به بيانات بالفعل", "err");
+ showToast(" هذا الكود محجوز ومسجل به بيانات بالفعل", "err");
  playSound("error");
  window.extOpen(id);
  if ($("newId")) $("newId").value = "";
@@ -3537,7 +3533,7 @@ on("quickAttendBtn", "click", function() {
      }
      const isFull = (reqPrice > 0 && pPaid >= reqPrice);
      const badgeHtml = isFull 
-       ? '<span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.85em; font-weight:bold;">مسددة بالكامل ✔</span>'
+       ? '<span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.85em; font-weight:bold;">مسددة بالكامل </span>'
        : `<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.85em; font-weight:bold;">متبقي: ${Math.max(0, reqPrice - pPaid)} ج</span>`;
      rRows += `
        <tr style="border-bottom: 1px solid var(--border);">
@@ -3598,7 +3594,7 @@ on("quickAttendBtn", "click", function() {
  on("rankWarnBtn", "click", function() {
  if(!currentId) return;
  students[currentId].rank = "warn";
- saveAll(); updateStudentUI(currentId); showToast("تم إعطاء إنذار ️", "warning");
+ saveAll(); updateStudentUI(currentId); showToast("تم إعطاء إنذار ", "warning");
  });
  
  on("markTodayBtn", "click", function() { 
@@ -3697,7 +3693,7 @@ on("quickAttendBtn", "click", function() {
           return;
       }
       let remainMsg = (pkgRemain === 0) 
-          ? "🎉 تم سداد مصاريف الباقة بالكامل." 
+          ? " تم سداد مصاريف الباقة بالكامل." 
           : ("المتبقي للباقة: " + pkgRemain + " ج.");
       let msg = "مرحباً " + st.name + "،\r\nتم استلام دفعة بقيمة " + v + " ج (" + methodName + ") لباقة (" + pkgName + ").\r\n" + remainMsg + "\r\n\r\nمع تحيات: أ/ " + currentManager;
       setTimeout(function() { 
@@ -3712,7 +3708,7 @@ on("quickAttendBtn", "click", function() {
  let st = students[currentId];
  if(!st || !st.payments || !st.payments[index]) return;
  
- let msg = currentLang === 'ar' ? "️ متأكد من حذف هذه الدفعة نهائياً؟" : "️ Are you sure you want to delete this payment?";
+ let msg = currentLang === 'ar' ? " متأكد من حذف هذه الدفعة نهائياً؟" : " Are you sure you want to delete this payment?";
  Swal.fire({
  title: 'تأكيد الحذف',
  text: msg,
@@ -4167,7 +4163,7 @@ on("quickAttendBtn", "click", function() {
        const enrolled = Object.values(students || {}).filter(st => st && st.packages && st.packages.includes(g));
        let textWarning = `هل أنت متأكد من حذف باقة "${g}" من السيستم؟`;
        if (enrolled.length > 0) {
-         textWarning = `⚠️ تنبيه: هناك (${enrolled.length}) طالب مسجلين حالياً في هذه الباقة.\nحذف الباقة سيقوم بإزالتها تلقائياً من باقات هؤلاء الطلاب لمنع بقاء باقات يتيمة بدون أسعار. هل تريد المتابعة؟`;
+         textWarning = ` تنبيه: هناك (${enrolled.length}) طالب مسجلين حالياً في هذه الباقة.\nحذف الباقة سيقوم بإزالتها تلقائياً من باقات هؤلاء الطلاب لمنع بقاء باقات يتيمة بدون أسعار. هل تريد المتابعة؟`;
        }
        Swal.fire({
          title: 'تأكيد حذف الباقة',
@@ -4304,7 +4300,7 @@ on("quickAttendBtn", "click", function() {
  // 16. EXCEL LOGIC (تصدير واستيراد - النسخة الاحترافية متعددة الصفحات)
  // ==========================================
  on("exportExcelBtn", "click", function() {
- if (typeof XLSX === "undefined") { return showToast("️ مكتبة الإكسيل غير موجودة، تأكد من وجود ملف xlsx.full.min.js في فولدر assets", "err"); }
+ if (typeof XLSX === "undefined") { return showToast(" مكتبة الإكسيل غير موجودة، تأكد من وجود ملف xlsx.full.min.js في فولدر assets", "err"); }
  
  const wb = XLSX.utils.book_new();
 
@@ -4318,7 +4314,7 @@ on("quickAttendBtn", "click", function() {
  for (let i = 0; i < filled.length; i++) {
  let s = filled[i];
  let history = s.attendanceDates ? s.attendanceDates.join(" | ") : "";
- let rankAr = s.rank === 'vip' ? 'VIP ' : (s.rank === 'warn' ? 'إنذار ️' : 'عادي ');
+ let rankAr = s.rank === 'vip' ? 'VIP ' : (s.rank === 'warn' ? 'إنذار ' : 'عادي ');
  let cleanNotes = s.notes ? s.notes.replace(/\r\n/g, " - ") : ""; 
  
  stData.push([s.id, s.name, s.className || "عام", s.phone, s.paid, rankAr, history, cleanNotes]);
@@ -4474,7 +4470,7 @@ on("importExcelInput", "change", async function(e) {
  let deleteTimer;
  const delBtn = $("deleteStudentBtn");
  
- if(delBtn) delBtn.innerHTML = `<span>️ حذف</span>`; 
+ if(delBtn) delBtn.innerHTML = `<span> حذف</span>`; 
 
  function startDeleteHold(e) {
  if(!currentId) return;
@@ -4801,10 +4797,10 @@ function updateDriveUI() {
  });
 
  on("restoreDriveBtn", "click", async function() {
- if (!accessToken) return showToast(currentLang === 'ar' ? "يرجى الربط بالدرايف أولاً ️" : "Please connect to Drive first ️", "err");
+ if (!accessToken) return showToast(currentLang === 'ar' ? "يرجى الربط بالدرايف أولاً " : "Please connect to Drive first ", "err");
  const confirmRes = await Swal.fire({
  title: 'تحذير شديد',
- text: currentLang === 'ar' ? "️ تحذير شديد: سيتم مسح كل البيانات الحالية واستبدالها بنسخة السحابة، متأكد؟" : "️ WARNING: Current data will be replaced by cloud backup. Sure?",
+ text: currentLang === 'ar' ? " تحذير شديد: سيتم مسح كل البيانات الحالية واستبدالها بنسخة السحابة، متأكد؟" : " WARNING: Current data will be replaced by cloud backup. Sure?",
  icon: 'error',
  showCancelButton: true,
  confirmButtonText: 'نعم، استرجع البيانات',
@@ -5318,7 +5314,7 @@ if ('BroadcastChannel' in window) {
           applyPermissionsToAssistantUI();
         }
         if (typeof showToast === 'function') {
-          showToast("⚡ تم تحديث الصلاحيات من قِبل المدير فورياً", "info");
+          showToast("تم تحديث الصلاحيات من قِبل المدير فورياً", "info");
         }
       }
     } else if (msg.type === 'DAILY_SHIFT_CHANGE' || msg.type === 'DAILY_SHIFT_APPROVED' || msg.type === 'DAILY_SHIFT_REJECTED') {
@@ -5329,6 +5325,32 @@ if ('BroadcastChannel' in window) {
     }
   };
 }
+
+// Supabase Real-time sync across different devices (Mobile & PC)
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.supabaseClient) {
+    window.supabaseClient.channel('custom-all-channel-sync')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'assistants' }, payload => {
+        const currentU = localStorage.getItem("ca_current_username") || "";
+        if (payload.new && payload.new.username && payload.new.username.toLowerCase() === currentU.toLowerCase()) {
+          currentPermissions = payload.new.permissions || {};
+          localStorage.setItem("ca_asst_permissions", JSON.stringify(currentPermissions));
+          if (typeof applyPermissionsToAssistantUI === 'function') {
+            applyPermissionsToAssistantUI();
+          }
+          if (typeof showToast === 'function') {
+            showToast("تم تحديث الصلاحيات من قِبل المدير فورياً", "info");
+          }
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_revenue_shifts' }, payload => {
+        if (typeof window.checkDailyShiftHeartbeat === 'function') {
+          window.checkDailyShiftHeartbeat(false);
+        }
+      })
+      .subscribe();
+  }
+});
 
  async function loadPermissions() {
   if (!window.supabaseClient) return;
@@ -5687,7 +5709,7 @@ if ('BroadcastChannel' in window) {
  if(last !== nowDateStr()) {
  if($("btnTabAdmin")) $("btnTabAdmin").classList.add("needs-backup");
  setTimeout(function() {
- let msg = currentLang==='ar' ? '️ تذكير: لم تقم بتصدير نسخة Excel اليوم' : '️ Backup reminder';
+ let msg = currentLang==='ar' ? ' تذكير: لم تقم بتصدير نسخة Excel اليوم' : ' Backup reminder';
  showToast(msg, 'warning');
  }, 3000);
  }
@@ -5792,7 +5814,7 @@ if ('BroadcastChannel' in window) {
 
  function exportColoredReport() {
  if (typeof XLSX === "undefined") {
- return showToast("️ مكتبة الإكسيل غير موجودة", "err");
+ return showToast(" مكتبة الإكسيل غير موجودة", "err");
  }
  const wb = XLSX.utils.book_new();
 
@@ -5968,13 +5990,13 @@ if ('BroadcastChannel' in window) {
  btn.onclick = function() {
  let dt = this.getAttribute("data-date");
  let idx = toInt(this.getAttribute("data-index"));
- if(confirm("️ متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟")) {
+ if(confirm(" متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟")) {
  let delItem = sessionStudentsByDate[dt][idx];
  revenueByDate[dt] = Math.max(0, (revenueByDate[dt] || 0) - toInt(delItem.amount));
  sessionStudentsByDate[dt].splice(idx, 1);
  saveAll();
  renderSessionStudentsList(dt);
- showToast("تم إلغاء تسجيل الحضور والمبلغ ️");
+ showToast("تم إلغاء تسجيل الحضور والمبلغ ");
  }
  };
  });
@@ -5988,7 +6010,7 @@ if ('BroadcastChannel' in window) {
  let method = $("sessStMethod") ? $("sessStMethod").value : "cash";
 
  if(!name || amount <= 0) {
- showToast("️ يرجى إدخال اسم الطالب والمبلغ بشكل صحيح", "warning");
+ showToast(" يرجى إدخال اسم الطالب والمبلغ بشكل صحيح", "warning");
  return;
  }
 
@@ -6089,7 +6111,7 @@ if ('BroadcastChannel' in window) {
  html += `
  <div class="item flexBetween" style="margin-bottom:8px; cursor:pointer;" onclick="document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('SessionStudents'); if($('sessFilterDate')) $('sessFilterDate').value='${today}'; renderSessionStudentsList('${today}');">
  <div>
- <b>${item.name}</b> <span class="badge" style="background:#fff3e0; color:#e65100;">طالب حصة ️</span> <span class="badge" style="background:#eee; color:#333;">${item.className || "عام"}</span>
+ <b>${item.name}</b> <span class="badge" style="background:#fff3e0; color:#e65100;">طالب حصة </span> <span class="badge" style="background:#eee; color:#333;">${item.className || "عام"}</span>
  <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:5px;">${mBadge}</span>
  </div>
  <div style="text-align:left;">
@@ -6280,7 +6302,7 @@ if ('BroadcastChannel' in window) {
  if (!bookletsStock[id]) return;
  let b = bookletsStock[id];
  if (b.sold >= b.qty) {
- showToast("️ انتهى مخزون هذه المذكرة، يرجى تعديل العدد الكلي إذا قمت بطباعة نسخ إضافية.", "err");
+ showToast(" انتهى مخزون هذه المذكرة، يرجى تعديل العدد الكلي إذا قمت بطباعة نسخ إضافية.", "err");
  playSound("error");
  return;
  }
@@ -6331,7 +6353,7 @@ if ('BroadcastChannel' in window) {
  delete bookletsStock[id];
  saveAll();
  renderBookletsStock();
- showToast("تم حذف المذكرة من قائمة المخزون ️");
+ showToast("تم حذف المذكرة من قائمة المخزون ");
  }
  };
 
@@ -6562,7 +6584,7 @@ if ('BroadcastChannel' in window) {
 
  on("btnStartAutoBroadcast", "click", function() {
  if (currentCampaignList.length === 0) {
- showToast("️ قائمة الأرقام فارغة، قم بتصفية داتا الطلاب أولاً.", "err");
+ showToast(" قائمة الأرقام فارغة، قم بتصفية داتا الطلاب أولاً.", "err");
  return;
  }
  if (broadcastTimer) clearInterval(broadcastTimer);
@@ -6628,7 +6650,7 @@ if ('BroadcastChannel' in window) {
       if (overlay && !overlay.classList.contains("hidden")) {
         overlay.classList.add("hidden");
         if (typeof showToast === 'function') {
-          showToast("⚡ تم اعتماد اليومية وفتح النظام بنجاح من قِبل المدير.", "success");
+          showToast(" تم اعتماد اليومية وفتح النظام بنجاح من قِبل المدير.", "success");
         }
       }
     } else {
@@ -6673,9 +6695,9 @@ if ('BroadcastChannel' in window) {
 
       if (isManual && typeof showToast === 'function') {
         if (isApproved) {
-          showToast("✅ اليومية معتمدة والنظام مفتوح للعمل", "success");
+          showToast(" اليومية معتمدة والنظام مفتوح للعمل", "success");
         } else {
-          showToast("⏳ اليومية معلقة وفي انتظار اعتماد المدير", "warning");
+          showToast(" اليومية معلقة وفي انتظار اعتماد المدير", "warning");
         }
       }
     } catch(err) {
@@ -6828,7 +6850,7 @@ if ('BroadcastChannel' in window) {
       div.innerHTML = `
         <div style="font-size:0.85em; color:var(--text-secondary); margin-bottom:5px;"> ${d.toLocaleString()}</div>
         <div style="font-weight:bold; margin-bottom:10px; color:var(--text-main);">${ann.message.replace(/\r\n/g, '<br>')}</div>
-        <div style="font-size:0.85em; color:var(--primary);">️ تمت القراءة بواسطة: ${readsCount} مساعد</div>
+        <div style="font-size:0.85em; color:var(--primary);"> تمت القراءة بواسطة: ${readsCount} مساعد</div>
       `;
       managerBroadcastHistory.appendChild(div);
     });
@@ -6889,7 +6911,7 @@ if ('BroadcastChannel' in window) {
  // Cloud Sync Click Handler (Top bar cloud icon)
  if ($("cloudSyncIndicator")) {
   $("cloudSyncIndicator").addEventListener("click", async function() {
-    showToast("جاري المزامنة والرفع إلى السحابة... ☁️", "warning");
+    showToast("جاري المزامنة والرفع إلى السحابة... ", "warning");
     try {
       await saveAll(); // This uses Supabase via the app's saveAll function
       
@@ -6897,13 +6919,13 @@ if ('BroadcastChannel' in window) {
       if (currentUserRole !== 'admin') {
         await loadPermissions();
         applyPermissionsToAssistantUI();
-        showToast("✅ تمت المزامنة وتحديث الصلاحيات بنجاح", "success");
+        showToast(" تمت المزامنة وتحديث الصلاحيات بنجاح", "success");
       } else {
-        showToast("✅ تمت المزامنة ورفع البيانات إلى السحابة بنجاح", "success");
+        showToast(" تمت المزامنة ورفع البيانات إلى السحابة بنجاح", "success");
       }
     } catch(err) {
       console.error('Cloud sync error:', err);
-      showToast("❌ خطأ في المزامنة، تحقق من الاتصال", "error");
+      showToast(" خطأ في المزامنة، تحقق من الاتصال", "error");
     }
   });
  }
@@ -7270,7 +7292,7 @@ window.togglePasswordVisibility = function(inputId, btnEl) {
 
 
 // ============================================================
-// 🚀 STUDIFY PREMIUM UI v2.0 — JAVASCRIPT FEATURES
+//  STUDIFY PREMIUM UI v2.0 — JAVASCRIPT FEATURES
 // ============================================================
 
 // ── IDEA #2: COUNT-UP ANIMATION
@@ -7790,3 +7812,124 @@ window.CLOUD_MONITOR_SECTIONS = [
     cloudTable: "settings (config.att_by_date)"
   }
 ];
+
+
+
+// ================= NOTIFICATIONS SYSTEM =================
+let notificationsList = [];
+
+async function fetchNotifications() {
+  if (!window.supabaseClient) return;
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(30);
+      
+    if (!error && data) {
+      notificationsList = data;
+      renderNotifications();
+    }
+  } catch(e) { console.error(e); }
+}
+
+function renderNotifications() {
+  const listEl = document.getElementById('notificationsList');
+  const badgeEl = document.getElementById('notificationsBadge');
+  if (!listEl || !badgeEl) return;
+  
+  const unreadCount = notificationsList.filter(n => !n.is_read).length;
+  if (unreadCount > 0) {
+    badgeEl.textContent = unreadCount;
+    badgeEl.classList.remove('hidden');
+  } else {
+    badgeEl.classList.add('hidden');
+  }
+  
+  if (notificationsList.length === 0) {
+    listEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 10px; font-size: 0.9em;">لا توجد إشعارات حالياً</div>';
+    return;
+  }
+  
+  listEl.innerHTML = '';
+  notificationsList.forEach(n => {
+    const item = document.createElement('div');
+    item.style.padding = '10px';
+    item.style.borderRadius = '8px';
+    item.style.background = n.is_read ? 'var(--bg-inset)' : 'var(--bg-surface)';
+    item.style.border = '1px solid ' + (n.is_read ? 'transparent' : 'var(--primary)');
+    item.style.cursor = 'pointer';
+    item.style.transition = 'all 0.2s ease';
+    
+    // Hover effect
+    item.onmouseenter = () => { if(n.is_read) item.style.background = 'var(--bg-surface)'; };
+    item.onmouseleave = () => { if(n.is_read) item.style.background = 'var(--bg-inset)'; };
+    
+    const d = new Date(n.created_at);
+    const dateStr = d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+    
+    item.innerHTML = `
+      <div style="font-size: 0.9em; font-weight: ${n.is_read ? 'normal' : 'bold'}; color: var(--text-primary); margin-bottom: 5px;">
+        ${n.type === 'warning' ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i> ' : '<i class="fa-solid fa-bell" style="color:var(--primary);"></i> '}
+        ${n.message}
+      </div>
+      <div style="font-size: 0.75em; color: var(--text-secondary); text-align: left;"><i class="fa-regular fa-clock"></i> ${dateStr}</div>
+    `;
+    
+    item.onclick = async () => {
+      if (!n.is_read && window.supabaseClient) {
+        await window.supabaseClient.from('notifications').update({ is_read: true }).eq('id', n.id);
+        n.is_read = true;
+        renderNotifications();
+      }
+    };
+    listEl.appendChild(item);
+  });
+}
+
+function setupNotificationsUI() {
+  const btn = document.getElementById('notificationsToggleBtn');
+  const drop = document.getElementById('notificationsDropdown');
+  const markAllBtn = document.getElementById('markAllReadBtn');
+  
+  if (btn && drop) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      drop.classList.toggle('hidden');
+      document.getElementById('userProfileDropdown')?.classList.add('hidden');
+      document.getElementById('cloudSyncIndicator')?.classList.add('hidden');
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!drop.contains(e.target) && !btn.contains(e.target)) {
+        drop.classList.add('hidden');
+      }
+    });
+  }
+  
+  if (markAllBtn) {
+    markAllBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!window.supabaseClient) return;
+      const unreadIds = notificationsList.filter(n => !n.is_read).map(n => n.id);
+      if (unreadIds.length > 0) {
+        await window.supabaseClient.from('notifications').update({ is_read: true }).in('id', unreadIds);
+        notificationsList.forEach(n => n.is_read = true);
+        renderNotifications();
+      }
+    });
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.supabaseClient) {
+    fetchNotifications();
+    setupNotificationsUI();
+    window.supabaseClient.channel('notifications_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, payload => {
+        fetchNotifications();
+      })
+      .subscribe();
+  }
+});

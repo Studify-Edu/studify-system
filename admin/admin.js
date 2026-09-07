@@ -893,9 +893,14 @@ window.togglePermission = async function(username, permKey, isAllowed) {
       });
     }
 
-    // 4. Update local cache if this username is also active locally
     localStorage.setItem(`ca_asst_permissions_${username}`, JSON.stringify(perms));
     localStorage.setItem("ca_asst_permissions", JSON.stringify(perms));
+
+    const statusText = isAllowed ? 'تفعيل' : 'إغلاق';
+    const msgText = `تم ${statusText} صلاحية (${permKey}) للمساعد ${username}.`;
+    if (typeof window.createNotification === 'function') {
+      window.createNotification(msgText, 'info');
+    }
 
     showToast(`تم تحديث صلاحية (${permKey}) للمساعد ${username} بنجاح`, "success");
 
@@ -1251,7 +1256,7 @@ window.renderAdminSyllabus = function() {
     let statusBadge = "لم يبدأ";
     let badgeColor = "var(--text-secondary)";
     if (s.status === "completed") { statusBadge = "تم الانتهاء "; badgeColor = "var(--success)"; }
-    else if (s.status === "in_progress") { statusBadge = "جاري الشرح ⏳"; badgeColor = "var(--warning)"; }
+    else if (s.status === "in_progress") { statusBadge = "جاري الشرح "; badgeColor = "var(--warning)"; }
 
     html += `
       <div class="syllabus-item-card ${s.status}">
@@ -1601,3 +1606,44 @@ window.toggleAdminMobileSidebar = function(open) {
     if (overlay) overlay.classList.remove("active");
   }
 };
+
+// ================= NOTIFICATIONS SYSTEM =================
+window.createNotification = async function(message, type = 'info') {
+  if (!supabase) return;
+  try {
+    await supabase.from('notifications').insert([{
+      message: message,
+      type: type
+    }]);
+  } catch (err) {
+    console.error("Failed to create notification:", err);
+  }
+};
+
+window.cleanupNotifications = async function() {
+  if (!supabase) return;
+  try {
+    // Delete read notifications older than 3 hours
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    await supabase.from('notifications')
+      .delete()
+      .eq('is_read', true)
+      .lte('created_at', threeHoursAgo);
+
+    // Delete unread notifications older than 10 days
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from('notifications')
+      .delete()
+      .eq('is_read', false)
+      .lte('created_at', tenDaysAgo);
+      
+    console.log("Auto-cleanup of old notifications completed.");
+  } catch (err) {
+    console.error("Failed to cleanup notifications:", err);
+  }
+};
+
+// Run cleanup once on admin dashboard load
+setTimeout(() => {
+  if (typeof cleanupNotifications === 'function') cleanupNotifications();
+}, 5000);
