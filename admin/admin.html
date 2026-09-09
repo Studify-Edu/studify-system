@@ -54,7 +54,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V5">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V7">
 </head>
 <body>
 
@@ -112,6 +112,21 @@
           <i class="fa-solid fa-key"></i> دخول مدير النظام
         </button>
       </form>
+
+      <div class="portal-switch-container">
+        <button type="button" class="modern-portal-switch" onclick="window.navigateWithTransition('index.html')" id="toAssistantPortalBtn">
+          <div class="switch-icon-circle">
+            <i class="fa-solid fa-users-gear"></i>
+          </div>
+          <div class="switch-text-group">
+            <span class="switch-prompt">هل أنت مساعد؟</span>
+            <span class="switch-action">الانتقال لبوابة المساعد والعمليات</span>
+          </div>
+          <div class="switch-arrow-circle">
+            <i class="fa-solid fa-arrow-left"></i>
+          </div>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -200,7 +215,7 @@
             <i class="fa-solid fa-moon" id="adminThemeIcon"></i>
           </button>
 
-          <span class="admin-user-badge">
+          <span class="admin-user-badge" id="adminUserBadgeBtn" onclick="window.showAdminUserMenu()" title="الملف الشخصي والحساب">
             <i class="fa-solid fa-circle-user"></i>
             <span id="adminTopName">المدير العام</span>
           </span>

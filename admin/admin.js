@@ -103,9 +103,18 @@ export async function checkAdminAuth() {
   if (loginWrapper) loginWrapper.classList.add("hidden");
   if (dashboardLayout) dashboardLayout.style.display = "flex";
 
-  const adminName = localStorage.getItem("ca_admin_username") || "المدير العام";
+  const rawAdmin = localStorage.getItem("ca_admin_username") || "المدير العام";
+  let displayAdmin = rawAdmin;
+  if (rawAdmin.includes("@")) {
+    const part = rawAdmin.split("@")[0].toLowerCase();
+    if (part.includes("ahmed") || part.includes("qutb")) {
+      displayAdmin = "أحمد قطب";
+    } else {
+      displayAdmin = rawAdmin.split("@")[0];
+    }
+  }
   const nameEl = document.getElementById("adminTopName");
-  if (nameEl) nameEl.textContent = adminName;
+  if (nameEl) nameEl.textContent = displayAdmin;
 
   const today = nowDateStr();
   const dateInput = document.getElementById("adminDailyDateInput");
@@ -118,7 +127,7 @@ export async function checkAdminAuth() {
 }
 
 window.navigateWithTransition = function(url) {
-  const card = document.querySelector('.admin-login-card');
+  const card = document.querySelector('.admin-login-card') || document.querySelector('.login-card');
   if (card) {
     card.classList.add('card-exit-transition');
   }
@@ -128,13 +137,13 @@ window.navigateWithTransition = function(url) {
   }
   setTimeout(() => {
     let target = url;
-    // Smart router: handle both /assistant/admin.html and /admin/admin.html execution context
-    if (window.location.pathname.includes('/assistant/')) {
-      if (url.includes('assistant/index.html')) target = 'index.html';
-      if (url.startsWith('../assistant/')) target = url.replace('../assistant/', '');
-    } else if (window.location.pathname.includes('/admin/')) {
-      if (url === 'index.html') target = '../assistant/index.html';
-      if (url === './assistant/index.html') target = '../assistant/index.html';
+    const path = window.location.pathname.toLowerCase();
+    if (path.includes('/assistant/')) {
+      if (url.includes('index.html')) target = 'index.html';
+      else if (url.includes('admin.html')) target = 'admin.html';
+    } else {
+      if (url.includes('index.html')) target = '../assistant/index.html';
+      else if (url.includes('admin.html')) target = 'admin.html';
     }
     window.location.replace(target);
   }, 280);
@@ -184,20 +193,26 @@ window.handleAdminLogin = async function() {
 };
 
 window.handleAdminLogout = function() {
-  Swal.fire({
-    title: 'تسجيل الخروج من لوحة الإدارة',
-    text: 'هل أنت متأكد من تسجيل الخروج؟',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'نعم، تسجيل الخروج',
-    cancelButtonText: 'إلغاء'
-  }).then((res) => {
-    if (res.isConfirmed) {
-      localStorage.removeItem("ca_admin_session");
-      localStorage.removeItem("ca_admin_username");
-      location.reload();
-    }
-  });
+  const btn = document.getElementById("adminLogoutBtn");
+  if (btn) {
+    btn.classList.add("logging-out");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري تسجيل الخروج...</span>';
+  }
+
+  // Close mobile sidebar drawer immediately if open
+  if (typeof window.toggleAdminMobileSidebar === 'function') {
+    window.toggleAdminMobileSidebar(false);
+  }
+
+  // Clear admin authentication & session keys
+  localStorage.removeItem("ca_admin_session");
+  localStorage.removeItem("ca_admin_username");
+
+  // Smooth instant reload
+  setTimeout(() => {
+    location.reload();
+  }, 250);
 };
 
 window.toggleAdminPass = function() {
@@ -1763,3 +1778,42 @@ window.cleanupNotifications = async function() {
 setTimeout(() => {
   if (typeof cleanupNotifications === 'function') cleanupNotifications();
 }, 5000);
+
+// Admin Profile Modal Popup on Avatar Click
+window.showAdminUserMenu = function() {
+  const email = localStorage.getItem("ca_admin_username") || "ahmedqutb11232@gmail.com";
+  let displayAdmin = email;
+  if (email.includes("@")) {
+    const part = email.split("@")[0].toLowerCase();
+    if (part.includes("ahmed") || part.includes("qutb")) {
+      displayAdmin = "أحمد قطب";
+    } else {
+      displayAdmin = email.split("@")[0];
+    }
+  }
+
+  if (window.Swal) {
+    Swal.fire({
+      title: '<i class="fa-solid fa-circle-user" style="color:var(--primary); font-size: 1.8em;"></i>',
+      html: `
+        <div style="text-align: center; margin-top: 10px;">
+          <h3 style="margin-bottom: 6px; font-weight: 800; color: var(--text-primary); font-size: 1.15em;">${displayAdmin}</h3>
+          <p style="font-size: 0.88em; color: var(--text-secondary); margin-bottom: 12px; direction: ltr;">${email}</p>
+          <span style="display: inline-block; padding: 4px 14px; background: rgba(37,99,235,0.12); color: var(--primary); border-radius: 20px; font-size: 0.82em; font-weight: 700; margin-bottom: 12px;">مدير النظام (Administrator)</span>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '<i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج',
+      cancelButtonText: 'إغلاق',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b'
+    }).then((res) => {
+      if (res.isConfirmed) {
+        window.handleAdminLogout();
+      }
+    });
+  } else {
+    window.handleAdminLogout();
+  }
+};
+
