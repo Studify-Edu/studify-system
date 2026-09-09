@@ -1,7 +1,7 @@
 // ============================================================================
 // Studify Service Worker - Offline-First Static Asset Caching
 // ============================================================================
-const CACHE_NAME = 'studify-cache-v35';
+const CACHE_NAME = 'studify-cache-v36';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -50,6 +50,7 @@ self.addEventListener('fetch', (event) => {
 
     if (event.request.method !== 'GET') return;
     if (url.hostname.includes('firebase') || 
+        url.hostname.includes('supabase') ||
         url.hostname.includes('googleapis') || 
         url.hostname.includes('gstatic') ||
         url.hostname.includes('google.com') ||

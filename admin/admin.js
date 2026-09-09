@@ -127,7 +127,16 @@ window.navigateWithTransition = function(url) {
     overlay.classList.add('active');
   }
   setTimeout(() => {
-    window.location.replace(url);
+    let target = url;
+    // Smart router: handle both /assistant/admin.html and /admin/admin.html execution context
+    if (window.location.pathname.includes('/assistant/')) {
+      if (url.includes('assistant/index.html')) target = 'index.html';
+      if (url.startsWith('../assistant/')) target = url.replace('../assistant/', '');
+    } else if (window.location.pathname.includes('/admin/')) {
+      if (url === 'index.html') target = '../assistant/index.html';
+      if (url === './assistant/index.html') target = '../assistant/index.html';
+    }
+    window.location.replace(target);
   }, 280);
 };
 
@@ -358,8 +367,9 @@ async function loadAllAdminData() {
 // 3. TAB NAVIGATION
 // ========================================================
 window.switchAdminTab = function(tabKey) {
-  // Update Nav Items
+  // Update Nav Items in both Sidebar and Mobile Bottom Navigation
   document.querySelectorAll(".admin-nav-item").forEach(btn => btn.classList.remove("active"));
+  document.querySelectorAll(".bottom-nav-item").forEach(btn => btn.classList.remove("active"));
   document.querySelectorAll(".admin-view").forEach(v => v.classList.add("hidden"));
 
   const tabConfigs = {
@@ -382,6 +392,19 @@ window.switchAdminTab = function(tabKey) {
   if (btnEl) btnEl.classList.add("active");
   if (titleEl) titleEl.textContent = c.title;
   if (iconEl) iconEl.className = `fa-solid ${c.icon}`;
+
+  // Activate bottom navigation tab if matched
+  const bottomBtn = document.querySelector(`.bottom-nav-item[data-tab="${tabKey}"]`);
+  if (bottomBtn) bottomBtn.classList.add("active");
+
+  // Auto-close mobile sidebar drawer on tab selection
+  if (typeof window.toggleAdminMobileSidebar === 'function') {
+    window.toggleAdminMobileSidebar(false);
+  }
+
+  // Smooth scroll content area to top on mobile
+  const content = document.querySelector(".admin-content");
+  if (content) content.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Tab specific refreshes
   if (tabKey === "dailyReport") window.loadDailyReport(document.getElementById("adminDailyDateInput")?.value || nowDateStr());
@@ -1019,13 +1042,19 @@ async function fetchDecisionsCount() {
       .eq('status', 'pending');
 
     const badge = document.getElementById("adminDecisionsBadge");
-    if (badge) {
-      if (count && count > 0) {
+    const bottomBadge = document.getElementById("bottomNavDecisionsBadge");
+    if (count && count > 0) {
+      if (badge) {
         badge.textContent = count;
         badge.classList.remove("hidden");
-      } else {
-        badge.classList.add("hidden");
       }
+      if (bottomBadge) {
+        bottomBadge.textContent = count;
+        bottomBadge.classList.remove("hidden");
+      }
+    } else {
+      if (badge) badge.classList.add("hidden");
+      if (bottomBadge) bottomBadge.classList.add("hidden");
     }
   } catch(e) { console.error(e); }
 }
@@ -1328,6 +1357,104 @@ window.exportAllDataToExcel = function() {
   } catch(e) {
     console.error(e);
     showToast("فشل تصدير البيانات إلى Excel", "err");
+  }
+};
+
+window.importDataFromExcel = async function(event) {
+  const file = event && event.target && event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (typeof XLSX === 'undefined') {
+    return showToast("مكتبة Excel غير متوفرة", "err");
+  }
+
+  const confirmRes = await Swal.fire({
+    title: 'استيراد بيانات الطلاب من Excel',
+    text: 'هل تريد دمج واستيراد بيانات الطلاب من هذا الملف؟ سيتم تحديث الطلاب الحاليين وإضافة الجدد.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'نعم، استيراد',
+    confirmButtonColor: '#2563EB',
+    cancelButtonText: 'إلغاء'
+  });
+
+  if (!confirmRes.isConfirmed) {
+    event.target.value = '';
+    return;
+  }
+
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array' });
+    const sheetName = wb.SheetNames.find(n => n.includes('طلاب') || n.toLowerCase().includes('student')) || wb.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+
+    if (!rows || rows.length === 0) {
+      showToast("الملف فارغ أو لا يحتوي على بيانات صالحة", "warning");
+      event.target.value = '';
+      return;
+    }
+
+    let importedCount = 0;
+    const studentRowsToUpsert = [];
+
+    rows.forEach(r => {
+      const id = String(r['كود الطالب'] || r['كود'] || r['id'] || r['ID'] || r['Code'] || '').trim();
+      const name = String(r['اسم الطالب'] || r['الاسم'] || r['name'] || r['Name'] || '').trim();
+      if (!id && !name) return;
+
+      const studentId = id || String(Date.now() + Math.floor(Math.random() * 1000));
+      const phone = String(r['رقم الهاتف'] || r['الموبايل'] || r['الهاتف'] || r['phone'] || r['Phone'] || '').trim();
+      const parentPhone = String(r['هاتف ولي الأمر'] || r['ولي الأمر'] || r['parentPhone'] || r['Parent Phone'] || '').trim();
+      const className = String(r['المجموعة'] || r['الصف'] || r['className'] || r['Class'] || '').trim();
+      const paid = Number(r['المبلغ المدفوع'] || r['المدفوع'] || r['paid'] || r['Paid'] || 0) || 0;
+      const status = String(r['الحالة'] || r['status'] || 'active').trim();
+
+      const existing = students[studentId] || {};
+      const updated = {
+        ...existing,
+        id: studentId,
+        name: name || existing.name || '',
+        phone: phone || existing.phone || '',
+        parentPhone: parentPhone || existing.parentPhone || '',
+        className: className || existing.className || '',
+        paid: paid !== 0 ? paid : (existing.paid || 0),
+        status: status === 'محذوف' || status === 'deleted' ? 'deleted' : 'active',
+        lastModified: Date.now()
+      };
+
+      students[studentId] = updated;
+      studentRowsToUpsert.push({
+        id: studentId,
+        name: updated.name,
+        phone: updated.phone,
+        parent_phone: updated.parentPhone,
+        class_name: updated.className,
+        paid: updated.paid,
+        status: updated.status,
+        last_modified: updated.lastModified
+      });
+      importedCount++;
+    });
+
+    if (supabase && studentRowsToUpsert.length > 0) {
+      await supabase.from('students').upsert(studentRowsToUpsert, { onConflict: 'id' });
+    }
+
+    if (window.localforage) {
+      try {
+        await window.localforage.setItem('ca_students_v6', JSON.stringify(students));
+      } catch(e) {}
+    }
+
+    showToast(`تم استيراد ${importedCount} طالب بنجاح!`, "success");
+    window.renderTermTable();
+    window.loadDailyReport(nowDateStr());
+  } catch(err) {
+    console.error("Excel import error:", err);
+    showToast("حدث خطأ أثناء قراءة ملف Excel: " + err.message, "err");
+  } finally {
+    event.target.value = '';
   }
 };
 
