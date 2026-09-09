@@ -3,10 +3,10 @@
    Clean, Standalone Architecture for Manager & Administration
    ========================================================= */
 
-@font-face { font-family: 'Cairo'; src: url('assets/Cairo-Regular.ttf') format('truetype'); font-weight: normal; }
-@font-face { font-family: 'Cairo'; src: url('assets/Cairo-Bold.ttf') format('truetype'); font-weight: bold; }
-@font-face { font-family: 'Almarai'; src: url('assets/Almarai-Regular.ttf') format('truetype'); font-weight: normal; }
-@font-face { font-family: 'Almarai'; src: url('assets/Almarai-Bold.ttf') format('truetype'); font-weight: bold; }
+@font-face { font-family: 'Cairo'; src: url('../assets/Cairo-Regular.ttf') format('truetype'); font-weight: normal; }
+@font-face { font-family: 'Cairo'; src: url('../assets/Cairo-Bold.ttf') format('truetype'); font-weight: bold; }
+@font-face { font-family: 'Almarai'; src: url('../assets/Almarai-Regular.ttf') format('truetype'); font-weight: normal; }
+@font-face { font-family: 'Almarai'; src: url('../assets/Almarai-Bold.ttf') format('truetype'); font-weight: bold; }
 
 :root, [data-theme="dark"] {
   --font: 'Almarai', 'Cairo', sans-serif;

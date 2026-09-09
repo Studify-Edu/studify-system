@@ -1427,6 +1427,27 @@ async function loadAll() {
             }
           }
 
+          // Merge session_students_by_date safely from cloud
+          const sessionSrc = cd.session_students_by_date || cfg.session_students_by_date;
+          if (sessionSrc && typeof sessionSrc === 'object') {
+            for (const d in sessionSrc) {
+              if (!sessionStudentsByDate[d]) {
+                sessionStudentsByDate[d] = sessionSrc[d] || [];
+              } else if (Array.isArray(sessionSrc[d])) {
+                const localList = sessionStudentsByDate[d] || [];
+                const localIds = new Set(localList.map(s => String(s.id || (s.name + '_' + s.phone))));
+                sessionSrc[d].forEach(cloudRec => {
+                  const cId = String(cloudRec.id || (cloudRec.name + '_' + cloudRec.phone));
+                  if (!localIds.has(cId)) {
+                    localList.push(cloudRec);
+                    localIds.add(cId);
+                  }
+                });
+                sessionStudentsByDate[d] = localList;
+              }
+            }
+          }
+
           // Evaluate shift lock state immediately on load
           const today = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
           const approvalMap = cfg.daily_approval_map || {};
@@ -3124,21 +3145,16 @@ const st = students[id];
  // ==========================================
  // Global functions for the HTML onclick handlers
  window.switchLoginTab = function(tab) {
- if(tab === 'manager') {
- $("tabManagerLogin").classList.add("active");
- $("tabAssistantLogin").classList.remove("active");
- $("managerLoginForm").classList.remove("hidden");
- $("managerLoginForm").classList.add("active");
- $("assistantLoginForm").classList.add("hidden");
- $("assistantLoginForm").classList.remove("active");
- } else {
- $("tabAssistantLogin").classList.add("active");
- $("tabManagerLogin").classList.remove("active");
- $("assistantLoginForm").classList.remove("hidden");
- $("assistantLoginForm").classList.add("active");
- $("managerLoginForm").classList.add("hidden");
- $("managerLoginForm").classList.remove("active");
- }
+   if ($("tabManagerLogin")) $("tabManagerLogin").classList.toggle("active", tab === 'manager');
+   if ($("tabAssistantLogin")) $("tabAssistantLogin").classList.toggle("active", tab !== 'manager');
+   if ($("managerLoginForm")) {
+     $("managerLoginForm").classList.toggle("hidden", tab !== 'manager');
+     $("managerLoginForm").classList.toggle("active", tab === 'manager');
+   }
+   if ($("assistantLoginForm")) {
+     $("assistantLoginForm").classList.toggle("hidden", tab === 'manager');
+     $("assistantLoginForm").classList.toggle("active", tab !== 'manager');
+   }
  };
 
  window.togglePassword = function(inputId) {
@@ -5346,6 +5362,54 @@ document.addEventListener("DOMContentLoaded", () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_revenue_shifts' }, payload => {
         if (typeof window.checkDailyShiftHeartbeat === 'function') {
           window.checkDailyShiftHeartbeat(false);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, payload => {
+        try {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const row = payload.new;
+            if (!row || !row.id) return;
+            const existing = students[row.id];
+            if (existing && existing.lastModified && row.last_modified && existing.lastModified > row.last_modified) {
+              return;
+            }
+            const stObj = {
+              id: row.id,
+              name: row.name || (existing ? existing.name : ''),
+              phone: row.phone || (existing ? existing.phone : ''),
+              parentPhone: row.parent_phone || row.parentPhone || (existing ? existing.parentPhone : ''),
+              className: row.class_name || row.className || (existing ? existing.className : ''),
+              paymentPlan: row.payment_plan || (existing ? existing.paymentPlan : 'cash'),
+              paid: Number(row.paid) || (existing ? existing.paid : 0),
+              discount: Number(row.discount) || (existing ? existing.discount : 0),
+              notes: row.notes || (existing ? existing.notes : ''),
+              status: row.status || (existing ? existing.status : 'active'),
+              packages: Array.isArray(row.packages) ? row.packages : (existing ? existing.packages : []),
+              installments: row.installments || (existing ? existing.installments : []),
+              payments: row.payments || (existing ? existing.payments : []),
+              attendanceDates: Array.from(new Set(row.attendance_dates || (existing ? existing.attendanceDates : []))),
+              lastModified: row.last_modified || Date.now()
+            };
+            if (row.status === 'deleted') {
+              deletedStudents[row.id] = stObj;
+              delete students[row.id];
+            } else {
+              students[row.id] = stObj;
+            }
+            if (typeof renderList === 'function') renderList(false);
+            if (typeof updateTopStats === 'function') updateTopStats();
+            secureSave(K_STUDENTS, students);
+          } else if (payload.eventType === 'DELETE') {
+            const oldId = payload.old && payload.old.id;
+            if (oldId && students[oldId]) {
+              delete students[oldId];
+              if (typeof renderList === 'function') renderList(false);
+              if (typeof updateTopStats === 'function') updateTopStats();
+              secureSave(K_STUDENTS, students);
+            }
+          }
+        } catch(err) {
+          console.warn('[Realtime Student Sync Error]:', err);
         }
       })
       .subscribe();
@@ -7810,6 +7874,18 @@ window.CLOUD_MONITOR_SECTIONS = [
     label: "سجلات الحضور",
     localCount: () => Object.keys(attByDate || {}).length,
     cloudTable: "settings (config.att_by_date)"
+  },
+  {
+    id: "session_students",
+    label: "طلاب الحصص",
+    localCount: () => Object.values(sessionStudentsByDate || {}).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0),
+    cloudTable: "settings (config.session_students_by_date)"
+  },
+  {
+    id: "expenses",
+    label: "المصروفات المسجلة",
+    localCount: () => Object.values(expensesByDate || {}).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0),
+    cloudTable: "settings (config.expenses_by_date)"
   }
 ];
 
