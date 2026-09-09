@@ -354,8 +354,29 @@ async function loadAllAdminData() {
 
       attByDate = cfg.att_by_date || cfg.attendance_by_date || {};
       if (cfg.revenue_by_date) revenueByDate = cfg.revenue_by_date;
-      if (cfg.expenses_by_date) expensesByDate = cfg.expenses_by_date;
-      const sylRaw = cfg.syllabus || cfg.syllabus_data || [];
+      if (Array.isArray(cfg.expenses_by_date)) {
+        expensesByDate = cfg.expenses_by_date;
+      } else if (cfg.expenses_by_date && typeof cfg.expenses_by_date === 'object') {
+        const flatList = [];
+        for (const dateKey in cfg.expenses_by_date) {
+          const items = cfg.expenses_by_date[dateKey];
+          if (Array.isArray(items)) {
+            items.forEach(item => {
+              if (item) {
+                flatList.push({
+                  date: item.date || dateKey,
+                  reason: item.reason || '',
+                  amount: Number(item.amount) || 0,
+                  timestamp: item.timestamp || Date.now()
+                });
+              }
+            });
+          }
+        }
+        expensesByDate = flatList;
+      } else {
+        expensesByDate = [];
+      }
       if (Array.isArray(sylRaw)) {
         syllabusList = sylRaw.map(s => ({
           title: s.title || s.name || '',
@@ -635,9 +656,15 @@ window.loadDailyReport = function(dateStr) {
   window.renderDailyApprovalWidget(d);
   const ids = attByDate[d] || [];
   const rev = revenueByDate[d] || 0;
-  const expArr = expensesByDate.filter(e => e.date === d);
+  let expArr = [];
+  if (Array.isArray(expensesByDate)) {
+    expArr = expensesByDate.filter(e => e && e.date === d);
+  } else if (expensesByDate && typeof expensesByDate === 'object') {
+    expArr = Array.isArray(expensesByDate[d]) ? expensesByDate[d] : [];
+  }
   const totalSt = Object.keys(students).length;
-  let totalExp = 0; expArr.forEach(e => totalExp += (e.amount || 0));
+  let totalExp = 0;
+  expArr.forEach(e => totalExp += (Number(e && e.amount) || 0));
 
   // Update Stat Cards
   const statAttend = document.getElementById("statDailyAttend");
@@ -1264,10 +1291,19 @@ window.recordNewExpense = async function() {
   if (!reason || amount <= 0) return showToast("يرجى إدخال بند ومبلغ المصروف", "err");
 
   const newExp = { reason, amount, date, timestamp: Date.now() };
+  if (!Array.isArray(expensesByDate)) expensesByDate = [];
   expensesByDate.push(newExp);
 
+  const expObj = {};
+  expensesByDate.forEach(e => {
+    if (!e) return;
+    const k = e.date || date;
+    if (!expObj[k]) expObj[k] = [];
+    expObj[k].push({ amount: Number(e.amount) || 0, reason: e.reason || '', method: e.method || 'cash', date: k, timestamp: e.timestamp || Date.now() });
+  });
+
   try {
-    await saveCenterConfig({ expenses_by_date: expensesByDate });
+    await saveCenterConfig({ expenses_by_date: expObj });
     showToast("تم تسجيل المصروف بنجاح", "success");
     document.getElementById("expenseReasonInput").value = "";
     document.getElementById("expenseAmountInput").value = "";
@@ -1745,35 +1781,37 @@ window.toggleAdminMobileSidebar = function(open) {
 window.createNotification = async function(message, type = 'info') {
   if (!supabase) return;
   try {
-    await supabase.from('notifications').insert([{
+    await supabase.from('communications').insert([{
+      id: "msg_" + Date.now(),
+      type: 'assistant_message',
+      title: type === 'warning' ? 'تنبيه إداري' : 'إشعار إداري',
       message: message,
-      type: type
+      status: 'unread'
     }]);
   } catch (err) {
-    console.error("Failed to create notification:", err);
+    // Graceful fallback
   }
 };
 
 window.cleanupNotifications = async function() {
   if (!supabase) return;
   try {
-    // Delete read notifications older than 3 hours
-    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-    await supabase.from('notifications')
+    // Delete read notifications older than 3 days
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from('communications')
       .delete()
-      .eq('is_read', true)
-      .lte('created_at', threeHoursAgo);
+      .eq('type', 'assistant_message')
+      .eq('status', 'read')
+      .lte('created_at', threeDaysAgo);
 
-    // Delete unread notifications older than 10 days
+    // Delete older notifications older than 10 days
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    await supabase.from('notifications')
+    await supabase.from('communications')
       .delete()
-      .eq('is_read', false)
+      .eq('type', 'assistant_message')
       .lte('created_at', tenDaysAgo);
-      
-    console.log("Auto-cleanup of old notifications completed.");
   } catch (err) {
-    console.error("Failed to cleanup notifications:", err);
+    // Graceful fallback
   }
 };
 

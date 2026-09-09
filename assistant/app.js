@@ -7901,16 +7901,23 @@ async function fetchNotifications() {
   if (!window.supabaseClient) return;
   try {
     const { data, error } = await window.supabaseClient
-      .from('notifications')
+      .from('communications')
       .select('*')
+      .eq('type', 'assistant_message')
       .order('created_at', { ascending: false })
       .limit(30);
       
     if (!error && data) {
-      notificationsList = data;
+      notificationsList = data.map(m => ({
+        id: m.id,
+        message: m.message || m.title || '',
+        type: m.title && m.title.includes('رفض') ? 'warning' : 'info',
+        is_read: m.status === 'read',
+        created_at: m.created_at || new Date().toISOString()
+      }));
       renderNotifications();
     }
-  } catch(e) { console.error(e); }
+  } catch(e) { }
 }
 
 function renderNotifications() {
@@ -7958,7 +7965,9 @@ function renderNotifications() {
     
     item.onclick = async () => {
       if (!n.is_read && window.supabaseClient) {
-        await window.supabaseClient.from('notifications').update({ is_read: true }).eq('id', n.id);
+        try {
+          await window.supabaseClient.from('communications').update({ status: 'read' }).eq('id', n.id);
+        } catch(err) {}
         n.is_read = true;
         renderNotifications();
       }
@@ -7993,7 +8002,9 @@ function setupNotificationsUI() {
       if (!window.supabaseClient) return;
       const unreadIds = notificationsList.filter(n => !n.is_read).map(n => n.id);
       if (unreadIds.length > 0) {
-        await window.supabaseClient.from('notifications').update({ is_read: true }).in('id', unreadIds);
+        try {
+          await window.supabaseClient.from('communications').update({ status: 'read' }).in('id', unreadIds);
+        } catch(err) {}
         notificationsList.forEach(n => n.is_read = true);
         renderNotifications();
       }
@@ -8005,10 +8016,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (window.supabaseClient) {
     fetchNotifications();
     setupNotificationsUI();
-    window.supabaseClient.channel('notifications_channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, payload => {
-        fetchNotifications();
-      })
-      .subscribe();
+    try {
+      window.supabaseClient.channel('communications_notifications_channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'communications' }, payload => {
+          fetchNotifications();
+        })
+        .subscribe();
+    } catch(err) {}
   }
 });
