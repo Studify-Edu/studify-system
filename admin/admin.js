@@ -367,19 +367,18 @@ async function loadAllAdminData() {
 // 3. TAB NAVIGATION
 // ========================================================
 window.switchAdminTab = function(tabKey) {
-  // Update Nav Items in both Sidebar and Mobile Bottom Navigation
+  // Update Nav Items in Sidebar
   document.querySelectorAll(".admin-nav-item").forEach(btn => btn.classList.remove("active"));
-  document.querySelectorAll(".bottom-nav-item").forEach(btn => btn.classList.remove("active"));
   document.querySelectorAll(".admin-view").forEach(v => v.classList.add("hidden"));
 
   const tabConfigs = {
-    dailyReport: { view: "viewDailyReport", btn: "navBtnDailyReport", title: "التقرير اليومي والمراجعة", icon: "fa-calendar-day" },
-    termReport: { view: "viewTermReport", btn: "navBtnTermReport", title: "تقرير الترم المالي وكشف الحسابات", icon: "fa-chart-line" },
-    assistants: { view: "viewAssistants", btn: "navBtnAssistants", title: "إدارة المساعدين والتحكم بالصلاحيات", icon: "fa-user-shield" },
+    dailyReport: { view: "viewDailyReport", btn: "navBtnDailyReport", title: "التقرير اليومي", icon: "fa-calendar-day" },
+    termReport: { view: "viewTermReport", btn: "navBtnTermReport", title: "تقرير الترم المالي", icon: "fa-chart-line" },
+    assistants: { view: "viewAssistants", btn: "navBtnAssistants", title: "إدارة المساعدين", icon: "fa-user-shield" },
     decisions: { view: "viewDecisions", btn: "navBtnDecisions", title: "صندوق طلبات القرارات", icon: "fa-bell" },
     packages: { view: "viewPackages", btn: "navBtnPackages", title: "إدارة الباقات والمصاريف", icon: "fa-box-archive" },
-    syllabus: { view: "viewSyllabus", btn: "navBtnSyllabus", title: "خريطة سير المنهج الدراسي", icon: "fa-book-open" },
-    settings: { view: "viewSettings", btn: "navBtnSettings", title: "الإعدادات المتقدمة والنسخ الاحتياطي", icon: "fa-sliders" }
+    syllabus: { view: "viewSyllabus", btn: "navBtnSyllabus", title: "خريطة سير المنهج", icon: "fa-book-open" },
+    settings: { view: "viewSettings", btn: "navBtnSettings", title: "إعدادات النظام", icon: "fa-sliders" }
   };
 
   const c = tabConfigs[tabKey] || tabConfigs.dailyReport;
@@ -392,10 +391,6 @@ window.switchAdminTab = function(tabKey) {
   if (btnEl) btnEl.classList.add("active");
   if (titleEl) titleEl.textContent = c.title;
   if (iconEl) iconEl.className = `fa-solid ${c.icon}`;
-
-  // Activate bottom navigation tab if matched
-  const bottomBtn = document.querySelector(`.bottom-nav-item[data-tab="${tabKey}"]`);
-  if (bottomBtn) bottomBtn.classList.add("active");
 
   // Auto-close mobile sidebar drawer on tab selection
   if (typeof window.toggleAdminMobileSidebar === 'function') {
@@ -1042,19 +1037,13 @@ async function fetchDecisionsCount() {
       .eq('status', 'pending');
 
     const badge = document.getElementById("adminDecisionsBadge");
-    const bottomBadge = document.getElementById("bottomNavDecisionsBadge");
     if (count && count > 0) {
       if (badge) {
         badge.textContent = count;
         badge.classList.remove("hidden");
       }
-      if (bottomBadge) {
-        bottomBadge.textContent = count;
-        bottomBadge.classList.remove("hidden");
-      }
     } else {
       if (badge) badge.classList.add("hidden");
-      if (bottomBadge) bottomBadge.classList.add("hidden");
     }
   } catch(e) { console.error(e); }
 }

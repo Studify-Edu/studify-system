@@ -111,21 +111,6 @@
         <button type="submit" id="adminLoginSubmitBtn" class="btn primary full-btn" style="margin-top: 6px; font-size: 1.05em; padding: 13px;">
           <i class="fa-solid fa-key"></i> دخول مدير النظام
         </button>
-
-        <div class="portal-switch-container">
-          <button type="button" class="modern-portal-switch" onclick="window.navigateWithTransition('./assistant/index.html')" id="toAssistantPortalBtn">
-            <div class="switch-icon-circle">
-              <i class="fa-solid fa-users-gear"></i>
-            </div>
-            <div class="switch-text-group">
-              <span class="switch-prompt">هل أنت مساعد بالمركز؟</span>
-              <span class="switch-action">الانتقال لبوابة المساعد وتسجيل الحضور</span>
-            </div>
-            <div class="switch-arrow-circle">
-              <i class="fa-solid fa-arrow-left"></i>
-            </div>
-          </button>
-        </div>
       </form>
     </div>
   </div>
@@ -188,9 +173,6 @@
       </nav>
 
       <div class="admin-sidebar-footer">
-        <button type="button" class="btn secondary smallBtn full-btn" onclick="window.navigateWithTransition('../assistant/index.html')">
-          <i class="fa-solid fa-users-gear"></i> بوابة المساعدين
-        </button>
         <button id="adminLogoutBtn" class="btn danger smallBtn full-btn" onclick="window.handleAdminLogout()">
           <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
         </button>
@@ -204,7 +186,8 @@
       <header class="admin-topbar">
         <div class="admin-topbar-left-cluster">
           <button id="adminMobileToggle" class="admin-mobile-toggle" onclick="window.toggleAdminMobileSidebar(true)" title="القائمة الرئيسية">
-            <i class="fa-solid fa-bars-staggered"></i>
+            <i class="fa-solid fa-bars"></i>
+            <span class="mobile-toggle-lbl">القائمة</span>
           </button>
           <div class="admin-topbar-title">
             <i id="adminPageIcon" class="fa-solid fa-calendar-day" style="color: var(--primary);"></i>
@@ -600,34 +583,7 @@
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- MOBILE BOTTOM NAVIGATION (Quick thumb navigation) -->
-  <!-- ======================================================== -->
-  <nav class="admin-mobile-bottom-nav" id="adminMobileBottomNav">
-    <button type="button" class="bottom-nav-item active" data-tab="dailyReport" onclick="window.switchAdminTab('dailyReport')">
-      <div class="bottom-nav-icon"><i class="fa-solid fa-calendar-day"></i></div>
-      <span class="bottom-nav-label">اليومي</span>
-    </button>
-    <button type="button" class="bottom-nav-item" data-tab="termReport" onclick="window.switchAdminTab('termReport')">
-      <div class="bottom-nav-icon"><i class="fa-solid fa-chart-line"></i></div>
-      <span class="bottom-nav-label">التقرير</span>
-    </button>
-    <button type="button" class="bottom-nav-item" data-tab="assistants" onclick="window.switchAdminTab('assistants')">
-      <div class="bottom-nav-icon"><i class="fa-solid fa-user-shield"></i></div>
-      <span class="bottom-nav-label">المساعدين</span>
-    </button>
-    <button type="button" class="bottom-nav-item" data-tab="packages" onclick="window.switchAdminTab('packages')">
-      <div class="bottom-nav-icon"><i class="fa-solid fa-box-archive"></i></div>
-      <span class="bottom-nav-label">الباقات</span>
-    </button>
-    <button type="button" class="bottom-nav-item" id="bottomNavMoreBtn" onclick="window.toggleAdminMobileSidebar(true)">
-      <div class="bottom-nav-icon"><i class="fa-solid fa-bars"></i></div>
-      <span class="bottom-nav-label">المزيد</span>
-      <span id="bottomNavDecisionsBadge" class="bottom-nav-badge hidden">0</span>
-    </button>
-  </nav>
-
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V6"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V7"></script>
 </body>
 </html>
