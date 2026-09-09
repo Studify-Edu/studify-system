@@ -54,7 +54,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V7">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V8">
 </head>
 <body>
 
@@ -217,7 +217,7 @@
 
           <span class="admin-user-badge" id="adminUserBadgeBtn" onclick="window.showAdminUserMenu()" title="الملف الشخصي والحساب">
             <i class="fa-solid fa-circle-user"></i>
-            <span id="adminTopName">المدير العام</span>
+            <span id="adminTopName">Ahmed Qutb</span>
           </span>
         </div>
       </header>
@@ -234,14 +234,14 @@
           <div id="dailyApprovalWidget" class="approval-card pending">
             <div class="approval-card-info">
               <div class="approval-card-title">
-                <i class="fa-solid fa-clock" style="color: var(--warning); font-size: 1.25em;"></i>
-                <span>حالة اعتماد اليومية</span>
+                <i class="fa-solid fa-lock" style="color: var(--danger); font-size: 1.25em;"></i>
+                <span>حالة تشغيل الشيفت واليومية</span>
                 <span class="approval-badge-pill pending">
-                  <i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / مغلقة
+                  <i class="fa-solid fa-lock"></i> مغلق ومجمد (OFF)
                 </span>
               </div>
               <p class="approval-card-desc">
-                العمليات متوقفة ومقيدة لدى المساعدين. قم بتبديل السويتش إلى (ON) لفتح النظام واعتماد اليومية.
+                الشيفت مغلق حالياً والعمليات متوقفة لدى المساعدين. قم بتشغيل السويتش إلى (ON) لفتح النظام والسماح بالعمليات.
               </p>
             </div>
             <div class="approval-card-actions">
@@ -249,11 +249,11 @@
                 <div class="approval-toggle-status">
                   <span class="toggle-status-badge badge-off">
                     <span class="toggle-pulse-dot"></span>
-                    <span>معطل (OFF)</span>
+                    <span>مغلق (OFF)</span>
                   </span>
-                  <span class="toggle-sub-hint">انقر لتشغيل اليومية</span>
+                  <span class="toggle-sub-hint">انقر لفتح الشيفت</span>
                 </div>
-                <button type="button" class="master-power-switch state-off" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || (window.nowDateStr ? window.nowDateStr() : ''), true)" title="اعتماد وتشغيل اليومية (Turn ON)" aria-label="سويتش تشغيل اليومية">
+                <button type="button" class="master-power-switch state-off" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || (window.nowDateStr ? window.nowDateStr() : ''), true)" title="فتح الشيفت (Turn ON)" aria-label="سويتش تشغيل الشيفت">
                   <span class="switch-rail">
                     <span class="rail-text-on">ON</span>
                     <span class="rail-text-off">OFF</span>
@@ -599,6 +599,6 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V7"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V8"></script>
 </body>
 </html>

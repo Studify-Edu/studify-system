@@ -6707,17 +6707,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const role = window.CURRENT_ROLE || localStorage.getItem("ca_role") || "";
     if (role === 'admin' || localStorage.getItem("ca_admin_session") || localStorage.getItem("ca_admin_username")) {
       if (overlay) overlay.classList.add("hidden");
+      document.body.classList.remove("system-hard-locked");
       return;
     }
 
     if (isApproved === true) {
+      document.body.classList.remove("system-hard-locked");
       if (overlay && !overlay.classList.contains("hidden")) {
         overlay.classList.add("hidden");
         if (typeof showToast === 'function') {
-          showToast(" تم اعتماد اليومية وفتح النظام بنجاح من قِبل المدير.", "success");
+          showToast("تم فتح الشيفت واليومية بنجاح من قِبل المدير.", "success");
         }
       }
     } else {
+      document.body.classList.add("system-hard-locked");
       if (overlay) {
         if (titleEl) titleEl.textContent = "اليومية معلقة ومغلقة من قِبل الإدارة";
         if (msgEl) {

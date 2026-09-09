@@ -103,12 +103,12 @@ export async function checkAdminAuth() {
   if (loginWrapper) loginWrapper.classList.add("hidden");
   if (dashboardLayout) dashboardLayout.style.display = "flex";
 
-  const rawAdmin = localStorage.getItem("ca_admin_username") || "المدير العام";
+  const rawAdmin = localStorage.getItem("ca_admin_username") || "Ahmed Qutb";
   let displayAdmin = rawAdmin;
   if (rawAdmin.includes("@")) {
     const part = rawAdmin.split("@")[0].toLowerCase();
     if (part.includes("ahmed") || part.includes("qutb")) {
-      displayAdmin = "أحمد قطب";
+      displayAdmin = "Ahmed Qutb";
     } else {
       displayAdmin = rawAdmin.split("@")[0];
     }
@@ -121,6 +121,9 @@ export async function checkAdminAuth() {
   if (dateInput && !dateInput.value) dateInput.value = today;
   if (typeof window.renderDailyApprovalWidget === 'function') {
     window.renderDailyApprovalWidget(today);
+  }
+  if (typeof window.loadDailyReport === 'function') {
+    window.loadDailyReport(today);
   }
 
   return true;
@@ -438,16 +441,16 @@ window.renderDailyApprovalWidget = function(dateStr) {
   widget.innerHTML = `
     <div class="approval-card-info">
       <div class="approval-card-title">
-        <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-clock'}" style="color: ${isApproved ? 'var(--success)' : 'var(--warning)'}; font-size: 1.25em;"></i>
-        <span>حالة اعتماد يومية (${d})</span>
+        <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-lock'}" style="color: ${isApproved ? 'var(--success)' : 'var(--danger)'}; font-size: 1.25em;"></i>
+        <span>حالة تشغيل الشيفت اليومي (${d})</span>
         <span class="approval-badge-pill ${isApproved ? 'approved' : 'pending'}">
-          ${isApproved ? '<i class="fa-solid fa-check"></i> معتمدة ومفتوحة' : '<i class="fa-solid fa-hourglass-half"></i> قيد المراجعة / مغلقة'}
+          ${isApproved ? '<i class="fa-solid fa-check"></i> مفتوح للعمل (ON)' : '<i class="fa-solid fa-lock"></i> مغلق ومعلق (OFF)'}
         </span>
       </div>
       <p class="approval-card-desc">
         ${isApproved 
-          ? 'النظام يعمل حالياً بصلاحيات كاملة للمساعدين. يمكنك إيقاف وتشغيل اليومية بسهولة عبر سويتش (ON / OFF).' 
-          : 'العمليات متوقفة ومقيدة لدى المساعدين. قم بتبديل السويتش إلى (ON) لفتح النظام واعتماد اليومية.'}
+          ? 'الشيفت مفتوح حالياً والمساعدون يسجلون الحضور والمصروفات بشكل طبيعي. عند انتهاء اليوم، قم بإيقاف السويتش لإغلاق الشيفت واعتماد الحسابات.' 
+          : 'الشيفت مغلق حالياً، وكافة العمليات مجمدة لدى المساعدين لحين فتح الشيفت. انقر على السويتش لتحويله إلى (ON) لفتح الشيفت والبدء.'}
       </p>
     </div>
     <div class="approval-card-actions">
@@ -455,11 +458,11 @@ window.renderDailyApprovalWidget = function(dateStr) {
         <div class="approval-toggle-status">
           <span class="toggle-status-badge ${isApproved ? 'badge-on' : 'badge-off'}">
             <span class="toggle-pulse-dot"></span>
-            <span>${isApproved ? 'مفعل (ON)' : 'معطل (OFF)'}</span>
+            <span>${isApproved ? 'مفتوح (ON)' : 'مغلق (OFF)'}</span>
           </span>
-          <span class="toggle-sub-hint">${isApproved ? 'انقر لإيقاف اليومية' : 'انقر لتشغيل اليومية'}</span>
+          <span class="toggle-sub-hint">${isApproved ? 'انقر لإغلاق الشيفت' : 'انقر لفتح الشيفت'}</span>
         </div>
-        <button type="button" class="master-power-switch ${isApproved ? 'state-on' : 'state-off'}" onclick="window.toggleDailyApproval('${d}', ${!isApproved})" title="${isApproved ? 'إيقاف اليومية (Turn OFF)' : 'اعتماد وتشغيل اليومية (Turn ON)'}" aria-label="سويتش تشغيل اليومية">
+        <button type="button" class="master-power-switch ${isApproved ? 'state-on' : 'state-off'}" onclick="window.toggleDailyApproval('${d}', ${!isApproved})" title="${isApproved ? 'إغلاق الشيفت (Turn OFF)' : 'فتح الشيفت (Turn ON)'}" aria-label="سويتش تشغيل الشيفت">
           <span class="switch-rail">
             <span class="rail-text-on">ON</span>
             <span class="rail-text-off">OFF</span>
@@ -478,11 +481,11 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
 
   if (toActive) {
     const res = await Swal.fire({
-      title: 'تشغيل اليومية (Turn ON)',
-      text: `هل تريد تفعيل يومية (${d}) وفتح النظام فوراً لجميع المساعدين؟`,
+      title: 'فتح الشيفت اليومي (Turn ON)',
+      text: `هل تريد تفعيل وفتح شيفت يوم (${d}) فوراً لجميع المساعدين لبدء تسجيل الحضور والعمليات؟`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، تشغيل اليومية (ON)',
+      confirmButtonText: 'نعم، فتح الشيفت (ON)',
       confirmButtonColor: '#10B981',
       cancelButtonText: 'إلغاء'
     });
@@ -494,7 +497,7 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
     
     // 2. Optimistic instant UI update (0ms)
     window.renderDailyApprovalWidget(d);
-    showToast(`تم تشغيل يومية (${d}) وفتح النظام للمساعدين بنجاح.`, "success");
+    showToast(`تم فتح شيفت يوم (${d}) بنجاح وبدء عمليات المساعدين.`, "success");
 
     try {
       // 3. Multi-tab broadcast (same device / browser profile)
@@ -520,7 +523,7 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
 
         await supabase.from('settings').update({
           daily_shift_status: 'open',
-          daily_approved_by: localStorage.getItem("ca_admin_username") || "المدير العام",
+          daily_approved_by: localStorage.getItem("ca_admin_username") || "Ahmed Qutb",
           config: cfg,
           updated_at: new Date().toISOString()
         }).eq('id', 1);
@@ -531,11 +534,11 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
     }
   } else {
     const res = await Swal.fire({
-      title: 'إيقاف وتعليق اليومية (Turn OFF)',
-      text: `هل أنت متأكد من إيقاف يومية (${d}) وتعليق عمليات المساعدين فوراً؟`,
+      title: 'إغلاق وتجميد الشيفت (Turn OFF)',
+      text: `هل أنت متأكد من إغلاق شيفت يوم (${d}) واعتماد اليومية وتجميد عمليات المساعدين؟`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'نعم، إيقاف اليومية (OFF)',
+      confirmButtonText: 'نعم، إغلاق الشيفت (OFF)',
       confirmButtonColor: '#EF4444',
       cancelButtonText: 'إلغاء'
     });
@@ -547,7 +550,7 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
     
     // 2. Optimistic instant UI update (0ms)
     window.renderDailyApprovalWidget(d);
-    showToast(`تم إيقاف يومية (${d}) وتعليق العمليات لدى المساعدين فورياً.`, "warning");
+    showToast(`تم إغلاق شيفت يوم (${d}) وتجميد العمليات لدى المساعدين فورياً.`, "warning");
 
     try {
       // 3. Multi-tab broadcast (same device / browser profile)
@@ -1786,7 +1789,7 @@ window.showAdminUserMenu = function() {
   if (email.includes("@")) {
     const part = email.split("@")[0].toLowerCase();
     if (part.includes("ahmed") || part.includes("qutb")) {
-      displayAdmin = "أحمد قطب";
+      displayAdmin = "Ahmed Qutb";
     } else {
       displayAdmin = email.split("@")[0];
     }
@@ -1794,26 +1797,18 @@ window.showAdminUserMenu = function() {
 
   if (window.Swal) {
     Swal.fire({
-      title: '<i class="fa-solid fa-circle-user" style="color:var(--primary); font-size: 1.8em;"></i>',
+      title: '<i class="fa-solid fa-circle-user" style="color:var(--primary); font-size: 2.2em;"></i>',
       html: `
         <div style="text-align: center; margin-top: 10px;">
-          <h3 style="margin-bottom: 6px; font-weight: 800; color: var(--text-primary); font-size: 1.15em;">${displayAdmin}</h3>
-          <p style="font-size: 0.88em; color: var(--text-secondary); margin-bottom: 12px; direction: ltr;">${email}</p>
-          <span style="display: inline-block; padding: 4px 14px; background: rgba(37,99,235,0.12); color: var(--primary); border-radius: 20px; font-size: 0.82em; font-weight: 700; margin-bottom: 12px;">مدير النظام (Administrator)</span>
+          <h3 style="margin-bottom: 6px; font-weight: 800; color: var(--text-primary); font-size: 1.25em;">${displayAdmin}</h3>
+          <p style="font-size: 0.88em; color: var(--text-secondary); margin-bottom: 14px; direction: ltr;">${email}</p>
+          <span style="display: inline-block; padding: 5px 16px; background: rgba(37,99,235,0.12); color: var(--primary); border-radius: 20px; font-size: 0.84em; font-weight: 700; margin-bottom: 6px;">مدير النظام (Administrator)</span>
         </div>
       `,
-      showCancelButton: true,
-      confirmButtonText: '<i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج',
-      cancelButtonText: 'إغلاق',
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#64748b'
-    }).then((res) => {
-      if (res.isConfirmed) {
-        window.handleAdminLogout();
-      }
+      showCancelButton: false,
+      confirmButtonText: 'إغلاق',
+      confirmButtonColor: '#64748b'
     });
-  } else {
-    window.handleAdminLogout();
   }
 };
 

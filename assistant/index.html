@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V75">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V76">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME FLASH -->
@@ -125,6 +125,42 @@
    <div class="transition-spinner"></div>
    <div class="transition-text">جاري الانتقال..</div>
  </div>
+
+  <!-- ============ ASSISTANT HARD LOCK OVERLAY (TOP-LEVEL IMMERSIVE BARRIER) ============ -->
+  <div id="assistantHardLockOverlay" class="assistant-hard-lock-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="assistantHardLockTitle">
+    <div class="hard-lock-card">
+      <div class="hard-lock-icon-container">
+        <div class="hard-lock-pulse-ring"></div>
+        <div class="hard-lock-pulse-ring-2"></div>
+        <div class="hard-lock-icon-circle">
+          <i class="fa-solid fa-shield-halved hard-lock-icon"></i>
+        </div>
+      </div>
+      
+      <div class="hard-lock-badge-pill">
+        <span class="hard-lock-dot"></span>
+        <span>حالة الشيفت: مغلق ومجمد</span>
+      </div>
+
+      <h2 id="assistantHardLockTitle" class="hard-lock-title">اليومية معلقة ومغلقة من قِبل الإدارة</h2>
+      
+      <p id="assistantHardLockMsg" class="hard-lock-desc">
+        تم إيقاف اليومية من قِبل المدير العام. تم تجميد كافة العمليات لحين فتح الشيفت مجدداً.
+      </p>
+
+      <div class="hard-lock-sync-info">
+        <i class="fa-solid fa-bolt-lightning" style="color: var(--primary);"></i>
+        <span>المزامنة حية ولحظية: سيفتح النظام تلقائياً على شاشتك فور تفعيل المدير لليومية بدون الحاجة لإعادة تشغيل التطبيق.</span>
+      </div>
+
+      <div class="hard-lock-actions">
+        <button type="button" class="hard-lock-btn-retry" onclick="window.checkDailyShiftHeartbeat ? window.checkDailyShiftHeartbeat(true) : null">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>التحقق من حالة الشيفت الآن</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ LOGIN ============ -->
   <div id="loginBox" class="login-wrapper hidden">
@@ -292,43 +328,7 @@
  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
  <!-- MAIN CONTENT -->
- <main class="main-content" style="position: relative;">
-
-  <!-- ASSISTANT HARD LOCK OVERLAY (REALTIME MANAGER CONTROL) -->
-  <div id="assistantHardLockOverlay" class="assistant-hard-lock-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="assistantHardLockTitle">
-    <div class="hard-lock-card">
-      <div class="hard-lock-icon-container">
-        <div class="hard-lock-pulse-ring"></div>
-        <div class="hard-lock-pulse-ring-2"></div>
-        <div class="hard-lock-icon-circle">
-          <i class="fa-solid fa-shield-halved hard-lock-icon"></i>
-        </div>
-      </div>
-      
-      <div class="hard-lock-badge-pill">
-        <span class="hard-lock-dot"></span>
-        <span>حالة اليومية: قيد المراجعة / معلقة</span>
-      </div>
-
-      <h2 id="assistantHardLockTitle" class="hard-lock-title">النظام معلق حالياً من قِبل الإدارة</h2>
-      
-      <p id="assistantHardLockMsg" class="hard-lock-desc">
-        اليومية الحالية غير معتمدة أو تم تعليق العمليات مؤقتاً بواسطة المدير العام. لا يمكن تسجيل الحضور أو التعاملات المالية حتى اعتماد اليومية وفتح النظام.
-      </p>
-
-      <div class="hard-lock-sync-info">
-        <i class="fa-solid fa-bolt-lightning" style="color: var(--primary);"></i>
-        <span>المزامنة حية ولحظية: سيفتح النظام تلقائياً على شاشتك فور تفعيل المدير لليومية بدون الحاجة لإعادة تشغيل التطبيق.</span>
-      </div>
-
-      <div class="hard-lock-actions">
-        <button type="button" class="hard-lock-btn-retry" onclick="window.checkDailyShiftHeartbeat ? window.checkDailyShiftHeartbeat(true) : null">
-          <i class="fa-solid fa-arrows-rotate"></i>
-          <span>التحقق من حالة الاعتماد الآن</span>
-        </button>
-      </div>
-    </div>
-  </div>
+ <main class="main-content">
 
  <!-- TOPBAR -->
  <header class="topbar">
@@ -1564,7 +1564,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <script type="module" src="app.js?v=STUDIFY_V115"></script>
+ <script type="module" src="app.js?v=STUDIFY_V116"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
