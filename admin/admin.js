@@ -69,8 +69,8 @@ export function showToast(msg, type = "info") {
   t.className = `toast ${type}`;
   let icon = "fa-circle-info";
   if (type === "success") icon = "fa-circle-check";
-  else if (type === "err") icon = "fa-circle-exclamation";
-  else if (type === "warning") icon = "fa-triangle-exclamation";
+  else if (type === "err") icon = "fa-circle-xmark";
+  else if (type === "warning") icon = "fa-bell";
   t.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${msg}</span>`;
   c.appendChild(t);
   setTimeout(() => { t.remove(); }, 3500);
@@ -1436,7 +1436,7 @@ window.importDataFromExcel = async function(event) {
       } catch(e) {}
     }
 
-    showToast(`تم استيراد ${importedCount} طالب بنجاح!`, "success");
+    showToast(`تم استيراد ${importedCount} طالب بنجاح`, "success");
     window.renderTermTable();
     window.loadDailyReport(nowDateStr());
   } catch(err) {

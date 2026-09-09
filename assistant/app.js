@@ -795,7 +795,7 @@ function showToast(msg, type = "success") {
  container.innerHTML = "";
  const toast = document.createElement("div");
  toast.className = `toast toast-${type}`;
- const icons = { success: '<i class="fa-solid fa-circle-check"></i>', err: '<i class="fa-solid fa-circle-xmark"></i>', warning: '<i class="fa-solid fa-triangle-exclamation"></i>', info: '<i class="fa-solid fa-circle-info"></i>' };
+ const icons = { success: '<i class="fa-solid fa-circle-check"></i>', err: '<i class="fa-solid fa-circle-xmark"></i>', warning: '<i class="fa-solid fa-bell"></i>', info: '<i class="fa-solid fa-circle-info"></i>' };
  const duration = type === 'err' ? 4500 : 3500;
  toast.innerHTML = `
    <div class="toast-inner">
@@ -2022,7 +2022,7 @@ function applyPermissions() {
           } else {
               cardStatus.style.background = "#fee2e2";
               cardStatus.style.color = "#b91c1c";
-              cardStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> باقي: ' + rem + ' ج';
+              cardStatus.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> باقي: ' + rem + ' ج';
           }
       }
       if (cardPrice) cardPrice.textContent = req + " ج";
@@ -2191,7 +2191,7 @@ const st = students[id];
                totalPaid += pkgPaid;
                totalRemain += pkgRemain;
                const tagStatus = (pkgRemain > 0) ? 'has-debt' : 'paid-full';
-               const icon = (pkgRemain > 0) ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i>' : '<i class="fa-solid fa-check-circle" style="color:#10b981"></i>';
+               const icon = (pkgRemain > 0) ? '<i class="fa-solid fa-hourglass-half" style="color:var(--danger)"></i>' : '<i class="fa-solid fa-check-circle" style="color:#10b981"></i>';
                pkgsHtml += `<div class="pkg-summary-tag ${tagStatus}">
                    ${icon}
                    <span>${pkgName}</span>
@@ -6854,7 +6854,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await window.supabaseClient.from('settings').update({ announcements: anns }).eq('id', 1);
         
         broadcastMsgInput.value = '';
-        showToast(currentLang==='ar' ? "تم إرسال الإعلان لجميع المساعدين" : "Broadcast sent!", "success");
+        showToast(currentLang==='ar' ? "تم إرسال الإعلان لجميع المساعدين" : "Broadcast sent", "success");
         loadAnnouncements();
       } catch(e) {
         console.error(e);
@@ -7098,7 +7098,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     showToast(" تم رفع جميع البيانات بنجاح إلى Supabase.", "success");
-    console.log("[Migration] Supabase migration complete!");
+    console.log("[Migration] Supabase migration complete");
   } catch(e) {
     console.error("[Migration] Error:", e);
     showToast("حدث خطأ أثناء الرفع: " + e.message, "err");
@@ -7947,7 +7947,7 @@ function renderNotifications() {
     
     item.innerHTML = `
       <div style="font-size: 0.9em; font-weight: ${n.is_read ? 'normal' : 'bold'}; color: var(--text-primary); margin-bottom: 5px;">
-        ${n.type === 'warning' ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i> ' : '<i class="fa-solid fa-bell" style="color:var(--primary);"></i> '}
+        ${n.type === 'warning' ? '<i class="fa-solid fa-bell" style="color:var(--warning);"></i> ' : '<i class="fa-solid fa-bell" style="color:var(--primary);"></i> '}
         ${n.message}
       </div>
       <div style="font-size: 0.75em; color: var(--text-secondary); text-align: left;"><i class="fa-regular fa-clock"></i> ${dateStr}</div>
