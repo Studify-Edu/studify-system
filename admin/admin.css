@@ -313,35 +313,37 @@ body {
   z-index: 100;
 }
 .admin-sidebar-header {
-  padding: 20px 22px;
+  padding: 20px 20px 16px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-inset);
+  min-height: 72px;
 }
 .admin-logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  border: 2px solid var(--primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border: none;
 }
 .admin-brand {
   font-family: 'Poppins', 'Outfit', sans-serif;
-  font-size: 1.3em;
+  font-size: 1.35em;
   font-weight: 800;
   letter-spacing: -0.4px;
   background: var(--gradient);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  white-space: nowrap;
   display: inline-block;
   line-height: 1.1;
 }
-.admin-brand-sub {
-  font-size: 0.72em;
-  color: var(--text-secondary);
-  display: block;
+.admin-sidebar-close {
+  display: none !important;
 }
 .admin-menu {
   flex: 1;
@@ -1653,36 +1655,10 @@ body {
   .admin-sidebar-header {
     display: flex !important;
     align-items: center !important;
-    justify-content: space-between !important;
-    padding: 16px 16px !important;
+    gap: 12px !important;
+    padding: 16px 20px !important;
     border-bottom: 1px solid var(--border) !important;
-  }
-
-  .admin-sidebar-brand-group {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-  }
-
-  .admin-sidebar-close {
-    width: 34px !important;
-    height: 34px !important;
-    border-radius: 10px !important;
-    background: var(--bg-inset) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--text-secondary) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    font-size: 1rem !important;
-    transition: all 0.2s ease !important;
-  }
-
-  .admin-sidebar-close:active {
-    transform: scale(0.92) !important;
-    background: var(--bg-hover) !important;
-    color: var(--text-primary) !important;
+    min-height: 64px !important;
   }
 
   /* ── DAILY STATS GRID ON MOBILE (2-column bento) ── */
