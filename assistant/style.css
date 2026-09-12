@@ -612,11 +612,12 @@ a { color: var(--primary); text-decoration: none; }
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
+  height: var(--topbar-h);
   min-height: var(--topbar-h);
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-wrap: nowrap !important;
   box-sizing: border-box;
 }
 
@@ -628,10 +629,11 @@ a { color: var(--primary); text-decoration: none; }
 }
 
 .topbar-end {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
   flex-shrink: 0 !important;
+  flex-wrap: nowrap !important;
   margin-inline-start: auto;
 }
 
@@ -655,7 +657,7 @@ a { color: var(--primary); text-decoration: none; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 12px;
   border-radius: 20px;
   font-size: 0.82em;
   font-weight: 600;
@@ -665,6 +667,8 @@ a { color: var(--primary); text-decoration: none; }
   transition: all 0.2s;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
+  height: 36px;
+  box-sizing: border-box;
 }
 .stat-pill b { color: var(--stat-accent); font-family: 'Cairo'; }
 .stat-pill.clickable { cursor: pointer; }
@@ -680,18 +684,20 @@ a { color: var(--primary); text-decoration: none; }
 }
 
 .topbar-icon-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--bg-inset);
   color: var(--text-secondary);
-  font-size: 1.15em;
+  font-size: 1.1em;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 0;
 }
 .topbar-icon-btn:hover {
   background: var(--gradient-subtle);
@@ -1798,8 +1804,8 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
   .sidebar-collapse-btn { display: none; }
   
-  .topbar { padding: 8px 16px; height: auto; min-height: var(--topbar-h); align-items: center; justify-content: space-between; width: 100%; }
-  .topbar-stats { display: flex; width: 100%; justify-content: center; order: 3; margin-top: 8px; gap: 6px; flex-wrap: wrap; }
+  .topbar { padding: 0 16px; height: var(--topbar-h); min-height: var(--topbar-h); flex-wrap: nowrap !important; }
+  .topbar-stats { flex-wrap: nowrap !important; overflow-x: auto; width: auto; order: initial; margin-top: 0; }
   
   .content-body { padding: 16px; width: 100%; }
 }
@@ -2190,16 +2196,20 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 /* ── CUSTOM CLOUD SYNC SVG ── */
 .cloud-sync-wrapper {
   position: relative;
-  width: 48px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  margin-inline-end: 10px;
+  flex-shrink: 0;
+  margin: 0 !important;
 }
 
 .cloud-vector {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  width: 34px;
+  height: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
   transition: fill 0.3s ease;
 }
 
@@ -2212,26 +2222,26 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 /* Sync Button inside cloud */
 .sync-button {
   position: absolute;
-  bottom: -4px;
-  left: -4px;
-  width: 22px;
-  height: 22px;
+  bottom: 2px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   transition: background-color 0.3s ease;
   padding: 0;
   outline: none;
-  border: 2px solid var(--bg-inset); /* separate from cloud */
-  pointer-events: none; /* Let parent handle clicks */
+  border: 1.5px solid var(--bg-surface);
+  pointer-events: none;
 }
 
 .sync-icon {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
 }
 
 /* Button Colors */
@@ -4011,7 +4021,7 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
 
 .topbar-stats {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: nowrap !important;
   align-items: center;
   justify-content: flex-start;
@@ -4021,7 +4031,7 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 0 10px;
+  padding: 0 4px;
 }
 
 [data-theme="light"] .card.bento-sm {
