@@ -5508,14 +5508,15 @@ document.addEventListener("DOMContentLoaded", () => {
       let html = "";
       reqs.forEach(r => {
         const date = new Date(r.created_at).toLocaleString("ar-EG");
-        const typeLabel = r.sub_type === "exemption" ? "إعفاء كامل" : 'خصم ' + r.amount + ' ج';
+        const isExempt = (r.title === "exemption" || r.sub_type === "exemption");
+        const typeLabel = isExempt ? "إعفاء كامل" : 'خصم ' + r.amount + ' ج';
         html += '<div class="decision-card">' +
           '<div class="decision-card-info">' +
             '<div class="decision-student-name">' + (r.student_id || '') + '</div>' +
             '<div class="decision-meta">' + typeLabel + ' • طلب من: ' + (r.sender_name || "مساعد") + ' • ' + date + '</div>' +
             '<div class="decision-meta" style="margin-top:4px;">السبب: ' + (r.message || "—") + '</div>' +
           '</div>' +
-          '<div class="decision-amount">' + (r.sub_type === "exemption" ? "إعفاء" : r.amount + " ج") + '</div>' +
+          '<div class="decision-amount">' + ((r.title === "exemption" || r.sub_type === "exemption") ? "إعفاء" : r.amount + " ج") + '</div>' +
           '<div class="decision-actions">' +
             '<button class="btn success smallBtn" onclick="window.approveRequest(\'' + r.id + '\')"><i class="fa-solid fa-check"></i> قبول</button>' +
             '<button class="btn danger smallBtn" onclick="window.rejectRequest(\'' + r.id + '\')"><i class="fa-solid fa-xmark"></i> رفض</button>' +
@@ -5571,7 +5572,7 @@ document.addEventListener("DOMContentLoaded", () => {
       id: msgId,
       type: 'assistant_message',
       title: " تمت الموافقة على طلبك",
-      message: 'وافق المدير على ' + (r.sub_type === "exemption" ? "إعفاء" : "خصم " + r.amount + " ج") + ' للطالب ' + (r.student_id || '') + '. السبب: ' + (r.message || "—"),
+      message: 'وافق المدير على ' + ((r.title === "exemption" || r.sub_type === "exemption") ? "إعفاء" : "خصم " + r.amount + " ج") + ' للطالب ' + (r.student_id || '') + '. السبب: ' + (r.message || "—"),
       status: 'unread'
     });
 
@@ -5595,7 +5596,7 @@ document.addEventListener("DOMContentLoaded", () => {
         id: msgId,
         type: 'assistant_message',
         title: " تم رفض طلبك",
-        message: 'رفض المدير طلب ' + (r.sub_type === "exemption" ? "الإعفاء" : "الخصم " + r.amount + " ج") + ' للطالب ' + (r.student_id || '') + '.',
+        message: 'رفض المدير طلب ' + ((r.title === "exemption" || r.sub_type === "exemption") ? "الإعفاء" : "الخصم " + r.amount + " ج") + ' للطالب ' + (r.student_id || '') + '.',
         status: 'unread'
       });
     }
@@ -5816,7 +5817,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const { error } = await window.supabaseClient.from('communications').insert([{
         id: reqId,
         type: 'manager_request',
-        sub_type: type,
+        title: type,
         student_id: String(st.id),
         amount: amount,
         message: reason,

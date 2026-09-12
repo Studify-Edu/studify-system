@@ -1380,7 +1380,7 @@ window.applyDirectDecision = async function() {
     await supabase.from('communications').insert([{
       id: decId,
       type: 'manager_request',
-      sub_type: type,
+      title: type,
       student_id: String(st.id),
       amount: type === "exemption" ? req : val,
       sender_name: 'مدير المركز (قرار مباشر)',
@@ -1438,7 +1438,8 @@ window.fetchDecisions = async function() {
     let html = "";
     reqs.forEach(r => {
       const date = new Date(r.created_at).toLocaleString("ar-EG");
-      const isExempt = r.sub_type === "exemption";
+      const isExempt = (r.title === "exemption" || r.sub_type === "exemption");
+      const subType = isExempt ? "exemption" : "discount";
       const typeLabel = isExempt ? "إعفاء كامل" : `خصم بقيمة ${r.amount} ج`;
 
       html += `
@@ -1450,7 +1451,7 @@ window.fetchDecisions = async function() {
           </div>
           <div class="decision-amount">${isExempt ? "إعفاء" : r.amount + " ج"}</div>
           <div class="decision-actions">
-            <button class="btn success smallBtn" onclick="window.approveDecision('${r.id}', '${r.student_id}', '${r.sub_type}', ${r.amount || 0})">
+            <button class="btn success smallBtn" onclick="window.approveDecision('${r.id}', '${r.student_id}', '${subType}', ${r.amount || 0})">
               <i class="fa-solid fa-check"></i> موافقة
             </button>
             <button class="btn danger smallBtn" onclick="window.rejectDecision('${r.id}', '${r.student_id}')">
