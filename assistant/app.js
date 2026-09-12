@@ -980,9 +980,15 @@ function showToast(msg, type = "success") {
      showToast("عفواً، قسم التقارير مقفل من المدير", "err");
      return;
    }
-   if (tabId === "Marketing" && currentPermissions.can_access_marketing === false) {
-     showToast("عفواً، قسم أدوات التسويق مقفل من المدير", "err");
-     return;
+   if (tabId === "Marketing") {
+     if (window.SUBSCRIPTION && window.SUBSCRIPTION.loaded && !window.SUBSCRIPTION.marketingEnabled) {
+       showToast("حملات التسويق متاحة حصرياً في الخطة الذهبية - يرجى ترقية باقة الاشتراك للوصول إلى هذه الميزة", "info");
+       return;
+     }
+     if (currentPermissions.can_access_marketing === false) {
+       showToast("عفواً، قسم أدوات التسويق مقفل من المدير", "err");
+       return;
+     }
    }
    if (tabId === "SessionStudents" && currentPermissions.can_access_session_students === false) {
      showToast("عفواً، قسم طلاب الحصة مقفل من المدير", "err");
@@ -1461,6 +1467,10 @@ async function loadAll() {
           if (typeof window.applyShiftLockState === 'function') {
             window.applyShiftLockState(today, isApproved, todayInfo?.reason || cd.daily_shift_status);
           }
+
+          if (cfg.subscription && typeof window.applyAssistantSubscription === 'function') {
+            window.applyAssistantSubscription(cfg.subscription);
+          }
         }
 
         // Cache the merged data back to IndexedDB
@@ -1747,8 +1757,8 @@ function applyPermissionsToAssistantUI() {
     if(document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.add('locked-feature');
   }
 
-  // Marketing
-  if (p.can_access_marketing !== false) {
+  // Marketing (Gated by both subscription plan and manager permission)
+  if (p.can_access_marketing !== false && (!window.SUBSCRIPTION || window.SUBSCRIPTION.marketingEnabled !== false)) {
     if(document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.remove('locked-feature');
   } else {
     if(document.getElementById('btnTabMarketing')) document.getElementById('btnTabMarketing').classList.add('locked-feature');
@@ -1843,7 +1853,10 @@ function applyPermissions() {
  
  const revenue = revenueByDate[nowDateStr()] || 0;
  
- if($("totalStudentsCount")) $("totalStudentsCount").textContent = filledCount;
+ if($("totalStudentsCount")) {
+   const maxSt = window.SUBSCRIPTION?.maxStudents;
+   $("totalStudentsCount").textContent = maxSt ? `${filledCount} / ${maxSt}` : filledCount;
+ }
  if($("todayCountTop")) $("todayCountTop").textContent = todayCount;
  
  const revPill = $("openRevenueModalBtn");
@@ -3460,6 +3473,24 @@ on("quickAttendBtn", "click", function() {
  if (currentUserRole !== "admin" && (!currentPermissions || !currentPermissions.can_add_student)) {
  showToast("عفواً، إضافة طالب جديد مقفلة من المدير ", "err");
  return;
+ }
+ const maxSt = window.SUBSCRIPTION?.maxStudents;
+ if (maxSt) {
+   const curCount = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.className)).length;
+   if (curCount >= maxSt) {
+     if (typeof Swal !== 'undefined') {
+       Swal.fire({
+         icon: 'warning',
+         title: 'تم الوصول للحد الأقصى للطلاب',
+         text: `باقتكم الحالية تسمح بحد أقصى ${maxSt} طالب. يرجى من الإدارة ترقية الاشتراك لإضافة المزيد من الطلاب.`,
+         confirmButtonText: 'إغلاق',
+         confirmButtonColor: '#2563EB'
+       });
+     } else {
+       showToast(`تم الوصول للحد الأقصى للطلاب (${maxSt})`, 'err');
+     }
+     return;
+   }
  }
  const id = $("newId") ? toInt($("newId").value) : 0;
  if(!id) return;
@@ -7854,6 +7885,12 @@ setTimeout(() => { if(typeof window.updateAttendanceUIState === 'function') wind
 // =============================================================================
 window.CLOUD_MONITOR_SECTIONS = [
   {
+    id: "subscription",
+    label: "بيانات الاشتراك والباقة",
+    localCount: () => (window.SUBSCRIPTION && window.SUBSCRIPTION.loaded ? 1 : 0),
+    cloudTable: "settings (config.subscription)"
+  },
+  {
     id: "students",
     label: "الطلاب المسجلين",
     localCount: () => Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.className)).length,
@@ -8030,3 +8067,105 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch(err) {}
   }
 });
+
+// =============================================================================
+// ASSISTANT SUBSCRIPTION & FEATURE GATING ENGINE
+// =============================================================================
+window.applyAssistantSubscription = function(subData) {
+  if (!subData) return;
+
+  const today     = new Date(); today.setHours(0,0,0,0);
+  const endDate   = new Date(subData.plan_end_date);  endDate.setHours(0,0,0,0);
+  const startDate = new Date(subData.plan_start_date); startDate.setHours(0,0,0,0);
+  const msPerDay  = 86400000;
+  const daysLeft  = Math.ceil((endDate - today) / msPerDay);
+  const totalDays = Math.max(1, Math.ceil((endDate - startDate) / msPerDay));
+
+  window.SUBSCRIPTION = {
+    loaded: true,
+    isActive: daysLeft > 0,
+    planKey: subData.plan_key || 'monthly',
+    planName: subData.plan_name || 'الخطة القياسية',
+    startDate: subData.plan_start_date,
+    endDate: subData.plan_end_date,
+    maxStudents: subData.max_students || (subData.plan_key === 'semi_annual' ? 1000 : (subData.plan_key === 'quarterly' ? 750 : 600)),
+    maxAssistants: subData.max_assistants || (subData.plan_key === 'semi_annual' ? 5 : (subData.plan_key === 'quarterly' ? 4 : 2)),
+    marketingEnabled: (subData.plan_key === 'semi_annual') || !!subData.marketing_enabled,
+    daysLeft: Math.max(0, daysLeft),
+    totalDays: totalDays
+  };
+
+  // 1. Update Student Count in Topbar Pill
+  const countEl = document.getElementById("totalStudentsCount");
+  if (countEl && typeof students !== 'undefined') {
+    const filledCount = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.className)).length;
+    countEl.textContent = `${filledCount} / ${window.SUBSCRIPTION.maxStudents}`;
+  }
+
+  // 2. Enforce Marketing Restriction for Assistant
+  const mktBtn = document.getElementById('btnTabMarketing');
+  if (mktBtn) {
+    if (!window.SUBSCRIPTION.marketingEnabled) {
+      mktBtn.classList.add('locked-feature');
+      mktBtn.setAttribute('title', 'حملات التسويق متاحة حصرياً في الخطة الذهبية');
+    } else if (typeof currentPermissions !== 'undefined' && currentPermissions.can_access_marketing !== false) {
+      mktBtn.classList.remove('locked-feature');
+      mktBtn.removeAttribute('title');
+    }
+  }
+
+  // 3. Enforce Expiration Lock Screen (if expired)
+  const lockEl = document.getElementById('assistantSubscriptionLockScreen');
+  if (lockEl) {
+    if (!window.SUBSCRIPTION.isActive) {
+      lockEl.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      const infoEl = document.getElementById('asstLockPlanInfo');
+      if (infoEl) {
+        infoEl.innerHTML = `
+          <div style="background:rgba(255,255,255,0.06);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);margin-top:14px;text-align:right;">
+            <div style="font-size:0.95em;color:#EF4444;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+              <i class="fa-solid fa-clock-rotate-left"></i> استهلاك مدة الاشتراك: 100% (0 يوم متبقي)
+            </div>
+            <div style="font-size:0.85em;color:#94A3B8;line-height:1.6;">
+              تاريخ الانتهاء: <b style="color:#F1F5F9;">${window.SUBSCRIPTION.endDate || '—'}</b> | الباقة: <b style="color:#F1F5F9;">${window.SUBSCRIPTION.planName}</b>
+            </div>
+          </div>`;
+      }
+
+      // Persistent warning notification when expired
+      if (!window._asstSubLockAlertShown) {
+        window._asstSubLockAlertShown = true;
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'error',
+            title: 'انتهاء صلاحية اشتراك النظام',
+            html: `<p style="color:var(--text-secondary);margin-bottom:12px">انتهت فترة صلاحية اشتراك المركز بالكامل.</p><p style="font-size:0.9em;color:#EF4444;font-weight:700">تم تعليق العمليات التشغيلية حتى تقوم الإدارة بتجديد الباقة.</p>`,
+            confirmButtonText: 'إغلاق',
+            confirmButtonColor: '#2563EB',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+          });
+        }
+      }
+    } else {
+      lockEl.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  }
+};
+
+// Initial subscription check on load
+(async function initAssistantSubscriptionEarly() {
+  try {
+    if (window.supabaseClient) {
+      const { data } = await window.supabaseClient.from('settings').select('config').eq('id', 1).maybeSingle();
+      if (data?.config?.subscription) {
+        window.applyAssistantSubscription(data.config.subscription);
+      }
+    }
+  } catch(e) {
+    console.warn('[Subscription] Early load error:', e);
+  }
+})();
+

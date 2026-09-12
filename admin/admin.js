@@ -2007,20 +2007,51 @@ const PLAN_NAMES_MAP = {
 export async function loadSubscriptionData() {
   if (!supabase) return;
   try {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
+    // 1. Primary storage: settings table (config.subscription)
+    const { data: setRow } = await supabase
+      .from('settings')
+      .select('config')
       .eq('id', 1)
       .maybeSingle();
 
-    if (error || !data) {
-      // No subscription table yet - graceful fallback, don't lock system
-      SUBSCRIPTION.isActive = true;
-      SUBSCRIPTION.loaded   = true;
-      window.SUBSCRIPTION   = SUBSCRIPTION;
+    let data = setRow?.config?.subscription;
+
+    // 2. Fallback storage: dedicated subscriptions table if available
+    if (!data) {
+      const { data: subRow } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
+      data = subRow;
+    }
+
+    if (!data) {
+      SUBSCRIPTION.isActive         = true;
+      SUBSCRIPTION.planKey          = 'semi_annual';
+      SUBSCRIPTION.planName         = PLAN_NAMES_MAP['semi_annual'];
+      SUBSCRIPTION.startDate        = new Date().toISOString().split('T')[0];
+      SUBSCRIPTION.endDate          = new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0];
+      SUBSCRIPTION.maxStudents      = 1000;
+      SUBSCRIPTION.maxAssistants    = 5;
+      SUBSCRIPTION.marketingEnabled = true;
+      SUBSCRIPTION.daysLeft         = 180;
+      SUBSCRIPTION.totalDays        = 180;
+      SUBSCRIPTION.loaded           = true;
+      window.SUBSCRIPTION           = SUBSCRIPTION;
       updateSubscriptionSidebarPill();
       return;
     }
+
+    // Fetch real assistant count
+    let asstCount = 0;
+    try {
+      const { count } = await supabase.from('assistants').select('*', { count: 'exact', head: true });
+      asstCount = count || 0;
+    } catch(err) {
+      asstCount = 0;
+    }
+    SUBSCRIPTION.currentAssistants = asstCount;
 
     const today     = new Date(); today.setHours(0,0,0,0);
     const endDate   = new Date(data.plan_end_date);  endDate.setHours(0,0,0,0);
@@ -2031,12 +2062,12 @@ export async function loadSubscriptionData() {
 
     SUBSCRIPTION.isActive         = daysLeft > 0;
     SUBSCRIPTION.planKey          = data.plan_key || 'monthly';
-    SUBSCRIPTION.planName         = PLAN_NAMES_MAP[data.plan_key] || data.plan_key;
+    SUBSCRIPTION.planName         = PLAN_NAMES_MAP[data.plan_key] || data.plan_name || data.plan_key;
     SUBSCRIPTION.startDate        = data.plan_start_date;
     SUBSCRIPTION.endDate          = data.plan_end_date;
-    SUBSCRIPTION.maxStudents      = data.max_students      || 600;
-    SUBSCRIPTION.maxAssistants    = data.max_assistants    || 2;
-    SUBSCRIPTION.marketingEnabled = !!data.marketing_enabled;
+    SUBSCRIPTION.maxStudents      = data.max_students || (data.plan_key === 'semi_annual' ? 1000 : (data.plan_key === 'quarterly' ? 750 : 600));
+    SUBSCRIPTION.maxAssistants    = data.max_assistants || (data.plan_key === 'semi_annual' ? 5 : (data.plan_key === 'quarterly' ? 4 : 2));
+    SUBSCRIPTION.marketingEnabled = (data.plan_key === 'semi_annual') || !!data.marketing_enabled;
     SUBSCRIPTION.daysLeft         = Math.max(0, daysLeft);
     SUBSCRIPTION.totalDays        = totalDays;
     SUBSCRIPTION.loaded           = true;
@@ -2047,7 +2078,7 @@ export async function loadSubscriptionData() {
 
   } catch(e) {
     console.error('[Subscription] Load error:', e);
-    SUBSCRIPTION.isActive = true; // graceful fallback
+    SUBSCRIPTION.isActive = true;
     SUBSCRIPTION.loaded   = true;
     window.SUBSCRIPTION   = SUBSCRIPTION;
     updateSubscriptionSidebarPill();
@@ -2063,9 +2094,37 @@ function enforceSubscriptionLock() {
     lockEl.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     const infoEl = document.getElementById('lockPlanInfo');
-    if (infoEl) infoEl.textContent = '\u0627\u0646\u062a\u0647\u0649 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0628\u062a\u0627\u0631\u064a\u062e: ' + (SUBSCRIPTION.endDate || '\u2014') + ' \u2014 ' + SUBSCRIPTION.planName;
+    if (infoEl) {
+      infoEl.innerHTML = `
+        <div style="background:rgba(255,255,255,0.06);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);margin-top:14px;text-align:right;">
+          <div style="font-size:0.95em;color:#EF4444;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+            <i class="fa-solid fa-clock-rotate-left"></i> استهلاك مدة الاشتراك: 100% (0 يوم متبقي)
+          </div>
+          <div style="font-size:0.85em;color:#94A3B8;line-height:1.6;">
+            تاريخ الانتهاء: <b style="color:#F1F5F9;">${SUBSCRIPTION.endDate || '—'}</b> | الباقة: <b style="color:#F1F5F9;">${SUBSCRIPTION.planName}</b>
+          </div>
+        </div>`;
+    }
     const dash = document.getElementById('adminDashboardLayout');
     if (dash) dash.style.display = 'none';
+
+    // Persistent notice for expired subscription
+    if (!window._subLockAlertShown) {
+      window._subLockAlertShown = true;
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'error',
+          title: 'انتهاء صلاحية اشتراك النظام',
+          html: `<p style="color:var(--text-secondary);margin-bottom:12px">انتهت فترة صلاحية الاشتراك الخاصة بنظام السنتر بالكامل.</p><p style="font-size:0.9em;color:#EF4444;font-weight:700">تم تعليق كافة العمليات التشغيلية وإيقاف الوصول للبيانات مؤقتاً حتى يتم سداد وتجديد الباقة.</p>`,
+          confirmButtonText: 'تواصل للتجديد الفوري',
+          confirmButtonColor: '#2563EB',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        }).then(() => {
+          window.contactForRenewal(SUBSCRIPTION.planKey);
+        });
+      }
+    }
   } else {
     lockEl.classList.add('hidden');
     document.body.style.overflow = '';
@@ -2079,11 +2138,11 @@ function updateSubscriptionSidebarPill() {
   pill.className = 'sub-status-pill';
   if (!SUBSCRIPTION.loaded) { pill.textContent = ''; return; }
   if (!SUBSCRIPTION.isActive) {
-    pill.classList.add('expired'); pill.textContent = '\u0645\u0646\u062a\u0647\u064a';
+    pill.classList.add('expired'); pill.textContent = 'منتهي';
   } else if (SUBSCRIPTION.daysLeft <= 10) {
-    pill.classList.add('warning'); pill.textContent = SUBSCRIPTION.daysLeft + ' \u064a\u0648\u0645';
+    pill.classList.add('warning'); pill.textContent = SUBSCRIPTION.daysLeft + ' يوم';
   } else {
-    pill.classList.add('active'); pill.textContent = '\u0646\u0634\u0637';
+    pill.classList.add('active'); pill.textContent = 'نشط';
   }
 }
 
@@ -2093,11 +2152,11 @@ export function checkStudentLimit() {
   if (count >= SUBSCRIPTION.maxStudents) {
     Swal.fire({
       icon: 'warning',
-      title: '\u062a\u0645 \u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0644\u0644\u0637\u0644\u0627\u0638',
-      html: `<p style="color:var(--text-secondary);margin-bottom:12px">\u0628\u0627\u0642\u062a\u0643 \u062a\u0633\u0645\u062d \u0628\u062d\u062f \u0623\u0642\u0635\u0649 <b>${SUBSCRIPTION.maxStudents} \u0637\u0627\u0644\u0628</b>.<br>\u0644\u062f\u064a\u0643 \u062d\u0627\u0644\u064a\u0627\u064b <b>${count} \u0637\u0627\u0644\u0628</b> \u0645\u0633\u062c\u0644.</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> \u0642\u0645 \u0628\u062a\u0631\u0642\u064a\u0629 \u0628\u0627\u0642\u062a\u0643 \u0644\u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0645\u0632\u064a\u062f \u0645\u0646 \u0627\u0644\u0637\u0644\u0627\u0628.</p>`,
-      confirmButtonText: '\u0639\u0631\u0636 \u062e\u0637\u0637 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643',
+      title: 'تم الوصول للحد الأقصى للطلاب',
+      html: `<p style="color:var(--text-secondary);margin-bottom:12px">باقتك الحالية تسمح بحد أقصى <b>${SUBSCRIPTION.maxStudents} طالب</b>.<br>لديك حالياً <b>${count} طالب</b> مسجل.</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> يرجى ترقية باقة الاشتراك لإضافة المزيد من الطلاب.</p>`,
+      confirmButtonText: 'عرض خطط الاشتراك',
       confirmButtonColor: '#2563EB',
-      showCancelButton: true, cancelButtonText: '\u0625\u063a\u0644\u0627\u0642'
+      showCancelButton: true, cancelButtonText: 'إغلاق'
     }).then(r => { if (r.isConfirmed) window.switchAdminTab('subscription'); });
     return false;
   }
@@ -2113,11 +2172,11 @@ export async function checkAssistantLimit() {
     if (cur >= SUBSCRIPTION.maxAssistants) {
       Swal.fire({
         icon: 'warning',
-        title: '\u062a\u0645 \u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0644\u0644\u0645\u0633\u0627\u0639\u062f\u064a\u0646',
-        html: `<p style="color:var(--text-secondary);margin-bottom:12px">\u0628\u0627\u0642\u062a\u0643 \u062a\u0633\u0645\u062d \u0628\u062d\u062f \u0623\u0642\u0635\u0649 <b>${SUBSCRIPTION.maxAssistants} \u0645\u0633\u0627\u0639\u062f</b>.<br>\u0644\u062f\u064a\u0643 \u062d\u0627\u0644\u064a\u0627\u064b <b>${cur} \u0645\u0633\u0627\u0639\u062f</b> \u0645\u0633\u062c\u0644.</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> \u0642\u0645 \u0628\u062a\u0631\u0642\u064a\u0629 \u0628\u0627\u0642\u062a\u0643 \u0644\u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0645\u0632\u064a\u062f.</p>`,
-        confirmButtonText: '\u0639\u0631\u0636 \u062e\u0637\u0637 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643',
+        title: 'تم الوصول للحد الأقصى للمساعدين',
+        html: `<p style="color:var(--text-secondary);margin-bottom:12px">باقتك الحالية تسمح بحد أقصى <b>${SUBSCRIPTION.maxAssistants} مساعد</b>.<br>لديك حالياً <b>${cur} مساعد</b> مسجل.</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> يرجى ترقية باقة الاشتراك لإضافة المزيد من حسابات المساعدين.</p>`,
+        confirmButtonText: 'عرض خطط الاشتراك',
         confirmButtonColor: '#2563EB',
-        showCancelButton: true, cancelButtonText: '\u0625\u063a\u0644\u0627\u0642'
+        showCancelButton: true, cancelButtonText: 'إغلاق'
       }).then(r => { if (r.isConfirmed) window.switchAdminTab('subscription'); });
       return false;
     }
@@ -2131,53 +2190,48 @@ window.renderSubscriptionView = function() {
   if (!card) return;
 
   if (!SUBSCRIPTION.loaded) {
-    card.innerHTML = '<div class="sub-plan-loading"><i class="fa-solid fa-spinner fa-spin"></i> \u062c\u0627\u0631\u064a \u062a\u062d\u0645\u064a\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643...</div>';
-    // Retry after load
+    card.innerHTML = '<div class="sub-plan-loading"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل بيانات الاشتراك...</div>';
     setTimeout(() => { if (SUBSCRIPTION.loaded) window.renderSubscriptionView(); }, 1500);
     return;
   }
 
   const { isActive, daysLeft, totalDays, planName, startDate, endDate,
-          maxStudents, maxAssistants, marketingEnabled, planKey } = SUBSCRIPTION;
+          maxStudents, maxAssistants, currentAssistants, planKey } = SUBSCRIPTION;
   const progress = Math.max(0, Math.min(100, Math.round((daysLeft / totalDays) * 100)));
   const statusClass = isActive ? (daysLeft <= 10 ? 'warning' : 'active') : 'expired';
-  const statusText  = isActive
-    ? (daysLeft <= 10 ? `\u26a0\ufe0f \u064a\u0646\u062a\u0647\u064a \u062e\u0644\u0627\u0644 ${daysLeft} \u064a\u0648\u0645` : '\u25cf \u0646\u0634\u0637')
-    : '\u2715 \u0645\u0646\u062a\u0647\u064a';
+  const statusIcon  = isActive ? (daysLeft <= 10 ? 'fa-clock' : 'fa-circle-check') : 'fa-circle-xmark';
+  const statusText  = isActive ? (daysLeft <= 10 ? `ينتهي خلال ${daysLeft} يوم` : 'نشط') : 'منتهي';
   const progressClass = progress <= 15 ? 'danger' : progress <= 30 ? 'warning' : '';
   const studentCount  = Object.keys(students).length;
-  const mktChip = marketingEnabled
-    ? `<div class="sub-limit-chip"><i class="fa-brands fa-whatsapp"></i><span class="sub-limit-chip-val">\u0645\u0641\u0639\u0651\u0644</span><span class="sub-limit-chip-lbl">\u0627\u0644\u062a\u0633\u0648\u064a\u0642 \u0628\u0627\u0644\u0648\u0627\u062a\u0633\u0627\u0628</span></div>`
-    : `<div class="sub-limit-chip" style="opacity:.5"><i class="fa-solid fa-ban" style="color:var(--danger)"></i><span class="sub-limit-chip-val">\u0645\u063a\u0644\u0642</span><span class="sub-limit-chip-lbl">\u0627\u0644\u062a\u0633\u0648\u064a\u0642 \u0628\u0627\u0644\u0648\u0627\u062a\u0633\u0627\u0628</span></div>`;
+  const asstCountDisplay = typeof currentAssistants === 'number' ? currentAssistants : 0;
 
   card.innerHTML = `
     <div class="sub-current-inner">
       <div class="sub-current-info">
         <div class="sub-current-badge ${statusClass}">
-          <i class="fa-solid ${isActive ? 'fa-circle-check' : 'fa-circle-xmark'}"></i> ${statusText}
+          <i class="fa-solid ${statusIcon}"></i> ${statusText}
         </div>
         <div class="sub-current-plan-name">${planName}</div>
         <div class="sub-current-date-row">
           <i class="fa-solid fa-calendar-check" style="color:var(--primary)"></i>
-          \u0645\u0646 <b>${startDate || '\u2014'}</b> &nbsp;\u062d\u062a\u0649&nbsp; <b>${endDate || '\u2014'}</b>
+          من <b>${startDate || '—'}</b> &nbsp;حتى&nbsp; <b>${endDate || '—'}</b>
         </div>
         <div class="sub-current-limits">
           <div class="sub-limit-chip">
             <i class="fa-solid fa-users"></i>
             <span class="sub-limit-chip-val">${studentCount} / ${maxStudents}</span>
-            <span class="sub-limit-chip-lbl">\u0637\u0627\u0644\u0628</span>
+            <span class="sub-limit-chip-lbl">طالب</span>
           </div>
           <div class="sub-limit-chip">
             <i class="fa-solid fa-user-shield"></i>
-            <span class="sub-limit-chip-val">— / ${maxAssistants}</span>
-            <span class="sub-limit-chip-lbl">\u0645\u0633\u0627\u0639\u062f</span>
+            <span class="sub-limit-chip-val">${asstCountDisplay} / ${maxAssistants}</span>
+            <span class="sub-limit-chip-lbl">مساعد</span>
           </div>
-          ${mktChip}
         </div>
         <div class="sub-progress-wrap">
           <div class="sub-progress-lbl">
-            <span>\u0627\u0633\u062a\u0647\u0644\u0627\u0643 \u0645\u062f\u0629 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643</span>
-            <span>${daysLeft} \u064a\u0648\u0645 \u0645\u062a\u0628\u0642\u064a \u0645\u0646 ${totalDays}</span>
+            <span>استهلاك مدة الاشتراك</span>
+            <span>${daysLeft} يوم متبقي من ${totalDays}</span>
           </div>
           <div class="sub-progress-bar">
             <div class="sub-progress-fill ${progressClass}" style="width:${progress}%"></div>
@@ -2186,7 +2240,7 @@ window.renderSubscriptionView = function() {
       </div>
       <div class="sub-countdown">
         <div class="sub-countdown-days">${daysLeft}</div>
-        <div class="sub-countdown-lbl">\u064a\u0648\u0645 \u0645\u062a\u0628\u0642\u064a</div>
+        <div class="sub-countdown-lbl">يوم متبقي</div>
       </div>
     </div>`;
 
@@ -2205,7 +2259,7 @@ window.renderSubscriptionView = function() {
     const btn = activePlanEl.querySelector('.sub-plan-btn');
     if (btn) {
       btn.className = 'sub-plan-btn current-plan-badge';
-      btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> \u0628\u0627\u0642\u062a\u0643 \u0627\u0644\u062d\u0627\u0644\u064a\u0629';
+      btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> باقتك الحالية';
       btn.onclick = null;
     }
   }
@@ -2213,18 +2267,18 @@ window.renderSubscriptionView = function() {
 
 window.contactForRenewal = function(planKey) {
   const names = {
-    monthly:     '\u0627\u0644\u062e\u0637\u0629 \u0627\u0644\u0645\u0631\u0646\u0629 (1500 \u062c/\u0634\u0647\u0631)',
-    quarterly:   '\u0627\u0644\u062e\u0637\u0629 \u0627\u0644\u0645\u0631\u064a\u062d\u0629 (4000 \u062c/3 \u0634\u0647\u0648\u0631)',
-    semi_annual: '\u0627\u0644\u062e\u0637\u0629 \u0627\u0644\u0630\u0647\u0628\u064a\u0629 (7500 \u062c/6 \u0634\u0647\u0648\u0631)'
+    monthly:     'الخطة المرنة (1500 ج/شهر)',
+    quarterly:   'الخطة المريحة (4000 ج/3 شهور)',
+    semi_annual: 'الخطة الذهبية (7500 ج/6 شهور)'
   };
   Swal.fire({
     icon: 'info',
-    title: '\u062a\u062c\u062f\u064a\u062f / \u062a\u0631\u0642\u064a\u0629 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643',
-    html: `<p style="color:var(--text-secondary);margin-bottom:14px">\u0644\u062a\u0641\u0639\u064a\u0644 <b>${names[planKey] || planKey}</b>،<br>\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0641\u0631\u064a\u0642 \u0627\u0644\u062f\u0639\u0645 \u0627\u0644\u0641\u0646\u064a \u0648\u0633\u064a\u062a\u0645 \u0627\u0644\u062a\u0641\u0639\u064a\u0644 \u0641\u0648\u0631\u0627\u064b.</p>
+    title: 'تجديد / ترقية الاشتراك',
+    html: `<p style="color:var(--text-secondary);margin-bottom:14px">لتفعيل <b>${names[planKey] || planKey}</b>،<br>تواصل مع فريق الدعم الفني وسيتم التفعيل فوراً.</p>
       <div style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.3);color:#25D366;padding:12px 18px;border-radius:10px;font-weight:700;font-size:.95em;display:flex;align-items:center;gap:10px;justify-content:center;">
-        <i class="fa-brands fa-whatsapp" style="font-size:1.3em"></i> \u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062f\u0639\u0645 \u0627\u0644\u0641\u0646\u064a \u0639\u0628\u0631 \u0627\u0644\u0648\u0627\u062a\u0633\u0627\u0628
+        <i class="fa-brands fa-whatsapp" style="font-size:1.3em"></i> تواصل مع الدعم الفني عبر الواتساب
       </div>`,
-    confirmButtonText: '\u062d\u0633\u0646\u0627\u064b',
+    confirmButtonText: 'حسناً',
     confirmButtonColor: '#2563EB'
   });
 };

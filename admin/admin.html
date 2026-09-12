@@ -621,10 +621,9 @@
               <ul class="sub-plan-features">
                 <li class="feature-ok"><i class="fa-solid fa-check"></i> النظام التشغيلي الكامل</li>
                 <li class="feature-ok"><i class="fa-solid fa-check"></i> النظام المالي وإدارة الطلاب</li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> حتى <b>900 طالب</b></li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> حتى <b>5 مساعدين</b></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> حتى <b>750 طالب</b></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> حتى <b>4 مساعدين</b></li>
                 <li class="feature-ok"><i class="fa-solid fa-check"></i> راحة بال من التجديد المتكرر</li>
-                <li class="feature-no"><i class="fa-solid fa-xmark"></i> حملات التسويق بالواتساب</li>
               </ul>
               <button class="sub-plan-btn sub-contact-btn" onclick="window.contactForRenewal('quarterly')">
                 <i class="fa-solid fa-headset"></i> تواصل للاشتراك
@@ -633,7 +632,7 @@
 
             <!-- Plan 3: Semi-Annual (BEST VALUE) -->
             <div class="sub-plan-card golden-plan" id="subPlanSemiAnnual">
-              <div class="golden-ribbon">الأكثر توفيراً ⭐</div>
+              <div class="golden-ribbon"><i class="fa-solid fa-star"></i> الأكثر توفيراً</div>
               <div class="sub-plan-header">
                 <div class="sub-plan-icon golden-icon">
                   <i class="fa-solid fa-crown"></i>
@@ -651,9 +650,10 @@
               <ul class="sub-plan-features">
                 <li class="feature-ok"><i class="fa-solid fa-check"></i> النظام التشغيلي الكامل</li>
                 <li class="feature-ok"><i class="fa-solid fa-check"></i> النظام المالي وإدارة الطلاب</li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> حتى <b>900 طالب</b></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> حتى <b>1,000 طالب</b></li>
                 <li class="feature-ok"><i class="fa-solid fa-check"></i> حتى <b>5 مساعدين</b></li>
-                <li class="feature-ok feature-golden"><i class="fa-brands fa-whatsapp"></i> <b>حملات التسويق الذكية بالواتساب</b> ✨</li>
+                <li class="feature-ok feature-support"><i class="fa-solid fa-headset"></i> <b>دعم فني متواصل 24 ساعة لحل المشاكل التقنية</b></li>
+                <li class="feature-ok feature-golden"><i class="fa-brands fa-whatsapp"></i> <b>حملات التسويق الذكية بالواتساب</b></li>
                 <li class="feature-ok"><i class="fa-solid fa-check"></i> استقرار تام لنصف عام</li>
               </ul>
               <button class="sub-plan-btn golden-btn" onclick="window.contactForRenewal('semi_annual')">
@@ -670,26 +670,44 @@
           </div>
 
           <div class="sub-coming-soon-grid">
-            <div class="sub-coming-card">
-              <div class="coming-icon pro-icon">
-                <i class="fa-solid fa-mobile-screen"></i>
+            <!-- Pro Card -->
+            <div class="sub-coming-card pro-card">
+              <div class="coming-card-top">
+                <div class="coming-icon pro-icon">
+                  <i class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <div class="coming-header-text">
+                  <div class="coming-name">باقة Pro — تطبيق الموبايل الذكي</div>
+                  <div class="coming-subtitle">تطبيق موبايل مخصص للطلاب وأولياء الأمور لمتابعة حضور ومواعيد السنتر لحظياً</div>
+                </div>
+                <div class="coming-badge">قريباً<br>Coming Soon</div>
               </div>
-              <div class="coming-info">
-                <div class="coming-name">Pro</div>
-                <div class="coming-desc">تطبيق موبايل للطلاب لمتابعة المواعيد والحضور والنتائج بشكل مباشر</div>
-              </div>
-              <div class="coming-badge">قريباً<br>Coming Soon</div>
+              <ul class="coming-features-list">
+                <li><i class="fa-solid fa-qrcode"></i> كارت الطالب الذكي مع كود QR مدمج لتسجيل الحضور الذاتي والسريع</li>
+                <li><i class="fa-solid fa-bell"></i> إشعارات فورية وتنبيهات لولي الأمر بالغياب والدرجات بعد كل حصة</li>
+                <li><i class="fa-solid fa-chart-line"></i> لوحة متابعة مستوى الطالب وتفاصيل الواجبات والاختبارات الدورية</li>
+                <li><i class="fa-solid fa-wallet"></i> متابعة الأقساط الشهرية وفواتير سداد الكورسات أونلاين بضغطة زر</li>
+              </ul>
             </div>
 
-            <div class="sub-coming-card">
-              <div class="coming-icon vip-icon">
-                <i class="fa-solid fa-gem"></i>
+            <!-- VIP Card -->
+            <div class="sub-coming-card vip-card">
+              <div class="coming-card-top">
+                <div class="coming-icon vip-icon">
+                  <i class="fa-solid fa-gem"></i>
+                </div>
+                <div class="coming-header-text">
+                  <div class="coming-name">باقة VIP — المنصة التعليمية المتكاملة</div>
+                  <div class="coming-subtitle">نظام تعليمي وسحابي كامل مع نطاق مخصص وسيرفرات خاصة بالسنتر</div>
+                </div>
+                <div class="coming-badge">قريباً<br>Coming Soon</div>
               </div>
-              <div class="coming-info">
-                <div class="coming-name">VIP</div>
-                <div class="coming-desc">منصة تعليمية متكاملة للسنتر مع لوحة طلاب أونلاين ومحتوى رقمي</div>
-              </div>
-              <div class="coming-badge">قريباً<br>Coming Soon</div>
+              <ul class="coming-features-list">
+                <li><i class="fa-solid fa-globe"></i> منصة وبوابة خاصة باسم ونطاق السنتر المستقل (Custom Domain)</li>
+                <li><i class="fa-solid fa-video-slash"></i> مشغل حصص وفيديوهات مشفر ومحمي بالكامل ضد تسجيل وتصوير الشاشة</li>
+                <li><i class="fa-solid fa-brain"></i> بنك أسئلة ذكي واختبارات إلكترونية بتصحيح فوري وتحليل أداء بالذكاء الاصطناعي</li>
+                <li><i class="fa-solid fa-infinity"></i> استيعاب غير محدود للطلاب والمساعدين مع سيرفر مخصص ودعم VIP</li>
+              </ul>
             </div>
           </div>
         </div>
