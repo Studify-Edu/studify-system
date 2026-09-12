@@ -8080,10 +8080,11 @@ window.applyAssistantSubscription = function(subData) {
   const msPerDay  = 86400000;
   const daysLeft  = Math.ceil((endDate - today) / msPerDay);
   const totalDays = Math.max(1, Math.ceil((endDate - startDate) / msPerDay));
+  const isActive  = (daysLeft > 0) && (subData.is_active !== false);
 
   window.SUBSCRIPTION = {
     loaded: true,
-    isActive: daysLeft > 0,
+    isActive: isActive,
     planKey: subData.plan_key || 'monthly',
     planName: subData.plan_name || 'الخطة القياسية',
     startDate: subData.plan_start_date,
