@@ -5359,6 +5359,11 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, payload => {
+        if (typeof window.checkDailyShiftHeartbeat === 'function') {
+          window.checkDailyShiftHeartbeat(false);
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_revenue_shifts' }, payload => {
         if (typeof window.checkDailyShiftHeartbeat === 'function') {
           window.checkDailyShiftHeartbeat(false);

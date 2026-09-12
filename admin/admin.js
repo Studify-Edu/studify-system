@@ -32,11 +32,104 @@ let packages = {};
 let groupFees = {};
 let attByDate = {};
 let revenueByDate = {};
+let sessionStudentsByDate = {};
 let expensesByDate = [];
 let booklets = {};
 let syllabusList = [];
 let currentCenterId = localStorage.getItem("ca_manager_id") || "ahmedqutb11232_gmail_com";
 let dailyApprovalMap = JSON.parse(localStorage.getItem('studify_daily_approval_map') || '{}');
+
+// Admin Realtime Live Sync across all devices (Students, Settings, Communications)
+if (supabase) {
+  try {
+    supabase.channel('admin-realtime-live-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, payload => {
+        try {
+          if (payload.eventType === 'DELETE') {
+            if (payload.old && payload.old.id) {
+              delete students[String(payload.old.id)];
+            }
+          } else if (payload.new && payload.new.id) {
+            const row = payload.new;
+            if (row.status === 'deleted') {
+              delete students[String(row.id)];
+            } else {
+              const existing = students[String(row.id)] || {};
+              students[String(row.id)] = {
+                id: row.id,
+                name: row.name || existing.name || '',
+                className: row.class_name || row.className || existing.className || '',
+                phone: row.phone || existing.phone || '',
+                parentPhone: row.parent_phone || row.parentPhone || existing.parentPhone || '',
+                paid: Number(row.paid !== undefined ? row.paid : existing.paid) || 0,
+                discount: Number(row.discount !== undefined ? row.discount : existing.discount) || 0,
+                paymentPlan: row.payment_plan || row.paymentPlan || existing.paymentPlan || 'cash',
+                packages: Array.isArray(row.packages) ? row.packages : (existing.packages || []),
+                payments: row.payments || existing.payments || [],
+                attendanceDates: row.attendance_dates || existing.attendanceDates || [],
+                status: row.status || existing.status || 'active'
+              };
+            }
+          }
+          if (typeof window.renderTermTable === 'function') window.renderTermTable();
+          const dInput = document.getElementById("adminDailyDateInput");
+          if (typeof window.loadDailyReport === 'function') window.loadDailyReport(dInput ? dInput.value : nowDateStr());
+        } catch(err) {
+          console.warn('[Admin Realtime Students] Error handling payload:', err);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, payload => {
+        try {
+          if (payload.new && payload.new.config) {
+            const cfg = payload.new.config;
+            if (cfg.att_by_date) attByDate = cfg.att_by_date;
+            if (cfg.revenue_by_date) revenueByDate = cfg.revenue_by_date;
+            if (cfg.session_students_by_date) sessionStudentsByDate = cfg.session_students_by_date;
+            if (cfg.daily_approval_map) {
+              dailyApprovalMap = cfg.daily_approval_map;
+              localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
+            }
+            if (Array.isArray(cfg.expenses_by_date)) {
+              expensesByDate = cfg.expenses_by_date;
+            } else if (cfg.expenses_by_date && typeof cfg.expenses_by_date === 'object') {
+              const flatList = [];
+              for (const dateKey in cfg.expenses_by_date) {
+                const items = cfg.expenses_by_date[dateKey];
+                if (Array.isArray(items)) {
+                  items.forEach(item => {
+                    if (item) flatList.push({ date: item.date || dateKey, reason: item.reason || '', amount: Number(item.amount) || 0, timestamp: item.timestamp || Date.now() });
+                  });
+                }
+              }
+              expensesByDate = flatList;
+            }
+            const dInput = document.getElementById("adminDailyDateInput");
+            const curDate = dInput ? dInput.value : nowDateStr();
+            if (typeof window.loadDailyReport === 'function') window.loadDailyReport(curDate);
+            if (typeof window.renderDailyApprovalWidget === 'function') window.renderDailyApprovalWidget(curDate);
+          }
+        } catch(err) {
+          console.warn('[Admin Realtime Settings] Error handling payload:', err);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'communications' }, payload => {
+        try {
+          if (typeof fetchDecisionsCount === 'function') fetchDecisionsCount();
+          const decView = document.getElementById("viewDecisions");
+          if (decView && !decView.classList.contains("hidden") && typeof window.fetchDecisions === 'function') {
+            window.fetchDecisions();
+          }
+        } catch(err) {
+          console.warn('[Admin Realtime Communications] Error handling payload:', err);
+        }
+      })
+      .subscribe((status) => {
+        console.log('[Admin Realtime Live Sync] Status:', status);
+      });
+  } catch(e) {
+    console.warn('[Admin Realtime Live Sync] Error:', e);
+  }
+}
 
 // Permissions Definitions (All 11 permissions, grouped cleanly)
 export const PERMISSIONS_DEFS = [
@@ -294,6 +387,7 @@ async function loadAllAdminData() {
           phone: s.phone || '',
           parentPhone: s.parent_phone || s.parentPhone || '',
           paid: Number(s.paid) || 0,
+          discount: Number(s.discount) || 0,
           paymentPlan: s.payment_plan || s.paymentPlan || 'cash',
           packages: pList,
           payments: s.payments || [],
@@ -354,6 +448,11 @@ async function loadAllAdminData() {
 
       attByDate = cfg.att_by_date || cfg.attendance_by_date || {};
       if (cfg.revenue_by_date) revenueByDate = cfg.revenue_by_date;
+      if (cfg.session_students_by_date && typeof cfg.session_students_by_date === 'object') {
+        sessionStudentsByDate = cfg.session_students_by_date;
+      } else {
+        sessionStudentsByDate = {};
+      }
       if (Array.isArray(cfg.expenses_by_date)) {
         expensesByDate = cfg.expenses_by_date;
       } else if (cfg.expenses_by_date && typeof cfg.expenses_by_date === 'object') {
@@ -377,6 +476,7 @@ async function loadAllAdminData() {
       } else {
         expensesByDate = [];
       }
+      const sylRaw = s.syllabus_data || cfg.syllabus_data || cfg.syllabus;
       if (Array.isArray(sylRaw)) {
         syllabusList = sylRaw.map(s => ({
           title: s.title || s.name || '',
@@ -655,6 +755,7 @@ window.loadDailyReport = function(dateStr) {
   const d = dateStr || nowDateStr();
   window.renderDailyApprovalWidget(d);
   const ids = attByDate[d] || [];
+  const sessList = sessionStudentsByDate[d] || [];
   const rev = revenueByDate[d] || 0;
   let expArr = [];
   if (Array.isArray(expensesByDate)) {
@@ -666,13 +767,14 @@ window.loadDailyReport = function(dateStr) {
   let totalExp = 0;
   expArr.forEach(e => totalExp += (Number(e && e.amount) || 0));
 
-  // Update Stat Cards
+  // Update Stat Cards (Regular students + Session students)
   const statAttend = document.getElementById("statDailyAttend");
   const statRev = document.getElementById("statDailyRevenue");
   const statAbsent = document.getElementById("statDailyAbsent");
   const statExp = document.getElementById("statDailyExpenses");
 
-  if (statAttend) statAttend.textContent = ids.length;
+  const totalAttended = ids.length + sessList.length;
+  if (statAttend) statAttend.textContent = totalAttended;
   if (statRev) statRev.textContent = rev.toLocaleString() + " ج";
   if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - ids.length);
   if (statExp) statExp.textContent = totalExp.toLocaleString() + " ج";
@@ -680,7 +782,7 @@ window.loadDailyReport = function(dateStr) {
   // Render Groups Breakdown
   const body = document.getElementById("dailyGroupsBreakdown");
   if (body) {
-    if (ids.length === 0 && expArr.length === 0) {
+    if (ids.length === 0 && sessList.length === 0 && expArr.length === 0) {
       body.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 24px;">لا توجد بيانات مسجلة لهذا التاريخ (${d})</div>`;
     } else {
       let groups = {};
@@ -694,6 +796,15 @@ window.loadDailyReport = function(dateStr) {
           let req = p ? p.price : 0;
           if (req > 0) groups[cls].revenue += req;
         }
+      });
+
+      // Add session students to groups breakdown
+      sessList.forEach(sSt => {
+        const rawCls = (sSt && sSt.className) ? sSt.className.trim() : "حصة فردية";
+        const grpKey = rawCls.includes("حصة") ? rawCls : `${rawCls} (حصة)`;
+        if (!groups[grpKey]) groups[grpKey] = { count: 0, revenue: 0 };
+        groups[grpKey].count++;
+        groups[grpKey].revenue += (Number(sSt.amount) || 0);
       });
 
       let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">';
@@ -784,7 +895,8 @@ window.renderTermTable = function() {
     }
     
     const paid = Number(st.paid) || 0;
-    const debt = Math.max(0, req - paid);
+    const discount = Number(st.discount) || 0;
+    const debt = Math.max(0, req - paid - discount);
     
     // Attendance count
     const attCount = (st.attendanceDates && st.attendanceDates.length > 0) 
@@ -799,7 +911,10 @@ window.renderTermTable = function() {
         <td style="font-weight: 700;">${st.name} <span style="font-size:0.8em; color:var(--text-secondary);">(#${st.id})</span></td>
         <td><span style="background:var(--gradient-subtle); color:var(--primary); font-weight:700; padding:3px 8px; border-radius:6px; font-size:0.85em;">${cls}</span></td>
         <td>${req > 0 ? req + " ج" : "—"}</td>
-        <td style="color:var(--success); font-weight:700;">${paid > 0 ? paid + " ج" : "0 ج"}</td>
+        <td style="color:var(--success); font-weight:700;">
+          ${paid > 0 ? paid + " ج" : "0 ج"}
+          ${discount > 0 ? `<span style="display:inline-block; font-size:0.75em; background:rgba(245,158,11,0.15); color:#F59E0B; padding:1px 5px; border-radius:4px; margin-inline-start:4px;">(خصم ${discount} ج)</span>` : ''}
+        </td>
         <td style="color:${debt > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${debt > 0 ? debt + " ج" : "خالص"}</td>
         <td style="font-weight:700;">${attCount}</td>
         <td>
@@ -1155,15 +1270,24 @@ window.approveDecision = async function(reqId, studentId, subType, amount) {
     // 1. Update Student record if exists
     const st = students[String(studentId)];
     if (st) {
-      const pkg = packages[st.className];
-      let req = pkg ? (pkg.price || 0) : 0;
+      let req = 0;
+      const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
+      stPkgs.forEach(pName => {
+        if (packages[pName]) req += (packages[pName].price || 0);
+        else if (groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
+      });
+
       if (subType === "exemption") {
-        st.paid = req;
+        st.discount = req;
       } else {
-        const discounted = Math.max(0, req - Number(amount));
-        st.paid = Math.max(st.paid || 0, discounted);
+        st.discount = Math.min(req, (Number(st.discount) || 0) + Number(amount));
       }
-      await supabase.from('students').upsert({ id: st.id, paid: st.paid });
+      st.lastModified = Date.now();
+      await supabase.from('students').upsert({
+        id: st.id,
+        discount: st.discount,
+        last_modified: st.lastModified
+      }, { onConflict: 'id' });
     }
 
     // 2. Mark request approved
@@ -1174,11 +1298,12 @@ window.approveDecision = async function(reqId, studentId, subType, amount) {
       id: "msg_" + Date.now(),
       type: 'assistant_message',
       title: ' تمت الموافقة على طلب الخصم',
-      message: `وافق المدير على طلب الطالب (${studentId})`,
+      message: `وافق المدير على طلب الطالب (${studentId}) بقيمة ${subType === "exemption" ? "إعفاء كامل" : amount + " ج"}`,
       status: 'unread'
     }]);
 
     showToast("تمت الموافقة وتطبيق الخصم بنجاح", "success");
+    window.renderTermTable();
     window.fetchDecisions();
 
   } catch(err) {
