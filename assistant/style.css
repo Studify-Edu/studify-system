@@ -212,10 +212,13 @@ a { color: var(--primary); text-decoration: none; }
 .sidebar {
   position: fixed;
   top: 0;
+  bottom: 0;
   right: 0;
   left: auto;
   width: var(--sidebar-w);
   height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
   background: var(--bg-sidebar);
   border-inline-end: 1px solid var(--border);
   display: flex;
@@ -223,6 +226,7 @@ a { color: var(--primary); text-decoration: none; }
   z-index: 900;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 [dir="ltr"] .sidebar {
@@ -439,26 +443,36 @@ a { color: var(--primary); text-decoration: none; }
 .app-shell.sidebar-collapsed .nav-text { opacity: 0; width: 0; }
 
 .sidebar-footer {
-  padding: 12px;
+  padding: 14px 12px;
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: center;
+  background: var(--bg-surface);
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .sidebar-collapse-btn {
   background: var(--bg-inset);
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 0.9em;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-collapse-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .sidebar-collapse-btn:hover { background: var(--primary); color: #ffffff; border-color: var(--primary); }
@@ -3592,7 +3606,6 @@ tr:hover td:first-child {
 /* Better scrollbar for inner containers */
 .modalContent::-webkit-scrollbar,
 .tableWrap::-webkit-scrollbar,
-.sidebar-menu::-webkit-scrollbar,
 .dropdown-menu::-webkit-scrollbar,
 .thin-scroll::-webkit-scrollbar {
   width: 6px;
@@ -3600,14 +3613,12 @@ tr:hover td:first-child {
 }
 .modalContent::-webkit-scrollbar-track,
 .tableWrap::-webkit-scrollbar-track,
-.sidebar-menu::-webkit-scrollbar-track,
 .dropdown-menu::-webkit-scrollbar-track,
 .thin-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 .modalContent::-webkit-scrollbar-thumb,
 .tableWrap::-webkit-scrollbar-thumb,
-.sidebar-menu::-webkit-scrollbar-thumb,
 .dropdown-menu::-webkit-scrollbar-thumb,
 .thin-scroll::-webkit-scrollbar-thumb {
   background: rgba(16, 185, 129, 0.35);
@@ -3615,10 +3626,28 @@ tr:hover td:first-child {
 }
 .modalContent::-webkit-scrollbar-thumb:hover,
 .tableWrap::-webkit-scrollbar-thumb:hover,
-.sidebar-menu::-webkit-scrollbar-thumb:hover,
 .dropdown-menu::-webkit-scrollbar-thumb:hover,
 .thin-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 185, 129, 0.7);
+}
+
+/* Subtle, ultra-sleek scrollbar for sidebar menu */
+.sidebar-menu {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 150, 150, 0.2) transparent;
+}
+.sidebar-menu::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.2);
+  border-radius: 10px;
+}
+.sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.4);
 }
 
 /* Smooth button press */
@@ -3667,12 +3696,12 @@ tr:hover td:first-child {
 
 /* Smooth Login Transition */
 #appBox:not(.hidden), #manager-dashboard:not(.hidden) {
-  animation: fadeInZoom 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: fadeInSimple 0.3s ease-out;
 }
 
-@keyframes fadeInZoom {
-  0% { opacity: 0; transform: scale(0.97); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes fadeInSimple {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 .login-bg-bubbles {
   position: absolute;
