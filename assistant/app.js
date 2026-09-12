@@ -1552,8 +1552,8 @@ async function loadAll() {
     document.body.classList.remove("login-active");
     
     if(currentUserRole === 'admin') {
-      // Manager has a dedicated standalone portal at admin.html
-      window.location.replace("admin.html");
+      // Manager has a dedicated standalone portal at ../admin/admin.html
+      window.location.replace("../admin/admin.html");
       return;
     } else {
       $("appBox").classList.remove("hidden");
@@ -3206,7 +3206,7 @@ const st = students[id];
       
       showToast("تم تسجيل الدخول بنجاح. جاري التوجيه إلى لوحة الإدارة...", "success");
       setTimeout(() => {
-        window.location.replace("admin.html");
+        window.location.replace("../admin/admin.html");
       }, 500);
     } catch (err) {
       console.error(err);

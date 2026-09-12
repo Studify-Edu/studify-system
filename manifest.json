@@ -46,7 +46,7 @@
       "name": "لوحة الإدارة العليا",
       "short_name": "الإدارة",
       "description": "لوحة تحكم المدير والإدارة العليا والتقارير",
-      "url": "./assistant/admin.html",
+      "url": "./admin/admin.html",
       "icons": [
         {
           "src": "./icon-192.png",

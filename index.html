@@ -22,7 +22,7 @@
       const role = localStorage.getItem("ca_role");
       const isAuth = localStorage.getItem("ca_auth_v1");
       if (isAuth === "1" && role === "admin") {
-        window.location.replace("./assistant/admin.html");
+        window.location.replace("./admin/admin.html");
       } else {
         window.location.replace("./assistant/index.html");
       }
