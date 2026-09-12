@@ -534,10 +534,13 @@
  <label class="lbl" data-i18n="lbl_name">الاسم</label>
  <input id="stName" class="inp" placeholder="اسم الطالب بالكامل">
  
- <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; margin-top:10px;">
-   <label class="lbl" style="margin:0;">الباقات المشترك بها الطالب</label>
-   <button id="managePackagesBtn" class="btn success smallBtn" style="border-radius:20px; padding:4px 12px; font-size:0.85em;"><i class="fa-solid fa-layer-group"></i> إدارة الباقات</button>
- </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; margin-top:10px;">
+    <label class="lbl" style="margin:0;">الباقات المشترك بها الطالب</label>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button id="btnRequestDecisionForStudent" type="button" class="btn warning smallBtn" style="border-radius:20px; padding:4px 12px; font-size:0.85em;" onclick="window.openDecisionRequestModal(typeof toInt==='function' && document.getElementById('stId') ? toInt(document.getElementById('stId').value) : 0)"><i class="fa-solid fa-hand-holding-dollar"></i> طلب قرار للمدير</button>
+      <button id="managePackagesBtn" class="btn success smallBtn" style="border-radius:20px; padding:4px 12px; font-size:0.85em;"><i class="fa-solid fa-layer-group"></i> إدارة الباقات</button>
+    </div>
+  </div>
  <div id="stPackagesContainer" style="background:var(--bg-inset); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-wrap:wrap; gap:8px;">
     <div style="color:var(--text-secondary); font-size:0.85em; width:100%; text-align:center;">لا توجد باقات محددة</div>
  </div>
@@ -1229,9 +1232,12 @@
  
   <!-- ====== PACKAGES ====== -->
   <section id="secPackages" class="tab-section hidden">
-    <div class="content-header">
-      <h2><i class="fa-solid fa-boxes-packing"></i> الباقات والأسعار</h2>
-      <p class="text-secondary">حدد اسم وسعر وصلاحية الباقات المتاحة للمركز مع قواعد التنبيه التلقائي.</p>
+    <div class="content-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h2><i class="fa-solid fa-boxes-packing"></i> الباقات والأسعار</h2>
+        <p class="text-secondary">حدد اسم وسعر وصلاحية الباقات المتاحة للمركز مع قواعد التنبيه التلقائي.</p>
+      </div>
+      <button class="btn warning" style="padding:8px 16px; font-weight:800; border-radius:10px; display:inline-flex; align-items:center; gap:8px;" onclick="window.openDecisionRequestModal()"><i class="fa-solid fa-hand-holding-dollar"></i> تقديم طلب قرار للمدير (خصم / إعفاء)</button>
     </div>
     <div class="content-body" style="max-width: 1200px; margin: 0 auto;">
       <div id="groupFeesList" style="padding-bottom: 30px;"></div>
@@ -1537,30 +1543,68 @@
 
 
 
- <!-- ====== MODAL: Discount Request (from Assistant) ====== -->
- <div id="discountRequestModal" class="modal hidden">
- <div class="modalContent" style="max-width:420px;">
- <h3 style="margin-bottom:16px; display:flex; align-items:center; gap:10px;">
- <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
- طلب خصم / إعفاء
- </h3>
- <input type="hidden" id="discReqStudentId">
- <div id="discReqStudentName" style="font-weight:700; margin-bottom:12px; padding:10px; background:var(--bg-inset); border-radius:8px;">—</div>
- <label class="lbl">نوع الطلب</label>
- <select id="discReqType" class="inp">
- <option value="discount">خصم جزئي</option>
- <option value="exemption">إعفاء كامل</option>
- </select>
- <label class="lbl" style="margin-top:12px;">المبلغ المقترح (ج) — اتركه 0 للإعفاء الكامل</label>
- <input type="number" id="discReqAmount" class="inp" placeholder="0" min="0">
- <label class="lbl" style="margin-top:12px;">السبب</label>
- <input type="text" id="discReqReason" class="inp" placeholder="اكتب سبب الطلب..">
- <div class="row" style="margin-top:18px; justify-content:flex-end;">
- <button class="btn secondary" onclick="document.getElementById('discountRequestModal').classList.add('hidden')">إلغاء</button>
- <button id="submitDiscountRequestBtn" class="btn primary">إرسال الطلب للمدير</button>
- </div>
- </div>
- </div>
+ <!-- ====== MODAL: Decision / Discount Request (from Assistant) ====== -->
+  <div id="discountRequestModal" class="modal hidden">
+    <div class="modalContent" style="max-width:480px; width:95%; background:var(--bg-surface); border-radius:16px; border:1px solid var(--border); padding:22px; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+        <h3 style="margin:0; display:flex; align-items:center; gap:10px; font-size:1.15em; color:var(--text-primary);">
+          <i class="fa-solid fa-hand-holding-dollar" style="color:var(--warning);"></i>
+          تقديم طلب قرار للمدير (خصم / إعفاء)
+        </h3>
+        <button type="button" class="iconBtn" onclick="document.getElementById('discountRequestModal').classList.add('hidden')" style="font-size:1.3em; color:var(--text-secondary); cursor:pointer; background:none; border:none;">&times;</button>
+      </div>
+
+      <input type="hidden" id="discReqStudentId">
+      
+      <label class="lbl">رقم الطالب (ID) أو الاسم</label>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <input type="text" id="discReqStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." oninput="window.handleDiscReqSearch(this.value)">
+      </div>
+
+      <!-- Student Info Card (Live Loaded) -->
+      <div id="discReqStudentDetails" class="hidden" style="background:var(--bg-inset); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span id="discReqStNameBadge" style="font-weight:800; color:var(--text-primary);">اسم الطالب</span>
+          <span id="discReqStClassBadge" style="background:rgba(37,99,235,0.1); color:var(--primary); padding:2px 8px; border-radius:6px; font-size:0.8em; font-weight:700;">الصف</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+          <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
+            <div style="font-size:0.75em; color:var(--text-secondary);">المطلوب</div>
+            <div id="discReqStRequired" style="font-weight:700; color:var(--text-primary); font-size:0.95em;">0 ج</div>
+          </div>
+          <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
+            <div style="font-size:0.75em; color:var(--text-secondary);">الخصم الحالي</div>
+            <div id="discReqStCurrentDisc" style="font-weight:700; color:var(--warning); font-size:0.95em;">0 ج</div>
+          </div>
+          <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
+            <div style="font-size:0.75em; color:var(--text-secondary);">المتبقي</div>
+            <div id="discReqStRemaining" style="font-weight:700; color:var(--danger); font-size:0.95em;">0 ج</div>
+          </div>
+        </div>
+      </div>
+
+      <label class="lbl">نوع القرار المطلوب</label>
+      <select id="discReqType" class="inp" onchange="window.handleDiscReqTypeChange(this.value)">
+        <option value="discount">خصم مالي محدد (جنيه)</option>
+        <option value="exemption">إعفاء كامل من المصاريف (100%)</option>
+      </select>
+
+      <div id="discReqAmountWrap" style="margin-top:12px;">
+        <label class="lbl">قيمة الخصم المقترحة (جنيه)</label>
+        <input type="number" id="discReqAmount" class="inp" placeholder="مثال: 100" min="1" step="10">
+      </div>
+
+      <label class="lbl" style="margin-top:12px;">سبب الطلب / ملاحظات للمدير <span style="color:var(--danger);">*</span></label>
+      <input type="text" id="discReqReason" class="inp" placeholder="اكتب سبب طلب الخصم أو الإعفاء...">
+
+      <div class="row" style="margin-top:20px; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn secondary" onclick="document.getElementById('discountRequestModal').classList.add('hidden')">إلغاء</button>
+        <button type="button" id="submitDiscountRequestBtn" class="btn primary" onclick="window.submitDecisionRequest()" style="display:inline-flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-paper-plane"></i> إرسال الطلب للمدير
+        </button>
+      </div>
+    </div>
+  </div>
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

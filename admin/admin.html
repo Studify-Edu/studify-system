@@ -438,14 +438,94 @@
         </div>
 
         <!-- ==================================================== -->
-        <!-- VIEW 4: DECISION REQUESTS -->
+        <!-- VIEW 4: DECISION REQUESTS & DIRECT ISSUANCE -->
         <!-- ==================================================== -->
         <div id="viewDecisions" class="admin-view hidden">
+
+          <!-- DIRECT MANAGER DECISION CARD -->
+          <div class="card" style="margin-bottom: 24px; border: 1.5px solid var(--border);">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-bolt" style="color: var(--warning);"></i>
+                إصدار وتطبيق قرار مباشر لطالب (خصم / إعفاء / تعديل مصاريف)
+              </div>
+            </div>
+
+            <!-- Search & Type Row -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 14px; align-items: end; margin-bottom: 16px;">
+              <div>
+                <label class="lbl">رقم الطالب (ID) أو الاسم</label>
+                <input type="text" id="directDecisionStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." oninput="window.handleDirectDecisionStudentSearch(this.value)">
+              </div>
+              <div>
+                <label class="lbl">نوع القرار</label>
+                <select id="directDecisionType" class="inp" onchange="window.handleDirectDecisionTypeChange(this.value)">
+                  <option value="discount">خصم مالي محدد (جنيه)</option>
+                  <option value="exemption">إعفاء كامل من المصاريف</option>
+                  <option value="custom_fee">تحديد إجمالي المصاريف المطلوبة</option>
+                </select>
+              </div>
+              <div>
+                <button class="btn primary" onclick="window.searchDirectDecisionStudent()">
+                  <i class="fa-solid fa-magnifying-glass"></i> فحص الطالب
+                </button>
+              </div>
+            </div>
+
+            <!-- Student Summary Card -->
+            <div id="directDecisionStudentCard" class="hidden" style="background: var(--surface-hover); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span id="ddsIdBadge" style="background: var(--primary); color: #fff; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 0.9em;">ID: —</span>
+                  <span id="ddsName" style="font-weight: 800; font-size: 1.1em; color: var(--text-primary);">اسم الطالب</span>
+                  <span id="ddsClass" style="background: rgba(37,99,235,0.1); color: var(--primary); padding: 3px 10px; border-radius: 6px; font-size: 0.85em; font-weight: 700;">الصف</span>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
+                  <div style="font-size: 0.75em; color: var(--text-secondary);">المطلوب الأصلي</div>
+                  <div id="ddsRequired" style="font-size: 1.15em; font-weight: 800; color: var(--text-primary);">0 ج</div>
+                </div>
+                <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
+                  <div style="font-size: 0.75em; color: var(--text-secondary);">الخصم الحالي</div>
+                  <div id="ddsCurrentDiscount" style="font-size: 1.15em; font-weight: 800; color: var(--warning);">0 ج</div>
+                </div>
+                <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
+                  <div style="font-size: 0.75em; color: var(--text-secondary);">المدفوع حتى الآن</div>
+                  <div id="ddsPaid" style="font-size: 1.15em; font-weight: 800; color: var(--success);">0 ج</div>
+                </div>
+                <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
+                  <div style="font-size: 0.75em; color: var(--text-secondary);">المتبقي بعد السداد</div>
+                  <div id="ddsRemaining" style="font-size: 1.15em; font-weight: 800; color: var(--danger);">0 ج</div>
+                </div>
+              </div>
+
+              <!-- Action Controls Row -->
+              <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 14px; align-items: end;">
+                <div id="directDecisionValueWrap">
+                  <label id="directDecisionValueLbl" class="lbl">قيمة الخصم المطلوبة (جنيه)</label>
+                  <input type="number" id="directDecisionValueInput" class="inp" min="0" step="10" placeholder="مثال: 100">
+                </div>
+                <div>
+                  <label class="lbl">سبب القرار / ملاحظات المدير (تظهر في السجلات)</label>
+                  <input type="text" id="directDecisionReasonInput" class="inp" placeholder="مثال: قرار مدير - ظرف خاص / تفوق دراسي">
+                </div>
+                <div>
+                  <button class="btn success" style="padding: 11px 22px; font-weight: 800;" onclick="window.applyDirectDecision()">
+                    <i class="fa-solid fa-circle-check"></i> تطبيق القرار فوراً
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PENDING DECISIONS INBOX -->
           <div class="card">
             <div class="card-header">
               <div class="card-title">
                 <i class="fa-solid fa-inbox" style="color: var(--primary);"></i>
-                صندوق طلبات القرارات المعلقة (خصم / إعفاء)
+                صندوق طلبات القرارات المعلقة من المساعدين
               </div>
               <button class="btn secondary smallBtn" onclick="window.fetchDecisions()">
                 <i class="fa-solid fa-rotate-right"></i> تحديث

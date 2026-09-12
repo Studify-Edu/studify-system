@@ -1228,6 +1228,192 @@ async function fetchDecisionsCount() {
   } catch(e) { console.error(e); }
 }
 
+// DIRECT MANAGER DECISION ISSUANCE
+// ========================================================
+window.selectedDirectDecisionStudent = null;
+
+window.handleDirectDecisionStudentSearch = function(val) {
+  const q = String(val || '').trim().toLowerCase();
+  const card = document.getElementById("directDecisionStudentCard");
+  if (!q) {
+    if (card) card.classList.add("hidden");
+    window.selectedDirectDecisionStudent = null;
+    return;
+  }
+  let found = null;
+  if (students[q]) {
+    found = students[q];
+  } else {
+    for (const id in students) {
+      const s = students[id];
+      if (s && (String(s.id) === q || (s.name && s.name.toLowerCase().includes(q)))) {
+        found = s;
+        break;
+      }
+    }
+  }
+
+  if (found) {
+    window.displayDirectDecisionStudent(found);
+  } else {
+    if (card) card.classList.add("hidden");
+    window.selectedDirectDecisionStudent = null;
+  }
+};
+
+window.searchDirectDecisionStudent = function() {
+  const inp = document.getElementById("directDecisionStudentInput");
+  const val = inp ? inp.value.trim() : '';
+  if (!val) {
+    showToast("يرجى إدخال رقم أو اسم الطالب", "warn");
+    return;
+  }
+  window.handleDirectDecisionStudentSearch(val);
+  if (!window.selectedDirectDecisionStudent) {
+    showToast("لم يتم العثور على طالب بهذا الرقم أو الاسم", "err");
+  }
+};
+
+window.displayDirectDecisionStudent = function(st) {
+  window.selectedDirectDecisionStudent = st;
+  const card = document.getElementById("directDecisionStudentCard");
+  if (!card) return;
+
+  let req = 0;
+  const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
+  stPkgs.forEach(pName => {
+    if (packages && packages[pName]) req += (packages[pName].price || 0);
+    else if (groupFees && groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
+  });
+  if (req === 0 && st.paid) req = Number(st.paid);
+
+  const curDisc = Number(st.discount) || 0;
+  const curPaid = Number(st.paid) || 0;
+  const remaining = Math.max(0, req - curDisc - curPaid);
+
+  document.getElementById("ddsIdBadge").textContent = "ID: " + st.id;
+  document.getElementById("ddsName").textContent = st.name || "طالب بدون اسم";
+  document.getElementById("ddsClass").textContent = st.className || "غير محدد";
+  document.getElementById("ddsRequired").textContent = req + " ج";
+  document.getElementById("ddsCurrentDiscount").textContent = curDisc + " ج";
+  document.getElementById("ddsPaid").textContent = curPaid + " ج";
+  document.getElementById("ddsRemaining").textContent = remaining + " ج";
+
+  const valInp = document.getElementById("directDecisionValueInput");
+  if (valInp) valInp.value = curDisc || "";
+
+  card.classList.remove("hidden");
+};
+
+window.handleDirectDecisionTypeChange = function(type) {
+  const wrap = document.getElementById("directDecisionValueWrap");
+  const lbl = document.getElementById("directDecisionValueLbl");
+  const inp = document.getElementById("directDecisionValueInput");
+  if (!wrap || !lbl || !inp) return;
+
+  if (type === "exemption") {
+    wrap.style.opacity = "0.4";
+    wrap.style.pointerEvents = "none";
+    lbl.textContent = "إعفاء كامل (100%)";
+    inp.value = "";
+  } else if (type === "custom_fee") {
+    wrap.style.opacity = "1";
+    wrap.style.pointerEvents = "";
+    lbl.textContent = "المصاريف الإجمالية المطلوبة (جنيه)";
+    inp.placeholder = "مثال: 250";
+  } else {
+    wrap.style.opacity = "1";
+    wrap.style.pointerEvents = "";
+    lbl.textContent = "قيمة الخصم المطلوبة (جنيه)";
+    inp.placeholder = "مثال: 100";
+  }
+};
+
+window.applyDirectDecision = async function() {
+  const st = window.selectedDirectDecisionStudent;
+  if (!st || !supabase) {
+    showToast("يرجى اختيار طالب أولاً", "err");
+    return;
+  }
+
+  const type = document.getElementById("directDecisionType")?.value || "discount";
+  const val = Number(document.getElementById("directDecisionValueInput")?.value) || 0;
+  const reason = document.getElementById("directDecisionReasonInput")?.value.trim() || "قرار مباشر من المدير";
+
+  let req = 0;
+  const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
+  stPkgs.forEach(pName => {
+    if (packages && packages[pName]) req += (packages[pName].price || 0);
+    else if (groupFees && groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
+  });
+  if (req === 0 && st.paid) req = Number(st.paid);
+
+  let newDiscount = Number(st.discount) || 0;
+  let summaryText = "";
+
+  if (type === "exemption") {
+    newDiscount = req;
+    summaryText = `إعفاء كامل من المصاريف (المطلوب: ${req} ج)`;
+  } else if (type === "custom_fee") {
+    newDiscount = Math.max(0, req - val);
+    summaryText = `تحديد مصاريف جديدة بقيمة ${val} ج (خصم: ${newDiscount} ج)`;
+  } else {
+    if (val <= 0) {
+      showToast("يرجى إدخال قيمة خصم صحيحة", "warn");
+      return;
+    }
+    newDiscount = Math.min(req, val);
+    summaryText = `خصم مالي بقيمة ${val} ج`;
+  }
+
+  try {
+    st.discount = newDiscount;
+    st.lastModified = Date.now();
+
+    await supabase.from('students').upsert({
+      id: st.id,
+      discount: st.discount,
+      last_modified: st.lastModified
+    }, { onConflict: 'id' });
+
+    const decId = "dec_" + Date.now();
+    await supabase.from('communications').insert([{
+      id: decId,
+      type: 'manager_request',
+      sub_type: type,
+      student_id: String(st.id),
+      amount: type === "exemption" ? req : val,
+      sender_name: 'مدير المركز (قرار مباشر)',
+      message: reason,
+      status: 'approved',
+      created_at: new Date().toISOString()
+    }]);
+
+    await supabase.from('communications').insert([{
+      id: "msg_" + Date.now(),
+      type: 'assistant_message',
+      title: 'قرار خصم مباشر من الإدارة',
+      message: `أصدر المدير قراراً للطالب ${st.name || st.id} (${summaryText}). السبب: ${reason}`,
+      status: 'unread'
+    }]);
+
+    showToast(`تم تطبيق القرار بنجاح للطالب: ${st.name || st.id}`, "success");
+
+    const card = document.getElementById("directDecisionStudentCard");
+    if (card) card.classList.add("hidden");
+    const searchInp = document.getElementById("directDecisionStudentInput");
+    if (searchInp) searchInp.value = "";
+    window.selectedDirectDecisionStudent = null;
+
+    if (typeof window.renderTermTable === 'function') window.renderTermTable();
+    if (typeof window.fetchDecisions === 'function') window.fetchDecisions();
+
+  } catch(err) {
+    console.error(err);
+    showToast("حدث خطأ أثناء تطبيق القرار: " + err.message, "err");
+  }
+};
+
 window.fetchDecisions = async function() {
   const listEl = document.getElementById("adminDecisionsList");
   if (!listEl || !supabase) return;

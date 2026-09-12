@@ -5641,54 +5641,216 @@ document.addEventListener("DOMContentLoaded", () => {
  }
 
  // ==========================================
- // 17.13. ASSISTANT: SEND DISCOUNT REQUEST
- // ==========================================
- window.openDiscountRequestModal = function(studentId) {
-  const st = students[String(studentId)];
-  if (!st) return;
-  if (!currentPermissions.can_request_discount) {
-    showToast("إرسال طلبات الخصم مقفل من المدير ", "warning");
-    return;
-  }
-  if ($("discReqStudentId")) $("discReqStudentId").value = studentId;
-  if ($("discReqStudentName")) $("discReqStudentName").textContent = `${st.name} (ID: ${studentId})`;
-  if ($("discReqAmount")) $("discReqAmount").value = "";
-  if ($("discReqReason")) $("discReqReason").value = "";
-  if ($("discountRequestModal")) $("discountRequestModal").classList.remove("hidden");
- };
+ // 17.13. ASSISTANT: SEND DECISION / DISCOUNT REQUEST
+  // ==========================================
+  window.selectedDiscReqStudent = null;
 
- if ($("submitDiscountRequestBtn")) {
-  on("submitDiscountRequestBtn", "click", async function() {
-    const stId = $("discReqStudentId") ? $("discReqStudentId").value : "";
-    const type = $("discReqType") ? $("discReqType").value : "discount";
-    const amount = $("discReqAmount") ? toInt($("discReqAmount").value) : 0;
-    const reason = $("discReqReason") ? $("discReqReason").value.trim() : "";
-    const st = students[String(stId)];
-    if (!st || !window.supabaseClient) return showToast("حدث خطأ، تأكد من الاتصال", "err");
-    if (!reason) return showToast("من فضلك اكتب سبب الطلب", "err");
+  window.openDecisionRequestModal = function(studentId) {
+    if (typeof currentPermissions !== 'undefined' && currentPermissions.can_request_discount === false) {
+      showToast("إرسال طلبات القرارات مقفل من قِبل المدير", "warning");
+      return;
+    }
+
+    const modal = document.getElementById("discountRequestModal");
+    if (!modal) return;
+
+    // Reset inputs
+    const sInp = document.getElementById("discReqStudentInput");
+    const idInp = document.getElementById("discReqStudentId");
+    const amtInp = document.getElementById("discReqAmount");
+    const rsnInp = document.getElementById("discReqReason");
+    const typeSel = document.getElementById("discReqType");
+
+    if (amtInp) amtInp.value = "";
+    if (rsnInp) rsnInp.value = "";
+    if (typeSel) typeSel.value = "discount";
+    window.handleDiscReqTypeChange("discount");
+
+    let st = null;
+    if (studentId && typeof students !== 'undefined') {
+      st = students[String(studentId)];
+    }
+
+    if (st) {
+      if (idInp) idInp.value = st.id;
+      if (sInp) sInp.value = String(st.id) + " - " + (st.name || '');
+      window.displayDiscReqStudent(st);
+    } else {
+      if (idInp) idInp.value = "";
+      if (sInp) {
+        sInp.value = "";
+        setTimeout(() => sInp.focus(), 150);
+      }
+      window.selectedDiscReqStudent = null;
+      const details = document.getElementById("discReqStudentDetails");
+      if (details) details.classList.add("hidden");
+    }
+
+    modal.classList.remove("hidden");
+  };
+
+  // Backward compatibility alias
+  window.openDiscountRequestModal = window.openDecisionRequestModal;
+
+  window.handleDiscReqSearch = function(val) {
+    const q = String(val || '').trim().toLowerCase();
+    const details = document.getElementById("discReqStudentDetails");
+    const idInp = document.getElementById("discReqStudentId");
+
+    if (!q) {
+      if (details) details.classList.add("hidden");
+      if (idInp) idInp.value = "";
+      window.selectedDiscReqStudent = null;
+      return;
+    }
+
+    let found = null;
+    if (typeof students !== 'undefined') {
+      if (students[q]) {
+        found = students[q];
+      } else {
+        for (const id in students) {
+          const s = students[id];
+          if (s && (String(s.id) === q || (s.name && s.name.toLowerCase().includes(q)))) {
+            found = s;
+            break;
+          }
+        }
+      }
+    }
+
+    if (found) {
+      if (idInp) idInp.value = found.id;
+      window.displayDiscReqStudent(found);
+    } else {
+      if (details) details.classList.add("hidden");
+      if (idInp) idInp.value = "";
+      window.selectedDiscReqStudent = null;
+    }
+  };
+
+  window.displayDiscReqStudent = function(st) {
+    window.selectedDiscReqStudent = st;
+    const details = document.getElementById("discReqStudentDetails");
+    if (!details) return;
+
+    let req = 0;
+    const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
+    stPkgs.forEach(pName => {
+      if (typeof packages !== 'undefined' && packages && packages[pName]) req += (packages[pName].price || 0);
+      else if (typeof groupFees !== 'undefined' && groupFees && groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
+    });
+    if (req === 0 && st.paid) req = Number(st.paid);
+
+    const curDisc = Number(st.discount) || 0;
+    const curPaid = Number(st.paid) || 0;
+    const remaining = Math.max(0, req - curDisc - curPaid);
+
+    const nameEl = document.getElementById("discReqStNameBadge");
+    const classEl = document.getElementById("discReqStClassBadge");
+    const reqEl = document.getElementById("discReqStRequired");
+    const discEl = document.getElementById("discReqStCurrentDisc");
+    const remEl = document.getElementById("discReqStRemaining");
+
+    if (nameEl) nameEl.textContent = (st.name || 'طالب بدون اسم') + " (ID: " + st.id + ")";
+    if (classEl) classEl.textContent = st.className || 'غير محدد';
+    if (reqEl) reqEl.textContent = req + " ج";
+    if (discEl) discEl.textContent = curDisc + " ج";
+    if (remEl) remEl.textContent = remaining + " ج";
+
+    details.classList.remove("hidden");
+  };
+
+  window.handleDiscReqTypeChange = function(type) {
+    const wrap = document.getElementById("discReqAmountWrap");
+    const amtInp = document.getElementById("discReqAmount");
+    if (!wrap) return;
+
+    if (type === "exemption") {
+      wrap.style.display = "none";
+      if (amtInp) amtInp.value = "";
+    } else {
+      wrap.style.display = "block";
+    }
+  };
+
+  window.submitDecisionRequest = async function() {
+    const idInp = document.getElementById("discReqStudentId");
+    let stId = idInp ? idInp.value.trim() : "";
+    let st = window.selectedDiscReqStudent || (stId && typeof students !== 'undefined' ? students[String(stId)] : null);
+
+    if (!st) {
+      showToast("يرجى اختيار طالب أولاً من البحث", "warn");
+      return;
+    }
+
+    const type = document.getElementById("discReqType") ? document.getElementById("discReqType").value : "discount";
+    const amount = type === "exemption" ? 0 : (Number(document.getElementById("discReqAmount") ? document.getElementById("discReqAmount").value : 0) || 0);
+    const reason = document.getElementById("discReqReason") ? document.getElementById("discReqReason").value.trim() : "";
+
+    if (type === "discount" && amount <= 0) {
+      showToast("يرجى كتابة قيمة الخصم المقترحة بالجنيه", "warn");
+      return;
+    }
+
+    if (!reason) {
+      showToast("يرجى كتابة سبب طلب القرار ليعتمده المدير", "warn");
+      return;
+    }
+
+    if (!window.supabaseClient) {
+      showToast("فشل الاتصال بقاعدة البيانات السحابية", "err");
+      return;
+    }
+
+    const submitBtn = document.getElementById("submitDiscountRequestBtn");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...';
+    }
+
     const reqId = "req_" + Date.now();
+    const assistantName = localStorage.getItem("ca_current_username") || "مساعد";
+
     try {
-      await window.supabaseClient.from('communications').insert({
+      const { error } = await window.supabaseClient.from('communications').insert([{
         id: reqId,
         type: 'manager_request',
-        student_id: stId,
         sub_type: type,
+        student_id: String(st.id),
         amount: amount,
         message: reason,
-        sender_name: localStorage.getItem("ca_current_username") || "مساعد",
-        status: "pending"
-      });
-      if ($("discountRequestModal")) $("discountRequestModal").classList.add("hidden");
-      showToast("تم إرسال الطلب للمدير ", "success");
-    } catch(e) {
-      console.error(e);
-      showToast("فشل إرسال الطلب، تأكد من الاتصال", "err");
-    }
-  });
- }
+        sender_name: assistantName,
+        status: "pending",
+        created_at: new Date().toISOString()
+      }]);
 
- // ==========================================
- // 17.14. ASSISTANT MESSAGES INBOX
+      if (error) throw error;
+
+      if ('BroadcastChannel' in window) {
+        try {
+          const bc = new BroadcastChannel('studify_permissions_sync');
+          bc.postMessage({ type: 'NEW_DECISION_REQUEST', student_id: st.id, sender: assistantName });
+        } catch(e) {}
+      }
+
+      const modal = document.getElementById("discountRequestModal");
+      if (modal) modal.classList.add("hidden");
+
+      showToast("تم إرسال طلب القرار للمدير بنجاح، وستصلك الموافقة فور اعتمادها من الإدارة", "success");
+
+    } catch(err) {
+      console.error(err);
+      showToast("فشل إرسال الطلب: " + err.message, "err");
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الطلب للمدير';
+      }
+    }
+  };
+
+  // 17.14. ASSISTANT MESSAGES INBOX
  // ==========================================
  let assistantMessages = [];
  let lastReadMsgTime = toInt(localStorage.getItem("ca_last_read_msg") || "0");
