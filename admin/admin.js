@@ -2457,9 +2457,9 @@ window.renderSubscriptionView = function() {
 
 window.contactForRenewal = function(planKey) {
   const names = {
-    monthly:     'الخطة المرنة (2,000 ج/شهر)',
-    quarterly:   'الخطة المريحة (5,400 ج/3 شهور)',
-    semi_annual: 'الخطة الذهبية (8,000 ج/ترم كامل - 5 شهور)'
+    monthly:     'الخطة المرنة (1,999 ج/شهر بدلاً من 2,499 ج)',
+    quarterly:   'الخطة المريحة (5,399 ج/3 شهور بدلاً من 6,000 ج)',
+    semi_annual: 'الخطة الذهبية (7,999 ج/ترم كامل بدلاً من 10,000 ج)'
   };
   Swal.fire({
     icon: 'info',
