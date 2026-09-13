@@ -2207,89 +2207,198 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
 .text-purple { color: #a855f7 !important; }
 .text-danger { color: #ef4444 !important; }
 
-/* ── CUSTOM CLOUD SYNC SVG ── */
+/* ── CLOUD SYNC TOPBAR BUTTON (Consistent square button matching topbar controls) ── */
+.topbar-icon-btn.cloud-sync-btn,
 .cloud-sync-wrapper {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  outline: none;
+  background: var(--bg-inset) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  transition: all 0.2s ease !important;
+  user-select: none;
+  flex-shrink: 0 !important;
   margin: 0 !important;
 }
 
-.cloud-vector {
-  width: 34px;
-  height: 24px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
-  transition: fill 0.3s ease;
+.topbar-icon-btn.cloud-sync-btn:hover,
+.cloud-sync-wrapper:hover {
+  background: var(--gradient-subtle) !important;
+  border-color: var(--primary) !important;
+  transform: translateY(-1px);
 }
 
-/* Base Cloud Colors based on state */
-.cloud-sync-wrapper.online .cloud-vector { fill: #10b981; } /* Green */
-.cloud-sync-wrapper.pending .cloud-vector,
-.cloud-sync-wrapper.syncing .cloud-vector { fill: #f59e0b; } /* Yellow/Orange */
-.cloud-sync-wrapper.offline .cloud-vector { fill: #ef4444; } /* Red */
+.topbar-icon-btn.cloud-sync-btn:active,
+.cloud-sync-wrapper:active {
+  transform: translateY(0);
+}
 
-/* Sync Button inside cloud */
-.sync-button {
-  position: absolute;
-  bottom: 2px;
-  left: 1px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
+/* Icon Container */
+.cloud-sync-btn .cloud-icon-container,
+.cloud-sync-wrapper .cloud-icon-container {
+  display: inline-flex;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  transition: background-color 0.3s ease;
-  padding: 0;
-  outline: none;
-  border: 1.5px solid var(--bg-surface);
+  justify-content: center;
+  position: relative;
+  width: 20px;
+  height: 20px;
   pointer-events: none;
 }
 
-.sync-icon {
-  width: 10px;
-  height: 10px;
+/* Main Cloud Icon */
+.cloud-sync-btn .cloud-main-icon,
+.cloud-sync-wrapper .cloud-main-icon {
+  font-size: 1.05rem;
+  transition: color 0.25s ease, transform 0.2s ease;
 }
 
-/* Button Colors */
-.cloud-sync-wrapper.online .sync-button { background-color: #10b981; }
-.cloud-sync-wrapper.pending .sync-button,
-.cloud-sync-wrapper.syncing .sync-button { background-color: #f59e0b; }
-.cloud-sync-wrapper.offline .sync-button { background-color: #ef4444; }
-
-/* Spinning animation when syncing */
-.cloud-sync-wrapper.syncing .sync-icon {
-  animation: spin 1.5s linear infinite;
+.cloud-sync-btn:hover .cloud-main-icon,
+.cloud-sync-wrapper:hover .cloud-main-icon {
+  transform: scale(1.1);
 }
 
-@keyframes spin {
-  100% { transform: rotate(360deg); }
+/* Spinner Icon (Default Hidden) */
+.cloud-sync-btn .cloud-spinner-icon,
+.cloud-sync-wrapper .cloud-spinner-icon {
+  display: none;
+  font-size: 0.95rem;
+  color: var(--primary, #3b82f6);
 }
 
-.sync-pending-badge {
+/* Status Indicator Dot (Corner) */
+.cloud-sync-btn .cloud-status-dot,
+.cloud-sync-wrapper .cloud-status-dot {
+  position: absolute;
+  bottom: 4px;
+  inset-inline-end: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-inset);
+  transition: background-color 0.25s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+  pointer-events: none;
+}
+
+.cloud-sync-btn:hover .cloud-status-dot,
+.cloud-sync-wrapper:hover .cloud-status-dot {
+  border-color: var(--bg-surface);
+}
+
+/* --- Status States --- */
+/* 1. Online (Connected & Synced) */
+.cloud-sync-btn.online .cloud-main-icon,
+.cloud-sync-wrapper.online .cloud-main-icon {
+  color: #10b981 !important; /* Rich Emerald */
+}
+.cloud-sync-btn.online .cloud-status-dot,
+.cloud-sync-wrapper.online .cloud-status-dot {
+  background-color: #10b981;
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
+}
+
+/* 2. Syncing (Active Upload/Download) */
+.cloud-sync-btn.syncing,
+.cloud-sync-wrapper.syncing {
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+.cloud-sync-btn.syncing .cloud-main-icon,
+.cloud-sync-wrapper.syncing .cloud-main-icon {
+  display: none !important;
+}
+.cloud-sync-btn.syncing .cloud-spinner-icon,
+.cloud-sync-wrapper.syncing .cloud-spinner-icon {
+  display: inline-block !important;
+  color: #3b82f6;
+  animation: cloudSyncRotate 0.85s linear infinite;
+}
+.cloud-sync-btn.syncing .cloud-status-dot,
+.cloud-sync-wrapper.syncing .cloud-status-dot {
+  background-color: #3b82f6;
+  box-shadow: 0 0 5px rgba(59, 130, 246, 0.7);
+}
+
+/* 3. Pending (Unsaved local changes) */
+.cloud-sync-btn.pending .cloud-main-icon,
+.cloud-sync-wrapper.pending .cloud-main-icon {
+  color: #f59e0b !important; /* Amber */
+}
+.cloud-sync-btn.pending .cloud-status-dot,
+.cloud-sync-wrapper.pending .cloud-status-dot {
+  background-color: #f59e0b;
+  box-shadow: 0 0 5px rgba(245, 158, 11, 0.7);
+  animation: pendingDotPulse 1.8s infinite;
+}
+
+/* 4. Offline (No connection) */
+.cloud-sync-btn.offline .cloud-main-icon,
+.cloud-sync-wrapper.offline .cloud-main-icon {
+  color: #ef4444 !important; /* Red */
+}
+.cloud-sync-btn.offline .cloud-status-dot,
+.cloud-sync-wrapper.offline .cloud-status-dot {
+  background-color: #ef4444;
+  box-shadow: 0 0 5px rgba(239, 68, 68, 0.7);
+}
+
+/* Pending Badge */
+.cloud-sync-btn .sync-pending-badge,
+.cloud-sync-wrapper .sync-pending-badge {
   position: absolute;
   top: -3px;
-  right: -3px;
-  background: #f59e0b;
-  width: 10px;
-  height: 10px;
+  inset-inline-end: -3px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  display: block;
-  border: 2px solid var(--bg-surface, #fff);
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
-  animation: pulse-pending 1.5s infinite;
+  background-color: #f59e0b;
+  border: 1.5px solid var(--bg-surface);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.8);
+  animation: pendingDotPulse 1.5s infinite;
+  pointer-events: none;
 }
 
-@keyframes pulse-pending {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+@keyframes cloudSyncRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pendingDotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* ── TOPBAR NOTIFICATION BADGE ── */
+.topbar-icon-btn .notification-badge {
+  position: absolute !important;
+  top: -4px !important;
+  inset-inline-end: -4px !important;
+  right: auto !important;
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  font-size: 0.68rem !important;
+  min-width: 17px !important;
+  height: 17px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 4px !important;
+  font-weight: 700 !important;
+  border: 2px solid var(--bg-surface) !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  pointer-events: none;
+}
+.topbar-icon-btn .notification-badge.hidden {
+  display: none !important;
 }
 
 /* ── 22. MANAGER DASHBOARD ── */

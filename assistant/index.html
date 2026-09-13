@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V78">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V79">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME FLASH -->
@@ -356,20 +356,15 @@
  </span>
  </div>
  <div class="topbar-end" style="position: relative;">
- <!-- Custom Cloud Sync SVG (User requested design) -->
- <div id="cloudSyncIndicator" class="cloud-sync-wrapper online" title="متصل بالسحابة">
- <!-- تصميم السحابة -->
- <svg class="cloud-vector" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
- <path d="M17.5 19c2.48 0 4.5-2.02 4.5-4.5 0-2.28-1.7-4.18-3.92-4.46C17.41 6.84 14.47 4.5 11 4.5 7.14 4.5 4 7.64 4 11.5c0 .35.03.69.08 1.02C1.78 13.06 0 15.08 0 17.5 0 20.53 2.47 23 5.5 23h12c2.48 0 4.5-2.02 4.5-4.5z"/>
- </svg>
- <!-- زر المزامنة الصغير -->
- <button id="syncSubBtn" class="sync-button" aria-label="مزامنة" tabindex="-1">
- <svg class="sync-icon" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
- <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
- </svg>
- </button>
- <span id="syncPendingBadge" class="sync-pending-badge hidden"></span>
- </div>
+ <!-- Cloud Sync Indicator (Consistent square button matching other controls) -->
+ <button id="cloudSyncIndicator" class="topbar-icon-btn cloud-sync-btn online" type="button" title="متصل بالسحابة — اضغط للمزامنة اليدوية" aria-label="مزامنة السحابة">
+    <div class="cloud-icon-container">
+      <i class="fa-solid fa-cloud cloud-main-icon"></i>
+      <i class="fa-solid fa-arrows-rotate cloud-spinner-icon"></i>
+    </div>
+    <span id="syncStatusDot" class="cloud-status-dot"></span>
+    <span id="syncPendingBadge" class="sync-pending-badge hidden"></span>
+  </button>
 
  <!-- Notifications Bell -->
  <div id="notificationsToggleBtn" class="topbar-icon-btn" title="رسائل وإشعارات" style="position: relative; cursor: pointer;">
@@ -1651,7 +1646,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V121"></script>
+  <script type="module" src="app.js?v=STUDIFY_V122"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
