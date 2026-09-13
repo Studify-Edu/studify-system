@@ -243,6 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
  const badge = document.getElementById("syncPendingBadge");
  
  if (indicator) {
+ indicator.classList.remove("hidden");
  indicator.classList.remove("online", "offline", "pending", "syncing");
  indicator.classList.add(state);
  indicator.title = title || "";
@@ -3336,21 +3337,7 @@ window.logout = async function() {
  }
  });
 
- on("notificationsToggleBtn", "click", function(e) {
- if(e) e.stopPropagation();
- if($("notificationsDropdown")) {
- $("notificationsDropdown").classList.toggle("hidden");
- if (!$("notificationsDropdown").classList.contains("hidden") && $("userProfileDropdown")) {
- $("userProfileDropdown").classList.add("hidden");
- }
- }
- });
-
- on("markAllReadBtn", "click", function(e) {
- if(e) e.stopPropagation();
- const badge = $("notificationsBadge");
- if (badge) badge.classList.add("hidden");
- });
+ // Notifications toggle & mark read handled centrally in setupNotificationsUI
 
  on("quickActivityLogBtn", "click", function() {
  if($("userProfileDropdown")) $("userProfileDropdown").classList.add("hidden");
@@ -5907,11 +5894,8 @@ document.addEventListener("DOMContentLoaded", () => {
  }
 
  function updateAssistantMsgBadge() {
-  const badge = $("notificationsBadge");
-  const unread = assistantMessages.filter(m => !m.read && m.timestamp > lastReadMsgTime).length;
-  if (badge) {
-    if (unread > 0) { badge.textContent = unread; badge.classList.remove("hidden"); }
-    else badge.classList.add("hidden");
+  if (typeof renderNotifications === 'function') {
+    renderNotifications();
   }
  }
 
@@ -5967,11 +5951,7 @@ document.addEventListener("DOMContentLoaded", () => {
   catch(e) { console.error(e); }
  };
 
- on("notificationsToggleBtn", "click", function() {
-  setTimeout(() => {
-    if (window.CURRENT_ROLE !== "admin") renderAssistantNotifDropdown();
-  }, 50);
- });
+ // Notifications toggle handled centrally in setupNotificationsUI
 
  if (window.CURRENT_ROLE !== "admin") fetchAssistantMessages();
 
@@ -8220,14 +8200,31 @@ function setupNotificationsUI() {
   const btn = document.getElementById('notificationsToggleBtn');
   const drop = document.getElementById('notificationsDropdown');
   const markAllBtn = document.getElementById('markAllReadBtn');
+  const syncCloud = document.getElementById('cloudSyncIndicator');
   
+  // Ensure cloudSyncIndicator is ALWAYS visible
+  if (syncCloud) syncCloud.classList.remove('hidden');
+
   if (btn && drop) {
-    btn.addEventListener('click', (e) => {
+    btn.onclick = (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      drop.classList.toggle('hidden');
+      
+      const willOpen = drop.classList.contains('hidden');
+      
+      // Close user profile dropdown if open
       document.getElementById('userProfileDropdown')?.classList.add('hidden');
-      document.getElementById('cloudSyncIndicator')?.classList.add('hidden');
-    });
+      
+      // NEVER hide cloud indicator!
+      if (syncCloud) syncCloud.classList.remove('hidden');
+      
+      if (willOpen) {
+        drop.classList.remove('hidden');
+        renderNotifications();
+      } else {
+        drop.classList.add('hidden');
+      }
+    };
     
     document.addEventListener('click', (e) => {
       if (!drop.contains(e.target) && !btn.contains(e.target)) {
@@ -8237,25 +8234,27 @@ function setupNotificationsUI() {
   }
   
   if (markAllBtn) {
-    markAllBtn.addEventListener('click', async (e) => {
+    markAllBtn.onclick = async (e) => {
+      e.preventDefault();
       e.stopPropagation();
       if (!window.supabaseClient) return;
       const unreadIds = notificationsList.filter(n => !n.is_read).map(n => n.id);
       if (unreadIds.length > 0) {
         try {
           await window.supabaseClient.from('communications').update({ status: 'read' }).in('id', unreadIds);
-        } catch(err) {}
+        } catch(err) { console.error('Error marking notifications as read:', err); }
         notificationsList.forEach(n => n.is_read = true);
         renderNotifications();
+        showToast("تم تحديد كافة الرسائل كمقروءة", "success");
       }
-    });
+    };
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function initNotificationsModule() {
+  setupNotificationsUI();
   if (window.supabaseClient) {
     fetchNotifications();
-    setupNotificationsUI();
     try {
       window.supabaseClient.channel('communications_notifications_channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'communications' }, payload => {
@@ -8264,7 +8263,14 @@ document.addEventListener("DOMContentLoaded", () => {
         .subscribe();
     } catch(err) {}
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener("DOMContentLoaded", initNotificationsModule);
+} else {
+  initNotificationsModule();
+}
+
 
 // =============================================================================
 // ASSISTANT SUBSCRIPTION & FEATURE GATING ENGINE
