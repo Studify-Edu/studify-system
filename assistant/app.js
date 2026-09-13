@@ -8381,3 +8381,302 @@ window.applyAssistantSubscription = function(subData) {
   }
 })();
 
+
+
+// =============================================================================
+// STUDENT SMART CONTRACT & BLANK REGISTRATION FORM ENGINE
+// =============================================================================
+function getNextMonthDateFormatted(baseDate) {
+  const d = baseDate ? new Date(baseDate) : new Date();
+  d.setMonth(d.getMonth() + 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+window.openStudentContractModal = function() {
+  const cId = window.currentId || (typeof currentId !== 'undefined' ? currentId : null);
+  if (!cId || !students[cId]) {
+    return showToast("يرجى اختيار أو فتح ملف طالب أولاً لطباعة الإقرار", "err");
+  }
+
+  const st = students[cId];
+  const centerTitle = (evalData && evalData.centerName) ? evalData.centerName : "المركز التعليمي";
+  const managerTitle = (evalData && evalData.manager) ? ("إشراف أ/ " + evalData.manager) : "إدارة السنتر والعمليات";
+  const shiftMgr = localStorage.getItem("ca_current_username") || (currentUserRole === 'admin' ? 'الإدارة' : 'المسؤول الميداني');
+  const todayStr = nowDateStr();
+  const nextMonthStr = getNextMonthDateFormatted(new Date());
+
+  // Calculate total package price
+  let totalRequiredPrice = 0;
+  const enrolledPkgs = (st.packages && st.packages.length > 0) ? st.packages : [];
+  
+  if (enrolledPkgs.length > 0) {
+    enrolledPkgs.forEach(pkgName => {
+      const pDet = window.getPkgDetails(pkgName);
+      totalRequiredPrice += toInt(pDet.price);
+    });
+  } else if (st.className) {
+    const pDet = window.getPkgDetails(st.className);
+    totalRequiredPrice = toInt(pDet.price) || 0;
+  }
+
+  const downPayment = Math.round(totalRequiredPrice * 0.5);
+  const remainPayment = totalRequiredPrice - downPayment;
+  const packagesListText = enrolledPkgs.length > 0 ? enrolledPkgs.join(" + ") : (st.className || "حصة عامة");
+
+  const contractHtml = `
+    <div style="border: 2px solid #0f172a; padding: 20px 24px; border-radius: 8px; position: relative; background: #ffffff; box-sizing: border-box;">
+      
+      <!-- HEADER -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 14px;">
+        <div style="text-align: right;">
+          <h2 style="margin: 0; font-size: 1.5em; font-weight: 900; color: #0f172a;">${centerTitle}</h2>
+          <span style="font-size: 0.9em; color: #475569; font-weight: 600;">${managerTitle}</span>
+        </div>
+        
+        <div style="text-align: center; border: 1.5px solid #0f172a; border-radius: 30px; padding: 6px 20px; background: #f8fafc;">
+          <span style="font-size: 1.2em; font-weight: 900; color: #0f172a; letter-spacing: 0.5px;">إقرار وتعهد تسجيل طالب</span>
+        </div>
+        
+        <div style="text-align: left; font-size: 0.9em;">
+          <div>كود الطالب: <strong style="font-size: 1.15em; color: #0f172a;">#${st.id}</strong></div>
+          <div style="color: #475569; margin-top: 3px;">التاريخ: <b>${todayStr}</b></div>
+        </div>
+      </div>
+
+      <!-- SECTION 1: STUDENT DATA TABLE -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 0.92em; border: 1px solid #cbd5e1;">
+        <tbody>
+          <tr>
+            <td style="padding: 7px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold; width: 18%;">اسم الطالب:</td>
+            <td style="padding: 7px 10px; border: 1px solid #cbd5e1; font-weight: 800; font-size: 1.05em; color: #0f172a; width: 32%;">${st.name || "—"}</td>
+            <td style="padding: 7px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold; width: 18%;">المرحلة / الصف:</td>
+            <td style="padding: 7px 10px; border: 1px solid #cbd5e1; width: 32%;">${st.className || "عام"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 7px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold;">رقم هاتف الطالب:</td>
+            <td style="padding: 7px 10px; border: 1px solid #cbd5e1; direction: ltr; text-align: right; font-family: monospace; font-size: 1.05em;">${st.phone || "—"}</td>
+            <td style="padding: 7px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold;">رقم ولي الأمر:</td>
+            <td style="padding: 7px 10px; border: 1px solid #cbd5e1; direction: ltr; text-align: right; font-family: monospace; font-size: 1.05em;">${st.parentPhone || "—"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 7px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold;">المواد / الباقات:</td>
+            <td style="padding: 7px 10px; border: 1px solid #cbd5e1; font-weight: 700; color: #1e40af;">${packagesListText}</td>
+            <td style="padding: 7px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold;">إجمالي الاشتراك:</td>
+            <td style="padding: 7px 10px; border: 1px solid #cbd5e1; font-weight: 900; font-size: 1.1em; color: #0f172a;">${totalRequiredPrice} جنيهاً</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- SECTION 2: INSTALLMENT SCHEDULE MINI TABLE -->
+      <div style="font-weight: 800; font-size: 0.95em; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-calendar-days"></i> خطة وجدول سداد قيمة الاشتراك:
+      </div>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 0.9em; border: 1.5px solid #0f172a;">
+        <thead>
+          <tr style="background: #f1f5f9; border-bottom: 1.5px solid #0f172a;">
+            <th style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: right;">الدفعة المقررة</th>
+            <th style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; width: 16%;">النسبة</th>
+            <th style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; width: 22%;">المبلغ المطلوب</th>
+            <th style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: right; width: 38%;">موعد وطريقة الاستحقاق</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">الدفعة الأولى (مقدم الحجز)</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">50%</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #0f172a;">${downPayment} ج</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1;">تُسدد فورياً عند التسجيل</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">الدفعة الثانية (المتبقي)</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">50%</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #0f172a;">${remainPayment} ج</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1;">تُسدد بحلول: ${nextMonthStr} (خلال شهر)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- SECTION 3: LEGAL CLAUSES & TERMS -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.85em; color: #1e293b; line-height: 1.55;">
+        <div style="font-weight: 800; color: #0f172a; margin-bottom: 5px; font-size: 0.95em;">
+          <i class="fa-solid fa-scale-balanced"></i> بنود الإقرار والتعهد الرسمي:
+        </div>
+        <ol style="margin: 0; padding-right: 18px; display: flex; flex-direction: column; gap: 4px;">
+          <li>أقر أنا الطالب المسجل بأن كافة البيانات والخيارات المدونة بهذه الاستمارة صحيحة، وأوافق على الرسوم المحددة للباقة.</li>
+          <li>أتعهد بسداد قيمة الاشتراك وفق خطة الدفع المقررة بالجدول أعلاه (50% عند التسجيل، و 50% المتبقية خلال الشهر التالي مباشرة).</li>
+          <li>في حالة التأخر عن سداد القسط المتبقي في موعده المحدد، يحق لإدارة السنتر إيقاف حضوري للمحاضرات لحين السداد، أو السماح بالحضور مع دفع قيمة كل محاضرة بشكل منفصل وفق لائحة المركز.</li>
+          <li><strong>بند الشفافية والتوثيق المالي:</strong> يحق للطالب أو ولي أمره طلب واستلام (إيصال سداد إلكتروني معتمد وموثق) من نظام (Studify) فور دفع أي مبالغ نقدية لضمان حقوقه المالية.</li>
+          <li>أتعهد بالالتزام التام بقواعد السنتر والمحافظة على الهدوء والانضباط داخل القاعات واحترام لوائح المركز.</li>
+          <li>يُعد توقيعي أو توقيع ولي أمري أدناه بمثابة موافقة صريحة ونهائية وإقرار ملزم بكافة الشروط المذكورة أعلاه.</li>
+        </ol>
+      </div>
+
+      <!-- SECTION 4: SIGNATURES & OFFICIAL STAMP BOX -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap: 10px; margin-top: 10px; font-size: 0.86em; align-items: stretch;">
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff;">
+          <div style="font-weight: bold; color: #475569; margin-bottom: 22px;">توقيع الطالب:</div>
+          <div style="border-bottom: 1px dashed #94a3b8; width: 100%;"></div>
+        </div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff;">
+          <div style="font-weight: bold; color: #475569; margin-bottom: 22px;">توقيع ولي الأمر:</div>
+          <div style="border-bottom: 1px dashed #94a3b8; width: 100%;"></div>
+        </div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff;">
+          <div style="font-weight: bold; color: #475569; margin-bottom: 4px;">مسؤول التسجيل:</div>
+          <div style="font-weight: 800; color: #0f172a; margin-bottom: 6px;">${shiftMgr}</div>
+          <div style="border-bottom: 1px dashed #94a3b8; width: 100%;"></div>
+        </div>
+        <div style="border: 1.5px dashed #64748b; border-radius: 6px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fafafa;">
+          <div style="font-size: 0.8em; color: #475569; font-weight: 700; margin-bottom: 4px;">ختم واعتماد السنتر الرسمي</div>
+          <div style="width: 48px; height: 48px; border-radius: 50%; border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.72em;">الختم هنا</div>
+        </div>
+      </div>
+
+      <!-- FOOTER WATERMARK -->
+      <div style="margin-top: 14px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 0.72em; color: #64748b;">
+        <span>وثيقة رسمية صادرة ومؤتمتة عبر منصة <b>Studify</b> للأنظمة التعليمية</span>
+        <span>تاريخ وتوقيت الطباعة: ${todayStr}</span>
+      </div>
+
+    </div>
+  `;
+
+  const area = document.getElementById("printableContractArea");
+  if (area) area.innerHTML = contractHtml;
+
+  const modal = document.getElementById("contractModal");
+  if (modal) modal.classList.remove("hidden");
+};
+
+window.openBlankContractModal = function() {
+  const centerTitle = (evalData && evalData.centerName) ? evalData.centerName : "المركز التعليمي";
+  const managerTitle = (evalData && evalData.manager) ? ("إشراف أ/ " + evalData.manager) : "إدارة السنتر والعمليات";
+  const todayStr = nowDateStr();
+
+  const blankHtml = `
+    <div style="border: 2px solid #0f172a; padding: 20px 24px; border-radius: 8px; position: relative; background: #ffffff; box-sizing: border-box;">
+      
+      <!-- HEADER -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 14px;">
+        <div style="text-align: right;">
+          <h2 style="margin: 0; font-size: 1.5em; font-weight: 900; color: #0f172a;">${centerTitle}</h2>
+          <span style="font-size: 0.9em; color: #475569; font-weight: 600;">${managerTitle}</span>
+        </div>
+        
+        <div style="text-align: center; border: 1.5px solid #0f172a; border-radius: 30px; padding: 6px 20px; background: #f8fafc;">
+          <span style="font-size: 1.2em; font-weight: 900; color: #0f172a; letter-spacing: 0.5px;">استمارة تقديم وتسجيل طالب (تعهد رسمي)</span>
+        </div>
+        
+        <div style="text-align: left; font-size: 0.9em;">
+          <div>كود الطالب: <strong style="font-size: 1.1em; color: #0f172a;">............................</strong></div>
+          <div style="color: #475569; margin-top: 3px;">التاريخ: <b>${todayStr}</b></div>
+        </div>
+      </div>
+
+      <!-- SECTION 1: STUDENT DATA TABLE (BLANK) -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 0.92em; border: 1px solid #cbd5e1;">
+        <tbody>
+          <tr>
+            <td style="padding: 8px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold; width: 20%;">اسم الطالب الرباعي:</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; width: 30%;">...................................................</td>
+            <td style="padding: 8px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold; width: 20%;">المرحلة / الصف الدراسي:</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; width: 30%;">...................................................</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold;">رقم هاتف الطالب:</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">...................................................</td>
+            <td style="padding: 8px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold;">رقم ولي الأمر:</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">...................................................</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold;">المواد / الباقات المسجل بها:</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">1- ...................... 2- ......................</td>
+            <td style="padding: 8px 10px; background: #f8fafc; border: 1px solid #cbd5e1; font-weight: bold;">إجمالي قيمة الاشتراك:</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; font-weight: 800;">....................................... جنيهاً</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- SECTION 2: INSTALLMENT SCHEDULE MINI TABLE -->
+      <div style="font-weight: 800; font-size: 0.95em; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-calendar-days"></i> خطة وجدول سداد قيمة الاشتراك:
+      </div>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 0.9em; border: 1.5px solid #0f172a;">
+        <thead>
+          <tr style="background: #f1f5f9; border-bottom: 1.5px solid #0f172a;">
+            <th style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: right;">الدفعة المقررة</th>
+            <th style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; width: 16%;">النسبة</th>
+            <th style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; width: 22%;">المبلغ المطلوب</th>
+            <th style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: right; width: 38%;">موعد وطريقة الاستحقاق</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">الدفعة الأولى (مقدم الحجز)</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">50%</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">.................. ج</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1;">تُسدد فورياً عند التسجيل</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">الدفعة الثانية (المتبقي)</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">50%</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">.................. ج</td>
+            <td style="padding: 6px 10px; border: 1px solid #cbd5e1;">تُسدد خلال الشهر التالي مباشرة</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- SECTION 3: LEGAL CLAUSES & TERMS -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.85em; color: #1e293b; line-height: 1.55;">
+        <div style="font-weight: 800; color: #0f172a; margin-bottom: 5px; font-size: 0.95em;">
+          <i class="fa-solid fa-scale-balanced"></i> بنود الإقرار والتعهد الرسمي:
+        </div>
+        <ol style="margin: 0; padding-right: 18px; display: flex; flex-direction: column; gap: 4px;">
+          <li>أقر أنا الطالب المسجل بأن كافة البيانات والخيارات المدونة بهذه الاستمارة صحيحة، وأوافق على الرسوم المحددة للباقة.</li>
+          <li>أتعهد بسداد قيمة الاشتراك وفق خطة الدفع المقررة بالجدول أعلاه (50% عند التسجيل، و 50% المتبقية خلال الشهر التالي مباشرة).</li>
+          <li>في حالة التأخر عن سداد القسط المتبقي في موعده المحدد، يحق لإدارة السنتر إيقاف حضوري للمحاضرات لحين السداد، أو السماح بالحضور مع دفع قيمة كل محاضرة بشكل منفصل وفق لائحة المركز.</li>
+          <li><strong>بند الشفافية والتوثيق المالي:</strong> يحق للطالب أو ولي أمره طلب واستلام (إيصال سداد إلكتروني معتمد وموثق) من نظام (Studify) فور دفع أي مبالغ نقدية لضمان حقوقه المالية.</li>
+          <li>أتعهد بالالتزام التام بقواعد السنتر والمحافظة على الهدوء والانضباط داخل القاعات واحترام لوائح المركز.</li>
+          <li>يُعد توقيعي أو توقيع ولي أمري أدناه بمثابة موافقة صريحة ونهائية وإقرار ملزم بكافة الشروط المذكورة أعلاه.</li>
+        </ol>
+      </div>
+
+      <!-- SECTION 4: SIGNATURES & OFFICIAL STAMP BOX -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap: 10px; margin-top: 10px; font-size: 0.86em; align-items: stretch;">
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff;">
+          <div style="font-weight: bold; color: #475569; margin-bottom: 22px;">توقيع الطالب:</div>
+          <div style="border-bottom: 1px dashed #94a3b8; width: 100%;"></div>
+        </div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff;">
+          <div style="font-weight: bold; color: #475569; margin-bottom: 22px;">توقيع ولي الأمر:</div>
+          <div style="border-bottom: 1px dashed #94a3b8; width: 100%;"></div>
+        </div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff;">
+          <div style="font-weight: bold; color: #475569; margin-bottom: 6px;">مسؤول التسجيل:</div>
+          <div style="font-weight: 800; color: #0f172a; margin-bottom: 6px;">..........................</div>
+          <div style="border-bottom: 1px dashed #94a3b8; width: 100%;"></div>
+        </div>
+        <div style="border: 1.5px dashed #64748b; border-radius: 6px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fafafa;">
+          <div style="font-size: 0.8em; color: #475569; font-weight: 700; margin-bottom: 4px;">ختم واعتماد السنتر الرسمي</div>
+          <div style="width: 48px; height: 48px; border-radius: 50%; border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.72em;">الختم هنا</div>
+        </div>
+      </div>
+
+      <!-- FOOTER WATERMARK -->
+      <div style="margin-top: 14px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 0.72em; color: #64748b;">
+        <span>استمارة تقديم رسميّة معتمدة ومؤتمتة عبر منصة <b>Studify</b> للأنظمة التعليمية</span>
+        <span>تاريخ وتوقيت الطباعة: ${todayStr}</span>
+      </div>
+
+    </div>
+  `;
+
+  const area = document.getElementById("printableContractArea");
+  if (area) area.innerHTML = blankHtml;
+
+  const modal = document.getElementById("contractModal");
+  if (modal) modal.classList.remove("hidden");
+};
