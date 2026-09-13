@@ -292,6 +292,19 @@ document.addEventListener('DOMContentLoaded', function() {
  let passSuccessCallback = null;
  let currentLang = localStorage.getItem(K_LANG) || "ar";
 
+  // Expose core system state accessors to window for global access
+  try {
+    Object.defineProperty(window, 'students', { get: () => students, set: (v) => { students = v; }, configurable: true });
+    Object.defineProperty(window, 'evalData', { get: () => evalData, set: (v) => { evalData = v; }, configurable: true });
+    Object.defineProperty(window, 'currentId', { get: () => currentId, set: (v) => { currentId = v; }, configurable: true });
+    Object.defineProperty(window, 'currentUserRole', { get: () => currentUserRole, set: (v) => { currentUserRole = v; }, configurable: true });
+  } catch(e) {
+    window.students = students;
+    window.evalData = evalData;
+    window.currentId = currentId;
+    window.currentUserRole = currentUserRole;
+  }
+
  // Global Enter Key Handler for Inputs
  document.addEventListener('keydown', function(e) {
  if (e.key === 'Enter') {
@@ -629,8 +642,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
  function t(key) { return (dict[key] && dict[key][currentLang]) ? dict[key][currentLang] : key; }
  function nowDateStr() { return new Date().toISOString().split('T')[0]; }
+  window.nowDateStr = nowDateStr;
  function prettyDate(d) { return d ? d.split("-").reverse().join("-") : "—"; }
  function toInt(v) { if (typeof v === 'object' && v !== null) return toInt(v.price || 0); const n = parseInt(v); return isNaN(n) ? 0 : n; }
+  window.toInt = toInt;
 
 
 
@@ -789,6 +804,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
  let _lastToastMsg = "", _lastToastTime = 0;
 function showToast(msg, type = "success") {
+  window.showToast = showToast;
  const _now = Date.now();
  if (_now - _lastToastTime < 350 && _lastToastMsg === msg) return;
  _lastToastMsg = msg; _lastToastTime = _now;
@@ -8396,30 +8412,40 @@ function getNextMonthDateFormatted(baseDate) {
 }
 
 window.openStudentContractModal = function() {
+  const allStudents = window.students || (typeof students !== 'undefined' ? students : {});
   const cId = window.currentId || (typeof currentId !== 'undefined' ? currentId : null);
-  if (!cId || !students[cId]) {
-    return showToast("يرجى اختيار أو فتح ملف طالب أولاً لطباعة الإقرار", "err");
+  const notify = window.showToast || (typeof showToast === 'function' ? showToast : (msg => alert(msg)));
+
+  if (!cId || !allStudents[cId]) {
+    return notify("يرجى اختيار أو فتح ملف طالب أولاً لطباعة الإقرار", "err");
   }
 
-  const st = students[cId];
-  const centerTitle = (evalData && evalData.centerName) ? evalData.centerName : "المركز التعليمي";
-  const managerTitle = (evalData && evalData.manager) ? ("إشراف أ/ " + evalData.manager) : "إدارة السنتر والعمليات";
-  const shiftMgr = localStorage.getItem("ca_current_username") || (currentUserRole === 'admin' ? 'الإدارة' : 'المسؤول الميداني');
-  const todayStr = nowDateStr();
+  const st = allStudents[cId];
+  const eData = window.evalData || (typeof evalData !== 'undefined' ? evalData : {});
+  const centerTitle = (eData && eData.centerName) ? eData.centerName : "المركز التعليمي";
+  const managerTitle = (eData && eData.manager) ? ("إشراف أ/ " + eData.manager) : "إدارة السنتر والعمليات";
+  const role = window.currentUserRole || (typeof currentUserRole !== 'undefined' ? currentUserRole : 'admin');
+  const shiftMgr = localStorage.getItem("ca_current_username") || (role === 'admin' ? 'الإدارة' : 'المسؤول الميداني');
+  const getToday = window.nowDateStr || (typeof nowDateStr === 'function' ? nowDateStr : (() => new Date().toISOString().split('T')[0]));
+  const todayStr = getToday();
   const nextMonthStr = getNextMonthDateFormatted(new Date());
 
   // Calculate total package price
   let totalRequiredPrice = 0;
   const enrolledPkgs = (st.packages && st.packages.length > 0) ? st.packages : [];
+  const parseNum = window.toInt || (typeof toInt === 'function' ? toInt : (v => {
+    if (typeof v === 'object' && v !== null) return parseInt(v.price || 0) || 0;
+    const n = parseInt(v); return isNaN(n) ? 0 : n;
+  }));
   
   if (enrolledPkgs.length > 0) {
     enrolledPkgs.forEach(pkgName => {
-      const pDet = window.getPkgDetails(pkgName);
-      totalRequiredPrice += toInt(pDet.price);
+      const pDet = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pkgName) : { price: 0 };
+      totalRequiredPrice += parseNum(pDet.price);
     });
   } else if (st.className) {
-    const pDet = window.getPkgDetails(st.className);
-    totalRequiredPrice = toInt(pDet.price) || 0;
+    const pDet = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(st.className) : { price: 0 };
+    totalRequiredPrice = parseNum(pDet.price) || 0;
   }
 
   const downPayment = Math.round(totalRequiredPrice * 0.5);
@@ -8552,9 +8578,11 @@ window.openStudentContractModal = function() {
 };
 
 window.openBlankContractModal = function() {
-  const centerTitle = (evalData && evalData.centerName) ? evalData.centerName : "المركز التعليمي";
-  const managerTitle = (evalData && evalData.manager) ? ("إشراف أ/ " + evalData.manager) : "إدارة السنتر والعمليات";
-  const todayStr = nowDateStr();
+  const eData = window.evalData || (typeof evalData !== 'undefined' ? evalData : {});
+  const centerTitle = (eData && eData.centerName) ? eData.centerName : "المركز التعليمي";
+  const managerTitle = (eData && eData.manager) ? ("إشراف أ/ " + eData.manager) : "إدارة السنتر والعمليات";
+  const getToday = window.nowDateStr || (typeof nowDateStr === 'function' ? nowDateStr : (() => new Date().toISOString().split('T')[0]));
+  const todayStr = getToday();
 
   const blankHtml = `
     <div style="border: 2px solid #0f172a; padding: 20px 24px; border-radius: 8px; position: relative; background: #ffffff; box-sizing: border-box;">
