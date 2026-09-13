@@ -2005,7 +2005,7 @@ body {
 .sub-limit-chip-val{font-weight:800;color:var(--text-primary)}
 .sub-limit-chip-lbl{color:var(--text-secondary);margin-inline-start:2px}
 .sub-countdown{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 20px;text-align:center;min-width:180px}
-.sub-countdown-days{font-size:2.8em;font-weight:900;line-height:1;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub-countdown-days{font-size:2.8em;font-weight:900;line-height:1;background:var(--gradient);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .sub-countdown-lbl{font-size:.8em;color:var(--text-secondary);margin-top:4px;font-weight:600}
 .sub-progress-wrap{margin-top:16px}
 .sub-progress-lbl{display:flex;justify-content:space-between;font-size:.78em;color:var(--text-secondary);margin-bottom:6px}
@@ -2044,7 +2044,7 @@ body {
 [data-theme="light"] .sub-plan-card.golden-plan .sub-plan-name{color:#78350F}
 [data-theme="light"] .sub-plan-card.golden-plan .sub-plan-duration{color:#92400E}
 [data-theme="light"] .sub-plan-card.golden-plan .price-amount{color:#92400E}
-[data-theme="light"] .sub-plan-card.golden-plan .golden-price{background:linear-gradient(135deg,#B45309,#D97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+[data-theme="light"] .sub-plan-card.golden-plan .golden-price{background:linear-gradient(135deg,#B45309,#D97706);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 [data-theme="light"] .sub-plan-card.golden-plan .price-currency{color:#78350F}
 [data-theme="light"] .sub-plan-card.golden-plan .golden-saving{background:rgba(217,119,6,.15);color:#92400E;border-color:rgba(217,119,6,.35)}
 [data-theme="light"] .sub-plan-card.golden-plan .golden-ribbon{background:linear-gradient(135deg,#D97706,#B45309);color:#FFFFFF;box-shadow:0 4px 12px rgba(180,83,9,.3)}
@@ -2067,7 +2067,7 @@ body {
 .golden-saving{background:rgba(245,158,11,.15);color:#F59E0B;border-color:rgba(245,158,11,.3)}
 .sub-plan-price{display:flex;align-items:baseline;gap:8px}
 .price-amount{font-size:2em;font-weight:900;color:var(--text-primary);line-height:1}
-.golden-price{background:linear-gradient(135deg,#F59E0B,#FBBF24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.golden-price{background:linear-gradient(135deg,#F59E0B,#FBBF24);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .price-currency{font-size:.82em;color:var(--text-secondary);font-weight:600}
 .sub-plan-features{list-style:none;display:flex;flex-direction:column;gap:9px;flex:1}
 .sub-plan-features li{display:flex;align-items:center;gap:9px;font-size:.85em;color:var(--text-secondary)}
