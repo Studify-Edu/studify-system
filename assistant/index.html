@@ -192,24 +192,24 @@
       
       <div class="hard-lock-badge-pill">
         <span class="hard-lock-dot"></span>
-        <span>حالة الشيفت: مغلق ومجمد</span>
+        <span data-i18n="lock_shift_status">حالة الشيفت: مغلق ومجمد</span>
       </div>
 
-      <h2 id="assistantHardLockTitle" class="hard-lock-title">اليومية معلقة ومغلقة من قِبل الإدارة</h2>
+      <h2 id="assistantHardLockTitle" class="hard-lock-title" data-i18n="lock_shift_title">اليومية معلقة ومغلقة من قِبل الإدارة</h2>
       
       <p id="assistantHardLockMsg" class="hard-lock-desc">
-        تم إيقاف اليومية من قِبل المدير العام. تم تجميد كافة العمليات لحين فتح الشيفت مجدداً.
+        <span data-i18n="lock_shift_desc">تم إيقاف اليومية من قِبل المدير العام. تم تجميد كافة العمليات لحين فتح الشيفت مجدداً.</span>
       </p>
 
       <div class="hard-lock-sync-info">
         <i class="fa-solid fa-bolt-lightning" style="color: var(--primary);"></i>
-        <span>المزامنة حية ولحظية: سيفتح النظام تلقائياً على شاشتك فور تفعيل المدير لليومية بدون الحاجة لإعادة تشغيل التطبيق.</span>
+        <span data-i18n="lock_shift_sync">المزامنة حية ولحظية: سيفتح النظام تلقائياً على شاشتك فور تفعيل المدير لليومية بدون الحاجة لإعادة تشغيل التطبيق.</span>
       </div>
 
       <div class="hard-lock-actions">
         <button type="button" class="hard-lock-btn-retry" onclick="window.checkDailyShiftHeartbeat ? window.checkDailyShiftHeartbeat(true) : null">
           <i class="fa-solid fa-arrows-rotate"></i>
-          <span>التحقق من حالة الشيفت الآن</span>
+          <span data-i18n="lock_shift_check_btn">التحقق من حالة الشيفت الآن</span>
         </button>
       </div>
     </div>
@@ -429,15 +429,15 @@
  <!-- Notifications Dropdown -->
  <div id="notificationsDropdown" class="user-profile-dropdown hidden" style="position: absolute; top: 110%; inset-inline-end: 40px; width: 320px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;">
  <div style="font-weight: bold; font-size: 0.95em; color: var(--primary); padding: 6px 8px; border-bottom: 1px solid var(--border); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-    <span><i class="fa-regular fa-bell"></i> رسائل وإشعارات</span>
+    <span data-i18n="notif_title"><i class="fa-regular fa-bell"></i> رسائل وإشعارات</span>
     <div style="display: flex; align-items: center; gap: 8px;">
-      <span id="markAllReadBtn" style="cursor: pointer; font-size: 0.82em; color: var(--success); font-weight: 600;" title="تحديد جميع الرسائل كمقروءة">تحديد كمقروء</span>
+      <span id="markAllReadBtn" style="cursor: pointer; font-size: 0.82em; color: var(--success); font-weight: 600;" title="تحديد جميع الرسائل كمقروءة" data-i18n="notif_mark_read">تحديد كمقروء</span>
       <span style="color: var(--border); font-size: 0.8em;">|</span>
-      <span id="clearReadNotificationsBtn" style="cursor: pointer; font-size: 0.82em; color: #ef4444; font-weight: 600;" title="حذف كافة الرسائل المقروءة نهائياً من السحابة">مسح المقروء</span>
+      <span id="clearReadNotificationsBtn" style="cursor: pointer; font-size: 0.82em; color: #ef4444; font-weight: 600;" title="حذف كافة الرسائل المقروءة نهائياً من السحابة" data-i18n="notif_clear_read">مسح المقروء</span>
     </div>
   </div>
  <div id="notificationsList" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
- <div style="text-align: center; color: #888; padding: 10px;">لا توجد رسائل</div>
+ <div style="text-align: center; color: #888; padding: 10px;" data-i18n="notif_no_messages">لا توجد رسائل</div>
  </div>
  </div>
 
@@ -458,7 +458,7 @@
  <div style="font-weight: bold; font-size: 0.95em; color: var(--primary); padding: 4px 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;" data-i18n="quick_controls_title">قائمة التحكم السريعة</div>
  
  <a href="../admin/admin.html" onclick="event.preventDefault(); window.navigateWithTransition('../admin/admin.html');" class="btn secondary" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-weight: bold; font-size: 0.9em; text-decoration: none; color: var(--text-primary); margin-bottom: 4px;">
-    <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> <span>لوحة الإدارة (Admin)</span>
+    <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> <span data-i18n="btn_admin_portal">لوحة الإدارة (Admin)</span>
  </a>
 
  <div style="border-top: 1px solid var(--border); margin: 4px 0;"></div>
@@ -467,7 +467,7 @@
  
  <button id="toggleSoundsBtn" class="btn secondary" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; font-weight: bold; font-size: 0.9em; text-align: start;">
  <div style="display: flex; align-items: center; gap: 10px;">
- <span id="soundIcon"></span> <span>كتم الأصوات</span>
+ <span id="soundIcon"></span> <span data-i18n="btn_mute_sounds">كتم الأصوات</span>
  </div>
  <input type="checkbox" id="muteSoundsToggle" style="pointer-events: none;">
  </button>
@@ -475,7 +475,7 @@
  <div style="border-top: 1px solid var(--border); margin: 4px 0;"></div>
  
  <button id="logoutBtn" class="btn danger" style="width: 100%; padding: 10px; font-weight: bold; font-size: 0.95em; display: flex; align-items: center; justify-content: center; gap: 8px;" data-i18n="btn_logout">
- <span></span> <span>خروج من النظام</span>
+ <span></span> <span data-i18n="btn_system_logout">خروج من النظام</span>
  </button>
  </div>
  </div>
@@ -648,15 +648,15 @@
       </div>
       <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; text-align:center; margin-bottom:8px;">
         <div style="background:var(--bg-inset); padding:6px 4px; border-radius:6px; border:1px solid var(--border);">
-          <div style="font-size:0.75em; color:var(--text-secondary);">سعر الباقة</div>
+          <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="lbl_pkg_price">سعر الباقة</div>
           <div id="pkgCardPrice" style="font-weight:bold; color:var(--text-primary); font-size:0.95em;">0 ج</div>
         </div>
         <div style="background:var(--bg-inset); padding:6px 4px; border-radius:6px; border:1px solid var(--border);">
-          <div style="font-size:0.75em; color:var(--text-secondary);">المدفوع</div>
+          <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="lbl_pkg_paid">المدفوع</div>
           <div id="pkgCardPaid" style="font-weight:bold; color:var(--success); font-size:0.95em;">0 ج</div>
         </div>
         <div style="background:var(--bg-inset); padding:6px 4px; border-radius:6px; border:1px solid var(--border);">
-          <div style="font-size:0.75em; color:var(--text-secondary);">المتبقي</div>
+          <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="lbl_pkg_remaining">المتبقي</div>
           <div id="pkgCardRemain" style="font-weight:bold; color:var(--danger); font-size:0.95em;">0 ج</div>
         </div>
       </div>
@@ -669,7 +669,7 @@
     <div class="payRow">
       <span class="payLabel" data-i18n="lbl_new_pay"> إيداع جديد:</span>
       <div class="row" style="flex:1; gap:6px;">
-        <input id="newPaymentInput" type="number" class="inp" placeholder="المبلغ" style="min-width:70px;">
+        <input id="newPaymentInput" type="number" class="inp" placeholder="المبلغ" data-i18n-placeholder="plc_new_payment_amt" style="min-width:70px;">
         <select id="newPaymentMethod" class="inp" style="width:auto; font-size:0.88em;">
           <option value="cash">كاش</option>
           <option value="instapay">إنستاباي</option>
@@ -1757,9 +1757,9 @@
 
       <input type="hidden" id="discReqStudentId">
       
-      <label class="lbl">رقم الطالب (ID) أو الاسم</label>
+      <label class="lbl" data-i18n="modal_dec_req_st_lbl">رقم الطالب (ID) أو الاسم</label>
       <div style="display:flex; gap:8px; margin-bottom:10px;">
-        <input type="text" id="discReqStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." oninput="window.handleDiscReqSearch(this.value)">
+        <input type="text" id="discReqStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." data-i18n-placeholder="modal_dec_req_st_plc" oninput="window.handleDiscReqSearch(this.value)">
       </div>
 
       <!-- Student Info Card (Live Loaded) -->
@@ -1770,38 +1770,38 @@
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
           <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
-            <div style="font-size:0.75em; color:var(--text-secondary);">المطلوب</div>
+            <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_req_lbl">المطلوب</div>
             <div id="discReqStRequired" style="font-weight:700; color:var(--text-primary); font-size:0.95em;">0 ج</div>
           </div>
           <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
-            <div style="font-size:0.75em; color:var(--text-secondary);">الخصم الحالي</div>
+            <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_disc_lbl">الخصم الحالي</div>
             <div id="discReqStCurrentDisc" style="font-weight:700; color:var(--warning); font-size:0.95em;">0 ج</div>
           </div>
           <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
-            <div style="font-size:0.75em; color:var(--text-secondary);">المتبقي</div>
+            <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_rem_lbl">المتبقي</div>
             <div id="discReqStRemaining" style="font-weight:700; color:var(--danger); font-size:0.95em;">0 ج</div>
           </div>
         </div>
       </div>
 
-      <label class="lbl">نوع القرار المطلوب</label>
+      <label class="lbl" data-i18n="modal_dec_req_type_lbl">نوع القرار المطلوب</label>
       <select id="discReqType" class="inp" onchange="window.handleDiscReqTypeChange(this.value)">
-        <option value="discount">خصم مالي محدد (جنيه)</option>
-        <option value="exemption">إعفاء كامل من المصاريف (100%)</option>
+        <option value="discount" data-i18n="modal_dec_req_type_disc">خصم مالي محدد (جنيه)</option>
+        <option value="exemption" data-i18n="modal_dec_req_type_exemp">إعفاء كامل من المصاريف (100%)</option>
       </select>
 
       <div id="discReqAmountWrap" style="margin-top:12px;">
-        <label class="lbl">قيمة الخصم المقترحة (جنيه)</label>
+        <label class="lbl" data-i18n="modal_dec_req_amt_lbl">قيمة الخصم المقترحة (جنيه)</label>
         <input type="number" id="discReqAmount" class="inp" placeholder="مثال: 100" min="1" step="10">
       </div>
 
-      <label class="lbl" style="margin-top:12px;">سبب الطلب / ملاحظات للمدير <span style="color:var(--danger);">*</span></label>
-      <input type="text" id="discReqReason" class="inp" placeholder="اكتب سبب طلب الخصم أو الإعفاء...">
+      <label class="lbl" style="margin-top:12px;" data-i18n="modal_dec_req_rsn_lbl">سبب الطلب / ملاحظات للمدير <span style="color:var(--danger);">*</span></label>
+      <input type="text" id="discReqReason" class="inp" placeholder="اكتب سبب طلب الخصم أو الإعفاء..." data-i18n-placeholder="modal_dec_req_rsn_plc">
 
       <div class="row" style="margin-top:20px; justify-content:flex-end; gap:10px;">
-        <button type="button" class="btn secondary" onclick="document.getElementById('discountRequestModal').classList.add('hidden')">إلغاء</button>
+        <button type="button" class="btn secondary" onclick="document.getElementById('discountRequestModal').classList.add('hidden')" data-i18n="modal_dec_req_cancel">إلغاء</button>
         <button type="button" id="submitDiscountRequestBtn" class="btn primary" onclick="window.submitDecisionRequest()" style="display:inline-flex; align-items:center; gap:6px;">
-          <i class="fa-solid fa-paper-plane"></i> إرسال الطلب للمدير
+          <i class="fa-solid fa-paper-plane"></i> <span data-i18n="modal_dec_req_submit">إرسال الطلب للمدير</span>
         </button>
       </div>
     </div>
@@ -1809,7 +1809,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V132"></script>
+  <script type="module" src="app.js?v=STUDIFY_V133"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
@@ -1872,8 +1872,8 @@
               <i class="fa-solid fa-book-bookmark"></i>
             </div>
             <div>
-              <h3 class="subject-modal-title">اختر مادة الحضور</h3>
-              <p class="subject-modal-subtitle">حدد المادة الدراسية لتسجيل الحضور ومتابعة الحصص للطلاب</p>
+              <h3 class="subject-modal-title" data-i18n="modal_sub_select_title">اختر مادة الحضور</h3>
+              <p class="subject-modal-subtitle" data-i18n="modal_sub_select_desc">حدد المادة الدراسية لتسجيل الحضور ومتابعة الحصص للطلاب</p>
             </div>
           </div>
           <button class="subject-modal-close-btn" onclick="document.getElementById('subjectSelectionModal').classList.add('hidden')" title="إغلاق">
@@ -1907,7 +1907,7 @@
            <button class="btn iconOnly" style="background: transparent; color: var(--text-secondary);" onclick="closePackageSelectionModal()"><i class="fa-solid fa-xmark"></i></button>
          </h2>
          <div style="color: var(--text-secondary); margin-top: 5px; font-size: 0.9em;">
-           تحديد الباقات والمجموعات للطالب: <span id="psmStudentName" style="color: var(--text-primary); font-weight: bold;"></span>
+           <span data-i18n="psm_desc_prefix">تحديد الباقات والمجموعات للطالب:</span> <span id="psmStudentName" style="color: var(--text-primary); font-weight: bold;"></span>
          </div>
        </div>
 

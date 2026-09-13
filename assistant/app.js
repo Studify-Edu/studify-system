@@ -726,7 +726,112 @@ document.addEventListener('DOMContentLoaded', function() {
  "receipt_inc_methods": { ar: "شامل طرق الدفع المسجلة بالسنتر", en: "Includes all registered payment methods" },
  "receipt_auth_title": { ar: "اعتماد إلكتروني معتمد", en: "Certified Electronic Approval" },
  "receipt_auth_sub": { ar: "توقيع الموظف / المحاسب المسئول", en: "Authorized Accountant / Employee Signature" },
- "receipt_sec_code": { ar: "رمز التحقق الأمني", en: "Security Verification Code" }
+ "receipt_sec_code": { ar: "رمز التحقق الأمني", en: "Security Verification Code" },
+
+  // Missing Assistant Portal Keys
+  "login_title_assistant": { ar: "بوابة العمليات والمساعدين", en: "Operations & Assistant Portal" },
+  "login_desc_assistant": { ar: "تسجيل الحضور اليومي والمهام الميدانية", en: "Daily attendance & operational management" },
+  "top_subject_lbl": { ar: "المادة:", en: "Subject:" },
+  "top_subject_val": { ar: "مادة الحضور", en: "Attendance Subject" },
+  "quick_subtitle": { ar: "تسجيل الحضور الفوري بالـ ID أو الباركود", en: "Instant attendance logging via ID or barcode" },
+  "lbl_student_id": { ar: "معرّف الطالب (ID)", en: "Student ID" },
+  "search_subtitle": { ar: "الوصول السريع لملفات وبيانات الطلاب", en: "Quick lookup for student profiles & records" },
+  "lbl_open_id_direct": { ar: "فتح مباشر برقم الـ ID", en: "Direct Open by ID #" },
+  "lbl_smart_search": { ar: "بحث ذكي متعدد", en: "Multi-Field Smart Search" },
+  "add_subtitle": { ar: "تسجيل طالب جديد وفتح ملفه فوراً", en: "Register new student & open file immediately" },
+  "lbl_new_student_id": { ar: "رقم الـ ID للطالب الجديد", en: "New Student ID #" },
+  "add_student_hint": { ar: "أدخل رقم الـ ID واضغط إضافة لفتح الملف واستكمال الاسم والباقات.", en: "Enter ID number and click Add & Open to complete details." },
+  "btn_print_blank_contract": { ar: "طباعة استمارة تقديم فارغة (للطوابير)", en: "Print Blank Registration Form (For Queues)" },
+  "lbl_student_packages": { ar: "الباقات المشترك بها الطالب", en: "Enrolled Student Packages" },
+  "btn_request_decision": { ar: "طلب قرار للمدير", en: "Request Manager Decision" },
+  "btn_manage_packages": { ar: "إدارة الباقات", en: "Manage Packages" },
+  "no_packages_selected": { ar: "لا توجد باقات محددة", en: "No packages assigned" },
+  "lbl_parent_phone": { ar: "رقم ولي الأمر", en: "Parent Phone" },
+  "lbl_class_group": { ar: "الصف الدراسي / المجموعة", en: "Grade / Group" },
+  "lbl_payment_package": { ar: "باقة الدفع:", en: "Payment Package:" },
+  "opt_select_package": { ar: "-- اختر الباقة --", en: "-- Select Package --" },
+  "lbl_pkg_account": { ar: "حساب الباقة", en: "Package Ledger" },
+  "lbl_pkg_price": { ar: "سعر الباقة", en: "Package Price" },
+  "lbl_pkg_paid": { ar: "المدفوع", en: "Paid" },
+  "lbl_pkg_remaining": { ar: "المتبقي", en: "Remaining" },
+  "plc_new_payment_amt": { ar: "المبلغ", en: "Amount" },
+
+  // Installments Keys
+  "inst_title": { ar: "لوحة متابعة الأقساط", en: "Installments Dashboard" },
+  "inst_all": { ar: "كل الأقساط المفتوحة", en: "All Active Installments" },
+  "inst_overdue": { ar: "المتأخرة فقط", en: "Overdue Only" },
+  "inst_upcoming": { ar: "المستحقة قريباً (7 أيام)", en: "Due Soon (7 Days)" },
+  "inst_th_student": { ar: "الطالب", en: "Student" },
+  "inst_th_phone": { ar: "رقم الموبايل", en: "Phone Number" },
+  "inst_th_package": { ar: "الباقة", en: "Package" },
+  "inst_th_installment": { ar: "اسم القسط", en: "Installment" },
+  "inst_th_amount": { ar: "المبلغ", en: "Amount" },
+  "inst_th_due_date": { ar: "تاريخ الاستحقاق", en: "Due Date" },
+  "inst_th_status": { ar: "الحالة", en: "Status" },
+  "inst_th_actions": { ar: "إجراءات", en: "Actions" },
+
+  // Students Table & Filters
+  "btn_blank_form_short": { ar: "استمارة فارغة", en: "Blank Form" },
+  "flt_all": { ar: "الكل", en: "All" },
+  "flt_debt": { ar: "عليهم متبقي", en: "With Debt" },
+  "flt_paid_full": { ar: "مسدد بالكامل", en: "Fully Paid" },
+  "flt_present_today": { ar: "حضروا اليوم", en: "Attended Today" },
+  "tbl_packages": { ar: "الباقات المشترك بها", en: "Subscribed Packages" },
+
+  // Vaults & Shift Closeout
+  "vaults_title": { ar: "أرصدة الخزائن وتقفيل الشيفت", en: "Vaults Balance & Shift Closeout" },
+  "vault_cash_drawer": { ar: "درج الكاش", en: "Cash Drawer" },
+  "badge_cash": { ar: "كاش", en: "Cash" },
+  "vault_instapay_account": { ar: "حساب إنستا باي", en: "InstaPay Account" },
+  "vault_wallet_account": { ar: "فودافون كاش / محفظة", en: "Vodafone Cash / Wallet" },
+  "badge_wallet": { ar: "محفظة", en: "Wallet" },
+  "lbl_today_colon": { ar: "اليوم:", en: "Today:" },
+  "lbl_total_all": { ar: "الإجمالي الكلي:", en: "Total All:" },
+
+  // Placeholders
+  "plc_student_name": { ar: "اسم الطالب بالكامل", en: "Full student name" },
+  "plc_class_group": { ar: "اختر أو اكتب الصف الدراسي أو المجموعة..", en: "Select or type grade / group.." },
+
+  // Notifications & User Dropdown
+  "notif_title": { ar: "رسائل وإشعارات", en: "Messages & Notifications" },
+  "notif_mark_read": { ar: "تحديد كمقروء", en: "Mark as Read" },
+  "notif_clear_read": { ar: "مسح المقروء", en: "Clear Read" },
+  "notif_no_messages": { ar: "لا توجد رسائل", en: "No messages" },
+  "btn_admin_portal": { ar: "لوحة الإدارة (Admin)", en: "Admin Dashboard" },
+  "btn_mute_sounds": { ar: "كتم الأصوات", en: "Mute Sounds" },
+  "btn_system_logout": { ar: "خروج من النظام", en: "Logout" },
+
+  // Decision Modal
+  "modal_dec_req_title": { ar: "تقديم طلب قرار للمدير (خصم / إعفاء)", en: "Submit Decision Request to Manager" },
+  "modal_dec_req_st_lbl": { ar: "رقم الطالب (ID) أو الاسم", en: "Student ID or Name" },
+  "modal_dec_req_st_plc": { ar: "ادخل كود الطالب أو ابحث بالاسم...", en: "Enter student ID or search by name..." },
+  "modal_dec_req_req_lbl": { ar: "المطلوب", en: "Required" },
+  "modal_dec_req_disc_lbl": { ar: "الخصم الحالي", en: "Current Discount" },
+  "modal_dec_req_rem_lbl": { ar: "المتبقي", en: "Remaining" },
+  "modal_dec_req_type_lbl": { ar: "نوع القرار المطلوب", en: "Requested Decision Type" },
+  "modal_dec_req_type_disc": { ar: "خصم مالي محدد (جنيه)", en: "Specific Financial Discount (EGP)" },
+  "modal_dec_req_type_exemp": { ar: "إعفاء كامل من المصاريف (100%)", en: "Full Fee Exemption (100%)" },
+  "modal_dec_req_amt_lbl": { ar: "قيمة الخصم المقترحة (جنيه)", en: "Proposed Discount Amount (EGP)" },
+  "modal_dec_req_rsn_lbl": { ar: "سبب الطلب / ملاحظات للمدير", en: "Request Reason / Notes for Manager" },
+  "modal_dec_req_rsn_plc": { ar: "اكتب سبب طلب الخصم أو الإعفاء...", en: "Type reason for request..." },
+  "modal_dec_req_cancel": { ar: "إلغاء", en: "Cancel" },
+  "modal_dec_req_submit": { ar: "إرسال الطلب للمدير", en: "Submit Request to Manager" },
+
+  // Subject Selection Modal
+  "modal_sub_select_title": { ar: "اختر مادة الحضور", en: "Select Attendance Subject" },
+  "modal_sub_select_desc": { ar: "حدد المادة الدراسية لتسجيل الحضور ومتابعة الحصص للطلاب", en: "Select subject to log attendance and track sessions" },
+  "modal_sub_select_close": { ar: "إغلاق النافذة", en: "Close Window" },
+
+  // Package Selection Modal
+  "psm_desc_prefix": { ar: "تحديد الباقات والمجموعات للطالب: ", en: "Assign packages & groups for student: " },
+
+  // Hard Lock Screen
+  "lock_shift_status": { ar: "حالة الشيفت: مغلق ومجمد", en: "Shift Status: Locked & Frozen" },
+  "lock_shift_title": { ar: "اليومية معلقة ومغلقة من قِبل الإدارة", en: "Daily Shift Suspended by Management" },
+  "lock_shift_desc": { ar: "تم إيقاف اليومية من قِبل المدير العام. تم تجميد كافة العمليات لحين فتح الشيفت مجدداً.", en: "The daily shift has been closed by the manager. Operations are paused until unlocked." },
+  "lock_shift_sync": { ar: "المزامنة حية ولحظية: سيفتح النظام تلقائياً على شاشتك فور تفعيل المدير لليومية بدون الحاجة لإعادة تشغيل التطبيق.", en: "Live real-time sync: The system will automatically unlock once the manager enables the shift." },
+  "lock_shift_check_btn": { ar: "التحقق من حالة الشيفت الآن", en: "Check Shift Status Now" },
+
 };
 
  // ==========================================
@@ -8245,17 +8350,19 @@ window.updateAttendanceUIState = function() {
     const input = document.getElementById("quickAttendId");
     if (!btn) return;
     
+    const isAr = (currentLang === "ar");
     const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
     if (input) {
-        input.placeholder = hasSelected ? (currentLang === "ar" ? "ID (مثال: 101)" : "ID (e.g. 101)") : (currentLang === "ar" ? "اختر مادة أولاً" : "Select Subject First");
+        input.placeholder = hasSelected ? (isAr ? "ID (مثال: 101)" : "ID (e.g. 101)") : (isAr ? "اختر مادة أولاً" : "Select Subject First");
     }
 
+    const recordText = isAr ? "سجل حضور" : "Record";
     if (!hasSelected) {
         btn.classList.add("btn-attend-pending");
-        btn.innerHTML = '<i class="fa-solid fa-lock" style="margin-inline-end: 6px;"></i> سجل حضور';
+        btn.innerHTML = `<i class="fa-solid fa-lock" style="margin-inline-end: 6px;"></i> ${recordText}`;
     } else {
         btn.classList.remove("btn-attend-pending");
-        btn.innerHTML = 'سجل حضور';
+        btn.innerHTML = recordText;
         // Clean any lingering inline styles
         btn.style.removeProperty("background");
         btn.style.removeProperty("background-image");
