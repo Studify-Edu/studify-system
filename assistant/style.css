@@ -625,12 +625,12 @@ a { color: var(--primary); text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 12px;
   height: var(--topbar-h);
   min-height: var(--topbar-h);
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
-  gap: 12px;
+  gap: 8px;
   flex-wrap: nowrap !important;
   box-sizing: border-box;
 }
@@ -638,14 +638,14 @@ a { color: var(--primary); text-decoration: none; }
 .topbar-start {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .topbar-end {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 6px !important;
   flex-shrink: 0 !important;
   flex-wrap: nowrap !important;
   margin-inline-start: auto;
@@ -653,7 +653,7 @@ a { color: var(--primary); text-decoration: none; }
 
 .topbar-stats {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: nowrap !important;
   align-items: center;
   flex: 1 1 auto;
@@ -662,6 +662,7 @@ a { color: var(--primary); text-decoration: none; }
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  padding: 0 2px;
 }
 .topbar-stats::-webkit-scrollbar {
   display: none;
@@ -670,10 +671,10 @@ a { color: var(--primary); text-decoration: none; }
 .stat-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 5px 9px;
   border-radius: 20px;
-  font-size: 0.82em;
+  font-size: 0.79em;
   font-weight: 600;
   background: var(--bg-inset);
   border: 1px solid var(--border);
@@ -681,7 +682,7 @@ a { color: var(--primary); text-decoration: none; }
   transition: all 0.2s;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
-  height: 36px;
+  height: 34px;
   box-sizing: border-box;
 }
 .stat-pill b { color: var(--stat-accent); font-family: 'Cairo'; }
@@ -5083,38 +5084,58 @@ body.system-hard-locked #loginBox {
   transform: rotate(180deg);
 }
 
-/* Topbar Compact Lang Toggle Button */
+/* Topbar Compact Lang Toggle Button (Exact Square Matching Other Controls) */
 .topbar-icon-btn.lang-toggle-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-width: 48px;
-  height: 38px;
-  padding: 0 8px;
-  border-radius: 10px;
-  font-weight: 800;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: all 0.25s ease;
+  position: relative !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--bg-inset) !important;
+  color: var(--text-secondary) !important;
+  font-size: 1.1em !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 0 !important;
 }
 .topbar-icon-btn.lang-toggle-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--bg-hover);
+  background: var(--gradient-subtle) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
   transform: translateY(-1px);
 }
-.lang-code-pill {
-  font-size: 0.72rem;
-  font-weight: 900;
-  background: var(--primary);
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 6px;
+.topbar-icon-btn.lang-toggle-btn:hover i {
+  transform: rotate(20deg);
+  transition: transform 0.3s ease;
+}
+.topbar-icon-btn.lang-toggle-btn .lang-badge,
+.topbar-icon-btn.lang-toggle-btn .lang-code-pill {
+  position: absolute !important;
+  top: -4px !important;
+  inset-inline-end: -4px !important;
+  right: auto !important;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  font-size: 0.62rem !important;
+  min-width: 18px !important;
+  height: 17px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 4px !important;
+  font-weight: 800 !important;
+  border: 2px solid var(--bg-surface) !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  pointer-events: none;
+  font-family: 'Outfit', sans-serif !important;
   letter-spacing: 0.5px;
 }
 

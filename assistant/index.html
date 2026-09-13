@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V80">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V81">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -390,24 +390,25 @@
   </div>
  <div class="topbar-stats">
   <span class="stat-pill clickable" id="openSubjectModalBtn" title="تحديد مادة الحضور">
- <i class="fa-solid fa-book" style="color:var(--primary); font-size:1.05em;"></i>
- <span>المادة:</span> <b id="globalSubjectText" style="font-family:'Cairo';">-- مادة الحضور --</b>
- </span>
- <span class="stat-pill clickable" id="openAllStudentsBtn">
- <span data-i18n="stat_students"> مسجلين:</span> <b id="totalStudentsCount">0</b>
- </span>
- <span class="stat-pill clickable" id="todayCountTopCard">
- <span data-i18n="stat_attend"> حضور:</span> <b id="todayCountTop">0</b>
- </span>
- <span class="stat-pill adminOnly clickable" id="openRevenueModalBtn">
- <span data-i18n="stat_revenue"> إيراد:</span> 
- <b id="todayRevenue" class="blurTarget">0 ج</b>
- <span id="toggleRevBtn" style="cursor:pointer; font-size:1.1em; margin-inline-start:5px;"></span>
- </span>
- <span class="stat-pill" id="openShiftManagerBtn" style="cursor: default;">
- <span data-i18n="shift_manager">مسئول الشيفت:</span> <b id="currentShiftManagerName">..</b>
- </span>
- </div>
+  <i class="fa-solid fa-book" style="color:var(--primary); font-size:1.05em;"></i>
+  <span>المادة:</span> <b id="globalSubjectText" style="font-family:'Cairo';">مادة الحضور</b>
+  </span>
+  <span class="stat-pill clickable" id="openAllStudentsBtn">
+  <span data-i18n="stat_students">مسجلين:</span> <b id="totalStudentsCount">0</b>
+  </span>
+  <span class="stat-pill clickable" id="todayCountTopCard">
+  <span data-i18n="stat_attend">حضور:</span> <b id="todayCountTop">0</b>
+  </span>
+  <span class="stat-pill adminOnly clickable" id="openRevenueModalBtn">
+  <span data-i18n="stat_revenue">إيراد:</span> 
+  <b id="todayRevenue" class="blurTarget">0 ج</b>
+  <span id="toggleRevBtn" style="cursor:pointer; font-size:1.1em; margin-inline-start:5px;"></span>
+  </span>
+  <span class="stat-pill" id="openShiftManagerBtn" style="cursor: default;">
+  <i class="fa-solid fa-user-tie" style="color:var(--primary); font-size:0.95em;"></i>
+  <span data-i18n="shift_manager">مسؤول الشيفت:</span> <b id="currentShiftManagerName">..</b>
+  </span>
+  </div>
  <div class="topbar-end" style="position: relative;">
  <!-- Cloud Sync Indicator (Consistent square button matching other controls) -->
  <button id="cloudSyncIndicator" class="topbar-icon-btn cloud-sync-btn online" type="button" title="متصل بالسحابة — اضغط للمزامنة اليدوية" aria-label="مزامنة السحابة">
@@ -443,7 +444,7 @@
  <!-- COMPACT TOPBAR LANGUAGE TOGGLE -->
   <button id="topbarLangToggle" class="topbar-icon-btn lang-toggle-btn" title="تبديل اللغة / Switch Language" onclick="document.getElementById('changeLangBtn').click()">
     <i class="fa-solid fa-globe"></i>
-    <span class="lang-code-pill" id="topbarLangCode">EN</span>
+    <span class="lang-badge" id="topbarLangCode">EN</span>
   </button>
   <button id="topbarThemeToggle" class="topbar-icon-btn" title="تبديل الثيم">
  <svg class="theme-svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -1808,7 +1809,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V129"></script>
+  <script type="module" src="app.js?v=STUDIFY_V130"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

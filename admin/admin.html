@@ -73,7 +73,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V12">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V13">
 </head>
 <body>
 
@@ -254,6 +254,11 @@
         </div>
 
         <div class="admin-topbar-right">
+          <button id="adminLangToggleBtn" class="topbar-icon-btn lang-toggle-btn" title="تبديل اللغة / Switch Language" onclick="window.toggleAdminLanguage()">
+            <i class="fa-solid fa-globe"></i>
+            <span class="lang-badge" id="adminTopbarLangCode">EN</span>
+          </button>
+
           <button id="adminThemeToggle" class="topbar-icon-btn" title="تبديل المظهر" onclick="window.toggleAdminTheme()">
             <i class="fa-solid fa-moon" id="adminThemeIcon"></i>
           </button>

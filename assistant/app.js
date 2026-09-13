@@ -3130,7 +3130,12 @@ const st = students[id];
  });
  
  if($("changeLangBtn")) {
- $("changeLangBtn").innerText = currentLang === "ar" ? " تغيير اللغة (Ar / En)" : " Switch Language";
+ const isAr = currentLang === "ar";
+	if($("topbarLangCode")) $("topbarLangCode").innerText = isAr ? "EN" : "عربي";
+	if($("asstLangBtnText")) $("asstLangBtnText").innerText = isAr ? "English" : "العربية";
+	if($("asstLangCurrentLabel")) $("asstLangCurrentLabel").innerText = isAr ? "اللغة الحالية: العربية" : "Current Language: English";
+	if($("asstLangSubLabel")) $("asstLangSubLabel").innerText = isAr ? "انقر للتحويل إلى English بالكامل" : "Click to switch completely to Arabic";
+	$("changeLangBtn").innerText = isAr ? " تغيير اللغة (Ar / En)" : " Switch Language";
  }
  
  if($("sidebarCollapseBtn")) {
