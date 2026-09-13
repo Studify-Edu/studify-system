@@ -78,7 +78,6 @@ body {
   background: var(--bg-body);
   color: var(--text-primary);
   min-height: 100vh;
-  direction: rtl;
   overflow-x: hidden;
   line-height: 1.5;
 }.hidden {
@@ -2622,54 +2621,121 @@ body {
 }
 
 /* ======================================================== */
-/* LTR (ENGLISH) LAYOUT OVERRIDES */
+/* LTR & RTL COMPREHENSIVE BIDIRECTIONAL ENGINE */
 /* ======================================================== */
-[dir="ltr"] {
+html[dir="rtl"], body[dir="rtl"], [dir="rtl"] {
+  direction: rtl !important;
+}
+
+html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
+  direction: ltr !important;
   font-family: 'Outfit', 'Segoe UI', Tahoma, sans-serif !important;
 }
+
+/* LTR Flex Layouts */
+[dir="ltr"] .admin-layout {
+  flex-direction: row !important;
+}
+
 [dir="ltr"] .admin-sidebar {
-  border-left: none;
-  border-right: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border) !important;
+  border-right: 1px solid var(--border) !important;
+  border-left: none !important;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+[dir="ltr"] .admin-topbar {
+  flex-direction: row !important;
+  justify-content: space-between !important;
+}
+
+[dir="ltr"] .admin-topbar-left-cluster {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-direction: row !important;
+  margin: 0 !important;
+}
+
+[dir="ltr"] .admin-topbar-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  flex-direction: row !important;
+}
+
+[dir="ltr"] .admin-nav-item {
+  text-align: left !important;
 }
 [dir="ltr"] .admin-nav-item i {
-  margin-left: 0;
-  margin-right: 12px;
+  margin-left: 0 !important;
+  margin-right: 12px !important;
 }
 [dir="ltr"] .admin-badge {
-  margin-left: auto;
-  margin-right: 0;
+  margin-left: auto !important;
+  margin-right: 0 !important;
 }
 [dir="ltr"] .sub-status-pill {
-  margin-left: auto;
-  margin-right: 0;
-}
-[dir="ltr"] .admin-topbar-left-cluster {
-  flex-direction: row;
-}
-[dir="ltr"] .admin-topbar-right {
-  margin-left: auto;
-  margin-right: 0;
-}
-[dir="ltr"] .topbar-icon-btn.lang-toggle-btn {
-  flex-direction: row;
+  margin-left: auto !important;
+  margin-right: 0 !important;
 }
 [dir="ltr"] .approval-card-info {
-  text-align: left;
+  text-align: left !important;
 }
 [dir="ltr"] th, [dir="ltr"] td {
-  text-align: left;
+  text-align: left !important;
 }
 [dir="ltr"] .admin-login-card {
-  text-align: left;
+  text-align: left !important;
 }
 [dir="ltr"] .modal-header-premium {
-  text-align: left;
+  text-align: left !important;
+  flex-direction: row !important;
 }
-[dir="ltr"] .close-btn {
-  left: auto;
-  right: 15px;
+[dir="ltr"] .modal-actions-premium {
+  flex-direction: row !important;
+  justify-content: flex-end !important;
+}
+[dir="ltr"] .close-btn, [dir="ltr"] .modal-close-btn {
+  left: auto !important;
+  right: 15px !important;
 }
 [dir="ltr"] .table-search-box {
-  margin-left: 0;
-  margin-right: auto;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+/* Assistant Cards & Permission Toggles LTR */
+[dir="ltr"] .asst-header {
+  flex-direction: row !important;
+}
+[dir="ltr"] .asst-user-info {
+  flex-direction: row !important;
+}
+[dir="ltr"] .asst-details {
+  text-align: left !important;
+}
+[dir="ltr"] .asst-actions {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  flex-direction: row !important;
+}
+[dir="ltr"] .perm-group-title {
+  text-align: left !important;
+}
+[dir="ltr"] .perm-item-premium {
+  flex-direction: row !important;
+}
+[dir="ltr"] .perm-text {
+  text-align: left !important;
+}
+[dir="ltr"] .ios-toggle {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+[dir="ltr"] .card-header {
+  flex-direction: row !important;
+  text-align: left !important;
 }

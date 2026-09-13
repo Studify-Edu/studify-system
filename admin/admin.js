@@ -19,6 +19,27 @@ const permChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('studi
 let currentLang = localStorage.getItem("ca_lang") || "ar";
 
 const ADMIN_DICT = {
+  // Assistants View & Modals
+  "asst_mgmt_title": { ar: "إدارة المساعدين والتحكم في الصلاحيات", en: "Assistants & Permissions Management" },
+  "asst_mgmt_desc": { ar: "تحكم بشكل مباشر في الميزات المتاحة لكل مساعد. أي تعديل يتم تطبيقه فوراً ولحظياً في صفحة المساعد المفتوحة.", en: "Directly control permissions available for each assistant. Any modifications are applied instantly to the assistant's active session." },
+  "btn_add_asst": { ar: "إضافة مساعد جديد", en: "Add New Assistant" },
+  "asst_created_at": { ar: "تاريخ الإنشاء:", en: "Created:" },
+  "btn_asst_pass": { ar: "كلمة المرور", en: "Password" },
+  "btn_asst_delete": { ar: "حذف", en: "Delete" },
+  "asst_empty_title": { ar: "لا يوجد مساعدين مسجلين بعد", en: "No assistants registered yet" },
+  "asst_empty_desc": { ar: "اضغط على 'إضافة مساعد جديد' لإنشاء أول حساب وتحديد صلاحياته.", en: "Click 'Add New Assistant' to create the first account and configure permissions." },
+  "asst_loading": { ar: "جاري جلب المساعدين والصلاحيات...", en: "Loading assistants and permissions..." },
+
+  // Edit Password Modal
+  "modal_edit_pass_title": { ar: "تعديل كلمة مرور المساعد:", en: "Update Assistant Password:" },
+  "modal_edit_pass_desc": { ar: "معاينة كلمة المرور الحالية وتعيين كلمة مرور جديدة ومحدثة فوراً", en: "View current password and set a new updated password instantly" },
+  "modal_current_pass_lbl": { ar: "كلمة المرور الحالية المسجلة:", en: "Current Registered Password:" },
+  "modal_current_pass_hint": { ar: "هذه هي كلمة المرور الحالية المستخدمة للدخول.", en: "This is the current password used for logging in." },
+  "modal_new_pass_lbl": { ar: "أدخل كلمة المرور الجديدة:", en: "Enter New Password:" },
+  "modal_new_pass_ph": { ar: "اكتب كلمة المرور الجديدة هنا", en: "Type the new password here" },
+  "modal_new_pass_hint": { ar: "على الأقل 6 خانات (حروف أو أرقام).", en: "At least 6 characters (letters or numbers)." },
+  "modal_btn_save_pass": { ar: "تحديث كلمة المرور", en: "Update Password" },
+
   // Navigation & Sections
   "nav_sec_finance": { ar: "التقارير المالية", en: "Financial Reports" },
   "nav_daily_report": { ar: "التقرير اليومي", en: "Daily Report" },
@@ -183,6 +204,7 @@ window.adminT = function(key) {
 window.applyAdminLanguage = function() {
   document.documentElement.lang = currentLang;
   document.documentElement.dir = currentLang === "ar" ? "rtl" : "ltr";
+  if (document.body) document.body.dir = currentLang === "ar" ? "rtl" : "ltr";
 
   // Translate all elements with data-i18n
   document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -242,6 +264,16 @@ window.applyAdminLanguage = function() {
   const themeSel = document.getElementById("adminThemeSelector");
   if (themeSel) {
     themeSel.value = localStorage.getItem("ca_theme") || "dark";
+  }
+
+  // Live re-render active view in new language if already loaded
+  const asstView = document.getElementById("viewAssistants");
+  if (asstView && !asstView.classList.contains("hidden")) {
+    window.fetchAssistants();
+  }
+  const termView = document.getElementById("viewTermReport");
+  if (termView && !termView.classList.contains("hidden")) {
+    window.renderTermTable();
   }
 };
 
@@ -420,29 +452,98 @@ if (supabase) {
 // Permissions Definitions (All 11 permissions, grouped cleanly)
 export function getPermissionTitle(permKey) {
   const found = PERMISSIONS_DEFS.find(p => p.key === permKey);
-  return found ? found.label : permKey;
+  if (found && found.label) {
+    return typeof found.label === 'object' ? (found.label[currentLang] || found.label.ar) : found.label;
+  }
+  return permKey;
 }
 
 export const PERMISSIONS_DEFS = [
-  { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يعرض رقم إيراد الوردية الحالي في الشريط العلوي للمساعد", icon: "fa-wallet", group: "financial" },
-  { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي", desc: "يجعل الإيراد معلقاً ولا يُضاف للإجمالي حتى يعتمده المدير", icon: "fa-shield-halved", group: "financial" },
-  { key: "can_request_discount", label: "طلب خصم / إعفاء", desc: "إظهار زر 'خصم' عند الدفع ليتمكن المساعد من طلب إعفاء", icon: "fa-tags", group: "financial" },
+  { 
+    key: "show_revenue", 
+    label: { ar: "إظهار الإيراد اليومي", en: "Show Daily Revenue" }, 
+    desc: { ar: "يعرض رقم إيراد الوردية الحالي في الشريط العلوي للمساعد", en: "Displays current shift revenue in assistant topbar" }, 
+    icon: "fa-wallet", 
+    group: "financial" 
+  },
+  { 
+    key: "require_daily_approval", 
+    label: { ar: "تفعيل الاعتماد اليومي", en: "Enable Daily Shift Closeout" }, 
+    desc: { ar: "يجعل الإيراد معلقاً ولا يُضاف للإجمالي حتى يعتمده المدير", en: "Keeps revenue pending until approved by manager" }, 
+    icon: "fa-shield-halved", 
+    group: "financial" 
+  },
+  { 
+    key: "can_request_discount", 
+    label: { ar: "طلب خصم / إعفاء", en: "Request Discount / Exemption" }, 
+    desc: { ar: "إظهار زر 'خصم' عند الدفع ليتمكن المساعد من طلب إعفاء", en: "Show 'Discount' button during payment to request exemption" }, 
+    icon: "fa-tags", 
+    group: "financial" 
+  },
   
-  { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح بفتح كارت 'إضافة طالب جديد' وتسجيل البيانات", icon: "fa-user-plus", group: "data" },
-  { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "إتاحة فتح صفحة إدارة الباقات والأسعار من القائمة الجانبية", icon: "fa-box-open", group: "data" },
-  { key: "can_access_settings", label: "إعدادات النظام", desc: "السماح بفتح لوحة الإعدادات المتقدمة (نسخ احتياطي - تصفير - إلخ)", icon: "fa-gears", group: "data" },
+  { 
+    key: "can_add_student", 
+    label: { ar: "إضافة طالب جديد", en: "Add New Student" }, 
+    desc: { ar: "يسمح بفتح كارت 'إضافة طالب جديد' وتسجيل البيانات", en: "Allows opening 'Add New Student' card and recording details" }, 
+    icon: "fa-user-plus", 
+    group: "data" 
+  },
+  { 
+    key: "can_manage_packages", 
+    label: { ar: "إدارة الباقات والأسعار", en: "Manage Packages & Pricing" }, 
+    desc: { ar: "إتاحة فتح صفحة إدارة الباقات والأسعار من القائمة الجانبية", en: "Allows opening packages and pricing from sidebar" }, 
+    icon: "fa-box-open", 
+    group: "data" 
+  },
+  { 
+    key: "can_access_settings", 
+    label: { ar: "إعدادات النظام", en: "System Settings" }, 
+    desc: { ar: "السماح بفتح لوحة الإعدادات المتقدمة (نسخ احتياطي - تصفير - إلخ)", en: "Allows opening advanced settings (Backup, Reset, etc.)" }, 
+    icon: "fa-gears", 
+    group: "data" 
+  },
 
-  { key: "can_access_syllabus", label: "المنهج الدراسي", desc: "السماح بفتح وعرض خريطة سير المنهج من القائمة الجانبية", icon: "fa-book-open", group: "pages" },
-  { key: "can_view_reports", label: "الوصول لصفحة التقارير", desc: "السماح للمساعد بفتح قسم الحسابات والتقارير", icon: "fa-chart-pie", group: "pages" },
-  { key: "can_access_marketing", label: "أدوات التسويق", desc: "إتاحة فتح صفحة التسويق وإرسال رسائل للطلاب", icon: "fa-bullhorn", group: "pages" },
-  { key: "can_access_session_students", label: "طلاب الحصة", desc: "السماح بعرض قائمة الحضور المخصصة للحصة الحالية", icon: "fa-clipboard-user", group: "pages" },
-  { key: "can_access_booklets", label: "مخزون المذكرات", desc: "السماح بفتح جرد المذكرات وإدارة المبيعات", icon: "fa-book", group: "pages" }
+  { 
+    key: "can_access_syllabus", 
+    label: { ar: "المنهج الدراسي", en: "Syllabus Roadmap" }, 
+    desc: { ar: "السماح بفتح وعرض خريطة سير المنهج من القائمة الجانبية", en: "Allows viewing and updating syllabus roadmap" }, 
+    icon: "fa-book-open", 
+    group: "pages" 
+  },
+  { 
+    key: "can_view_reports", 
+    label: { ar: "الوصول لصفحة التقارير", en: "Access Reports Page" }, 
+    desc: { ar: "السماح للمساعد بفتح قسم الحسابات والتقارير", en: "Allows opening accounts and reports section" }, 
+    icon: "fa-chart-pie", 
+    group: "pages" 
+  },
+  { 
+    key: "can_access_marketing", 
+    label: { ar: "أدوات التسويق", en: "Marketing Tools" }, 
+    desc: { ar: "إتاحة فتح صفحة التسويق وإرسال رسائل للطلاب", en: "Allows opening marketing and student messaging" }, 
+    icon: "fa-bullhorn", 
+    group: "pages" 
+  },
+  { 
+    key: "can_access_session_students", 
+    label: { ar: "طلاب الحصة", en: "Session Students" }, 
+    desc: { ar: "السماح بعرض قائمة الحضور المخصصة للحصة الحالية", en: "Allows viewing the current session student attendance list" }, 
+    icon: "fa-clipboard-user", 
+    group: "pages" 
+  },
+  { 
+    key: "can_access_booklets", 
+    label: { ar: "مخزون المذكرات", en: "Booklets Inventory" }, 
+    desc: { ar: "السماح بفتح جرد المذكرات وإدارة المبيعات", en: "Allows opening booklet inventory and sales" }, 
+    icon: "fa-book", 
+    group: "pages" 
+  }
 ];
 
 const PERM_GROUPS = [
-  { id: "financial", title: "<i class='fa-solid fa-money-bill-wave'></i> الصلاحيات المالية" },
-  { id: "data", title: "<i class='fa-solid fa-server'></i> إدارة البيانات والنظام" },
-  { id: "pages", title: "<i class='fa-solid fa-layer-group'></i> صلاحيات الصفحات والأدوات" }
+  { id: "financial", icon: "fa-money-bill-wave", title: { ar: "الصلاحيات المالية", en: "Financial Permissions" } },
+  { id: "data", icon: "fa-server", title: { ar: "إدارة البيانات والنظام", en: "Data & System Management" } },
+  { id: "pages", icon: "fa-layer-group", title: { ar: "صلاحيات الصفحات والأدوات", en: "Pages & Tools Permissions" } }
 ];
 
 // Helper: Toast
@@ -1246,7 +1347,8 @@ window.fetchAssistants = async function() {
   if (!listEl) return;
   if (!supabase) return;
 
-  listEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> جاري جلب المساعدين والصلاحيات...</div>';
+  const isAr = (currentLang === "ar");
+  listEl.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? "جاري جلب المساعدين والصلاحيات..." : "Loading assistants & permissions..."}</div>`;
 
   try {
     const { data: assistants, error } = await supabase
@@ -1256,12 +1358,15 @@ window.fetchAssistants = async function() {
 
     if (error) throw error;
 
+    // Cache assistants for instant lookup
+    window.cachedAssistants = assistants || [];
+
     if (!assistants || assistants.length === 0) {
       listEl.innerHTML = `
         <div style="text-align: center; padding: 40px; color: var(--text-secondary); background: var(--bg-surface); border-radius: var(--radius); border: 1px solid var(--border);">
           <i class="fa-solid fa-users-slash" style="font-size: 2.5em; margin-bottom: 12px; opacity: 0.5;"></i>
-          <p style="font-size: 1.1em; font-weight: 700;">لا يوجد مساعدين مسجلين بعد</p>
-          <p style="font-size: 0.85em; margin-top: 4px;">اضغط على "إضافة مساعد جديد" لإنشاء أول حساب وتحديد صلاحياته.</p>
+          <p style="font-size: 1.1em; font-weight: 700;">${isAr ? "لا يوجد مساعدين مسجلين بعد" : "No assistants registered yet"}</p>
+          <p style="font-size: 0.85em; margin-top: 4px;">${isAr ? 'اضغط على "إضافة مساعد جديد" لإنشاء أول حساب وتحديد صلاحياته.' : 'Click "Add New Assistant" to create the first account and configure permissions.'}</p>
         </div>
       `;
       return;
@@ -1270,28 +1375,35 @@ window.fetchAssistants = async function() {
     let html = "";
     assistants.forEach(asst => {
       const uName = asst.username;
+      const pass = (asst.password || '').replace(/'/g, "\\'");
       const initial = (uName[0] || "A").toUpperCase();
-      const createdAt = asst.created_at ? new Date(asst.created_at).toLocaleDateString("ar-EG") : "—";
+      const dateLocale = isAr ? "ar-EG" : "en-US";
+      const createdAt = asst.created_at ? new Date(asst.created_at).toLocaleDateString(dateLocale) : "—";
       const asstPerms = asst.permissions || {};
 
       // Render Permission Groups
       let groupsHtml = "";
       PERM_GROUPS.forEach(grp => {
         const itemsInGroup = PERMISSIONS_DEFS.filter(p => p.group === grp.id);
+        const groupTitle = typeof grp.title === 'object' ? (grp.title[currentLang] || grp.title.ar) : grp.title;
         groupsHtml += `
           <div class="perm-group-box">
-            <div class="perm-group-title">${grp.title}</div>
+            <div class="perm-group-title">
+              <i class="fa-solid ${grp.icon}"></i> ${groupTitle}
+            </div>
             <div class="perm-items-grid">
         `;
 
         itemsInGroup.forEach(p => {
           const isChecked = asstPerms[p.key] !== false; // default true if not set
+          const pLabel = typeof p.label === 'object' ? (p.label[currentLang] || p.label.ar) : p.label;
+          const pDesc = typeof p.desc === 'object' ? (p.desc[currentLang] || p.desc.ar) : p.desc;
           groupsHtml += `
             <div class="perm-item-premium">
               <i class="fa-solid ${p.icon} perm-icon"></i>
               <div class="perm-text">
-                <span class="perm-text-title">${p.label}</span>
-                <span class="perm-text-desc">${p.desc}</span>
+                <span class="perm-text-title">${pLabel}</span>
+                <span class="perm-text-desc">${pDesc}</span>
               </div>
               <label class="ios-toggle">
                 <input type="checkbox" ${isChecked ? "checked" : ""} onchange="window.togglePermission('${uName}', '${p.key}', this.checked)">
@@ -1311,15 +1423,15 @@ window.fetchAssistants = async function() {
               <div class="asst-avatar">${initial}</div>
               <div class="asst-details">
                 <h3>${uName}</h3>
-                <span>تاريخ الإنشاء: ${createdAt}</span>
+                <span>${isAr ? "تاريخ الإنشاء:" : "Created:"} ${createdAt}</span>
               </div>
             </div>
             <div class="asst-actions">
-              <button class="btn secondary smallBtn" onclick="window.changeAssistantPassword('${uName}')">
-                <i class="fa-solid fa-key"></i> كلمة المرور
+              <button class="btn secondary smallBtn" onclick="window.openEditAssistantPasswordModal('${uName}', '${pass}')">
+                <i class="fa-solid fa-key"></i> ${isAr ? "كلمة المرور" : "Password"}
               </button>
               <button class="btn danger smallBtn" onclick="window.deleteAssistant('${uName}')">
-                <i class="fa-solid fa-trash"></i> حذف
+                <i class="fa-solid fa-trash"></i> ${isAr ? "حذف" : "Delete"}
               </button>
             </div>
           </div>
@@ -1335,7 +1447,7 @@ window.fetchAssistants = async function() {
 
   } catch(err) {
     console.error("Fetch Assistants Error:", err);
-    listEl.innerHTML = `<div style="color:var(--danger); text-align:center; padding:20px;">فشل تحميل المساعدين: ${err.message}</div>`;
+    listEl.innerHTML = `<div style="color:var(--danger); text-align:center; padding:20px;">${currentLang === 'ar' ? 'فشل تحميل المساعدين:' : 'Failed to load assistants:'} ${err.message}</div>`;
   }
 };
 
@@ -1498,27 +1610,148 @@ window.submitNewAssistant = async function() {
   }
 };
 
-window.changeAssistantPassword = async function(username) {
-  const res = await Swal.fire({
-    title: `تعديل كلمة المرور: ${username}`,
-    input: 'password',
-    inputLabel: 'أدخل كلمة المرور الجديدة',
-    inputPlaceholder: 'New Password',
-    showCancelButton: true,
-    confirmButtonText: 'تحديث كلمة المرور',
-    cancelButtonText: 'إلغاء'
-  });
+// ========================================================
+// LUXURY EDIT ASSISTANT PASSWORD MODAL CONTROLLERS
+// ========================================================
+let activeEditingAssistant = null;
 
-  if (res.isConfirmed && res.value) {
+window.openEditAssistantPasswordModal = async function(username, currentPass) {
+  activeEditingAssistant = username;
+
+  // If currentPass not passed or empty, look up from cache or fetch from Supabase
+  let passVal = currentPass || '';
+  if (!passVal && window.cachedAssistants) {
+    const found = window.cachedAssistants.find(a => a.username === username);
+    if (found) passVal = found.password || '';
+  }
+  if (!passVal && supabase) {
     try {
-      if (!supabase) return;
-      await supabase.from('assistants').update({ password: res.value.trim() }).eq('username', username);
-      showToast("تم تحديث كلمة مرور المساعد بنجاح", "success");
-    } catch(err) {
-      console.error(err);
-      showToast("فشل تحديث كلمة المرور", "err");
+      const { data } = await supabase.from('assistants').select('password').eq('username', username).single();
+      if (data) passVal = data.password || '';
+    } catch(e) {
+      console.warn("Could not fetch old pass:", e);
     }
   }
+
+  const modal = document.getElementById("editAssistantPasswordModal");
+  const userEl = document.getElementById("editAsstModalUsername");
+  const currPassInp = document.getElementById("editAsstCurrentPasswordInput");
+  const newPassInp = document.getElementById("editAsstNewPasswordInput");
+
+  if (userEl) userEl.textContent = username;
+  if (currPassInp) {
+    currPassInp.value = passVal || "••••••";
+    currPassInp.type = "password";
+  }
+  const oldIcon = document.getElementById("oldPassEyeIcon");
+  if (oldIcon) oldIcon.className = "fa-regular fa-eye";
+
+  if (newPassInp) {
+    newPassInp.value = "";
+    newPassInp.type = "password";
+  }
+  const newIcon = document.getElementById("newPassEyeIcon");
+  if (newIcon) newIcon.className = "fa-regular fa-eye";
+
+  if (modal) modal.classList.remove("hidden");
+};
+
+window.closeEditAssistantPasswordModal = function() {
+  const modal = document.getElementById("editAssistantPasswordModal");
+  if (modal) modal.classList.add("hidden");
+  activeEditingAssistant = null;
+};
+
+window.toggleOldPasswordVisibility = function() {
+  const inp = document.getElementById("editAsstCurrentPasswordInput");
+  const icon = document.getElementById("oldPassEyeIcon");
+  if (!inp || !icon) return;
+
+  if (inp.type === "password") {
+    inp.type = "text";
+    icon.className = "fa-regular fa-eye-slash";
+  } else {
+    inp.type = "password";
+    icon.className = "fa-regular fa-eye";
+  }
+};
+
+window.toggleNewPasswordVisibility = function() {
+  const inp = document.getElementById("editAsstNewPasswordInput");
+  const icon = document.getElementById("newPassEyeIcon");
+  if (!inp || !icon) return;
+
+  if (inp.type === "password") {
+    inp.type = "text";
+    icon.className = "fa-regular fa-eye-slash";
+  } else {
+    inp.type = "password";
+    icon.className = "fa-regular fa-eye";
+  }
+};
+
+window.copyCurrentAssistantPassword = function() {
+  const inp = document.getElementById("editAsstCurrentPasswordInput");
+  if (!inp || !inp.value) return;
+
+  navigator.clipboard.writeText(inp.value).then(() => {
+    showToast(currentLang === 'ar' ? "تم نسخ كلمة المرور الحالية إلى الحافظة" : "Current password copied to clipboard", "success");
+  }).catch(() => {
+    inp.select();
+    document.execCommand('copy');
+    showToast(currentLang === 'ar' ? "تم نسخ كلمة المرور" : "Password copied", "success");
+  });
+};
+
+window.submitEditAssistantPassword = async function() {
+  const username = activeEditingAssistant;
+  if (!username) return;
+
+  const newPassInp = document.getElementById("editAsstNewPasswordInput");
+  const newPass = newPassInp ? newPassInp.value.trim() : "";
+
+  if (!newPass) {
+    showToast(currentLang === 'ar' ? "يرجى كتابة كلمة المرور الجديدة" : "Please enter the new password", "warn");
+    return;
+  }
+  if (newPass.length < 6) {
+    showToast(currentLang === 'ar' ? "كلمة المرور يجب أن تتكون من 6 خانات على الأقل" : "Password must be at least 6 characters", "warn");
+    return;
+  }
+
+  const btn = document.getElementById("submitEditPasswordBtn");
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + (currentLang === 'ar' ? "جاري الحفظ..." : "Saving...");
+    }
+
+    if (!supabase) throw new Error("No supabase connection");
+
+    const { error } = await supabase
+      .from('assistants')
+      .update({ password: newPass })
+      .eq('username', username);
+
+    if (error) throw error;
+
+    showToast(currentLang === 'ar' ? `تم تحديث كلمة مرور المساعد (${username}) بنجاح` : `Password for (${username}) updated successfully`, "success");
+    window.closeEditAssistantPasswordModal();
+    window.fetchAssistants();
+
+  } catch(err) {
+    console.error("Update Password Error:", err);
+    showToast(currentLang === 'ar' ? "فشل تحديث كلمة المرور: " + err.message : "Failed to update password: " + err.message, "err");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> ' + (currentLang === 'ar' ? "تحديث كلمة المرور" : "Update Password");
+    }
+  }
+};
+
+window.changeAssistantPassword = function(username) {
+  window.openEditAssistantPasswordModal(username);
 };
 
 window.deleteAssistant = async function(username) {
