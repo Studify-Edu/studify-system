@@ -380,6 +380,7 @@ async function loadAllAdminData() {
     const sRow = setRes && setRes.data ? setRes.data : {};
     const cfg = sRow.config || {};
     const stPkgsMap = cfg.student_packages || {};
+    const stRanksMap = cfg.student_ranks || {};
     const cfgGroupFees = cfg.group_fees || {};
 
     // Students (with packages, payments, attendanceDates)
@@ -399,6 +400,7 @@ async function loadAllAdminData() {
           paid: Number(s.paid) || 0,
           discount: Number(s.discount) || 0,
           paymentPlan: s.payment_plan || s.paymentPlan || 'cash',
+          rank: stRanksMap[s.id] || s.rank || 'normal',
           packages: pList,
           payments: s.payments || [],
           attendanceDates: s.attendance_dates || [],

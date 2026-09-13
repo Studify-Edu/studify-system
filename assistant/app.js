@@ -1127,6 +1127,14 @@ function showToast(msg, type = "success") {
         }
       });
 
+      // 5. Map student ranks (VIP / Warn / Normal) to persist in settings.config
+      const studentRanksMap = {};
+      Object.values(students || {}).forEach(st => {
+        if (st && st.id) {
+          studentRanksMap[String(st.id)] = st.rank || 'normal';
+        }
+      });
+
       // Fetch latest settings config to merge safely without overwriting other keys (like daily_approval_map)
       let existingConfig = {};
       try {
@@ -1160,6 +1168,7 @@ function showToast(msg, type = "success") {
           updated_at: s.updated_at || new Date().toISOString()
         })),
         student_packages: Object.assign({}, existingConfig.student_packages || {}, studentPackagesMap),
+        student_ranks: Object.assign({}, existingConfig.student_ranks || {}, studentRanksMap),
         group_fees: groupFees || {}
       });
 
@@ -1305,6 +1314,7 @@ async function loadAll() {
         const cd = (centerRes && centerRes.data) ? centerRes.data : {};
         const cfg = cd.config || {};
         const studentPackagesMap = cfg.student_packages || {};
+        const studentRanksMap = cfg.student_ranks || {};
 
         if (!stRes.error && stRes.data) {
           stRes.data.forEach(row => {
@@ -1320,6 +1330,7 @@ async function loadAll() {
             }
 
             const restoredPackages = (studentPackagesMap && studentPackagesMap[row.id]) || (local && local.packages) || row.packages || [];
+            const restoredRank = (studentRanksMap && studentRanksMap[row.id]) || (local && local.rank) || row.rank || 'normal';
 
             const stObj = {
               id: row.id,
@@ -1332,6 +1343,7 @@ async function loadAll() {
               discount: Number(row.discount) || (local ? local.discount : 0),
               notes: row.notes || (local ? local.notes : ''),
               status: row.status || (local ? local.status : 'active'),
+              rank: restoredRank,
               packages: Array.isArray(restoredPackages) ? restoredPackages : [],
               installments: row.installments || (local ? local.installments : []),
               payments: row.payments || (local ? local.payments : []),
@@ -5391,6 +5403,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, payload => {
+        if (payload.new && payload.new.config && payload.new.config.student_ranks) {
+          const ranks = payload.new.config.student_ranks;
+          let changed = false;
+          Object.keys(ranks).forEach(stId => {
+            if (students[stId] && students[stId].rank !== ranks[stId]) {
+              students[stId].rank = ranks[stId];
+              changed = true;
+            }
+          });
+          if (changed) {
+            if (typeof currentId !== 'undefined' && currentId && students[currentId] && typeof updateStudentUI === 'function') {
+              updateStudentUI(currentId);
+            }
+            if (typeof renderList === 'function') renderList(false);
+            secureSave(K_STUDENTS, students);
+          }
+        }
         if (typeof window.checkDailyShiftHeartbeat === 'function') {
           window.checkDailyShiftHeartbeat(false);
         }
@@ -8094,6 +8123,12 @@ window.CLOUD_MONITOR_SECTIONS = [
     label: "المصروفات المسجلة",
     localCount: () => Object.values(expensesByDate || {}).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0),
     cloudTable: "settings (config.expenses_by_date)"
+  },
+  {
+    id: "student_ranks",
+    label: "تصنيفات الطلاب (VIP / إنذار)",
+    localCount: () => Object.values(students || {}).filter(s => s && s.rank && s.rank !== 'normal').length,
+    cloudTable: "settings (config.student_ranks)"
   }
 ];
 
