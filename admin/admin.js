@@ -191,7 +191,83 @@ const ADMIN_DICT = {
   "modal_asst_pass_lbl": { ar: "كلمة المرور المؤقتة", en: "Temporary Password" },
   "modal_asst_pass_hint": { ar: "6 أحرف أو أرقام على الأقل، يمكن للمساعد تغييرها لاحقاً", en: "At least 6 characters, assistant can change it later" },
   "modal_btn_cancel": { ar: "إلغاء", en: "Cancel" },
-  "modal_btn_create_asst": { ar: "إنشاء الحساب وتفعيل الصلاحيات", en: "Create Account & Grant Permissions" }
+  "modal_btn_create_asst": { ar: "إنشاء الحساب وتفعيل الصلاحيات", en: "Create Account & Grant Permissions" },
+
+  // Daily Report & Status Banner
+  "stat_attended_today": { ar: "طلاب حضروا اليوم", en: "Attended Today" },
+  "stat_shift_revenue": { ar: "إيراد الوردية (ج)", en: "Shift Revenue (EGP)" },
+  "stat_absent_today": { ar: "غياب اليوم", en: "Absent Today" },
+  "stat_expenses_today": { ar: "مصروفات اليوم (ج)", en: "Today's Expenses (EGP)" },
+  "daily_breakdown_title": { ar: "تفاصيل الحضور والمجموعات ليوم:", en: "Attendance & Groups Details for:" },
+  "daily_reject_lbl": { ar: "سبب التعليق أو الرفض (يظهر للمساعدين):", en: "Suspension or Rejection Reason (Visible to Assistants):" },
+  "daily_reject_ph": { ar: "اكتب سبب الرفض أو التعليمات هنا..", en: "Type rejection reason or instructions here.." },
+  "daily_confirm_reject_btn": { ar: "تأكيد الرفض", en: "Confirm Rejection" },
+
+  // Term Financial Report
+  "stat_term_total_students": { ar: "إجمالي الطلاب المسجلين", en: "Total Registered Students" },
+  "stat_term_total_rev": { ar: "إجمالي الإيرادات المحصلة (ج)", en: "Total Collected Revenue (EGP)" },
+  "stat_term_total_debt": { ar: "إجمالي المتبقي والديون (ج)", en: "Total Outstanding & Debt (EGP)" },
+  "term_detailed_statement": { ar: "كشف حساب الطلاب التفصيلي", en: "Detailed Students Financial Statement" },
+  "term_search_ph": { ar: "بحث باسم الطالب..", en: "Search by student name.." },
+  "term_all_classes": { ar: "جميع المجموعات", en: "All Groups" },
+  "th_student_name": { ar: "اسم الطالب", en: "Student Name" },
+  "th_group": { ar: "المجموعة", en: "Group" },
+  "th_required": { ar: "المطلوب", en: "Required" },
+  "th_paid": { ar: "المدفوع", en: "Paid" },
+  "th_remaining": { ar: "المتبقي", en: "Remaining" },
+  "th_att_count": { ar: "مرات الحضور", en: "Attendances" },
+  "th_action": { ar: "الإجراء", en: "Action" },
+
+  // Assistants View
+  "asst_mgmt_title": { ar: "إدارة المساعدين والتحكم في الصلاحيات", en: "Assistants & Permissions Management" },
+  "asst_mgmt_desc": { ar: "تحكم بشكل مباشر في الميزات المتاحة لكل مساعد. أي تعديل يتم تطبيقه فورياً ولحظياً في صفحة المساعد المفتوحة.", en: "Directly manage features available to each assistant. Any changes apply instantly to the active assistant page." },
+  "btn_add_asst": { ar: "إضافة مساعد جديد", en: "Add New Assistant" },
+
+  // Decision Requests
+  "dec_direct_title": { ar: "إصدار وتطبيق قرار مباشر لطالب (خصم / إعفاء / تعديل مصاريف)", en: "Issue Direct Student Decision (Discount / Exemption / Custom Fee)" },
+  "dec_student_lbl": { ar: "رقم الطالب (ID) أو الاسم", en: "Student ID or Name" },
+  "dec_student_ph": { ar: "ادخل كود الطالب أو ابحث بالاسم...", en: "Enter student code or search name..." },
+  "dec_type_lbl": { ar: "نوع القرار", en: "Decision Type" },
+  "dec_opt_discount": { ar: "خصم مالي محدد (جنيه)", en: "Specific Financial Discount (EGP)" },
+  "dec_opt_exemption": { ar: "إعفاء كامل من المصاريف", en: "Full Fee Exemption" },
+  "dec_opt_custom_fee": { ar: "تحديد إجمالي المصاريف المطلوبة", en: "Set Total Required Fee" },
+  "dec_btn_check": { ar: "فحص الطالب", en: "Check Student" },
+  "dec_lbl_req": { ar: "المطلوب الأصلي", en: "Original Required" },
+  "dec_lbl_disc": { ar: "الخصم الحالي", en: "Current Discount" },
+  "dec_lbl_paid": { ar: "المدفوع حتى الآن", en: "Paid So Far" },
+  "dec_lbl_rem": { ar: "المتبقي بعد السداد", en: "Remaining After Payment" },
+  "dec_disc_val_lbl": { ar: "قيمة الخصم المطلوبة (جنيه)", en: "Required Discount Value (EGP)" },
+  "dec_reason_lbl": { ar: "سبب القرار / ملاحظات المدير (تظهر في السجلات)", en: "Decision Reason / Manager Notes" },
+  "dec_apply_btn": { ar: "تطبيق القرار فوراً", en: "Apply Decision Immediately" },
+  "dec_inbox_title": { ar: "صندوق طلبات القرارات المعلقة من المساعدين", en: "Pending Assistant Decision Requests Inbox" },
+  "dec_btn_refresh": { ar: "تحديث", en: "Refresh" },
+
+  // Packages & Expenses
+  "pkg_title": { ar: "إدارة باقات المجموعات والأسعار", en: "Group Packages & Pricing Management" },
+  "pkg_add_btn": { ar: "إضافة باقة جديدة", en: "Add New Package" },
+  "exp_title": { ar: "تسجيل ومتابعة المصروفات", en: "Record & Monitor Expenses" },
+  "exp_reason_lbl": { ar: "بند المصروف / السبب", en: "Expense Item / Reason" },
+  "exp_reason_ph": { ar: "مثال: فواتير كهرباء / طباعة ورق", en: "e.g. Electricity bills / Paper printing" },
+  "exp_amount_lbl": { ar: "المبلغ (ج)", en: "Amount (EGP)" },
+  "exp_date_lbl": { ar: "التاريخ", en: "Date" },
+  "exp_record_btn": { ar: "تسجيل المصروف", en: "Record Expense" },
+
+  // Syllabus
+  "syl_title": { ar: "إضافة وتحديث خطة سير المنهج الدراسي", en: "Add & Update Syllabus Roadmap Plan" },
+  "syl_lesson_lbl": { ar: "اسم الفصل / الدرس", en: "Chapter / Lesson Name" },
+  "syl_lesson_ph": { ar: "مثال: Chapter 2 - Electric Flux", en: "e.g. Chapter 2 - Electric Flux" },
+  "syl_status_lbl": { ar: "حالة الشرح", en: "Teaching Status" },
+  "syl_opt_not_started": { ar: "لم يبدأ بعد", en: "Not Started" },
+  "syl_opt_in_progress": { ar: "جاري الشرح", en: "In Progress" },
+  "syl_opt_completed": { ar: "تم الانتهاء", en: "Completed" },
+  "syl_notes_lbl": { ar: "ملاحظات الحصة الأخيرة (تظهر للمساعدين)", en: "Latest Session Notes (Visible to Assistants)" },
+  "syl_notes_ph": { ar: "مثال: تم إنهاء المسائل والواجب صفحة 45", en: "e.g. Completed problems and homework page 45" },
+  "syl_save_btn": { ar: "حفظ وإضافة للجدول", en: "Save & Add to Schedule" },
+  "syl_timeline_title": { ar: "خريطة الدروس الحالية", en: "Current Lessons Roadmap" },
+
+  // Subscription
+  "sub_title_std": { ar: "خطط الاشتراك المتاحة — Standard", en: "Available Subscription Plans — Standard" },
+  "sub_title_upcoming": { ar: "الباقات القادمة قريباً", en: "Upcoming Future Packages" }
 };
 
 window.adminT = function(key) {
@@ -266,14 +342,28 @@ window.applyAdminLanguage = function() {
     themeSel.value = localStorage.getItem("ca_theme") || "dark";
   }
 
-  // Live re-render active view in new language if already loaded
-  const asstView = document.getElementById("viewAssistants");
-  if (asstView && !asstView.classList.contains("hidden")) {
-    window.fetchAssistants();
-  }
-  const termView = document.getElementById("viewTermReport");
-  if (termView && !termView.classList.contains("hidden")) {
-    window.renderTermTable();
+    // Live re-render active view in new language immediately
+  const activeView = document.querySelector(".admin-view:not(.hidden)");
+  if (activeView) {
+    const id = activeView.id;
+    if (id === "viewDailyReport") {
+      const dateInp = document.getElementById("adminDailyDateInput");
+      const d = (dateInp && dateInp.value) ? dateInp.value : (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+      if (typeof window.loadDailyReport === 'function') window.loadDailyReport(d);
+    } else if (id === "viewTermReport") {
+      if (typeof window.renderTermTable === 'function') window.renderTermTable();
+    } else if (id === "viewAssistants") {
+      if (typeof window.fetchAssistants === 'function') window.fetchAssistants();
+    } else if (id === "viewDecisions") {
+      if (typeof window.fetchDecisions === 'function') window.fetchDecisions();
+    } else if (id === "viewPackages") {
+      if (typeof window.renderAdminPackages === 'function') window.renderAdminPackages();
+    } else if (id === "viewSyllabus") {
+      if (typeof window.renderAdminSyllabus === 'function') window.renderAdminSyllabus();
+    } else if (id === "viewSubscription") {
+      if (typeof window.renderSubscriptionView === 'function') window.renderSubscriptionView();
+      else if (typeof window.loadSubscriptionData === 'function') window.loadSubscriptionData();
+    }
   }
 };
 
@@ -281,9 +371,12 @@ window.toggleAdminLanguage = function() {
   const targetLang = currentLang === "ar" ? "en" : "ar";
   const overlay = document.getElementById("adminLangSwitchOverlay");
   const textEl = document.getElementById("adminLangSwitchText");
+  const btn = document.getElementById("adminLangToggleBtn");
+
+  if (btn) btn.classList.add("lang-animating");
 
   if (overlay && textEl) {
-    textEl.innerText = targetLang === "en" ? "Switching to English... " : "جاري التبديل إلى العربية... ";
+    textEl.innerText = targetLang === "en" ? "Switching to English..." : "جاري التبديل إلى العربية...";
     overlay.classList.add("active");
 
     setTimeout(() => {
@@ -293,12 +386,16 @@ window.toggleAdminLanguage = function() {
 
       setTimeout(() => {
         overlay.classList.remove("active");
+        if (btn) btn.classList.remove("lang-animating");
       }, 350);
-    }, 550);
+    }, 500);
   } else {
     currentLang = targetLang;
     localStorage.setItem("ca_lang", currentLang);
     window.applyAdminLanguage();
+    if (btn) {
+      setTimeout(() => btn.classList.remove("lang-animating"), 650);
+    }
   }
 };
 
@@ -951,27 +1048,47 @@ window.switchAdminTab = function(tabKey) {
 
 // ========================================================
 window.renderDailyApprovalWidget = function(dateStr) {
-  const d = dateStr || nowDateStr();
+  const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
   const widget = document.getElementById("dailyApprovalWidget");
   if (!widget) return;
 
   const info = dailyApprovalMap[d];
   const isApproved = info && (info.status === 'approved' || info === 'approved' || info === true);
+  const isAr = (currentLang === "ar");
+
+  const titleText = isAr ? `حالة تشغيل الشيفت اليومي (${d})` : `Daily Shift Operation Status (${d})`;
+  const badgeHtml = isApproved 
+    ? (isAr ? '<i class="fa-solid fa-check"></i> مفتوح للعمل (ON)' : '<i class="fa-solid fa-check"></i> Active for Work (ON)')
+    : (isAr ? '<i class="fa-solid fa-lock"></i> مغلق ومعلق (OFF)' : '<i class="fa-solid fa-lock"></i> Locked & Suspended (OFF)');
+  const descText = isApproved
+    ? (isAr 
+        ? 'الشيفت مفتوح حالياً والمساعدون يسجلون الحضور والمصروفات بشكل طبيعي. عند انتهاء اليوم، قم بإيقاف السويتش لإغلاق الشيفت واعتماد الحسابات.'
+        : 'The shift is currently active and assistants are logging attendance and expenses normally. At the end of the day, turn off the switch to close the shift and audit accounts.')
+    : (isAr
+        ? 'الشيفت مغلق حالياً، وكافة العمليات مجمدة لدى المساعدين لحين فتح الشيفت. انقر على السويتش لتحويله إلى (ON) لفتح الشيفت والبدء.'
+        : 'The shift is currently locked and all assistant operations are frozen until opened. Click switch to turn ON and start operations.');
+  const toggleStatusText = isApproved 
+    ? (isAr ? 'مفتوح (ON)' : 'Open (ON)')
+    : (isAr ? 'مغلق (OFF)' : 'Locked (OFF)');
+  const toggleHintText = isApproved
+    ? (isAr ? 'انقر لإغلاق الشيفت' : 'Click to close shift')
+    : (isAr ? 'انقر لفتح الشيفت' : 'Click to open shift');
+  const switchTitle = isApproved
+    ? (isAr ? 'إغلاق الشيفت (Turn OFF)' : 'Close Shift (Turn OFF)')
+    : (isAr ? 'فتح الشيفت (Turn ON)' : 'Open Shift (Turn ON)');
 
   widget.className = `approval-card ${isApproved ? 'approved' : 'pending'}`;
   widget.innerHTML = `
     <div class="approval-card-info">
       <div class="approval-card-title">
         <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-lock'}" style="color: ${isApproved ? 'var(--success)' : 'var(--danger)'}; font-size: 1.25em;"></i>
-        <span>حالة تشغيل الشيفت اليومي (${d})</span>
+        <span>${titleText}</span>
         <span class="approval-badge-pill ${isApproved ? 'approved' : 'pending'}">
-          ${isApproved ? '<i class="fa-solid fa-check"></i> مفتوح للعمل (ON)' : '<i class="fa-solid fa-lock"></i> مغلق ومعلق (OFF)'}
+          ${badgeHtml}
         </span>
       </div>
       <p class="approval-card-desc">
-        ${isApproved 
-          ? 'الشيفت مفتوح حالياً والمساعدون يسجلون الحضور والمصروفات بشكل طبيعي. عند انتهاء اليوم، قم بإيقاف السويتش لإغلاق الشيفت واعتماد الحسابات.' 
-          : 'الشيفت مغلق حالياً، وكافة العمليات مجمدة لدى المساعدين لحين فتح الشيفت. انقر على السويتش لتحويله إلى (ON) لفتح الشيفت والبدء.'}
+        ${descText}
       </p>
     </div>
     <div class="approval-card-actions">
@@ -979,11 +1096,11 @@ window.renderDailyApprovalWidget = function(dateStr) {
         <div class="approval-toggle-status">
           <span class="toggle-status-badge ${isApproved ? 'badge-on' : 'badge-off'}">
             <span class="toggle-pulse-dot"></span>
-            <span>${isApproved ? 'مفتوح (ON)' : 'مغلق (OFF)'}</span>
+            <span>${toggleStatusText}</span>
           </span>
-          <span class="toggle-sub-hint">${isApproved ? 'انقر لإغلاق الشيفت' : 'انقر لفتح الشيفت'}</span>
+          <span class="toggle-sub-hint">${toggleHintText}</span>
         </div>
-        <button type="button" class="master-power-switch ${isApproved ? 'state-on' : 'state-off'}" onclick="window.toggleDailyApproval('${d}', ${!isApproved})" title="${isApproved ? 'إغلاق الشيفت (Turn OFF)' : 'فتح الشيفت (Turn ON)'}" aria-label="سويتش تشغيل الشيفت">
+        <button type="button" class="master-power-switch ${isApproved ? 'state-on' : 'state-off'}" onclick="window.toggleDailyApproval('${d}', ${!isApproved})" title="${switchTitle}" aria-label="سويتش تشغيل الشيفت">
           <span class="switch-rail">
             <span class="rail-text-on">ON</span>
             <span class="rail-text-off">OFF</span>
@@ -1152,7 +1269,7 @@ window.confirmRejectDailyShift = async function() {
 // 4. DAILY REPORT & APPROVAL
 // ========================================================
 window.loadDailyReport = function(dateStr) {
-  const d = dateStr || nowDateStr();
+  const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
   window.renderDailyApprovalWidget(d);
   const ids = attByDate[d] || [];
   const sessList = sessionStudentsByDate[d] || [];
@@ -1167,6 +1284,9 @@ window.loadDailyReport = function(dateStr) {
   let totalExp = 0;
   expArr.forEach(e => totalExp += (Number(e && e.amount) || 0));
 
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
+
   // Update Stat Cards (Regular students + Session students)
   const statAttend = document.getElementById("statDailyAttend");
   const statRev = document.getElementById("statDailyRevenue");
@@ -1175,20 +1295,20 @@ window.loadDailyReport = function(dateStr) {
 
   const totalAttended = ids.length + sessList.length;
   if (statAttend) statAttend.textContent = totalAttended;
-  if (statRev) statRev.textContent = rev.toLocaleString() + " ج";
+  if (statRev) statRev.textContent = rev.toLocaleString() + currencySuffix;
   if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - ids.length);
-  if (statExp) statExp.textContent = totalExp.toLocaleString() + " ج";
+  if (statExp) statExp.textContent = totalExp.toLocaleString() + currencySuffix;
 
   // Render Groups Breakdown
   const body = document.getElementById("dailyGroupsBreakdown");
   if (body) {
     if (ids.length === 0 && sessList.length === 0 && expArr.length === 0) {
-      body.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 24px;">لا توجد بيانات مسجلة لهذا التاريخ (${d})</div>`;
+      body.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 24px;">${isAr ? `لا توجد بيانات مسجلة لهذا التاريخ (${d})` : `No data recorded for this date (${d})`}</div>`;
     } else {
       let groups = {};
       ids.forEach(id => {
         const st = students[id];
-        const cls = (st && st.className) ? st.className.trim() : "عام";
+        const cls = (st && st.className) ? st.className.trim() : (isAr ? "عام" : "General");
         if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
         groups[cls].count++;
         if (st && st.paid !== undefined) {
@@ -1200,8 +1320,9 @@ window.loadDailyReport = function(dateStr) {
 
       // Add session students to groups breakdown
       sessList.forEach(sSt => {
-        const rawCls = (sSt && sSt.className) ? sSt.className.trim() : "حصة فردية";
-        const grpKey = rawCls.includes("حصة") ? rawCls : `${rawCls} (حصة)`;
+        const defaultSessLabel = isAr ? "حصة فردية" : "Single Session";
+        const rawCls = (sSt && sSt.className) ? sSt.className.trim() : defaultSessLabel;
+        const grpKey = rawCls.includes("حصة") || rawCls.includes("Session") ? rawCls : `${rawCls} (${defaultSessLabel})`;
         if (!groups[grpKey]) groups[grpKey] = { count: 0, revenue: 0 };
         groups[grpKey].count++;
         groups[grpKey].revenue += (Number(sSt.amount) || 0);
@@ -1213,10 +1334,10 @@ window.loadDailyReport = function(dateStr) {
           <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center;">
             <div>
               <span style="font-weight: 700; color: var(--primary); font-size: 1.05em;">${g}</span>
-              <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 2px;">إيراد تقديري: ${groups[g].revenue} ج</div>
+              <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 2px;">${isAr ? 'إيراد تقديري:' : 'Estimated Revenue:'} ${groups[g].revenue} ${currencySuffix}</div>
             </div>
             <span style="background: var(--gradient-subtle); color: var(--primary); font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.9em;">
-              ${groups[g].count} طالب
+              ${groups[g].count} ${isAr ? 'طالب' : 'Students'}
             </span>
           </div>
         `;
@@ -1230,13 +1351,13 @@ window.loadDailyReport = function(dateStr) {
   const expBody = document.getElementById("dailyExpensesBreakdown");
   if (expBody) {
     if (expArr.length > 0) {
-      let expHtml = '<h4 style="color: var(--danger); font-size: 0.95em; margin-bottom: 10px; font-weight: 700;"><i class="fa-solid fa-receipt"></i> مصروفات اليوم:</h4>';
+      let expHtml = `<h4 style="color: var(--danger); font-size: 0.95em; margin-bottom: 10px; font-weight: 700;"><i class="fa-solid fa-receipt"></i> ${isAr ? 'مصروفات اليوم:' : "Today's Expenses:"}</h4>`;
       expHtml += '<div style="display: flex; flex-direction: column; gap: 8px;">';
       expArr.forEach(e => {
         expHtml += `
           <div style="display:flex; justify-content:space-between; align-items:center; background: var(--bg-danger-subtle); border: 1px solid rgba(239,68,68,0.2); padding: 8px 14px; border-radius: 8px; font-size: 0.88em;">
-            <span>${e.reason || "مصروف"}</span>
-            <b style="color: var(--danger); font-size: 1.05em;">${e.amount} ج</b>
+            <span>${e.reason || (isAr ? "مصروف" : "Expense")}</span>
+            <b style="color: var(--danger); font-size: 1.05em;">${e.amount} ${currencySuffix}</b>
           </div>
         `;
       });

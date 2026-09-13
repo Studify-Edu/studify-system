@@ -316,10 +316,10 @@
 
           <!-- Reject Note Area -->
           <div id="rejectNoteBox" class="card hidden" style="border-inline-start: 4px solid var(--danger);">
-            <label class="lbl">سبب التعليق أو الرفض (يظهر للمساعدين):</label>
+            <label class="lbl" data-i18n="daily_reject_lbl">سبب التعليق أو الرفض (يظهر للمساعدين):</label>
             <div style="display: flex; gap: 10px; margin-top: 6px;">
-              <input type="text" id="dailyRejectReasonInput" class="inp" placeholder="اكتب سبب الرفض أو التعليمات هنا.." style="flex: 1;">
-              <button class="btn danger" onclick="window.confirmRejectDailyShift()">تأكيد الرفض</button>
+              <input type="text" id="dailyRejectReasonInput" class="inp" placeholder="اكتب سبب الرفض أو التعليمات هنا.." data-i18n-placeholder="daily_reject_ph" style="flex: 1;">
+              <button class="btn danger" onclick="window.confirmRejectDailyShift()"><span data-i18n="daily_confirm_reject_btn">تأكيد الرفض</span></button>
             </div>
           </div>
 
@@ -328,25 +328,25 @@
             <div class="stat-card" style="--stat-color: var(--success); --stat-bg: var(--bg-success-subtle);">
               <div class="stat-card-icon"><i class="fa-solid fa-user-check"></i></div>
               <div class="stat-card-val" id="statDailyAttend">—</div>
-              <div class="stat-card-lbl">طلاب حضروا اليوم</div>
+              <div class="stat-card-lbl" data-i18n="stat_attended_today">طلاب حضروا اليوم</div>
             </div>
 
             <div class="stat-card" style="--stat-color: var(--primary);">
               <div class="stat-card-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
               <div class="stat-card-val" id="statDailyRevenue">—</div>
-              <div class="stat-card-lbl">إيراد الوردية (ج)</div>
+              <div class="stat-card-lbl" data-i18n="stat_shift_revenue">إيراد الوردية (ج)</div>
             </div>
 
             <div class="stat-card" style="--stat-color: var(--danger); --stat-bg: var(--bg-danger-subtle);">
               <div class="stat-card-icon"><i class="fa-solid fa-user-xmark"></i></div>
               <div class="stat-card-val" id="statDailyAbsent">—</div>
-              <div class="stat-card-lbl">غياب اليوم</div>
+              <div class="stat-card-lbl" data-i18n="stat_absent_today">غياب اليوم</div>
             </div>
 
             <div class="stat-card" style="--stat-color: var(--warning); --stat-bg: var(--bg-warning-subtle);">
               <div class="stat-card-icon"><i class="fa-solid fa-receipt"></i></div>
               <div class="stat-card-val" id="statDailyExpenses">—</div>
-              <div class="stat-card-lbl">مصروفات اليوم (ج)</div>
+              <div class="stat-card-lbl" data-i18n="stat_expenses_today">مصروفات اليوم (ج)</div>
             </div>
           </div>
 
@@ -355,7 +355,7 @@
             <div class="card-header">
               <div class="card-title">
                 <i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i>
-                تفاصيل الحضور والمجموعات ليوم:
+                <span data-i18n="daily_breakdown_title">تفاصيل الحضور والمجموعات ليوم:</span>
               </div>
               <input type="date" id="adminDailyDateInput" class="inp" style="width: auto;" onchange="window.loadDailyReport(this.value)">
             </div>
@@ -376,19 +376,19 @@
             <div class="stat-card" style="--stat-color: var(--primary);">
               <div class="stat-card-icon"><i class="fa-solid fa-users"></i></div>
               <div class="stat-card-val" id="statTermStudents">—</div>
-              <div class="stat-card-lbl">إجمالي الطلاب المسجلين</div>
+              <div class="stat-card-lbl" data-i18n="stat_term_total_students">إجمالي الطلاب المسجلين</div>
             </div>
 
             <div class="stat-card" style="--stat-color: var(--success); --stat-bg: var(--bg-success-subtle);">
               <div class="stat-card-icon"><i class="fa-solid fa-wallet"></i></div>
               <div class="stat-card-val" id="statTermRevenue">—</div>
-              <div class="stat-card-lbl">إجمالي الإيرادات المحصلة (ج)</div>
+              <div class="stat-card-lbl" data-i18n="stat_term_total_rev">إجمالي الإيرادات المحصلة (ج)</div>
             </div>
 
             <div class="stat-card" style="--stat-color: var(--danger); --stat-bg: var(--bg-danger-subtle);">
               <div class="stat-card-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
               <div class="stat-card-val" id="statTermDebt">—</div>
-              <div class="stat-card-lbl">إجمالي المتبقي والديون (ج)</div>
+              <div class="stat-card-lbl" data-i18n="stat_term_total_debt">إجمالي المتبقي والديون (ج)</div>
             </div>
           </div>
 
@@ -396,12 +396,12 @@
             <div class="card-header">
               <div class="card-title">
                 <i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i>
-                كشف حساب الطلاب التفصيلي
+                <span data-i18n="term_detailed_statement">كشف حساب الطلاب التفصيلي</span>
               </div>
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="text" id="termSearchInput" class="inp" placeholder="بحث باسم الطالب.." style="width: 220px;" oninput="window.renderTermTable()">
+                <input type="text" id="termSearchInput" class="inp" placeholder="بحث باسم الطالب.." data-i18n-placeholder="term_search_ph" style="width: 220px;" oninput="window.renderTermTable()">
                 <select id="termClassFilter" class="inp" style="width: 170px;" onchange="window.renderTermTable()">
-                  <option value="">جميع المجموعات</option>
+                  <option value="" data-i18n="term_all_classes">جميع المجموعات</option>
                 </select>
               </div>
             </div>
@@ -463,27 +463,27 @@
             <div class="card-header">
               <div class="card-title">
                 <i class="fa-solid fa-bolt" style="color: var(--warning);"></i>
-                إصدار وتطبيق قرار مباشر لطالب (خصم / إعفاء / تعديل مصاريف)
+                <span data-i18n="dec_direct_title">إصدار وتطبيق قرار مباشر لطالب (خصم / إعفاء / تعديل مصاريف)</span>
               </div>
             </div>
 
             <!-- Search & Type Row -->
             <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 14px; align-items: end; margin-bottom: 16px;">
               <div>
-                <label class="lbl">رقم الطالب (ID) أو الاسم</label>
-                <input type="text" id="directDecisionStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." oninput="window.handleDirectDecisionStudentSearch(this.value)">
+                <label class="lbl" data-i18n="dec_student_lbl">رقم الطالب (ID) أو الاسم</label>
+                <input type="text" id="directDecisionStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." data-i18n-placeholder="dec_student_ph" oninput="window.handleDirectDecisionStudentSearch(this.value)">
               </div>
               <div>
-                <label class="lbl">نوع القرار</label>
+                <label class="lbl" data-i18n="dec_type_lbl">نوع القرار</label>
                 <select id="directDecisionType" class="inp" onchange="window.handleDirectDecisionTypeChange(this.value)">
-                  <option value="discount">خصم مالي محدد (جنيه)</option>
-                  <option value="exemption">إعفاء كامل من المصاريف</option>
-                  <option value="custom_fee">تحديد إجمالي المصاريف المطلوبة</option>
+                  <option value="discount" data-i18n="dec_opt_discount">خصم مالي محدد (جنيه)</option>
+                  <option value="exemption" data-i18n="dec_opt_exemption">إعفاء كامل من المصاريف</option>
+                  <option value="custom_fee" data-i18n="dec_opt_custom_fee">تحديد إجمالي المصاريف المطلوبة</option>
                 </select>
               </div>
               <div>
                 <button class="btn primary" onclick="window.searchDirectDecisionStudent()">
-                  <i class="fa-solid fa-magnifying-glass"></i> فحص الطالب
+                  <i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="dec_btn_check">فحص الطالب</span>
                 </button>
               </div>
             </div>
@@ -500,19 +500,19 @@
 
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px;">
                 <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
-                  <div style="font-size: 0.75em; color: var(--text-secondary);">المطلوب الأصلي</div>
+                  <div style="font-size: 0.75em; color: var(--text-secondary);" data-i18n="dec_lbl_req">المطلوب الأصلي</div>
                   <div id="ddsRequired" style="font-size: 1.15em; font-weight: 800; color: var(--text-primary);">0 ج</div>
                 </div>
                 <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
-                  <div style="font-size: 0.75em; color: var(--text-secondary);">الخصم الحالي</div>
+                  <div style="font-size: 0.75em; color: var(--text-secondary);" data-i18n="dec_lbl_disc">الخصم الحالي</div>
                   <div id="ddsCurrentDiscount" style="font-size: 1.15em; font-weight: 800; color: var(--warning);">0 ج</div>
                 </div>
                 <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
-                  <div style="font-size: 0.75em; color: var(--text-secondary);">المدفوع حتى الآن</div>
+                  <div style="font-size: 0.75em; color: var(--text-secondary);" data-i18n="dec_lbl_paid">المدفوع حتى الآن</div>
                   <div id="ddsPaid" style="font-size: 1.15em; font-weight: 800; color: var(--success);">0 ج</div>
                 </div>
                 <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
-                  <div style="font-size: 0.75em; color: var(--text-secondary);">المتبقي بعد السداد</div>
+                  <div style="font-size: 0.75em; color: var(--text-secondary);" data-i18n="dec_lbl_rem">المتبقي بعد السداد</div>
                   <div id="ddsRemaining" style="font-size: 1.15em; font-weight: 800; color: var(--danger);">0 ج</div>
                 </div>
               </div>
@@ -520,16 +520,16 @@
               <!-- Action Controls Row -->
               <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 14px; align-items: end;">
                 <div id="directDecisionValueWrap">
-                  <label id="directDecisionValueLbl" class="lbl">قيمة الخصم المطلوبة (جنيه)</label>
+                  <label id="directDecisionValueLbl" class="lbl" data-i18n="dec_disc_val_lbl">قيمة الخصم المطلوبة (جنيه)</label>
                   <input type="number" id="directDecisionValueInput" class="inp" min="0" step="10" placeholder="مثال: 100">
                 </div>
                 <div>
-                  <label class="lbl">سبب القرار / ملاحظات المدير (تظهر في السجلات)</label>
+                  <label class="lbl" data-i18n="dec_reason_lbl">سبب القرار / ملاحظات المدير (تظهر في السجلات)</label>
                   <input type="text" id="directDecisionReasonInput" class="inp" placeholder="مثال: قرار مدير - ظرف خاص / تفوق دراسي">
                 </div>
                 <div>
                   <button class="btn success" style="padding: 11px 22px; font-weight: 800;" onclick="window.applyDirectDecision()">
-                    <i class="fa-solid fa-circle-check"></i> تطبيق القرار فوراً
+                    <i class="fa-solid fa-circle-check"></i> <span data-i18n="dec_apply_btn">تطبيق القرار فوراً</span>
                   </button>
                 </div>
               </div>
@@ -541,10 +541,10 @@
             <div class="card-header">
               <div class="card-title">
                 <i class="fa-solid fa-inbox" style="color: var(--primary);"></i>
-                صندوق طلبات القرارات المعلقة من المساعدين
+                <span data-i18n="dec_inbox_title">صندوق طلبات القرارات المعلقة من المساعدين</span>
               </div>
               <button class="btn secondary smallBtn" onclick="window.fetchDecisions()">
-                <i class="fa-solid fa-rotate-right"></i> تحديث
+                <i class="fa-solid fa-rotate-right"></i> <span data-i18n="dec_btn_refresh">تحديث</span>
               </button>
             </div>
 
@@ -562,10 +562,10 @@
             <div class="card-header">
               <div class="card-title">
                 <i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i>
-                إدارة باقات المجموعات والأسعار
+                <span data-i18n="pkg_title">إدارة باقات المجموعات والأسعار</span>
               </div>
               <button class="btn primary smallBtn" onclick="window.openAddPackageModal()">
-                <i class="fa-solid fa-plus"></i> إضافة باقة جديدة
+                <i class="fa-solid fa-plus"></i> <span data-i18n="pkg_add_btn">إضافة باقة جديدة</span>
               </button>
             </div>
 
@@ -578,26 +578,26 @@
             <div class="card-header">
               <div class="card-title">
                 <i class="fa-solid fa-receipt" style="color: var(--danger);"></i>
-                تسجيل ومتابعة المصروفات
+                <span data-i18n="exp_title">تسجيل ومتابعة المصروفات</span>
               </div>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
               <div>
-                <label class="lbl">بند المصروف / السبب</label>
-                <input type="text" id="expenseReasonInput" class="inp" placeholder="مثال: فواتير كهرباء / طباعة ورق">
+                <label class="lbl" data-i18n="exp_reason_lbl">بند المصروف / السبب</label>
+                <input type="text" id="expenseReasonInput" class="inp" placeholder="مثال: فواتير كهرباء / طباعة ورق" data-i18n-placeholder="exp_reason_ph">
               </div>
               <div>
-                <label class="lbl">المبلغ (ج)</label>
+                <label class="lbl" data-i18n="exp_amount_lbl">المبلغ (ج)</label>
                 <input type="number" id="expenseAmountInput" class="inp" placeholder="0" min="1">
               </div>
               <div>
-                <label class="lbl">التاريخ</label>
+                <label class="lbl" data-i18n="exp_date_lbl">التاريخ</label>
                 <input type="date" id="expenseDateInput" class="inp">
               </div>
               <div style="display: flex; align-items: flex-end;">
                 <button class="btn danger full-btn" onclick="window.recordNewExpense()">
-                  <i class="fa-solid fa-plus-circle"></i> تسجيل المصروف
+                  <i class="fa-solid fa-plus-circle"></i> <span data-i18n="exp_record_btn">تسجيل المصروف</span>
                 </button>
               </div>
             </div>
@@ -612,38 +612,38 @@
             <div class="card-header">
               <div class="card-title">
                 <i class="fa-solid fa-book-bookmark" style="color: var(--primary);"></i>
-                إضافة وتحديث خطة سير المنهج الدراسي
+                <span data-i18n="syl_title">إضافة وتحديث خطة سير المنهج الدراسي</span>
               </div>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 14px;">
               <div>
-                <label class="lbl">اسم الفصل / الدرس</label>
-                <input type="text" id="syllabusLessonName" class="inp" placeholder="مثال: Chapter 2 - Electric Flux">
+                <label class="lbl" data-i18n="syl_lesson_lbl">اسم الفصل / الدرس</label>
+                <input type="text" id="syllabusLessonName" class="inp" placeholder="مثال: Chapter 2 - Electric Flux" data-i18n-placeholder="syl_lesson_ph">
               </div>
               <div>
-                <label class="lbl">حالة الشرح</label>
+                <label class="lbl" data-i18n="syl_status_lbl">حالة الشرح</label>
                 <select id="syllabusLessonStatus" class="inp">
-                  <option value="not_started">لم يبدأ بعد</option>
-                  <option value="in_progress">جاري الشرح</option>
-                  <option value="completed">تم الانتهاء</option>
+                  <option value="not_started" data-i18n="syl_opt_not_started">لم يبدأ بعد</option>
+                  <option value="in_progress" data-i18n="syl_opt_in_progress">جاري الشرح</option>
+                  <option value="completed" data-i18n="syl_opt_completed">تم الانتهاء</option>
                 </select>
               </div>
               <div style="grid-column: 1 / -1;">
-                <label class="lbl">ملاحظات الحصة الأخيرة (تظهر للمساعدين)</label>
-                <input type="text" id="syllabusLessonNotes" class="inp" placeholder="مثال: تم إنهاء المسائل والواجب صفحة 45">
+                <label class="lbl" data-i18n="syl_notes_lbl">ملاحظات الحصة الأخيرة (تظهر للمساعدين)</label>
+                <input type="text" id="syllabusLessonNotes" class="inp" placeholder="مثال: تم إنهاء المسائل والواجب صفحة 45" data-i18n-placeholder="syl_notes_ph">
               </div>
             </div>
 
             <button class="btn primary" onclick="window.saveSyllabusLesson()">
-              <i class="fa-solid fa-floppy-disk"></i> حفظ وإضافة للجدول
+              <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="syl_save_btn">حفظ وإضافة للجدول</span>
             </button>
           </div>
 
           <div class="card">
             <div class="card-title" style="margin-bottom: 16px;">
               <i class="fa-solid fa-timeline" style="color: var(--primary);"></i>
-              خريطة الدروس الحالية
+              <span data-i18n="syl_timeline_title">خريطة الدروس الحالية</span>
             </div>
             <div id="adminSyllabusTimelineContainer">
               <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل المنهج..</div>
@@ -665,7 +665,7 @@
           <!-- Pricing Plans Grid -->
           <div class="sub-section-title">
             <i class="fa-solid fa-layer-group"></i>
-            خطط الاشتراك المتاحة — Standard
+            <span data-i18n="sub_title_std">خطط الاشتراك المتاحة — Standard</span>
           </div>
 
           <div class="sub-plans-grid">
@@ -780,7 +780,7 @@
           <!-- Coming Soon Plans -->
           <div class="sub-section-title" style="margin-top: 36px;">
             <i class="fa-solid fa-rocket"></i>
-            الباقات القادمة قريباً
+            <span data-i18n="sub_title_upcoming">الباقات القادمة قريباً</span>
           </div>
 
           <div class="sub-coming-soon-grid">
@@ -1069,6 +1069,15 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V13"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V14"></script>
+
+  <!-- ======================================================== -->
+  <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->
+  <!-- ======================================================== -->
+  <div id="adminLangSwitchOverlay" class="admin-lang-switch-overlay">
+    <div class="admin-lang-spinner"></div>
+    <div class="admin-lang-switch-text" id="adminLangSwitchText">Switching Language...</div>
+  </div>
+
 </body>
 </html>
