@@ -26,6 +26,14 @@ window.addEventListener('error', function(event) {
  ============================================================================= */
 
 // =============================================================================
+// =============================================================================
+// =============================================================================
+// GLOBAL LANGUAGE & LOCALIZATION STATE
+// =============================================================================
+const K_LANG = "ca_lang";
+let currentLang = localStorage.getItem(K_LANG) || "ar";
+window.currentLang = currentLang;
+// =============================================================================
 // GLOBAL NOTIFICATION & INTERCEPTOR ENGINE (ZERO NATIVE BROWSER POPUPS)
 // =============================================================================
 let _lastToastMsg = "", _lastToastTime = 0;
@@ -181,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
  const K_REVENUE = "ca_revenue_v6";
  const K_DELETED = "ca_deleted_v9";
  const K_THEME = "ca_theme_v1";
- const K_LANG = "ca_lang";
+  // const K_LANG = "ca_lang"; (defined at top)
  const K_LAST_BACKUP = "ca_last_backup";
  const K_BG_IMAGE = "ca_bg_image";
  const K_NOTEBOOK = "ca_notebook_v1";
@@ -357,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
  let recentScans = [];
  let isRevHidden = false;
  let passSuccessCallback = null;
- let currentLang = localStorage.getItem(K_LANG) || "ar";
+  // let currentLang defined at top of file
 
   // Expose core system state accessors to window for global access
   try {
