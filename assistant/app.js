@@ -409,6 +409,30 @@ document.addEventListener('DOMContentLoaded', function() {
  // 3. THE COMPREHENSIVE DICTIONARY
  // ==========================================
  const dict = {
+
+  "nav_packages_menu": { ar: "الباقات والأسعار", en: "Packages & Pricing" },
+  "nav_installments": { ar: "متابعة الأقساط", en: "Installments Tracker" },
+  "packages_title": { ar: "الباقات والأسعار", en: "Packages & Pricing" },
+  "packages_desc": { ar: "حدد اسم وسعر وصلاحية الباقات المتاحة للمركز مع قواعد التنبيه التلقائي.", en: "Configure package names, pricing, and automated notification rules." },
+  "contract_print_btn": { ar: "طباعة إقرار وتعهد تسجيل الطالب", en: "Print Student Legal Contract" },
+  "blank_contract_print_btn": { ar: "طباعة استمارة تقديم فارغة", en: "Print Blank Registration Form" },
+  "save_student_data": { ar: "حفظ البيانات", en: "Save Student" },
+  "mark_attend_btn": { ar: "حضور", en: "Present" },
+  "mark_absent_btn": { ar: "غياب", en: "Absent" },
+  "quick_controls_title": { ar: "قائمة التحكم السريعة", en: "Quick Controls" },
+  "admin_portal_link": { ar: "لوحة الإدارة (Admin)", en: "Admin Dashboard" },
+  "mute_sounds_lbl": { ar: "كتم الأصوات", en: "Mute Sounds" },
+  "logout_system": { ar: "خروج من النظام", en: "Logout" },
+  "psm_title": { ar: "اختيار الباقات", en: "Select Packages" },
+  "psm_total_cost": { ar: "إجمالي التكلفة:", en: "Total Cost:" },
+  "psm_currency": { ar: "جنيهاً", en: "EGP" },
+  "psm_cancel": { ar: "إلغاء", en: "Cancel" },
+  "psm_confirm": { ar: "تأكيد وحفظ", en: "Confirm & Save" },
+  "set_ui_title": { ar: "المظهر والتخصيص", en: "Theme & Customization" },
+  "lbl_theme": { ar: "ثيم البرنامج:", en: "System Theme:" },
+  "theme_light": { ar: "الوضع النهاري (Light Mode)", en: "Light Mode" },
+  "theme_dark": { ar: "الوضع الليلي (Dark Mode)", en: "Dark Mode" },
+
  "grp_daily": { ar: "الإدارة اليومية", en: "Daily Operations" },
  "nav_session_st": { ar: "طلاب الحصة", en: "Session Students" },
  "grp_finance": { ar: "الحسابات والتقارير", en: "Finance & Reports" },

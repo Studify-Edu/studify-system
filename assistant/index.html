@@ -22,14 +22,17 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V79">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V80">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
- <!-- PREVENT THEME FLASH -->
+ <!-- PREVENT THEME & LANGUAGE FLASH -->
  <script>
  (function() {
  var savedTheme = localStorage.getItem("ca_theme_v1") || "dark";
  document.documentElement.setAttribute("data-theme", savedTheme);
+ var savedLang = localStorage.getItem("ca_lang") || "ar";
+ document.documentElement.lang = savedLang;
+ document.documentElement.dir = (savedLang === "en") ? "ltr" : "rtl";
  })();
  </script>
  
@@ -437,7 +440,12 @@
  </div>
  </div>
 
- <button id="topbarThemeToggle" class="topbar-icon-btn" title="تبديل الثيم">
+ <!-- COMPACT TOPBAR LANGUAGE TOGGLE -->
+  <button id="topbarLangToggle" class="topbar-icon-btn lang-toggle-btn" title="تبديل اللغة / Switch Language" onclick="document.getElementById('changeLangBtn').click()">
+    <i class="fa-solid fa-globe"></i>
+    <span class="lang-code-pill" id="topbarLangCode">EN</span>
+  </button>
+  <button id="topbarThemeToggle" class="topbar-icon-btn" title="تبديل الثيم">
  <svg class="theme-svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
  </button>
  
@@ -730,7 +738,7 @@
  <!-- زر طباعة إقرار وتعهد تسجيل الطالب -->
  <div style="margin-top:10px;">
  <button id="printContractBtn" type="button" class="btn" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px; font-weight:bold; font-size:0.98em; border-radius:8px; background:linear-gradient(135deg, #1e40af, #2563eb); color:#fff; box-shadow:0 4px 12px rgba(37,99,235,0.25);" onclick="window.openStudentContractModal()">
- <i class="fa-solid fa-file-contract"></i> <span>طباعة إقرار وتعهد تسجيل الطالب</span>
+ <i class="fa-solid fa-file-contract"></i> <span data-i18n="contract_print_btn">طباعة إقرار وتعهد تسجيل الطالب</span>
  </button>
  </div>
  
@@ -1286,7 +1294,21 @@
  </select>
  </div>
 
- <button class="btn primary w100" id="changeLangBtn" data-i18n="btn_change_lang"> تغيير اللغة (Ar / En)</button>
+ <div class="luxury-lang-switcher-card">
+    <div class="lang-switch-info">
+      <div class="lang-switch-icon-wrap">
+        <i class="fa-solid fa-globe"></i>
+      </div>
+      <div class="lang-switch-text-group">
+        <div class="lang-current-title" id="asstLangCurrentLabel">اللغة الحالية: العربية</div>
+        <div class="lang-switch-subtitle" id="asstLangSubLabel">انقر للتحويل إلى English بالكامل</div>
+      </div>
+    </div>
+    <button type="button" class="btn luxury-lang-btn" id="changeLangBtn">
+      <span class="lang-btn-text" id="asstLangBtnText">English</span>
+      <i class="fa-solid fa-arrow-right-arrow-left"></i>
+    </button>
+  </div>
  </div>
  </div>
 </div>
@@ -1298,8 +1320,8 @@
   <section id="secPackages" class="tab-section hidden">
     <div class="content-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
       <div>
-        <h2><i class="fa-solid fa-boxes-packing"></i> الباقات والأسعار</h2>
-        <p class="text-secondary">حدد اسم وسعر وصلاحية الباقات المتاحة للمركز مع قواعد التنبيه التلقائي.</p>
+        <h2><i class="fa-solid fa-boxes-packing"></i> <span data-i18n="packages_title">الباقات والأسعار</span></h2>
+        <p class="text-secondary" data-i18n="packages_desc">حدد اسم وسعر وصلاحية الباقات المتاحة للمركز مع قواعد التنبيه التلقائي.</p>
       </div>
       <button class="btn warning" style="padding:8px 16px; font-weight:800; border-radius:10px; display:inline-flex; align-items:center; gap:8px;" onclick="window.openDecisionRequestModal()"><i class="fa-solid fa-hand-holding-dollar"></i> تقديم طلب قرار للمدير (خصم / إعفاء)</button>
     </div>
@@ -1786,7 +1808,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V128"></script>
+  <script type="module" src="app.js?v=STUDIFY_V129"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

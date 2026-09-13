@@ -13,6 +13,282 @@ window.supabaseClient = supabase;
 // BroadcastChannel for 0-latency multi-tab sync
 const permChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('studify_permissions_sync') : null;
 
+// =============================================================================
+// COMPLETE ADMIN LOCALIZATION DICTIONARY & I18N ENGINE
+// =============================================================================
+let currentLang = localStorage.getItem("ca_lang") || "ar";
+
+const ADMIN_DICT = {
+  // Navigation & Sections
+  "nav_sec_finance": { ar: "التقارير المالية", en: "Financial Reports" },
+  "nav_daily_report": { ar: "التقرير اليومي", en: "Daily Report" },
+  "nav_term_report": { ar: "تقرير الترم المالي", en: "Term Financial Report" },
+  "nav_sec_management": { ar: "الإدارة والمساعدين", en: "Management & Assistants" },
+  "nav_assistants": { ar: "إدارة المساعدين والصلاحيات", en: "Assistants & Permissions" },
+  "nav_decisions": { ar: "طلبات القرارات", en: "Decision Requests" },
+  "nav_packages": { ar: "الباقات والمصاريف", en: "Packages & Expenses" },
+  "nav_syllabus": { ar: "خريطة سير المنهج", en: "Syllabus Roadmap" },
+  "nav_sec_system": { ar: "إعدادات النظام", en: "System Settings" },
+  "nav_settings": { ar: "الإعدادات المتقدمة والنسخ الاحتياطي", en: "Advanced Settings & Backup" },
+  "nav_sec_subscription": { ar: "الاشتراك والباقة", en: "Subscription & Plan" },
+  "nav_subscription": { ar: "خطة الاشتراك", en: "Subscription Plan" },
+  "nav_logout": { ar: "تسجيل الخروج", en: "Logout" },
+  "nav_mobile_menu": { ar: "القائمة", en: "Menu" },
+
+  // Topbar
+  "topbar_theme_title": { ar: "تبديل المظهر", en: "Toggle Theme" },
+  "topbar_lang_title": { ar: "تبديل اللغة / Switch Language", en: "Switch Language" },
+  "topbar_user_title": { ar: "الملف الشخصي والحساب", en: "Profile & Account" },
+
+  // Login Screen
+  "login_badge": { ar: "الإدارة العليا والتحكم المركزي", en: "Executive Management & Central Control" },
+  "login_title": { ar: "لوحة تحكم الإدارة", en: "Admin Control Panel" },
+  "login_desc": { ar: "تسجيل الدخول المخصص لمدير المركز", en: "Dedicated login for Center Director" },
+  "login_user_lbl": { ar: "اسم المستخدم أو البريد (المدير)", en: "Username or Email (Manager)" },
+  "login_pass_lbl": { ar: "كلمة المرور", en: "Password" },
+  "login_submit_btn": { ar: "دخول إلى لوحة الإدارة", en: "Login to Admin Dashboard" },
+  "login_to_asst_portal": { ar: "بوابة المساعد والعمليات", en: "Assistant & Operations Portal" },
+  "login_asst_desc": { ar: "تسجيل الحضور اليومي والمهام الميدانية", en: "Daily attendance & field operations" },
+
+  // View 1: Daily Report
+  "daily_shift_title": { ar: "حالة تشغيل الشيفت واليومية", en: "Shift & Operations Status" },
+  "daily_shift_frozen": { ar: "مغلق ومجمد (OFF)", en: "Closed & Frozen (OFF)" },
+  "daily_shift_active": { ar: "مفتوح ونشط (LIVE)", en: "Open & Active (LIVE)" },
+  "daily_shift_desc_frozen": { ar: "اليومية متوقفة الآن، لا يمكن للمساعدين تسجيل حضور جديد لحين فتح الشيفت.", en: "Daily operations are currently paused. Assistants cannot record new attendance until shift is opened." },
+  "daily_shift_desc_active": { ar: "اليومية قيد العمل المباشر وتستقبل عمليات الحضور والإيرادات بلحظتها.", en: "Daily operations are live and receiving real-time attendance and revenue transactions." },
+  "daily_btn_activate": { ar: "تفعيل وبدء تشغيل اليومية", en: "Activate & Open Shift" },
+  "daily_btn_freeze": { ar: "تجميد وقفل اليومية", en: "Freeze & Close Shift" },
+  "stat_today_revenue": { ar: "إجمالي إيراد اليوم", en: "Total Today's Revenue" },
+  "stat_today_expenses": { ar: "مصروفات اليوم", en: "Today's Expenses" },
+  "stat_net_vault": { ar: "صافي النقدية بالخزينة", en: "Net Cash in Vault" },
+  "stat_today_attending": { ar: "إجمالي الطلاب الحاضرين", en: "Total Attending Students" },
+  "daily_approval_title": { ar: "اعتماد الحسابات اليومية وتصفير الشيفت", en: "Daily Financial Approval & Shift Closeout" },
+  "daily_approval_desc": { ar: "الاعتماد النهائي للمبالغ المحصلة واستلام الخزينة من المساعد المسؤول.", en: "Final approval of collected funds and cash vault handoff from the shift assistant." },
+  "daily_btn_approve": { ar: "اعتماد الحساب واستلام الخزينة", en: "Approve Accounts & Receive Vault" },
+  "daily_approved_badge": { ar: "معتمد ومستلم", en: "Approved & Received" },
+  "daily_tbl_st_title": { ar: "سجل حضور ومدفوعات اليوم التفصيلي", en: "Today's Detailed Attendance & Payments Log" },
+  "th_st_id": { ar: "كود الطالب", en: "Student ID" },
+  "th_st_name": { ar: "اسم الطالب", en: "Student Name" },
+  "th_st_class": { ar: "الصف / المادة", en: "Class / Subject" },
+  "th_amount": { ar: "المبلغ المدفوع", en: "Amount Paid" },
+  "th_time": { ar: "توقيت التسجيل", en: "Timestamp" },
+  "th_actions": { ar: "إجراءات", en: "Actions" },
+
+  // View 2: Term Financial Report
+  "term_report_title": { ar: "تقرير الإيرادات والمصروفات للترم المالي", en: "Term Financial Revenue & Expense Report" },
+  "filter_from_date": { ar: "من تاريخ:", en: "From Date:" },
+  "filter_to_date": { ar: "إلى تاريخ:", en: "To Date:" },
+  "filter_class_all": { ar: "جميع المراحل الدراسية", en: "All Academic Grades" },
+  "btn_export_excel": { ar: "تصدير Excel", en: "Export Excel" },
+  "btn_print_term": { ar: "طباعة التقرير", en: "Print Report" },
+  "stat_term_revenue": { ar: "إجمالي إيرادات الترم", en: "Total Term Revenue" },
+  "stat_term_expenses": { ar: "إجمالي مصروفات الترم", en: "Total Term Expenses" },
+  "stat_term_profit": { ar: "صافي أرباح المركز", en: "Center Net Profit" },
+  "search_st_placeholder": { ar: "ابحث بالاسم أو كود الطالب...", en: "Search by student name or ID..." },
+  "th_st_phone": { ar: "هاتف الطالب", en: "Student Phone" },
+  "th_parent_phone": { ar: "هاتف ولي الأمر", en: "Parent Phone" },
+  "th_total_paid": { ar: "إجمالي المدفوع", en: "Total Paid" },
+  "th_discount": { ar: "الخصم", en: "Discount" },
+  "th_att_count": { ar: "مرات الحضور", en: "Attendances" },
+  "th_payment_status": { ar: "حالة السداد", en: "Payment Status" },
+
+  // View 3: Assistants
+  "asst_page_title": { ar: "إدارة المساعدين وصلاحيات العمليات", en: "Assistants & Operations Permissions" },
+  "asst_page_desc": { ar: "التحكم في حسابات المساعدين، منح أو حجب الصلاحيات الفردية، وتعديل كلمات المرور.", en: "Manage assistant accounts, grant or revoke individual permissions, and reset passwords." },
+  "btn_add_new_asst": { ar: "إضافة مساعد جديد", en: "Add New Assistant" },
+  "th_username": { ar: "اسم المستخدم", en: "Username" },
+  "th_role": { ar: "الدور الوظيفي", en: "Role" },
+  "th_status": { ar: "الحالة", en: "Status" },
+  "th_permissions": { ar: "الصلاحيات الممنوحة", en: "Granted Permissions" },
+  "th_password": { ar: "كلمة المرور", en: "Password" },
+  "btn_edit_pass": { ar: "تعديل", en: "Edit" },
+  "perm_can_add_student": { ar: "إضافة طالب", en: "Add Student" },
+  "perm_can_edit_student": { ar: "تعديل بيانات", en: "Edit Student" },
+  "perm_can_delete_student": { ar: "حذف طالب", en: "Delete Student" },
+  "perm_show_revenue": { ar: "رؤية الإيراد", en: "View Revenue" },
+  "perm_manage_expenses": { ar: "إدارة المصروفات", en: "Manage Expenses" },
+  "perm_manage_packages": { ar: "إدارة الباقات", en: "Manage Packages" },
+  "perm_manage_booklets": { ar: "جرد المذكرات", en: "Inventory Booklets" },
+  "perm_manage_syllabus": { ar: "تحديث المنهج", en: "Update Syllabus" },
+  "perm_export_excel": { ar: "تصدير Excel", en: "Export Excel" },
+  "perm_manage_groups": { ar: "إدارة المجموعات", en: "Manage Groups" },
+
+  // View 4: Decision Requests
+  "decisions_page_title": { ar: "صندوق طلبات القرارات الواردة من المساعدين", en: "Assistant Decision Requests Inbox" },
+  "decisions_page_desc": { ar: "مراجعة واعتماد أو رفض طلبات الخصم والإعفاء المالي المقدمة من المساعدين.", en: "Review, approve, or reject discount and fee exemption requests submitted by assistants." },
+  "tab_dec_pending": { ar: "الطلبات المعلقة", en: "Pending Requests" },
+  "tab_dec_approved": { ar: "الطلبات المقبولة", en: "Approved Requests" },
+  "tab_dec_rejected": { ar: "الطلبات المرفوضة", en: "Rejected Requests" },
+  "btn_approve_req": { ar: "قبول واعتماد الخصم", en: "Approve & Apply Discount" },
+  "btn_reject_req": { ar: "رفض الطلب", en: "Reject Request" },
+
+  // View 5: Packages & Expenses
+  "packages_mgmt_title": { ar: "إدارة باقات وأسعار المركز", en: "Center Packages & Pricing Management" },
+  "btn_add_new_pkg": { ar: "إضافة باقة جديدة", en: "Add New Package" },
+  "expenses_record_title": { ar: "تسجيل وتوثيق مصروفات المركز", en: "Record & Document Center Expenses" },
+  "lbl_expense_reason": { ar: "بند المصروف / السبب", en: "Expense Item / Purpose" },
+  "lbl_expense_amount": { ar: "المبلغ (ج)", en: "Amount (EGP)" },
+  "lbl_expense_date": { ar: "التاريخ", en: "Date" },
+  "btn_record_expense": { ar: "تسجيل المصروف", en: "Record Expense" },
+
+  // View 6: Syllabus Roadmap
+  "syllabus_mgmt_title": { ar: "إضافة وتحديث خطة سير المنهج الدراسي", en: "Add & Update Syllabus Roadmap Plan" },
+  "lbl_syll_name": { ar: "اسم الفصل / الدرس", en: "Chapter / Lesson Name" },
+  "lbl_syll_status": { ar: "حالة الشرح", en: "Progress Status" },
+  "syll_status_not_started": { ar: "لم يبدأ بعد", en: "Not Started" },
+  "syll_status_in_progress": { ar: "جاري الشرح", en: "In Progress" },
+  "syll_status_completed": { ar: "تم الانتهاء", en: "Completed" },
+  "lbl_syll_notes": { ar: "ملاحظات الحصة الأخيرة (تظهر للمساعدين)", en: "Latest Session Notes (Visible to Assistants)" },
+  "btn_save_lesson": { ar: "حفظ وإضافة للجدول", en: "Save & Add to Roadmap" },
+  "syllabus_timeline_title": { ar: "خريطة الدروس الحالية", en: "Current Lessons Roadmap" },
+
+  // View 7: Subscriptions
+  "sub_title": { ar: "خطط الاشتراك المتاحة — Standard", en: "Available Subscription Plans — Standard" },
+  "sub_plan_flexible": { ar: "الخطة المرنة", en: "Flexible Plan" },
+  "sub_plan_comfortable": { ar: "الخطة المريحة", en: "Comfortable Plan" },
+  "sub_plan_golden": { ar: "الخطة الذهبية (الترم)", en: "Golden Term Plan" },
+  "sub_btn_contact": { ar: "تواصل للاشتراك", en: "Contact to Subscribe" },
+
+  // View 8: Settings, Appearance & Danger Zone
+  "admin_set_ui_title": { ar: "المظهر وتخصيص اللغة", en: "Appearance & Language Customization" },
+  "admin_lbl_theme": { ar: "مظهر النظام (الثيم):", en: "System Theme:" },
+  "admin_theme_dark": { ar: "الوضع الليلي الفاخر (Dark Mode)", en: "Luxury Dark Mode" },
+  "admin_theme_light": { ar: "الوضع النهاري (Light Mode)", en: "Crisp Light Mode" },
+  "backup_card_title": { ar: "النسخ الاحتياطي وتصدير البيانات", en: "Data Backup & Export" },
+  "btn_export_full_db": { ar: "تصدير قاعدة البيانات كاملة (Excel)", en: "Export Full Database (Excel)" },
+  "btn_import_excel": { ar: "استيراد بيانات من Excel", en: "Import Data from Excel" },
+  "danger_zone_title": { ar: "منطقة العمليات الحساسة (Danger Zone)", en: "Sensitive Operations (Danger Zone)" },
+  "danger_zone_desc": { ar: "تصفير بيانات الحضور أو إعادة تعيين النظام بالكامل. هذه الخطوة لا يمكن التراجع عنها إلا باسترجاع نسخة احتياطية.", en: "Reset attendance records or perform a complete factory reset. This action is irreversible unless restored from backup." },
+  "btn_reset_term": { ar: "تصفير حضور ومصاريف الترم بالكامل", en: "Reset Entire Term Attendance & Expenses" },
+  "btn_factory_reset": { ar: "إعادة تهيئة النظام بالكامل (ضبط المصنع)", en: "Factory Reset Entire System" },
+
+  // Modals & General
+  "modal_add_asst_title": { ar: "إضافة حساب مساعد جديد", en: "Add New Assistant Account" },
+  "modal_add_asst_desc": { ar: "قم بإنشاء حساب آمن لمساعدك لإدارة العمليات الميدانية والصلاحيات", en: "Create a secure account for your assistant to handle field operations and permissions" },
+  "modal_asst_user_lbl": { ar: "اسم المستخدم للمساعد", en: "Assistant Username" },
+  "modal_asst_user_hint": { ar: "اسم بالإنجليزية فقط بدون مسافات، سيتم استخدامه في تسجيل الدخول", en: "English characters only without spaces, used for signing in" },
+  "modal_asst_pass_lbl": { ar: "كلمة المرور المؤقتة", en: "Temporary Password" },
+  "modal_asst_pass_hint": { ar: "6 أحرف أو أرقام على الأقل، يمكن للمساعد تغييرها لاحقاً", en: "At least 6 characters, assistant can change it later" },
+  "modal_btn_cancel": { ar: "إلغاء", en: "Cancel" },
+  "modal_btn_create_asst": { ar: "إنشاء الحساب وتفعيل الصلاحيات", en: "Create Account & Grant Permissions" }
+};
+
+window.adminT = function(key) {
+  if (ADMIN_DICT[key] && ADMIN_DICT[key][currentLang]) {
+    return ADMIN_DICT[key][currentLang];
+  }
+  return key;
+};
+
+window.applyAdminLanguage = function() {
+  document.documentElement.lang = currentLang;
+  document.documentElement.dir = currentLang === "ar" ? "rtl" : "ltr";
+
+  // Translate all elements with data-i18n
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (ADMIN_DICT[key] && ADMIN_DICT[key][currentLang]) {
+      el.innerHTML = ADMIN_DICT[key][currentLang];
+    }
+  });
+
+  // Translate all input placeholders with data-i18n-placeholder
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (ADMIN_DICT[key] && ADMIN_DICT[key][currentLang]) {
+      el.placeholder = ADMIN_DICT[key][currentLang];
+    }
+  });
+
+  // Update Topbar and Switcher Buttons
+  const isAr = currentLang === "ar";
+  const topbarLangBadge = document.getElementById("adminTopbarLangCode");
+  if (topbarLangBadge) topbarLangBadge.innerText = isAr ? "EN" : "عربي";
+
+  const currentLabel = document.getElementById("adminLangCurrentLabel");
+  if (currentLabel) currentLabel.innerText = isAr ? "اللغة الحالية: العربية" : "Current Language: English";
+
+  const subLabel = document.getElementById("adminLangSubLabel");
+  if (subLabel) subLabel.innerText = isAr ? "انقر للتبديل إلى English بالكامل" : "Click to switch completely to Arabic";
+
+  const btnText = document.getElementById("adminSettingsLangBtnText");
+  if (btnText) btnText.innerText = isAr ? "English" : "العربية";
+
+  // Update current active tab title in Topbar
+  const tabConfigs = {
+    dailyReport:  { title: isAr ? "التقرير اليومي" : "Daily Report", icon: "fa-calendar-day" },
+    termReport:   { title: isAr ? "تقرير الترم المالي" : "Term Financial Report", icon: "fa-chart-line" },
+    assistants:   { title: isAr ? "إدارة المساعدين والصلاحيات" : "Assistants & Permissions", icon: "fa-user-shield" },
+    decisions:    { title: isAr ? "صندوق طلبات القرارات" : "Decision Requests Inbox", icon: "fa-bell" },
+    packages:     { title: isAr ? "إدارة الباقات والمصاريف" : "Packages & Expenses", icon: "fa-box-archive" },
+    syllabus:     { title: isAr ? "خريطة سير المنهج" : "Syllabus Roadmap", icon: "fa-book-open" },
+    settings:     { title: isAr ? "الإعدادات المتقدمة والنسخ الاحتياطي" : "Advanced Settings & Backup", icon: "fa-sliders" },
+    subscription: { title: isAr ? "خطة الاشتراك والباقة" : "Subscription Plan & Status", icon: "fa-crown" }
+  };
+
+  const activeNav = document.querySelector(".admin-nav-item.active");
+  if (activeNav) {
+    const id = activeNav.id;
+    for (const [k, cfg] of Object.entries(tabConfigs)) {
+      if (id.toLowerCase().includes(k.toLowerCase())) {
+        const pageTitle = document.getElementById("adminPageTitle");
+        if (pageTitle) pageTitle.textContent = cfg.title;
+        break;
+      }
+    }
+  }
+
+  // Update theme selector option if exists
+  const themeSel = document.getElementById("adminThemeSelector");
+  if (themeSel) {
+    themeSel.value = localStorage.getItem("ca_theme") || "dark";
+  }
+};
+
+window.toggleAdminLanguage = function() {
+  const targetLang = currentLang === "ar" ? "en" : "ar";
+  const overlay = document.getElementById("adminLangSwitchOverlay");
+  const textEl = document.getElementById("adminLangSwitchText");
+
+  if (overlay && textEl) {
+    textEl.innerText = targetLang === "en" ? "Switching to English... " : "جاري التبديل إلى العربية... ";
+    overlay.classList.add("active");
+
+    setTimeout(() => {
+      currentLang = targetLang;
+      localStorage.setItem("ca_lang", currentLang);
+      window.applyAdminLanguage();
+
+      setTimeout(() => {
+        overlay.classList.remove("active");
+      }, 350);
+    }, 550);
+  } else {
+    currentLang = targetLang;
+    localStorage.setItem("ca_lang", currentLang);
+    window.applyAdminLanguage();
+  }
+};
+
+window.switchAdminTheme = function(val) {
+  if (typeof window.toggleAdminTheme === 'function') {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    if (current !== val) {
+      window.toggleAdminTheme();
+    }
+  }
+};
+
+// Initialize Language on Startup
+if (typeof window.applyAdminLanguage === 'function') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => window.applyAdminLanguage());
+  } else {
+    window.applyAdminLanguage();
+  }
+}
+
+
 // Realtime WebSocket channel for cross-device instant sync (< 150ms)
 let realtimeShiftChannel = null;
 if (supabase) {
@@ -530,15 +806,16 @@ window.switchAdminTab = function(tabKey) {
   document.querySelectorAll(".admin-nav-item").forEach(btn => btn.classList.remove("active"));
   document.querySelectorAll(".admin-view").forEach(v => v.classList.add("hidden"));
 
+  const isAr = (currentLang === "ar");
   const tabConfigs = {
-    dailyReport:  { view: "viewDailyReport",  btn: "navBtnDailyReport",  title: "التقرير اليومي",             icon: "fa-calendar-day" },
-    termReport:   { view: "viewTermReport",   btn: "navBtnTermReport",   title: "تقرير الترم المالي",         icon: "fa-chart-line" },
-    assistants:   { view: "viewAssistants",   btn: "navBtnAssistants",   title: "إدارة المساعدين",            icon: "fa-user-shield" },
-    decisions:    { view: "viewDecisions",    btn: "navBtnDecisions",    title: "صندوق طلبات القرارات",      icon: "fa-bell" },
-    packages:     { view: "viewPackages",     btn: "navBtnPackages",     title: "إدارة الباقات والمصاريف",   icon: "fa-box-archive" },
-    syllabus:     { view: "viewSyllabus",     btn: "navBtnSyllabus",     title: "خريطة سير المنهج",          icon: "fa-book-open" },
-    settings:     { view: "viewSettings",     btn: "navBtnSettings",     title: "إعدادات النظام",            icon: "fa-sliders" },
-    subscription: { view: "viewSubscription", btn: "navBtnSubscription", title: "خطة الاشتراك والباقة",     icon: "fa-crown" }
+    dailyReport:  { view: "viewDailyReport",  btn: "navBtnDailyReport",  title: isAr ? "التقرير اليومي" : "Daily Report", icon: "fa-calendar-day" },
+    termReport:   { view: "viewTermReport",   btn: "navBtnTermReport",   title: isAr ? "تقرير الترم المالي" : "Term Financial Report", icon: "fa-chart-line" },
+    assistants:   { view: "viewAssistants",   btn: "navBtnAssistants",   title: isAr ? "إدارة المساعدين والصلاحيات" : "Assistants & Permissions", icon: "fa-user-shield" },
+    decisions:    { view: "viewDecisions",    btn: "navBtnDecisions",    title: isAr ? "صندوق طلبات القرارات" : "Decision Requests Inbox", icon: "fa-bell" },
+    packages:     { view: "viewPackages",     btn: "navBtnPackages",     title: isAr ? "إدارة الباقات والمصاريف" : "Packages & Expenses", icon: "fa-box-archive" },
+    syllabus:     { view: "viewSyllabus",     btn: "navBtnSyllabus",     title: isAr ? "خريطة سير المنهج" : "Syllabus Roadmap", icon: "fa-book-open" },
+    settings:     { view: "viewSettings",     btn: "navBtnSettings",     title: isAr ? "الإعدادات المتقدمة والنسخ الاحتياطي" : "Advanced Settings & Backup", icon: "fa-sliders" },
+    subscription: { view: "viewSubscription", btn: "navBtnSubscription", title: isAr ? "خطة الاشتراك والباقة" : "Subscription Plan & Status", icon: "fa-crown" }
   };
 
   const c = tabConfigs[tabKey] || tabConfigs.dailyReport;

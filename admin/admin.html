@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="dark">
 <head>
-  <!-- PREVENT THEME FLASH -->
+  <!-- PREVENT THEME & LANGUAGE FLASH -->
   <script>
     (function() {
       const savedTheme = localStorage.getItem('ca_theme') || localStorage.getItem('studify_admin_theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
+      const savedLang = localStorage.getItem('ca_lang') || 'ar';
+      document.documentElement.lang = savedLang;
+      document.documentElement.dir = (savedLang === 'en') ? 'ltr' : 'rtl';
     })();
   </script>
   <meta charset="UTF-8">
@@ -70,7 +73,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V11">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V12">
 </head>
 <body>
 
@@ -126,21 +129,21 @@
     <div class="admin-login-card">
       <div class="portal-type-badge manager-badge">
         <i class="fa-solid fa-shield-halved"></i>
-        <span>الإدارة العليا والتحكم المركزي</span>
+        <span data-i18n="login_badge">الإدارة العليا والتحكم المركزي</span>
       </div>
       <div class="login-logo-area">
         <img src="./icon-192.png" onerror="this.onerror=null;this.src='../icon-192.png';" alt="Studify" class="admin-login-logo">
-        <h1 class="admin-login-title">لوحة تحكم الإدارة</h1>
-        <p class="admin-login-desc">تسجيل الدخول المخصص لمدير المركز</p>
+        <h1 class="admin-login-title" data-i18n="login_title">لوحة تحكم الإدارة</h1>
+        <p class="admin-login-desc" data-i18n="login_desc">تسجيل الدخول المخصص لمدير المركز</p>
       </div>
 
       <form id="adminLoginForm" class="admin-login-form" onsubmit="event.preventDefault(); window.handleAdminLogin();">
         <div>
-          <label class="lbl">اسم المستخدم أو البريد (المدير)</label>
+          <label class="lbl" data-i18n="login_user_lbl">اسم المستخدم أو البريد (المدير)</label>
           <input type="text" id="adminLoginUser" class="inp" placeholder="Manager ID / Email" required autocomplete="username">
         </div>
         <div>
-          <label class="lbl">كلمة المرور</label>
+          <label class="lbl" data-i18n="login_pass_lbl">كلمة المرور</label>
           <div class="pass-wrap">
             <input type="password" id="adminLoginPass" class="inp" placeholder="Password" required autocomplete="current-password">
             <button type="button" class="pass-toggle-btn" onclick="window.toggleAdminPass()">
@@ -184,52 +187,52 @@
       </div>
 
       <nav class="admin-menu">
-        <div class="admin-nav-section">التقارير المالية</div>
+        <div class="admin-nav-section" data-i18n="nav_sec_finance">التقارير المالية</div>
         <button id="navBtnDailyReport" class="admin-nav-item active" onclick="window.switchAdminTab('dailyReport')">
           <i class="fa-solid fa-calendar-day"></i>
-          <span>التقرير اليومي</span>
+          <span data-i18n="nav_daily_report">التقرير اليومي</span>
         </button>
         <button id="navBtnTermReport" class="admin-nav-item" onclick="window.switchAdminTab('termReport')">
           <i class="fa-solid fa-chart-line"></i>
-          <span>تقرير الترم المالي</span>
+          <span data-i18n="nav_term_report">تقرير الترم المالي</span>
         </button>
 
-        <div class="admin-nav-section">الإدارة والمساعدين</div>
+        <div class="admin-nav-section" data-i18n="nav_sec_management">الإدارة والمساعدين</div>
         <button id="navBtnAssistants" class="admin-nav-item" onclick="window.switchAdminTab('assistants')">
           <i class="fa-solid fa-user-shield"></i>
-          <span>إدارة المساعدين والصلاحيات</span>
+          <span data-i18n="nav_assistants">إدارة المساعدين والصلاحيات</span>
         </button>
         <button id="navBtnDecisions" class="admin-nav-item" onclick="window.switchAdminTab('decisions')">
           <i class="fa-solid fa-bell"></i>
-          <span>طلبات القرارات</span>
+          <span data-i18n="nav_decisions">طلبات القرارات</span>
           <span id="adminDecisionsBadge" class="admin-badge hidden">0</span>
         </button>
         <button id="navBtnPackages" class="admin-nav-item" onclick="window.switchAdminTab('packages')">
           <i class="fa-solid fa-box-archive"></i>
-          <span>الباقات والمصاريف</span>
+          <span data-i18n="nav_packages">الباقات والمصاريف</span>
         </button>
         <button id="navBtnSyllabus" class="admin-nav-item" onclick="window.switchAdminTab('syllabus')">
           <i class="fa-solid fa-book-open"></i>
-          <span>خريطة سير المنهج</span>
+          <span data-i18n="nav_syllabus">خريطة سير المنهج</span>
         </button>
 
-        <div class="admin-nav-section">إعدادات النظام</div>
+        <div class="admin-nav-section" data-i18n="nav_sec_system">إعدادات النظام</div>
         <button id="navBtnSettings" class="admin-nav-item" onclick="window.switchAdminTab('settings')">
           <i class="fa-solid fa-sliders"></i>
-          <span>الإعدادات المتقدمة والنسخ الاحتياطي</span>
+          <span data-i18n="nav_settings">الإعدادات المتقدمة والنسخ الاحتياطي</span>
         </button>
 
-        <div class="admin-nav-section">الاشتراك والباقة</div>
+        <div class="admin-nav-section" data-i18n="nav_sec_subscription">الاشتراك والباقة</div>
         <button id="navBtnSubscription" class="admin-nav-item subscription-nav-btn" onclick="window.switchAdminTab('subscription')">
           <i class="fa-solid fa-crown"></i>
-          <span>خطة الاشتراك</span>
+          <span data-i18n="nav_subscription">خطة الاشتراك</span>
           <span id="subscriptionStatusPill" class="sub-status-pill"></span>
         </button>
       </nav>
 
       <div class="admin-sidebar-footer">
         <button id="adminLogoutBtn" class="btn danger smallBtn full-btn" onclick="window.handleAdminLogout()">
-          <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+          <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="nav_logout">تسجيل الخروج</span>
         </button>
       </div>
     </aside>
@@ -242,7 +245,7 @@
         <div class="admin-topbar-left-cluster">
           <button id="adminMobileToggle" class="admin-mobile-toggle" onclick="window.toggleAdminMobileSidebar(true)" title="القائمة الرئيسية">
             <i class="fa-solid fa-bars"></i>
-            <span class="mobile-toggle-lbl">القائمة</span>
+            <span class="mobile-toggle-lbl" data-i18n="nav_mobile_menu">القائمة</span>
           </button>
           <div class="admin-topbar-title">
             <i id="adminPageIcon" class="fa-solid fa-calendar-day" style="color: var(--primary);"></i>
@@ -275,7 +278,7 @@
             <div class="approval-card-info">
               <div class="approval-card-title">
                 <i class="fa-solid fa-lock" style="color: var(--danger); font-size: 1.25em;"></i>
-                <span>حالة تشغيل الشيفت واليومية</span>
+                <span data-i18n="daily_shift_title">حالة تشغيل الشيفت واليومية</span>
                 <span class="approval-badge-pill pending">
                   <i class="fa-solid fa-lock"></i> مغلق ومجمد (OFF)
                 </span>
@@ -832,10 +835,10 @@
 
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
               <button class="btn success" onclick="window.exportAllDataToExcel()">
-                <i class="fa-solid fa-file-excel"></i> تصدير قاعدة البيانات كاملة (Excel)
+                <i class="fa-solid fa-file-excel"></i> <span data-i18n="btn_export_full_db">تصدير قاعدة البيانات كاملة (Excel)</span>
               </button>
               <button class="btn secondary" onclick="document.getElementById('importExcelInput').click()">
-                <i class="fa-solid fa-file-import"></i> استيراد بيانات من Excel
+                <i class="fa-solid fa-file-import"></i> <span data-i18n="btn_import_excel">استيراد بيانات من Excel</span>
               </button>
               <input type="file" id="importExcelInput" accept=".xlsx, .xls" style="display: none;" onchange="window.importDataFromExcel(event)">
             </div>
@@ -844,17 +847,17 @@
           <div class="card" style="border-color: var(--danger);">
             <div class="card-title" style="color: var(--danger); margin-bottom: 8px;">
               <i class="fa-solid fa-shield-halved"></i>
-              منطقة العمليات الحساسة (Danger Zone)
+              <span data-i18n="danger_zone_title">منطقة العمليات الحساسة (Danger Zone)</span>
             </div>
             <p style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 16px;">
-              تصفير بيانات الحضور أو إعادة تعيين النظام بالكامل. هذه الخطوة لا يمكن التراجع عنها إلا باسترجاع نسخة احتياطية.
+              <span data-i18n="danger_zone_desc">تصفير بيانات الحضور أو إعادة تعيين النظام بالكامل. هذه الخطوة لا يمكن التراجع عنها إلا باسترجاع نسخة احتياطية.</span>
             </p>
             <div style="display: flex; gap: 14px; flex-wrap: wrap;">
               <button class="btn danger" onclick="window.resetTermData()">
-                <i class="fa-solid fa-rotate-left"></i> تصفير حضور ومصاريف الترم بالكامل
+                <i class="fa-solid fa-rotate-left"></i> <span data-i18n="btn_reset_term">تصفير حضور ومصاريف الترم بالكامل</span>
               </button>
               <button class="btn danger" style="background: linear-gradient(135deg, #b91c1c, #991b1b); box-shadow: 0 4px 14px rgba(185, 28, 28, 0.4);" onclick="window.factoryResetSystem()">
-                <i class="fa-solid fa-power-off"></i> إعادة تهيئة النظام بالكامل (ضبط المصنع)
+                <i class="fa-solid fa-power-off"></i> <span data-i18n="btn_factory_reset">إعادة تهيئة النظام بالكامل (ضبط المصنع)</span>
               </button>
             </div>
           </div>
@@ -880,8 +883,8 @@
           <i class="fa-solid fa-user-plus"></i>
         </div>
         <div>
-          <h3 class="modal-title-premium">إضافة حساب مساعد جديد</h3>
-          <p class="modal-subtitle-premium">قم بإنشاء حساب آمن لمساعدك لإدارة العمليات الميدانية والصلاحيات</p>
+          <h3 class="modal-title-premium" data-i18n="modal_add_asst_title">إضافة حساب مساعد جديد</h3>
+          <p class="modal-subtitle-premium" data-i18n="modal_add_asst_desc">قم بإنشاء حساب آمن لمساعدك لإدارة العمليات الميدانية والصلاحيات</p>
         </div>
       </div>
 
@@ -952,6 +955,6 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V11"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V12"></script>
 </body>
 </html>
