@@ -43,6 +43,22 @@
   
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    // GLOBAL POPUP INTERCEPTOR - ZERO NATIVE CHROME POPUPS
+    window.alert = function(msg) {
+      if (typeof window.showToast === 'function') {
+        window.showToast(String(msg), 'warning');
+      } else if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'info',
+          title: 'تنبيه النظام',
+          text: String(msg),
+          confirmButtonText: 'حسناً',
+          confirmButtonColor: '#2563eb'
+        });
+      }
+    };
+  </script>
   
   <!-- SheetJS (Excel) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

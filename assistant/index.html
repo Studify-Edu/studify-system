@@ -38,16 +38,66 @@
  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
- <script>
- // Service Worker Registration
- if ('serviceWorker' in navigator) {
- window.addEventListener('load', () => {
- navigator.serviceWorker.register('./service-worker.js')
- .then(reg => console.log('[SW] Registered:', reg.scope))
- .catch(err => console.warn('[SW] Registration failed:', err));
- });
- }
- </script>
+  <script>
+  // GLOBAL POPUP INTERCEPTOR - ZERO NATIVE CHROME POPUPS
+  (function() {
+    window.showToast = function(msg, type = "success") {
+      let container = document.getElementById("toastContainer");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+        if (document.body) document.body.appendChild(container);
+      }
+      if (!container || !container.parentNode) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: type === 'err' ? 'error' : (type === 'warning' ? 'warning' : 'info'),
+            text: String(msg),
+            timer: 3500,
+            showConfirmButton: false
+          });
+        }
+        return;
+      }
+      container.innerHTML = "";
+      const toast = document.createElement("div");
+      toast.className = `toast toast-${type}`;
+      const icons = {
+        success: '<i class="fa-solid fa-circle-check"></i>',
+        err: '<i class="fa-solid fa-circle-xmark"></i>',
+        warning: '<i class="fa-solid fa-triangle-exclamation"></i>',
+        info: '<i class="fa-solid fa-circle-info"></i>'
+      };
+      const duration = type === 'err' ? 4500 : 3500;
+      toast.innerHTML = `
+        <div class="toast-inner">
+          <div class="toast-icon-wrap">${icons[type] || icons.info}</div>
+          <span class="toast-msg">${msg}</span>
+          <button class="toast-close-btn" onclick="this.closest('.toast').remove()">&times;</button>
+        </div>
+        <div class="toast-progress-bar" style="animation-duration:${duration}ms;"></div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = "toastSlideOut 0.35s cubic-bezier(0.4, 0, 1, 1) forwards";
+        setTimeout(() => toast.remove(), 350);
+      }, duration);
+    };
+
+    window.alert = function(msg) {
+      window.showToast(String(msg), "warning");
+    };
+  })();
+
+  // Service Worker Registration
+  if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+  navigator.serviceWorker.register('./service-worker.js')
+  .then(reg => console.log('[SW] Registered:', reg.scope))
+  .catch(err => console.warn('[SW] Registration failed:', err));
+  });
+  }
+  </script>
  <!-- SWEETALERT2 STYLING -->
  <style>
  div:where(.swal2-container) {
@@ -1650,7 +1700,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V125"></script>
+  <script type="module" src="app.js?v=STUDIFY_V126"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

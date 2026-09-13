@@ -183,6 +183,7 @@ export function showToast(msg, type = "info") {
   c.appendChild(t);
   setTimeout(() => { t.remove(); }, 3500);
 }
+window.showToast = showToast;
 
 // Helper: Date format
 export function nowDateStr() {

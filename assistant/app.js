@@ -26,6 +26,73 @@ window.addEventListener('error', function(event) {
  ============================================================================= */
 
 // =============================================================================
+// GLOBAL NOTIFICATION & INTERCEPTOR ENGINE (ZERO NATIVE BROWSER POPUPS)
+// =============================================================================
+let _lastToastMsg = "", _lastToastTime = 0;
+window.showToast = function(msg, type = "success") {
+  const _now = Date.now();
+  if (_now - _lastToastTime < 350 && _lastToastMsg === msg) return;
+  _lastToastMsg = msg; _lastToastTime = _now;
+  let container = document.getElementById("toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    container.className = "toast-container";
+    if (document.body) document.body.appendChild(container);
+  }
+  if (!container || !container.parentNode) {
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: type === 'err' ? 'error' : (type === 'warning' ? 'warning' : 'info'),
+        text: String(msg),
+        timer: 3500,
+        showConfirmButton: false
+      });
+    }
+    return;
+  }
+  container.innerHTML = "";
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  const icons = {
+    success: '<i class="fa-solid fa-circle-check"></i>',
+    err: '<i class="fa-solid fa-circle-xmark"></i>',
+    warning: '<i class="fa-solid fa-triangle-exclamation"></i>',
+    info: '<i class="fa-solid fa-circle-info"></i>'
+  };
+  const duration = type === 'err' ? 4500 : 3500;
+  toast.innerHTML = `
+    <div class="toast-inner">
+      <div class="toast-icon-wrap">${icons[type] || icons.info}</div>
+      <span class="toast-msg">${msg}</span>
+      <button class="toast-close-btn" onclick="this.closest('.toast').remove()">&times;</button>
+    </div>
+    <div class="toast-progress-bar" style="animation-duration:${duration}ms;"></div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = "toastSlideOut 0.35s cubic-bezier(0.4, 0, 1, 1) forwards";
+    setTimeout(() => toast.remove(), 350);
+  }, duration);
+};
+
+// Bulletproof Interception of Native Browser Popups
+window.alert = function(msg) {
+  window.showToast(String(msg), "warning");
+};
+
+window.confirm = function(msg) {
+  console.warn("[Intercepted Native Confirm]:", msg);
+  window.showToast(String(msg), "warning");
+  return false;
+};
+
+window.prompt = function(msg, def) {
+  console.warn("[Intercepted Native Prompt]:", msg);
+  return null;
+};
+
+// =============================================================================
 // SUPABASE CLIENT INITIALIZATION & CLOUD SYNC ENGINE
 // =============================================================================
 const SUPABASE_URL = "https://erwrrvafuxezszgbiswg.supabase.co";
@@ -802,31 +869,8 @@ document.addEventListener('DOMContentLoaded', function() {
  setTimeout(() => { box.classList.add("hidden"); }, 400);
  }
 
- let _lastToastMsg = "", _lastToastTime = 0;
 function showToast(msg, type = "success") {
-  window.showToast = showToast;
- const _now = Date.now();
- if (_now - _lastToastTime < 350 && _lastToastMsg === msg) return;
- _lastToastMsg = msg; _lastToastTime = _now;
- let container = $("toastContainer"); if(!container) return;
- container.innerHTML = "";
- const toast = document.createElement("div");
- toast.className = `toast toast-${type}`;
- const icons = { success: '<i class="fa-solid fa-circle-check"></i>', err: '<i class="fa-solid fa-circle-xmark"></i>', warning: '<i class="fa-solid fa-bell"></i>', info: '<i class="fa-solid fa-circle-info"></i>' };
- const duration = type === 'err' ? 4500 : 3500;
- toast.innerHTML = `
-   <div class="toast-inner">
-     <div class="toast-icon-wrap">${icons[type] || icons.info}</div>
-     <span class="toast-msg">${msg}</span>
-     <button class="toast-close-btn" onclick="this.closest('.toast').remove()">&times;</button>
-   </div>
-   <div class="toast-progress-bar" style="animation-duration:${duration}ms;"></div>
- `;
- container.appendChild(toast);
- setTimeout(() => {
-   toast.style.animation = "toastSlideOut 0.35s cubic-bezier(0.4, 0, 1, 1) forwards";
-   setTimeout(() => toast.remove(), 350);
- }, duration);
+   return window.showToast(msg, type);
  }
 
  function showUndoToast(msg, onUndo) {
@@ -4606,8 +4650,30 @@ on("importExcelInput", "change", async function(e) {
  on("openBinBtn", "click", function() { renderBinList(); if ($("recycleBinModal")) $("recycleBinModal").classList.remove("hidden"); });
  on("closeBinBtn", "click", function() { if ($("recycleBinModal")) $("recycleBinModal").classList.add("hidden"); });
  on("emptyBinBtn", "click", function() { 
- let confMsg = currentLang==='ar' ? "حذف السلة نهائياً؟" : "Empty completely?";
- if(confirm(confMsg)) { deletedStudents = {}; saveAll(); renderBinList(); }
+   let confMsg = currentLang === 'ar' ? "هل تريد إفراغ سلة المهملات وحذف الطلاب نهائياً؟" : "Empty recycle bin completely?";
+   if (typeof Swal !== 'undefined') {
+     Swal.fire({
+       title: confMsg,
+       text: currentLang === 'ar' ? "لن يمكنك التراجع عن هذه الخطوة نهائياً" : "This action cannot be undone",
+       icon: "warning",
+       showCancelButton: true,
+       confirmButtonColor: "#ef4444",
+       cancelButtonColor: "#64748b",
+       confirmButtonText: currentLang === 'ar' ? "نعم، تفريغ السلة" : "Yes, empty bin",
+       cancelButtonText: currentLang === 'ar' ? "إلغاء" : "Cancel"
+     }).then(res => {
+       if (res.isConfirmed) {
+         deletedStudents = {};
+         saveAll();
+         renderBinList();
+         showToast(currentLang === 'ar' ? "تم تفريغ السلة بنجاح" : "Recycle bin emptied", "success");
+       }
+     });
+   } else {
+     deletedStudents = {};
+     saveAll();
+     renderBinList();
+   }
  });
 
  on("openAllStudentsBtn", "click", function() { renderSimpleTable(); if ($("allStudentsModal")) $("allStudentsModal").classList.remove("hidden"); });
@@ -5145,12 +5211,32 @@ window.toggleAssistantPermission = async function(username, key, val) {
 
 
 window.editAssistantPassword = async function(key) {
-  const newPass = prompt("أدخل كلمة المرور الجديدة للمساعد:");
-  if (!newPass) return;
+  let newPass = "";
+  if (typeof Swal !== 'undefined') {
+    const res = await Swal.fire({
+      title: "تغيير كلمة المرور",
+      text: `أدخل كلمة المرور الجديدة للمساعد (${key}):`,
+      input: "password",
+      inputPlaceholder: "كلمة المرور الجديدة",
+      showCancelButton: true,
+      confirmButtonText: "حفظ كلمة المرور",
+      cancelButtonText: "إلغاء",
+      confirmButtonColor: "#2563eb",
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return "يرجى كتابة كلمة مرور صالحة";
+        }
+      }
+    });
+    if (!res.isConfirmed || !res.value) return;
+    newPass = res.value.trim();
+  } else {
+    return;
+  }
   const managerId = localStorage.getItem("ca_manager_id");
   if (!managerId || !window.supabaseClient) return;
   try {
-    const hashedPass = await hashPass(newPass.trim());
+    const hashedPass = await hashPass(newPass);
     const { error } = await window.supabaseClient
       .from('assistants')
       .update({ password: hashedPass })
@@ -6283,16 +6369,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
  document.querySelectorAll(".delete-sess-btn").forEach(btn => {
  btn.onclick = function() {
- let dt = this.getAttribute("data-date");
- let idx = toInt(this.getAttribute("data-index"));
- if(confirm(" متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟")) {
- let delItem = sessionStudentsByDate[dt][idx];
- revenueByDate[dt] = Math.max(0, (revenueByDate[dt] || 0) - toInt(delItem.amount));
- sessionStudentsByDate[dt].splice(idx, 1);
- saveAll();
- renderSessionStudentsList(dt);
- showToast("تم إلغاء تسجيل الحضور والمبلغ ");
- }
+   let dt = this.getAttribute("data-date");
+   let idx = toInt(this.getAttribute("data-index"));
+   if (typeof Swal !== 'undefined') {
+     Swal.fire({
+       title: "إلغاء الحضور المالي",
+       text: "هل أنت متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟",
+       icon: "warning",
+       showCancelButton: true,
+       confirmButtonColor: "#ef4444",
+       cancelButtonColor: "#64748b",
+       confirmButtonText: "نعم، إلغاء الحضور",
+       cancelButtonText: "تراجع"
+     }).then(res => {
+       if (res.isConfirmed) {
+         let delItem = sessionStudentsByDate[dt][idx];
+         revenueByDate[dt] = Math.max(0, (revenueByDate[dt] || 0) - toInt(delItem.amount));
+         sessionStudentsByDate[dt].splice(idx, 1);
+         saveAll();
+         renderSessionStudentsList(dt);
+         showToast("تم إلغاء تسجيل الحضور والمبلغ بنجاح", "success");
+       }
+     });
+   } else {
+     let delItem = sessionStudentsByDate[dt][idx];
+     revenueByDate[dt] = Math.max(0, (revenueByDate[dt] || 0) - toInt(delItem.amount));
+     sessionStudentsByDate[dt].splice(idx, 1);
+     saveAll();
+     renderSessionStudentsList(dt);
+     showToast("تم إلغاء تسجيل الحضور والمبلغ", "success");
+   }
  };
  });
  };
@@ -6627,29 +6733,64 @@ document.addEventListener("DOMContentLoaded", () => {
  };
 
  window.editBookletQty = function(id) {
- if (!bookletsStock[id]) return;
- let b = bookletsStock[id];
- let nQty = prompt(`تعديل العدد الكلي المستلم لمذكرة (${b.name}):`, b.qty);
- if (nQty !== null) {
- let q = toInt(nQty);
- if (q >= 0) {
- b.qty = q;
- saveAll();
- renderBookletsStock();
- showToast("تم تحديث العدد الكلي بنجاح ");
- }
- }
+   if (!bookletsStock[id]) return;
+   let b = bookletsStock[id];
+   if (typeof Swal !== 'undefined') {
+     Swal.fire({
+       title: "تعديل رصيد المذكرة",
+       text: `أدخل العدد الكلي المستلم لمذكرة (${b.name}):`,
+       input: "number",
+       inputValue: b.qty,
+       showCancelButton: true,
+       confirmButtonText: "حفظ التعديل",
+       cancelButtonText: "إلغاء",
+       confirmButtonColor: "#2563eb",
+       inputValidator: (value) => {
+         if (value === "" || isNaN(value) || parseInt(value) < 0) {
+           return "يرجى إدخال عدد صحيح موجب";
+         }
+       }
+     }).then(res => {
+       if (res.isConfirmed && res.value !== undefined && res.value !== "") {
+         let q = toInt(res.value);
+         if (q >= 0) {
+           b.qty = q;
+           saveAll();
+           renderBookletsStock();
+           showToast("تم تحديث العدد الكلي بنجاح", "success");
+         }
+       }
+     });
+   }
  };
 
  window.deleteBooklet = function(id) {
- if (!bookletsStock[id]) return;
- let b = bookletsStock[id];
- if (confirm(`هل أنت متأكد من حذف مذكرة (${b.name}) من قائمة الجرد؟`)) {
- delete bookletsStock[id];
- saveAll();
- renderBookletsStock();
- showToast("تم حذف المذكرة من قائمة المخزون ");
- }
+   if (!bookletsStock[id]) return;
+   let b = bookletsStock[id];
+   if (typeof Swal !== 'undefined') {
+     Swal.fire({
+       title: "حذف مذكرة من الجرد",
+       text: `هل أنت متأكد من حذف مذكرة (${b.name}) من قائمة الجرد؟`,
+       icon: "warning",
+       showCancelButton: true,
+       confirmButtonColor: "#ef4444",
+       cancelButtonColor: "#64748b",
+       confirmButtonText: "نعم، حذف المذكرة",
+       cancelButtonText: "إلغاء"
+     }).then(res => {
+       if (res.isConfirmed) {
+         delete bookletsStock[id];
+         saveAll();
+         renderBookletsStock();
+         showToast("تم حذف المذكرة من قائمة المخزون", "success");
+       }
+     });
+   } else {
+     delete bookletsStock[id];
+     saveAll();
+     renderBookletsStock();
+     showToast("تم حذف المذكرة من قائمة المخزون", "success");
+   }
  };
 
  // ==========================================
@@ -8531,10 +8672,9 @@ function getNextMonthDateFormatted(baseDate) {
 window.openStudentContractModal = function() {
   const allStudents = window.students || (typeof students !== 'undefined' ? students : {});
   const cId = window.currentId || (typeof currentId !== 'undefined' ? currentId : null);
-  const notify = window.showToast || (typeof showToast === 'function' ? showToast : (msg => alert(msg)));
-
   if (!cId || !allStudents[cId]) {
-    return notify("يرجى اختيار أو فتح ملف طالب أولاً لطباعة الإقرار", "err");
+    window.showToast("يرجى اختيار أو فتح ملف طالب أولاً لطباعة الإقرار", "warning");
+    return;
   }
 
   const st = allStudents[cId];
