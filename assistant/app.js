@@ -8983,3 +8983,84 @@ window.openBlankContractModal = function() {
   const modal = document.getElementById("contractModal");
   if (modal) modal.classList.remove("hidden");
 };
+window.printContractDocument = function() {
+  const area = document.getElementById("printableContractArea");
+  if (!area || !area.innerHTML.trim()) {
+    return window.print();
+  }
+
+  let iframe = document.getElementById("contractPrintFrame");
+  if (!iframe) {
+    iframe = document.createElement("iframe");
+    iframe.id = "contractPrintFrame";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    iframe.style.zIndex = "-9999";
+    document.body.appendChild(iframe);
+  }
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(`
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>إقرار وتعهد طالب - Studify</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      <style>
+        @page {
+          size: A4 portrait;
+          margin: 6mm 8mm;
+        }
+        *, *::before, *::after {
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+        }
+        html, body {
+          margin: 0;
+          padding: 0;
+          background: #ffffff !important;
+          font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+          color: #0f172a;
+          direction: rtl;
+          width: 100%;
+          height: auto;
+          overflow: visible;
+        }
+        .contract-single-page {
+          width: 100%;
+          box-sizing: border-box;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          page-break-after: avoid !important;
+        }
+      </style>
+    </head>
+    <body>
+      ${area.innerHTML}
+    </body>
+    </html>
+  `);
+  doc.close();
+
+  setTimeout(() => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch (e) {
+      console.warn("Iframe print fallback to window.print():", e);
+      window.print();
+    }
+  }, 350);
+};
