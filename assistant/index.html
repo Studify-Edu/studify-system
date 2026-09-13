@@ -297,7 +297,7 @@
  </button>
  <button id="btnTabPackages" class="nav-item">
  <span class="nav-icon"><i class="fa-solid fa-boxes-packing"></i></span>
- <span class="nav-text">الباقات والأسعار</span>
+ <span class="nav-text" data-i18n="nav_packages_menu">الباقات والأسعار</span>
  </button>
  <button id="btnTabSyllabus" class="nav-item">
  <span class="nav-icon"><i class="fa-solid fa-book-open"></i></span>
@@ -324,7 +324,7 @@
 
  <button id="btnTabInstallments" class="nav-item" onclick="window.switchTab('Installments'); if(typeof renderInstallmentsDashboard==='function') renderInstallmentsDashboard(); if(window.innerWidth <= 768 && document.getElementById('sidebar')) document.getElementById('sidebar').classList.remove('open');">
  <span class="nav-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
- <span class="nav-text">متابعة الأقساط</span>
+ <span class="nav-text" data-i18n="nav_installments">متابعة الأقساط</span>
  </button>
 
  </div>
@@ -391,7 +391,7 @@
  <div class="topbar-stats">
   <span class="stat-pill clickable" id="openSubjectModalBtn" title="تحديد مادة الحضور">
   <i class="fa-solid fa-book" style="color:var(--primary); font-size:1.05em;"></i>
-  <span>المادة:</span> <b id="globalSubjectText" style="font-family:'Cairo';">مادة الحضور</b>
+  <span data-i18n="top_subject_lbl">المادة:</span> <b id="globalSubjectText" style="font-family:'Cairo';" data-i18n="top_subject_val">مادة الحضور</b>
   </span>
   <span class="stat-pill clickable" id="openAllStudentsBtn">
   <span data-i18n="stat_students">مسجلين:</span> <b id="totalStudentsCount">0</b>
@@ -492,10 +492,10 @@
  <div class="card bento-sm">
    <div>
      <h2 class="bento-card-title"><span data-i18n="quick_title">سريع (QR)</span></h2>
-     <span class="bento-card-subtitle">تسجيل الحضور الفوري بالـ ID أو الباركود</span>
+     <span class="bento-card-subtitle" data-i18n="quick_subtitle">تسجيل الحضور الفوري بالـ ID أو الباركود</span>
      
      <div class="bento-field-group">
-       <label class="bento-input-lbl"><i class="fa-solid fa-id-card"></i> معرّف الطالب (ID)</label>
+       <label class="bento-input-lbl"><i class="fa-solid fa-id-card"></i> <span data-i18n="lbl_student_id">معرّف الطالب (ID)</span></label>
        <div class="bento-input-action-row">
          <input id="quickAttendId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)">
          <button id="quickAttendBtn" class="btn primary" style="min-width: 105px;" data-i18n="btn_record">سجل حضور</button>
@@ -516,10 +516,10 @@
  <div class="card bento-sm">
    <div>
      <h2 class="bento-card-title"><span data-i18n="search_title">بحث شامل</span></h2>
-     <span class="bento-card-subtitle">الوصول السريع لملفات وبيانات الطلاب</span>
+     <span class="bento-card-subtitle" data-i18n="search_subtitle">الوصول السريع لملفات وبيانات الطلاب</span>
      
      <div class="bento-field-group">
-       <label class="bento-input-lbl"><i class="fa-solid fa-hashtag"></i> فتح مباشر برقم الـ ID</label>
+       <label class="bento-input-lbl"><i class="fa-solid fa-hashtag"></i> <span data-i18n="lbl_open_id_direct">فتح مباشر برقم الـ ID</span></label>
        <div class="bento-input-action-row">
          <input id="openId" class="inp" inputmode="numeric" placeholder="ID (ex: 101)">
          <button id="openBtn" class="btn primary" style="min-width: 80px;" data-i18n="btn_open">فتح</button>
@@ -530,7 +530,7 @@
    <div>
      <div class="bento-divider"></div>
      <div class="bento-field-group" style="margin-bottom:0;">
-       <label class="bento-input-lbl"><i class="fa-solid fa-magnifying-glass"></i> بحث ذكي متعدد</label>
+       <label class="bento-input-lbl"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="lbl_smart_search">بحث ذكي متعدد</span></label>
        <input id="searchAny" class="inp" placeholder="الاسم / الرقم / الكود.." data-i18n-placeholder="search_plc">
        <div id="searchMsg" class="msg"></div>
      </div>
@@ -541,10 +541,10 @@
  <div id="addStudentCard" class="card bento-sm">
    <div>
      <h2 class="bento-card-title"><span data-i18n="add_title">+ إضافة طالب جديد</span></h2>
-     <span class="bento-card-subtitle">تسجيل طالب جديد وفتح ملفه فوراً</span>
+     <span class="bento-card-subtitle" data-i18n="add_subtitle">تسجيل طالب جديد وفتح ملفه فوراً</span>
      
      <div class="bento-field-group">
-       <label class="bento-input-lbl"><i class="fa-solid fa-user-plus"></i> رقم الـ ID للطالب الجديد</label>
+       <label class="bento-input-lbl"><i class="fa-solid fa-user-plus"></i> <span data-i18n="lbl_new_student_id">رقم الـ ID للطالب الجديد</span></label>
        <div class="bento-input-action-row">
          <input id="newId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)">
          <button id="addNewBtn" class="btn success" style="min-width: 110px;" data-i18n="btn_add_open">إضافة وفتح</button>
@@ -556,10 +556,10 @@
      <div class="bento-divider"></div>
      <div class="bento-info-box">
        <i class="fa-solid fa-circle-info"></i>
-       <span>أدخل رقم الـ ID واضغط إضافة لفتح الملف واستكمال الاسم والباقات.</span>
+       <span data-i18n="add_student_hint">أدخل رقم الـ ID واضغط إضافة لفتح الملف واستكمال الاسم والباقات.</span>
      </div>
      <button type="button" class="btn secondary smallBtn" style="width:100%; margin-top:10px; border-radius:8px; font-weight:bold; font-size:0.88em; padding:8px 12px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.openBlankContractModal()">
-       <i class="fa-solid fa-print"></i> <span>طباعة استمارة تقديم فارغة (للطوابير)</span>
+       <i class="fa-solid fa-print"></i> <span data-i18n="btn_print_blank_contract">طباعة استمارة تقديم فارغة (للطوابير)</span>
      </button>
    </div>
  </div>
@@ -593,17 +593,17 @@
 </div>
  
  <label class="lbl" data-i18n="lbl_name">الاسم</label>
- <input id="stName" class="inp" placeholder="اسم الطالب بالكامل">
+ <input id="stName" class="inp" placeholder="اسم الطالب بالكامل" data-i18n-placeholder="plc_student_name">
  
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; margin-top:10px;">
-    <label class="lbl" style="margin:0;">الباقات المشترك بها الطالب</label>
+    <label class="lbl" style="margin:0;" data-i18n="lbl_student_packages">الباقات المشترك بها الطالب</label>
     <div style="display:flex; gap:8px; align-items:center;">
-      <button id="btnRequestDecisionForStudent" type="button" class="btn warning smallBtn" style="border-radius:20px; padding:4px 12px; font-size:0.85em;" onclick="window.openDecisionRequestModal(typeof toInt==='function' && document.getElementById('stId') ? toInt(document.getElementById('stId').value) : 0)"><i class="fa-solid fa-hand-holding-dollar"></i> طلب قرار للمدير</button>
-      <button id="managePackagesBtn" class="btn success smallBtn" style="border-radius:20px; padding:4px 12px; font-size:0.85em;"><i class="fa-solid fa-layer-group"></i> إدارة الباقات</button>
+      <button id="btnRequestDecisionForStudent" type="button" class="btn warning smallBtn" style="border-radius:20px; padding:4px 12px; font-size:0.85em;" onclick="window.openDecisionRequestModal(typeof toInt==='function' && document.getElementById('stId') ? toInt(document.getElementById('stId').value) : 0)"><i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="btn_request_decision">طلب قرار للمدير</span></button>
+      <button id="managePackagesBtn" class="btn success smallBtn" style="border-radius:20px; padding:4px 12px; font-size:0.85em;"><i class="fa-solid fa-layer-group"></i> <span data-i18n="btn_manage_packages">إدارة الباقات</span></button>
     </div>
   </div>
  <div id="stPackagesContainer" style="background:var(--bg-inset); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-wrap:wrap; gap:8px;">
-    <div style="color:var(--text-secondary); font-size:0.85em; width:100%; text-align:center;">لا توجد باقات محددة</div>
+    <div style="color:var(--text-secondary); font-size:0.85em; width:100%; text-align:center;" data-i18n="no_packages_selected">لا توجد باقات محددة</div>
  </div>
 
  <div class="row" style="gap:12px; margin-top:10px; flex-wrap:wrap;">
@@ -616,7 +616,7 @@
     </div>
 
     <div style="flex:1; min-width:200px;">
-      <label class="lbl">رقم ولي الأمر</label>
+      <label class="lbl" data-i18n="lbl_parent_phone">رقم ولي الأمر</label>
       <div class="row">
         <input id="stParentPhone" class="inp" inputmode="tel" placeholder="01xxxxxxxxx">
         <button id="waParentBtn" class="btn success" title="مراسلة ولي الأمر عبر واتساب" aria-label="واتساب ولي الأمر"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></button>
@@ -625,8 +625,8 @@
   </div>
 
   <div style="margin-top:10px;">
-    <label class="lbl">الصف الدراسي / المجموعة</label>
-    <input id="stClass" list="stClassList" class="inp" placeholder="اختر أو اكتب الصف الدراسي أو المجموعة..">
+    <label class="lbl" data-i18n="lbl_class_group">الصف الدراسي / المجموعة</label>
+    <input id="stClass" list="stClassList" class="inp" placeholder="اختر أو اكتب الصف الدراسي أو المجموعة.." data-i18n-placeholder="plc_class_group">
     <datalist id="stClassList"></datalist>
   </div>
 
@@ -634,16 +634,16 @@
   <div class="paymentBox">
   
     <div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
-      <span class="payLabel" style="white-space:nowrap; font-weight:bold;"><i class="fa-solid fa-cube" style="color:var(--primary);"></i> باقة الدفع:</span>
+      <span class="payLabel" style="white-space:nowrap; font-weight:bold;"><i class="fa-solid fa-cube" style="color:var(--primary);"></i> <span data-i18n="lbl_payment_package">باقة الدفع:</span></span>
       <select id="newPaymentPackage" class="inp" style="flex:1; font-weight:bold;">
-        <option value="">-- اختر الباقة --</option>
+        <option value="" data-i18n="opt_select_package">-- اختر الباقة --</option>
       </select>
     </div>
 
     <!-- كارت الحساب المالي للباقة المحددة -->
     <div id="pkgFinanceCard" style="background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <span id="pkgCardNameTitle" style="font-size:0.9em; font-weight:bold; color:var(--text-primary);"><i class="fa-solid fa-receipt"></i> حساب الباقة</span>
+        <span id="pkgCardNameTitle" style="font-size:0.9em; font-weight:bold; color:var(--text-primary);"><i class="fa-solid fa-receipt"></i> <span data-i18n="lbl_pkg_account">حساب الباقة</span></span>
         <span id="pkgCardStatusBadge" class="badge" style="font-size:0.8em; background:#e0f2fe; color:#0369a1;">--</span>
       </div>
       <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; text-align:center; margin-bottom:8px;">
@@ -756,12 +756,12 @@
   <section id="secInstallments" class="tab-section hidden">
     <div class="card">
       <div class="flexBetween" style="margin-bottom:15px;">
-        <h2 style="color:var(--primary);"><i class="fa-solid fa-hand-holding-dollar"></i> لوحة متابعة الأقساط</h2>
+        <h2 style="color:var(--primary);"><i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="inst_title">لوحة متابعة الأقساط</span></h2>
         <div style="display:flex; gap:10px;">
            <select id="filterInstallmentsStatus" class="inp" style="width:auto;">
-             <option value="all">كل الأقساط المفتوحة</option>
-             <option value="overdue">المتأخرة فقط</option>
-             <option value="upcoming">المستحقة قريباً (7 أيام)</option>
+             <option value="all" data-i18n="inst_all">كل الأقساط المفتوحة</option>
+             <option value="overdue" data-i18n="inst_overdue">المتأخرة فقط</option>
+             <option value="upcoming" data-i18n="inst_upcoming">المستحقة قريباً (7 أيام)</option>
            </select>
            <button class="btn secondary" id="refreshInstallmentsBtn" title="تحديث"><i class="fa-solid fa-rotate"></i></button>
         </div>
@@ -771,14 +771,14 @@
         <table id="installmentsTable">
           <thead>
             <tr>
-              <th>الطالب</th>
-              <th>رقم الموبايل</th>
-              <th>الباقة</th>
-              <th>اسم القسط</th>
-              <th>المبلغ</th>
-              <th>تاريخ الاستحقاق</th>
-              <th>الحالة</th>
-              <th>إجراءات</th>
+              <th data-i18n="inst_th_student">الطالب</th>
+              <th data-i18n="inst_th_phone">رقم الموبايل</th>
+              <th data-i18n="inst_th_package">الباقة</th>
+              <th data-i18n="inst_th_installment">اسم القسط</th>
+              <th data-i18n="inst_th_amount">المبلغ</th>
+              <th data-i18n="inst_th_due_date">تاريخ الاستحقاق</th>
+              <th data-i18n="inst_th_status">الحالة</th>
+              <th data-i18n="inst_th_actions">إجراءات</th>
             </tr>
           </thead>
           <tbody id="installmentsTbody">
@@ -797,7 +797,7 @@
  <h2 data-i18n="adv_search_title">قائمة البحث المتقدم</h2>
  <div style="display:flex; gap:10px; align-items:center;">
    <button type="button" class="btn secondary smallBtn" style="border-radius:20px; padding:6px 14px; font-weight:bold; display:flex; align-items:center; gap:6px; white-space:nowrap;" onclick="window.openBlankContractModal()">
-     <i class="fa-solid fa-print"></i> <span>استمارة فارغة</span>
+     <i class="fa-solid fa-print"></i> <span data-i18n="btn_blank_form_short">استمارة فارغة</span>
    </button>
    <input id="tableSearchInp" class="inp" style="width: 250px;" placeholder=" ابحث في الجدول.." data-i18n-placeholder="search_tbl_plc">
  </div>
@@ -805,10 +805,10 @@
  
    <!-- Quick Filter Pills -->
   <div class="quick-filter-pills" style="display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0;">
-    <button type="button" class="btn secondary smallBtn quick-flt-btn active" data-flt="all" style="border-radius:20px; padding:6px 14px; font-weight:bold;"><i class="fa-solid fa-layer-group"></i> الكل</button>
-    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="debt" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#ef4444;"><i class="fa-solid fa-hand-holding-dollar"></i> عليهم متبقي</button>
-    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="paid" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#10b981;"><i class="fa-solid fa-circle-check"></i> مسدد بالكامل</button>
-    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="present" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#3b82f6;"><i class="fa-solid fa-calendar-check"></i> حضروا اليوم</button>
+    <button type="button" class="btn secondary smallBtn quick-flt-btn active" data-flt="all" style="border-radius:20px; padding:6px 14px; font-weight:bold;"><i class="fa-solid fa-layer-group"></i> <span data-i18n="flt_all">الكل</span></button>
+    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="debt" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#ef4444;"><i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="flt_debt">عليهم متبقي</span></button>
+    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="paid" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#10b981;"><i class="fa-solid fa-circle-check"></i> <span data-i18n="flt_paid_full">مسدد بالكامل</span></button>
+    <button type="button" class="btn secondary smallBtn quick-flt-btn" data-flt="present" style="border-radius:20px; padding:6px 14px; font-weight:bold; color:#3b82f6;"><i class="fa-solid fa-calendar-check"></i> <span data-i18n="flt_present_today">حضروا اليوم</span></button>
   </div>
   
   <div class="row filters-row">
@@ -841,8 +841,8 @@
   <th><input type="checkbox" id="selectAllCheckbox"></th>
   <th>ID</th>
   <th data-i18n="tbl_name">الاسم</th>
-  <th>الصف الدراسي</th>
-  <th>الباقات المشترك بها</th>
+  <th data-i18n="tbl_class">الصف الدراسي</th>
+  <th data-i18n="tbl_packages">الباقات المشترك بها</th>
   <th data-i18n="tbl_paid">إجمالي المدفوع</th>
   <th data-i18n="tbl_remain">المتبقي</th>
   <th data-i18n="tbl_today">حضور اليوم</th> 
@@ -1340,38 +1340,38 @@
  </div>
   <!-- ====== VAULTS STATS (تقفيل الشيفت والأرصدة) ====== -->
   <div class="card" style="margin-bottom:25px; background:var(--bg-surface); border:1px solid var(--border);">
-     <h3 style="color:var(--primary); margin:0 0 15px 0;"><i class="fa-solid fa-vault"></i> أرصدة الخزائن وتقفيل الشيفت</h3>
+     <h3 style="color:var(--primary); margin:0 0 15px 0;"><i class="fa-solid fa-vault"></i> <span data-i18n="vaults_title">أرصدة الخزائن وتقفيل الشيفت</span></h3>
      
      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
         
         <!-- Cash Card -->
         <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:10px;">
            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:bold; color:#166534;"><i class="fa-solid fa-money-bill-wave"></i> درج الكاش</span>
-              <span class="badge" style="background:#dcfce7; color:#15803d;">كاش</span>
+              <span style="font-weight:bold; color:#166534;"><i class="fa-solid fa-money-bill-wave"></i> <span data-i18n="vault_cash_drawer">درج الكاش</span></span>
+              <span class="badge" style="background:#dcfce7; color:#15803d;" data-i18n="badge_cash">كاش</span>
            </div>
-           <div style="font-size:0.9em; color:#166534;">اليوم: <b id="vaultCashToday" style="font-size:1.3em; color:#15803d;">0 ج</b></div>
-           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;">الإجمالي الكلي: <b id="vaultCashAll">0 ج</b></div>
+           <div style="font-size:0.9em; color:#166534;"><span data-i18n="lbl_today_colon">اليوم:</span> <b id="vaultCashToday" style="font-size:1.3em; color:#15803d;">0 ج</b></div>
+           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;"><span data-i18n="lbl_total_all">الإجمالي الكلي:</span> <b id="vaultCashAll">0 ج</b></div>
         </div>
 
         <!-- Instapay Card -->
         <div style="background:#e0f2fe; border:1px solid #bae6fd; padding:15px; border-radius:10px;">
            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:bold; color:#0369a1;"><i class="fa-solid fa-mobile-screen"></i> حساب إنستا باي</span>
+              <span style="font-weight:bold; color:#0369a1;"><i class="fa-solid fa-mobile-screen"></i> <span data-i18n="vault_instapay_account">حساب إنستا باي</span></span>
               <span class="badge" style="background:#bae6fd; color:#0284c7;">InstaPay</span>
            </div>
-           <div style="font-size:0.9em; color:#0369a1;">اليوم: <b id="vaultInstapayToday" style="font-size:1.3em; color:#0284c7;">0 ج</b></div>
-           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;">الإجمالي الكلي: <b id="vaultInstapayAll">0 ج</b></div>
+           <div style="font-size:0.9em; color:#0369a1;"><span data-i18n="lbl_today_colon">اليوم:</span> <b id="vaultInstapayToday" style="font-size:1.3em; color:#0284c7;">0 ج</b></div>
+           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;"><span data-i18n="lbl_total_all">الإجمالي الكلي:</span> <b id="vaultInstapayAll">0 ج</b></div>
         </div>
 
         <!-- Wallet Card -->
         <div style="background:#fef2f2; border:1px solid #fecaca; padding:15px; border-radius:10px;">
            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:bold; color:#991b1b;"><i class="fa-solid fa-wallet"></i> فودافون كاش / محفظة</span>
-              <span class="badge" style="background:#fecaca; color:#dc2626;">محفظة</span>
+              <span style="font-weight:bold; color:#991b1b;"><i class="fa-solid fa-wallet"></i> <span data-i18n="vault_wallet_account">فودافون كاش / محفظة</span></span>
+              <span class="badge" style="background:#fecaca; color:#dc2626;" data-i18n="badge_wallet">محفظة</span>
            </div>
-           <div style="font-size:0.9em; color:#991b1b;">اليوم: <b id="vaultWalletToday" style="font-size:1.3em; color:#dc2626;">0 ج</b></div>
-           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;">الإجمالي الكلي: <b id="vaultWalletAll">0 ج</b></div>
+           <div style="font-size:0.9em; color:#991b1b;"><span data-i18n="lbl_today_colon">اليوم:</span> <b id="vaultWalletToday" style="font-size:1.3em; color:#dc2626;">0 ج</b></div>
+           <div style="font-size:0.85em; color:#4b5563; margin-top:4px;"><span data-i18n="lbl_total_all">الإجمالي الكلي:</span> <b id="vaultWalletAll">0 ج</b></div>
         </div>
 
      </div>
@@ -1809,7 +1809,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V131"></script>
+  <script type="module" src="app.js?v=STUDIFY_V132"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

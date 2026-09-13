@@ -1719,6 +1719,24 @@ async function loadAll() {
 
  function showApp() {
   applyPermissions();
+
+  // Update locked revenue if applicable
+  if (!currentPermissions.can_show_revenue) {
+    const revEl = document.getElementById("todayRevenue");
+    if (revEl) revEl.textContent = (currentLang === "ar" ? " مقفول" : " Locked");
+  }
+
+  // Update default globalSubjectText if no custom subject chosen
+  const globSubEl = document.getElementById("globalSubjectText");
+  if (globSubEl && (!window.currentGlobalSubject || window.currentGlobalSubject === "مادة الحضور" || window.currentGlobalSubject === "Attendance Subject")) {
+    globSubEl.textContent = (currentLang === "ar" ? "مادة الحضور" : "Attendance Subject");
+  }
+
+  // Update quickAttendId placeholder
+  if (typeof window.updateAttendanceUIState === "function") {
+    window.updateAttendanceUIState();
+  }
+
   if (typeof loadPermissions === "function" && currentUserRole !== "admin") loadPermissions();
  if($("reportDate")) $("reportDate").value = nowDateStr();
  
@@ -1799,7 +1817,7 @@ function applyPermissionsToAssistantUI() {
       revToggle.style.display = "none";
       revToggle.classList.remove('locked-feature');
     }
-    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = " مقفول";
+    if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = (currentLang === "ar" ? " مقفول" : " Locked");
   }
 
   // Add student
@@ -1817,7 +1835,7 @@ function applyPermissionsToAssistantUI() {
     }
     if (newIdInput) {
       newIdInput.disabled = true;
-      newIdInput.placeholder = ' مقفول من قِبَل المدير';
+      newIdInput.placeholder = (currentLang === "ar" ? " مقفول من قِبَل المدير" : " Locked by Manager");
     }
   } else {
     if (addNavBtn) addNavBtn.classList.remove('locked-feature');
@@ -1973,7 +1991,7 @@ function applyPermissions() {
      revPill.style.display = "";
    }
    if (revToggle) { revToggle.style.display = "none"; revToggle.classList.remove('locked-feature'); }
-   if ($("todayRevenue")) $("todayRevenue").textContent = " مقفول";
+   if ($("todayRevenue")) $("todayRevenue").textContent = (currentLang === "ar" ? " مقفول" : " Locked");
  } else {
    if (revPill) {
      revPill.classList.remove('locked-feature');
@@ -8229,7 +8247,7 @@ window.updateAttendanceUIState = function() {
     
     const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
     if (input) {
-        input.placeholder = hasSelected ? "ID (مثال: 101)" : "اختر مادة أولاً";
+        input.placeholder = hasSelected ? (currentLang === "ar" ? "ID (مثال: 101)" : "ID (e.g. 101)") : (currentLang === "ar" ? "اختر مادة أولاً" : "Select Subject First");
     }
 
     if (!hasSelected) {
