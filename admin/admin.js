@@ -142,6 +142,11 @@ if (supabase) {
 }
 
 // Permissions Definitions (All 11 permissions, grouped cleanly)
+export function getPermissionTitle(permKey) {
+  const found = PERMISSIONS_DEFS.find(p => p.key === permKey);
+  return found ? found.label : permKey;
+}
+
 export const PERMISSIONS_DEFS = [
   { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يعرض رقم إيراد الوردية الحالي في الشريط العلوي للمساعد", icon: "fa-wallet", group: "financial" },
   { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي", desc: "يجعل الإيراد معلقاً ولا يُضاف للإجمالي حتى يعتمده المدير", icon: "fa-shield-halved", group: "financial" },
@@ -1090,13 +1095,14 @@ window.togglePermission = async function(username, permKey, isAllowed) {
     localStorage.setItem(`ca_asst_permissions_${username}`, JSON.stringify(perms));
     localStorage.setItem("ca_asst_permissions", JSON.stringify(perms));
 
-    const statusText = isAllowed ? 'تفعيل' : 'إغلاق';
-    const msgText = `تم ${statusText} صلاحية (${permKey}) للمساعد ${username}.`;
+    const statusText = isAllowed ? 'تفعيل' : 'تعطيل';
+    const permName = getPermissionTitle(permKey);
+    const msgText = `تم ${statusText} صلاحية «${permName}» للمساعد ${username}.`;
     if (typeof window.createNotification === 'function') {
-      window.createNotification(msgText, 'info');
+      window.createNotification(msgText, isAllowed ? 'info' : 'warning');
     }
 
-    showToast(`تم تحديث صلاحية (${permKey}) للمساعد ${username} بنجاح`, "success");
+    showToast(`تم ${statusText} صلاحية «${permName}» للمساعد ${username} بنجاح`, "success");
 
   } catch(err) {
     console.error("Toggle Permission Error:", err);

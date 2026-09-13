@@ -8140,6 +8140,55 @@ window.CLOUD_MONITOR_SECTIONS = [
 // ================= NOTIFICATIONS SYSTEM =================
 let notificationsList = [];
 
+const NOTIF_PERM_TITLES = {
+  'can_add_student': 'إضافة وتعديل بيانات الطلاب',
+  'show_revenue': 'عرض الإيرادات والخزينة',
+  'require_daily_approval': 'الاعتماد اليومي للإيرادات',
+  'can_request_discount': 'طلب خصم أو إعفاء',
+  'can_manage_packages': 'إدارة الباقات والاشتراكات',
+  'can_access_settings': 'إعدادات النظام والنسخ الاحتياطي',
+  'can_access_syllabus': 'خريطة المنهج الدراسي',
+  'can_view_reports': 'التقارير والحسابات المالية',
+  'can_access_marketing': 'حملات التسويق بالواتساب',
+  'can_access_session_students': 'طلاب الحصة والغياب السريع',
+  'can_access_booklets': 'إدارة ومبيعات المذكرات',
+  'can_delete_student': 'حذف الطلاب'
+};
+
+function formatNotificationMessage(msg) {
+  if (!msg) return '';
+  let res = String(msg);
+  for (const [key, label] of Object.entries(NOTIF_PERM_TITLES)) {
+    res = res.replace(new RegExp('\\(' + key + '\\)', 'g'), '«' + label + '»');
+    res = res.replace(new RegExp('\\b' + key + '\\b', 'g'), '«' + label + '»');
+  }
+  res = res.replace(/إغلاق صلاحية/g, 'تعطيل صلاحية');
+  return res;
+}
+
+// Automatic cleanup of old notifications from Supabase
+async function cleanupOldNotifications() {
+  if (!window.supabaseClient) return;
+  try {
+    // 1. Delete read notifications older than 3 days
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    await window.supabaseClient.from('communications')
+      .delete()
+      .eq('type', 'assistant_message')
+      .eq('status', 'read')
+      .lte('created_at', threeDaysAgo);
+
+    // 2. Delete all notifications older than 10 days
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    await window.supabaseClient.from('communications')
+      .delete()
+      .eq('type', 'assistant_message')
+      .lte('created_at', tenDaysAgo);
+  } catch (err) {
+    // Graceful fallback
+  }
+}
+
 async function fetchNotifications() {
   if (!window.supabaseClient) return;
   try {
@@ -8177,36 +8226,63 @@ function renderNotifications() {
   }
   
   if (notificationsList.length === 0) {
-    listEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 10px; font-size: 0.9em;">لا توجد إشعارات حالياً</div>';
+    listEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 22px 12px; font-size: 0.9em;"><i class="fa-regular fa-bell-slash" style="font-size:1.8em; margin-bottom:8px; display:block; opacity:0.4;"></i>لا توجد رسائل أو إشعارات حالياً</div>';
     return;
   }
   
   listEl.innerHTML = '';
   notificationsList.forEach(n => {
     const item = document.createElement('div');
-    item.style.padding = '10px';
-    item.style.borderRadius = '8px';
-    item.style.background = n.is_read ? 'var(--bg-inset)' : 'var(--bg-surface)';
-    item.style.border = '1px solid ' + (n.is_read ? 'transparent' : 'var(--primary)');
+    item.style.padding = '10px 12px';
+    item.style.borderRadius = '10px';
+    item.style.background = n.is_read ? 'var(--bg-inset)' : 'var(--bg-card, #1e293b)';
+    item.style.border = '1px solid ' + (n.is_read ? 'var(--border)' : 'var(--primary)');
     item.style.cursor = 'pointer';
     item.style.transition = 'all 0.2s ease';
+    item.style.position = 'relative';
+    item.style.display = 'flex';
+    item.style.flexDirection = 'column';
+    item.style.gap = '6px';
     
     // Hover effect
-    item.onmouseenter = () => { if(n.is_read) item.style.background = 'var(--bg-surface)'; };
-    item.onmouseleave = () => { if(n.is_read) item.style.background = 'var(--bg-inset)'; };
+    item.onmouseenter = () => { item.style.transform = 'translateY(-1px)'; };
+    item.onmouseleave = () => { item.style.transform = 'none'; };
     
     const d = new Date(n.created_at);
     const dateStr = d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+    const formattedMsg = formatNotificationMessage(n.message);
+    
+    const isDeactivation = formattedMsg.includes('تعطيل') || formattedMsg.includes('إغلاق') || formattedMsg.includes('رفض');
+    const isActivation = formattedMsg.includes('تفعيل') || formattedMsg.includes('قبول') || formattedMsg.includes('بنجاح');
+    
+    let iconWrap = '<div style="width:28px; height:28px; border-radius:8px; background:rgba(59,130,246,0.15); color:#3b82f6; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9em;"><i class="fa-solid fa-bell"></i></div>';
+    if (isActivation) {
+      iconWrap = '<div style="width:28px; height:28px; border-radius:8px; background:rgba(16,185,129,0.15); color:#10b981; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9em;"><i class="fa-solid fa-shield-check"></i></div>';
+    } else if (isDeactivation) {
+      iconWrap = '<div style="width:28px; height:28px; border-radius:8px; background:rgba(245,158,11,0.15); color:#f59e0b; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9em;"><i class="fa-solid fa-shield-halved"></i></div>';
+    }
     
     item.innerHTML = `
-      <div style="font-size: 0.9em; font-weight: ${n.is_read ? 'normal' : 'bold'}; color: var(--text-primary); margin-bottom: 5px;">
-        ${n.type === 'warning' ? '<i class="fa-solid fa-bell" style="color:var(--warning);"></i> ' : '<i class="fa-solid fa-bell" style="color:var(--primary);"></i> '}
-        ${n.message}
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+        <div style="display: flex; align-items: flex-start; gap: 8px; flex: 1;">
+          ${iconWrap}
+          <div style="font-size: 0.88em; font-weight: ${n.is_read ? '600' : '800'}; color: var(--text-primary); line-height: 1.45; flex: 1;">
+            ${formattedMsg}
+          </div>
+        </div>
+        <button class="btn-delete-single-notif" data-id="${n.id}" title="حذف هذا الإشعار" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 2px 4px; font-size: 0.85em; opacity: 0.5; transition: opacity 0.2s, color 0.2s;" onmouseenter="this.style.opacity='1'; this.style.color='#ef4444';" onmouseleave="this.style.opacity='0.5'; this.style.color='var(--text-secondary)';">
+          <i class="fa-regular fa-trash-can"></i>
+        </button>
       </div>
-      <div style="font-size: 0.75em; color: var(--text-secondary); text-align: left;"><i class="fa-regular fa-clock"></i> ${dateStr}</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.73em; color: var(--text-secondary); padding-inline-start: 36px;">
+        <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
+        ${!n.is_read ? '<span style="color: var(--primary); font-weight: 700;">• جديد</span>' : ''}
+      </div>
     `;
     
-    item.onclick = async () => {
+    // Mark as read on item click
+    item.onclick = async (e) => {
+      if (e.target.closest('.btn-delete-single-notif')) return; // handled separately
       if (!n.is_read && window.supabaseClient) {
         try {
           await window.supabaseClient.from('communications').update({ status: 'read' }).eq('id', n.id);
@@ -8215,6 +8291,23 @@ function renderNotifications() {
         renderNotifications();
       }
     };
+    
+    // Single delete button handler
+    const delBtn = item.querySelector('.btn-delete-single-notif');
+    if (delBtn) {
+      delBtn.onclick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.supabaseClient) {
+          try {
+            await window.supabaseClient.from('communications').delete().eq('id', n.id);
+          } catch(err) {}
+        }
+        notificationsList = notificationsList.filter(item => item.id !== n.id);
+        renderNotifications();
+      };
+    }
+    
     listEl.appendChild(item);
   });
 }
@@ -8223,6 +8316,7 @@ function setupNotificationsUI() {
   const btn = document.getElementById('notificationsToggleBtn');
   const drop = document.getElementById('notificationsDropdown');
   const markAllBtn = document.getElementById('markAllReadBtn');
+  const clearReadBtn = document.getElementById('clearReadNotificationsBtn');
   const syncCloud = document.getElementById('cloudSyncIndicator');
   
   // Ensure cloudSyncIndicator is ALWAYS visible
@@ -8243,7 +8337,7 @@ function setupNotificationsUI() {
       
       if (willOpen) {
         drop.classList.remove('hidden');
-        renderNotifications();
+        fetchNotifications();
       } else {
         drop.classList.add('hidden');
       }
@@ -8272,11 +8366,34 @@ function setupNotificationsUI() {
       }
     };
   }
+
+  if (clearReadBtn) {
+    clearReadBtn.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!window.supabaseClient) return;
+      const readIds = notificationsList.filter(n => n.is_read).map(n => n.id);
+      if (readIds.length === 0) {
+        showToast("لا توجد رسائل مقروءة لمسحها", "info");
+        return;
+      }
+      try {
+        await window.supabaseClient.from('communications').delete().in('id', readIds);
+        notificationsList = notificationsList.filter(n => !n.is_read);
+        renderNotifications();
+        showToast("تم مسح الرسائل المقروءة بنجاح", "success");
+      } catch(err) {
+        console.error('Error deleting read notifications:', err);
+        showToast("فشل مسح الرسائل المقروءة", "err");
+      }
+    };
+  }
 }
 
 function initNotificationsModule() {
   setupNotificationsUI();
   if (window.supabaseClient) {
+    cleanupOldNotifications();
     fetchNotifications();
     try {
       window.supabaseClient.channel('communications_notifications_channel')

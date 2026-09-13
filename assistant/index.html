@@ -374,10 +374,14 @@
  
  <!-- Notifications Dropdown -->
  <div id="notificationsDropdown" class="user-profile-dropdown hidden" style="position: absolute; top: 110%; inset-inline-end: 40px; width: 320px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;">
- <div style="font-weight: bold; font-size: 0.95em; color: var(--primary); padding: 4px 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px; display: flex; justify-content: space-between;">
- <span><i class="fa-regular fa-bell"></i> رسائل وإشعارات</span>
- <span id="markAllReadBtn" style="cursor: pointer; font-size: 0.85em; color: var(--success); font-weight: normal;">تحديد كمقروء</span>
- </div>
+ <div style="font-weight: bold; font-size: 0.95em; color: var(--primary); padding: 6px 8px; border-bottom: 1px solid var(--border); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+    <span><i class="fa-regular fa-bell"></i> رسائل وإشعارات</span>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span id="markAllReadBtn" style="cursor: pointer; font-size: 0.82em; color: var(--success); font-weight: 600;" title="تحديد جميع الرسائل كمقروءة">تحديد كمقروء</span>
+      <span style="color: var(--border); font-size: 0.8em;">|</span>
+      <span id="clearReadNotificationsBtn" style="cursor: pointer; font-size: 0.82em; color: #ef4444; font-weight: 600;" title="حذف كافة الرسائل المقروءة نهائياً من السحابة">مسح المقروء</span>
+    </div>
+  </div>
  <div id="notificationsList" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
  <div style="text-align: center; color: #888; padding: 10px;">لا توجد رسائل</div>
  </div>
@@ -1646,7 +1650,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V123"></script>
+  <script type="module" src="app.js?v=STUDIFY_V124"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
