@@ -3263,15 +3263,16 @@ if($("assistantLoginBtn")) {
     const p = $("assistantPass") ? $("assistantPass").value.trim() : "";
     if (!rawU || !p) return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
 
-    
-
     try {
       if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
+
+      const cleanU = rawU.replace(/@studify\.com$/i, '').trim();
+      const fullEmail = `${cleanU}@studify.com`;
 
       const { data, error } = await window.supabaseClient
         .from('assistants')
         .select('*')
-        .eq('email', rawU)
+        .or(`email.eq.${fullEmail},username.eq.${cleanU}`)
         .eq('password', p);
 
       if (error || !data || data.length === 0) {
@@ -3286,11 +3287,17 @@ if($("assistantLoginBtn")) {
       window.CURRENT_MANAGER_ID = fetchedManagerId;
       localStorage.setItem("ca_manager_id", fetchedManagerId);
 
+      const displayUsername = (asstRow.username || cleanU).replace(/@studify\.com$/i, '');
+
       localStorage.setItem(K_AUTH, "1");
       localStorage.setItem(K_ROLE, "assistant");
-      localStorage.setItem("ca_current_username", asstRow.username || rawU);
-      localStorage.setItem("ca_asst_email", rawU);
+      localStorage.setItem("ca_current_username", displayUsername);
+      localStorage.setItem("ca_asst_email", asstRow.email || fullEmail);
       window.CURRENT_ROLE = "assistant";
+      
+      if ($("currentShiftManagerName")) {
+        $("currentShiftManagerName").innerText = displayUsername;
+      }
       
       // Load settings to get permissions
       await loadAll();

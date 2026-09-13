@@ -1106,7 +1106,24 @@ window.togglePermission = async function(username, permKey, isAllowed) {
 
 window.openAddAssistantModal = function() {
   const m = document.getElementById("addAssistantModal");
-  if (m) m.classList.remove("hidden");
+  if (m) {
+    m.classList.remove("hidden");
+    const uInp = document.getElementById("newAsstUsernameInput");
+    const pInp = document.getElementById("newAsstPasswordInput");
+    if (uInp) {
+      uInp.value = "";
+      setTimeout(() => uInp.focus(), 50);
+    }
+    if (pInp) {
+      pInp.value = "";
+      pInp.type = "password";
+      const eyeIcon = document.getElementById("asstPassEyeIcon");
+      if (eyeIcon) {
+        eyeIcon.className = "fa-regular fa-eye";
+      }
+    }
+    window.updateAsstPreview();
+  }
 };
 
 window.closeAddAssistantModal = function() {
@@ -1114,12 +1131,39 @@ window.closeAddAssistantModal = function() {
   if (m) m.classList.add("hidden");
 };
 
+window.toggleNewAsstPassword = function() {
+  const passInp = document.getElementById("newAsstPasswordInput");
+  const eyeIcon = document.getElementById("asstPassEyeIcon");
+  if (!passInp) return;
+  if (passInp.type === "password") {
+    passInp.type = "text";
+    if (eyeIcon) eyeIcon.className = "fa-regular fa-eye-slash";
+  } else {
+    passInp.type = "password";
+    if (eyeIcon) eyeIcon.className = "fa-regular fa-eye";
+  }
+};
+
+window.updateAsstPreview = function() {
+  const uInp = document.getElementById("newAsstUsernameInput");
+  const previewEl = document.getElementById("asstEmailPreviewText");
+  if (!previewEl) return;
+  let val = uInp ? uInp.value.trim().toLowerCase() : "";
+  val = val.replace(/@studify\.com$/i, '').trim();
+  previewEl.textContent = (val || "username") + "@studify.com";
+};
+
 window.submitNewAssistant = async function() {
-  const u = document.getElementById("newAsstUsernameInput").value.trim().toLowerCase();
-  const p = document.getElementById("newAsstPasswordInput").value.trim();
+  const uInp = document.getElementById("newAsstUsernameInput");
+  const pInp = document.getElementById("newAsstPasswordInput");
+  const btn = document.getElementById("submitNewAssistantBtn");
+
+  let u = uInp ? uInp.value.trim().toLowerCase() : "";
+  u = u.replace(/@studify\.com$/i, '').trim();
+  const p = pInp ? pInp.value.trim() : "";
 
   if (!u || !p) return showToast("يرجى إدخال اسم المستخدم وكلمة المرور", "err");
-  if (!/^[a-zA-Z0-9_]+$/.test(u)) return showToast("اسم المستخدم يجب أن يكون بالإنجليزية وبدون مسافات", "err");
+  if (!/^[a-z0-9_]+$/.test(u)) return showToast("اسم المستخدم يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام فقط بدون مسافات", "err");
 
   // Check assistant plan limit before adding
   if (typeof window.checkAssistantLimit === 'function') {
@@ -1128,34 +1172,45 @@ window.submitNewAssistant = async function() {
   }
 
   try {
-    if (!supabase) return;
+    if (!supabase) return showToast("فشل الاتصال بالسحابة", "err");
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإنشاء...';
+    }
     
     // Default all permissions to true initially
     const initialPerms = {};
     PERMISSIONS_DEFS.forEach(def => { initialPerms[def.key] = true; });
 
+    const fullEmail = `${u}@studify.com`;
+
     const { error } = await supabase.from('assistants').insert([{
       username: u,
-      email: `${u}@studify.com`,
+      email: fullEmail,
       password: p,
-      permissions: initialPerms,
-      manager_id: currentCenterId
+      permissions: initialPerms
     }]);
 
     if (error) {
-      if (error.code === '23505') throw new Error("اسم المستخدم محجوز مسبقاً، اختر اسماً آخر.");
+      if (error.code === '23505') throw new Error("اسم المستخدم محجوز مسبقاً، يرجى اختيار اسم آخر.");
       throw error;
     }
 
-    showToast("تم إنشاء حساب المساعد بنجاح.", "success");
-    document.getElementById("newAsstUsernameInput").value = "";
-    document.getElementById("newAsstPasswordInput").value = "";
+    showToast("تم إنشاء حساب المساعد بنجاح", "success");
+    if (uInp) uInp.value = "";
+    if (pInp) pInp.value = "";
     window.closeAddAssistantModal();
     window.fetchAssistants();
 
   } catch(err) {
-    console.error(err);
+    console.error("Submit New Assistant Error:", err);
     showToast(err.message || "فشل إضافة المساعد", "err");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> إنشاء الحساب';
+    }
   }
 };
 
