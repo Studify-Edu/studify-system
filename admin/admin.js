@@ -1375,6 +1375,8 @@ window.loadDailyReport = function(dateStr) {
 // 5. TERM FINANCIAL REPORT
 // ========================================================
 window.renderTermTable = function() {
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
   const search = (document.getElementById("termSearchInput")?.value || "").toLowerCase().trim();
   const clsFilter = document.getElementById("termClassFilter")?.value || "";
   const tbody = document.getElementById("termReportTableBody");
@@ -1383,7 +1385,7 @@ window.renderTermTable = function() {
   // Populate classes
   if (clsSel) {
     const existing = [...clsSel.options].map(o => o.value);
-    const classes = [...new Set(Object.values(students).map(s => s.className || "عام"))];
+    const classes = [...new Set(Object.values(students).map(s => s.className || (isAr ? "عام" : "General")))];
     classes.forEach(c => {
       if (!existing.includes(c)) {
         const opt = document.createElement("option");
@@ -1399,7 +1401,7 @@ window.renderTermTable = function() {
   Object.values(students).forEach(st => {
     if (!st || !st.name) return;
     if (search && !st.name.toLowerCase().includes(search) && !String(st.id).includes(search)) return;
-    const cls = (st.className || "عام").trim();
+    const cls = (st.className || (isAr ? "عام" : "General")).trim();
     if (clsFilter && cls !== clsFilter) return;
 
     matchCount++;
@@ -1427,20 +1429,28 @@ window.renderTermTable = function() {
     totalRev += paid;
     totalDebt += debt;
 
+    const discountBadge = discount > 0 
+      ? `<span style="display:inline-block; font-size:0.75em; background:rgba(245,158,11,0.15); color:#F59E0B; padding:1px 5px; border-radius:4px; margin-inline-start:4px;">(${isAr ? 'خصم ' + discount + ' ج' : 'Disc. ' + discount + ' EGP'})</span>`
+      : '';
+    const statusText = debt > 0 
+      ? (debt + currencySuffix) 
+      : `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.85em; padding:3px 8px; border-radius:6px; font-weight:700;"><i class="fa-solid fa-circle-check"></i> ${isAr ? "خالص" : "Paid"}</span>`;
+    const profileBtnText = isAr ? "ملف الطالب" : "Profile";
+
     rowsHtml += `
       <tr>
         <td style="font-weight: 700;">${st.name} <span style="font-size:0.8em; color:var(--text-secondary);">(#${st.id})</span></td>
         <td><span style="background:var(--gradient-subtle); color:var(--primary); font-weight:700; padding:3px 8px; border-radius:6px; font-size:0.85em;">${cls}</span></td>
-        <td>${req > 0 ? req + " ج" : "—"}</td>
+        <td>${req > 0 ? (req + currencySuffix) : "—"}</td>
         <td style="color:var(--success); font-weight:700;">
-          ${paid > 0 ? paid + " ج" : "0 ج"}
-          ${discount > 0 ? `<span style="display:inline-block; font-size:0.75em; background:rgba(245,158,11,0.15); color:#F59E0B; padding:1px 5px; border-radius:4px; margin-inline-start:4px;">(خصم ${discount} ج)</span>` : ''}
+          ${paid > 0 ? (paid + currencySuffix) : ("0" + currencySuffix)}
+          ${discountBadge}
         </td>
-        <td style="color:${debt > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${debt > 0 ? debt + " ج" : "خالص"}</td>
+        <td style="color:${debt > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${statusText}</td>
         <td style="font-weight:700;">${attCount}</td>
         <td>
           <a href="../assistant/index.html" style="text-decoration:none;" class="btn secondary smallBtn">
-            <i class="fa-solid fa-folder-open"></i> ملف الطالب
+            <i class="fa-solid fa-folder-open"></i> ${profileBtnText}
           </a>
         </td>
       </tr>
@@ -1452,11 +1462,11 @@ window.renderTermTable = function() {
   const statTermDbt = document.getElementById("statTermDebt");
 
   if (statTermSt) statTermSt.textContent = matchCount;
-  if (statTermRev) statTermRev.textContent = totalRev.toLocaleString() + " ج";
-  if (statTermDbt) statTermDbt.textContent = totalDebt.toLocaleString() + " ج";
+  if (statTermRev) statTermRev.textContent = totalRev.toLocaleString() + currencySuffix;
+  if (statTermDbt) statTermDbt.textContent = totalDebt.toLocaleString() + currencySuffix;
 
   if (tbody) {
-    tbody.innerHTML = rowsHtml || `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">لا توجد نتائج مطابقة</td></tr>`;
+    tbody.innerHTML = rowsHtml || `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">${isAr ? "لا توجد نتائج مطابقة" : "No matching records found"}</td></tr>`;
   }
 };
 
@@ -1986,13 +1996,15 @@ window.displayDirectDecisionStudent = function(st) {
   const curPaid = Number(st.paid) || 0;
   const remaining = Math.max(0, req - curDisc - curPaid);
 
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
   document.getElementById("ddsIdBadge").textContent = "ID: " + st.id;
-  document.getElementById("ddsName").textContent = st.name || "طالب بدون اسم";
-  document.getElementById("ddsClass").textContent = st.className || "غير محدد";
-  document.getElementById("ddsRequired").textContent = req + " ج";
-  document.getElementById("ddsCurrentDiscount").textContent = curDisc + " ج";
-  document.getElementById("ddsPaid").textContent = curPaid + " ج";
-  document.getElementById("ddsRemaining").textContent = remaining + " ج";
+  document.getElementById("ddsName").textContent = st.name || (isAr ? "طالب بدون اسم" : "Unnamed Student");
+  document.getElementById("ddsClass").textContent = st.className || (isAr ? "غير محدد" : "Unspecified");
+  document.getElementById("ddsRequired").textContent = req + currencySuffix;
+  document.getElementById("ddsCurrentDiscount").textContent = curDisc + currencySuffix;
+  document.getElementById("ddsPaid").textContent = curPaid + currencySuffix;
+  document.getElementById("ddsRemaining").textContent = remaining + currencySuffix;
 
   const valInp = document.getElementById("directDecisionValueInput");
   if (valInp) valInp.value = curDisc || "";
@@ -2112,7 +2124,9 @@ window.applyDirectDecision = async function() {
 window.fetchDecisions = async function() {
   const listEl = document.getElementById("adminDecisionsList");
   if (!listEl || !supabase) return;
-  listEl.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> جاري جلب الطلبات...</div>';
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
+  listEl.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? "جاري جلب الطلبات..." : "Loading decision requests..."}</div>`;
 
   try {
     const { data: reqs, error } = await supabase
@@ -2126,31 +2140,38 @@ window.fetchDecisions = async function() {
     fetchDecisionsCount();
 
     if (!reqs || reqs.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-secondary);">لا توجد طلبات قرارات معلقة حالياً. كل شيء مستقر.</div>';
+      listEl.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد طلبات قرارات معلقة حالياً. كل شيء مستقر." : "No pending decision requests currently. All clear."}</div>`;
       return;
     }
 
     let html = "";
     reqs.forEach(r => {
-      const date = new Date(r.created_at).toLocaleString("ar-EG");
+      const date = new Date(r.created_at).toLocaleString(isAr ? "ar-EG" : "en-US");
       const isExempt = (r.title === "exemption" || r.sub_type === "exemption");
       const subType = isExempt ? "exemption" : "discount";
-      const typeLabel = isExempt ? "إعفاء كامل" : `خصم بقيمة ${r.amount} ج`;
+      const typeLabel = isExempt ? (isAr ? "إعفاء كامل (100%)" : "Full Exemption (100%)") : (isAr ? `خصم بقيمة ${r.amount} ج` : `Discount of ${r.amount} EGP`);
+      const studentCodeTitle = isAr ? `طالب كود: ${r.student_id || '—'}` : `Student ID: ${r.student_id || '—'}`;
+      const requestedByLabel = isAr ? "طلب بواسطة:" : "Requested by:";
+      const senderTitle = r.sender_name || (isAr ? "مساعد" : "Assistant");
+      const reasonLabel = isAr ? "السبب:" : "Reason:";
+      const amountText = isExempt ? (isAr ? "إعفاء" : "Exemption") : (r.amount + currencySuffix);
+      const approveText = isAr ? "موافقة" : "Approve";
+      const rejectText = isAr ? "رفض" : "Reject";
 
       html += `
         <div class="decision-card">
           <div class="decision-card-info">
-            <div class="decision-student-name">طالب كود: ${r.student_id || '—'}</div>
-            <div class="decision-meta">${typeLabel} • طلب بواسطة: <b>${r.sender_name || 'مساعد'}</b> • ${date}</div>
-            <div class="decision-meta" style="margin-top: 4px; color: var(--text-primary);">السبب: ${r.message || '—'}</div>
+            <div class="decision-student-name">${studentCodeTitle}</div>
+            <div class="decision-meta">${typeLabel} • ${requestedByLabel} <b>${senderTitle}</b> • ${date}</div>
+            <div class="decision-meta" style="margin-top: 4px; color: var(--text-primary);">${reasonLabel} ${r.message || '—'}</div>
           </div>
-          <div class="decision-amount">${isExempt ? "إعفاء" : r.amount + " ج"}</div>
+          <div class="decision-amount">${amountText}</div>
           <div class="decision-actions">
             <button class="btn success smallBtn" onclick="window.approveDecision('${r.id}', '${r.student_id}', '${subType}', ${r.amount || 0})">
-              <i class="fa-solid fa-check"></i> موافقة
+              <i class="fa-solid fa-check"></i> ${approveText}
             </button>
             <button class="btn danger smallBtn" onclick="window.rejectDecision('${r.id}', '${r.student_id}')">
-              <i class="fa-solid fa-xmark"></i> رفض
+              <i class="fa-solid fa-xmark"></i> ${rejectText}
             </button>
           </div>
         </div>
@@ -2161,7 +2182,7 @@ window.fetchDecisions = async function() {
 
   } catch(err) {
     console.error(err);
-    listEl.innerHTML = `<div style="color:var(--danger); text-align:center;">فشل جلب الطلبات: ${err.message}</div>`;
+    listEl.innerHTML = `<div style="color:var(--danger); text-align:center;">${isAr ? "فشل جلب الطلبات: " : "Failed to load requests: "}${err.message}</div>`;
   }
 };
 
@@ -2232,9 +2253,11 @@ window.rejectDecision = async function(reqId, studentId) {
 window.renderAdminPackages = function() {
   const container = document.getElementById("adminPackagesListContainer");
   if (!container) return;
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
 
   if (Object.keys(packages).length === 0) {
-    container.innerHTML = '<div style="color:var(--text-secondary); padding:10px;">لا توجد باقات مضافة بعد.</div>';
+    container.innerHTML = `<div style="color:var(--text-secondary); padding:10px;">${isAr ? "لا توجد باقات مضافة بعد." : "No packages added yet."}</div>`;
     return;
   }
 
@@ -2244,10 +2267,10 @@ window.renderAdminPackages = function() {
       <div style="background:var(--bg-inset); border:1px solid var(--border); border-radius:10px; padding:16px; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <h4 style="font-size:1.05em; font-weight:700; color:var(--primary);">${p.name}</h4>
-          <span style="font-size:0.85em; color:var(--text-secondary);">السعر: <b>${p.price} ج</b></span>
+          <span style="font-size:0.85em; color:var(--text-secondary);">${isAr ? "السعر:" : "Price:"} <b>${p.price}${currencySuffix}</b></span>
         </div>
         <button class="btn secondary smallBtn" onclick="window.editPackagePrice('${p.name}', ${p.price})">
-          <i class="fa-solid fa-pen-to-square"></i> تعديل
+          <i class="fa-solid fa-pen-to-square"></i> ${isAr ? "تعديل" : "Edit"}
         </button>
       </div>
     `;

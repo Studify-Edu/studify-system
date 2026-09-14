@@ -2108,7 +2108,9 @@ function applyPermissions() {
      revToggle.innerHTML = isRevHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
    }
    if ($("todayRevenue")) {
-     $("todayRevenue").textContent = isRevHidden ? "****** ج" : revenue + " ج";
+     const isAr = (currentLang === "ar");
+   const currencySuffix = isAr ? " ج" : " EGP";
+   $("todayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (revenue + currencySuffix);
    }
  }
 
@@ -2508,7 +2510,9 @@ const st = students[id];
  remBox.style.background = "";
  remBox.style.color = "";
  remBox.style.border = "";
- remBox.innerHTML = `إجمالي المديونيات: <span id="stRemainingAmt">${remain}</span> ج`;
+ const isAr = (currentLang === "ar");
+ const currencySuffix = isAr ? " ج" : " EGP";
+ remBox.innerHTML = (isAr ? `إجمالي المديونيات: <span id="stRemainingAmt">${remain}</span> ج` : `Total Debt: <span id="stRemainingAmt">${remain}</span> EGP`);
  }
  }
 
@@ -2830,8 +2834,10 @@ const st = students[id];
  if (filterStatusEl) fStatus = filterStatusEl.value;
  if (filterAttendEl) fAttend = filterAttendEl.value;
  
- if(filterClassEl && filterClassEl.options.length <= 1) { 
-  filterClassEl.innerHTML = '<option value="all" data-i18n="flt_all_classes">كل الصفوف والمجموعات</option>';
+ if(filterClassEl) { 
+  const isAr = (currentLang === "ar");
+  const curVal = filterClassEl.value || "all";
+  filterClassEl.innerHTML = `<option value="all" data-i18n="flt_all_classes">${isAr ? "كل الصفوف والمجموعات" : "All Grades & Groups"}</option>`;
   const classesSet = new Set();
   Object.values(students).forEach(st => {
       if (st && st.className && st.className.trim()) classesSet.add(st.className.trim());
@@ -2839,16 +2845,19 @@ const st = students[id];
   classesSet.forEach(c => {
       const opt = document.createElement("option");
       opt.value = "class:" + c;
-      opt.innerText = "الصف: " + c;
+      opt.innerText = (isAr ? "الصف: " : "Grade: ") + c;
       filterClassEl.appendChild(opt);
   });
   const pkgsSet = new Set(Object.keys(groupFees || {}));
   pkgsSet.forEach(p => {
       const opt = document.createElement("option");
       opt.value = "pkg:" + p;
-      opt.innerText = "باقة: " + p;
+      opt.innerText = (isAr ? "باقة: " : "Package: ") + p;
       filterClassEl.appendChild(opt);
   });
+  if (curVal && [...filterClassEl.options].some(o => o.value === curVal)) {
+    filterClassEl.value = curVal;
+  }
 }
 
  let filled = [];
@@ -2987,12 +2996,14 @@ const st = students[id];
      let pBarColor = (remainAmt === 0 && totalReq > 0) ? "var(--success)" : "var(--primary)";
      let pBar = totalReq > 0 ? `<div style="width:100%; background:var(--bg-inset); height:5px; border-radius:3px; margin-top:4px; overflow:hidden; border:1px solid var(--border);"><div style="width:${percent}%; height:100%; background:${pBarColor}; border-radius:3px;"></div></div>` : '';
 
+     const isAr = (currentLang === "ar");
+     const currencySuffix = isAr ? " ج" : " EGP";
      let isAttended = (s.attendanceDates && s.attendanceDates.includes(today));
      let attendTxt = isAttended 
-        ? `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check"></i> حاضر</span>` 
+        ? `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check"></i> ${isAr ? "حاضر" : "Present"}</span>` 
         : `<span style="color:var(--text-secondary); font-size:0.85em;">—</span>`;
      let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
-     let gColor = getTagColor(sClass || 'عام');
+     let gColor = getTagColor(sClass || (isAr ? 'عام' : 'General'));
      let classBadge = sClass 
         ? `<span class="badge" style="background:${gColor}; border-color:${gColor}; color:#fff; font-weight:600; font-size:0.82em;">${sClass}</span>` 
         : `<span style="color:var(--text-secondary); font-size:0.82em;">—</span>`;
@@ -3003,16 +3014,16 @@ const st = students[id];
             return `<span class="badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:0.78em; margin:2px; display:inline-flex; align-items:center; gap:3px;"><i class="fa-solid fa-cube" style="font-size:0.85em;"></i> ${pName}</span>`;
         }).join(" ");
      } else {
-        pkgsBadgeHtml = `<span style="color:var(--text-secondary); font-size:0.8em;">بدون باقات</span>`;
+        pkgsBadgeHtml = `<span style="color:var(--text-secondary); font-size:0.8em;">${isAr ? "بدون باقات" : "No packages"}</span>`;
      }
 
      let remainDisplay = "";
      if (totalReq === 0) {
-        remainDisplay = `<span style="color:var(--text-secondary); font-size:0.85em;">0 ج</span>`;
+        remainDisplay = `<span style="color:var(--text-secondary); font-size:0.85em;">0${currencySuffix}</span>`;
      } else if (remainAmt === 0) {
-        remainDisplay = `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-circle-check"></i> خالص</span>`;
+        remainDisplay = `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-circle-check"></i> ${isAr ? "خالص" : "Paid"}</span>`;
      } else {
-        remainDisplay = `<span style="color:var(--danger); font-weight:bold; font-size:0.95em;">${remainAmt} ج</span>`;
+        remainDisplay = `<span style="color:var(--danger); font-weight:bold; font-size:0.95em;">${remainAmt}${currencySuffix}</span>`;
      }
 
      tr.innerHTML = `
@@ -3021,7 +3032,7 @@ const st = students[id];
      <td><b>${s.name}</b>${rankIcon}</td>
      <td>${classBadge}</td>
      <td>${pkgsBadgeHtml}</td>
-     <td><span style="font-weight:600; color:var(--text-primary);">${totalPaid} ج</span>${pBar}</td>
+     <td><span style="font-weight:600; color:var(--text-primary);">${totalPaid}${currencySuffix}</span>${pBar}</td>
      <td>${remainDisplay}</td>
      <td>${attendTxt}</td>`;
  tr.onclick = function(e) { 
@@ -3293,6 +3304,17 @@ const st = students[id];
  if(opt.value === "completed") opt.text = currentLang === 'ar' ? " تم الانتهاء" : " Completed";
  }
  }
+
+  // Live re-render active assistant tabs
+  const secPkg = document.getElementById("secPackages");
+  if (secPkg && !secPkg.classList.contains("hidden")) {
+    if (typeof renderGroupFeesModal === 'function') renderGroupFeesModal();
+  }
+  const secSt = document.getElementById("secStudents");
+  if (secSt && !secSt.classList.contains("hidden")) {
+    if (typeof renderList === 'function') renderList(true);
+  }
+  if (typeof updateTopbarRevenue === 'function') updateTopbarRevenue();
  }
  // ==========================================
  // 13. SYLLABUS MODULE
