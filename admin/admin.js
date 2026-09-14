@@ -265,9 +265,71 @@ const ADMIN_DICT = {
   "syl_save_btn": { ar: "حفظ وإضافة للجدول", en: "Save & Add to Schedule" },
   "syl_timeline_title": { ar: "خريطة الدروس الحالية", en: "Current Lessons Roadmap" },
 
-  // Subscription
+  // Subscription Plans & Lock Screen
+  "lock_title": { ar: "انتهت فترة اشتراكك", en: "Subscription Expired" },
+  "lock_desc": { ar: "عفواً، لقد انتهت فترة اشتراكك في نظام Studify.<br>يرجى التواصل مع الدعم الفني لتجديد الاشتراك والاستمرار في استخدام النظام.", en: "Your Studify subscription has expired.<br>Please contact technical support to renew your subscription and continue using the system." },
+  "lock_contact_text": { ar: "للتجديد تواصل مع فريق الدعم الفني", en: "Contact Technical Support to Renew" },
+  "sub_loading": { ar: "جاري تحميل بيانات الاشتراك...", en: "Loading subscription details..." },
   "sub_title_std": { ar: "خطط الاشتراك المتاحة — Standard", en: "Available Subscription Plans — Standard" },
-  "sub_title_upcoming": { ar: "الباقات القادمة قريباً", en: "Upcoming Future Packages" }
+  "sub_title_upcoming": { ar: "الباقات القادمة قريباً", en: "Upcoming Future Packages" },
+  
+  // Plan 1: Monthly
+  "sub_monthly_name": { ar: "الخطة المرنة", en: "Flexible Plan" },
+  "sub_monthly_dur": { ar: "اشتراك شهر واحد", en: "1 Month Subscription" },
+  "sub_monthly_badge": { ar: "الباقة الأساسية", en: "Basic Plan" },
+  "sub_monthly_curr": { ar: "جنيه / شهر", en: "EGP / Month" },
+  "sub_monthly_subtext": { ar: "السعر الأساسي لاشتراك الشهر الواحد", en: "Standard price for 1 month subscription" },
+  
+  // Plan 2: Quarterly
+  "sub_quarterly_name": { ar: "الخطة المريحة", en: "Comfort Plan" },
+  "sub_quarterly_dur": { ar: "اشتراك 3 شهور", en: "3 Months Subscription" },
+  "sub_quarterly_saving": { ar: "وفّر 600 ج", en: "Save 600 EGP" },
+  "sub_quarterly_old_price": { ar: "6,000 ج", en: "6,000 EGP" },
+  "sub_quarterly_discount_badge": { ar: "خصم ربع سنوي", en: "Quarterly Discount" },
+  "sub_quarterly_curr": { ar: "جنيه / 3 شهور", en: "EGP / 3 Months" },
+  "sub_quarterly_subtext": { ar: "يعادل <b>1,799 ج</b> فقط شهرياً", en: "Equates to only <b>1,799 EGP</b> / month" },
+  
+  // Plan 3: Golden / Semi-Annual
+  "sub_golden_ribbon": { ar: "الأكثر طلباً وتوفيراً", en: "Most Popular & Best Value" },
+  "sub_golden_name": { ar: "الخطة الذهبية", en: "Golden Plan" },
+  "sub_golden_dur": { ar: "اشتراك ترم كامل (5 شهور)", en: "Full Term Subscription (5 Months)" },
+  "sub_golden_saving": { ar: "وفّر 2,000 ج (شهر مجاناً)", en: "Save 2,000 EGP (1 Month Free)" },
+  "sub_golden_old_price": { ar: "10,000 ج", en: "10,000 EGP" },
+  "sub_golden_free_month": { ar: "شهر كامل مجاناً", en: "1 Full Month Free" },
+  "sub_golden_curr": { ar: "جنيه / ترم كامل", en: "EGP / Full Term" },
+  "sub_golden_subtext": { ar: "يعادل <b>1,599 ج</b> فقط شهرياً (وفر 2,000 ج)", en: "Equates to only <b>1,599 EGP</b> / month (Save 2,000 EGP)" },
+  "sub_btn_contact_golden": { ar: "تواصل للاشتراك الذهبي", en: "Contact for Golden Plan" },
+  
+  // Shared Plan Features
+  "sub_feat_full_system": { ar: "النظام التشغيلي والمالي الكامل", en: "Full Operational & Financial System" },
+  "sub_feat_full_system_all": { ar: "النظام التشغيلي والمالي بالكامل", en: "Full Operational & Financial System" },
+  "sub_feat_max_st_600": { ar: "الحد الأقصى <b>600 طالب فقط</b>", en: "Maximum <b>600 Students only</b>" },
+  "sub_feat_max_asst_2": { ar: "الحد الأقصى <b>2 مساعد فقط</b>", en: "Maximum <b>2 Assistants only</b>" },
+  "sub_feat_max_st_750": { ar: "الحد الأقصى <b>750 طالب</b>", en: "Maximum <b>750 Students</b>" },
+  "sub_feat_max_asst_4": { ar: "الحد الأقصى <b>4 مساعدين</b>", en: "Maximum <b>4 Assistants</b>" },
+  "sub_feat_max_st_1000": { ar: "الحد الأقصى <b>1,000 طالب</b>", en: "Maximum <b>1,000 Students</b>" },
+  "sub_feat_max_asst_5": { ar: "الحد الأقصى <b>5 مساعدين</b>", en: "Maximum <b>5 Assistants</b>" },
+  "sub_feat_peace_mind": { ar: "راحة بال من التجديد المتكرر", en: "Peace of mind from frequent renewals" },
+  "sub_feat_term_stability": { ar: "استقرار تام لترم دراسي كامل (5 شهور)", en: "Complete stability for full academic term (5 months)" },
+  "sub_feat_support_24h": { ar: "<b>دعم فني متواصل 24 ساعه لحل المشاكل التقنية</b>", en: "<b>24/7 continuous technical support for any issues</b>" },
+  "sub_feat_wa_golden": { ar: "<b>حملات التسويق الذكية بالواتساب (ميزة حصرية)</b>", en: "<b>Smart WhatsApp marketing campaigns (Exclusive feature)</b>" },
+  "sub_feat_wa_locked": { ar: "حملات التسويق الذكية بالواتساب (مغلقة)", en: "Smart WhatsApp Marketing Campaigns (Locked)" },
+  "sub_btn_contact": { ar: "تواصل للاشتراك", en: "Contact to Subscribe" },
+  
+  // Upcoming Plans
+  "sub_pro_name": { ar: "باقة Pro — تطبيق الموبايل الذكي", en: "Pro Package — Smart Mobile App" },
+  "sub_pro_subtitle": { ar: "تطبيق موبايل مخصص للطلاب وأولياء الأمور لمتابعة حضور ومواعيد السنتر لحظياً", en: "Dedicated mobile app for students & parents to track center attendance and schedules in real-time" },
+  "sub_vip_name": { ar: "باقة VIP — المنصة التعليمية المتكاملة", en: "VIP Package — All-in-One Learning Platform" },
+  "sub_vip_subtitle": { ar: "نظام تعليمي وسحابي كامل مع نطاق مخصص وسيرفرات خاصة بالسنتر", en: "Complete cloud learning platform with custom domain and dedicated servers for your center" },
+  "sub_badge_coming_soon": { ar: "قريباً<br>Coming Soon", en: "Coming Soon" },
+  "sub_pro_f1": { ar: "كارت الطالب الذكي مع كود QR مدمج لتسجيل الحضور الذاتي والسريع", en: "Smart student ID card with QR code for instant self-attendance" },
+  "sub_pro_f2": { ar: "إشعارات فورية وتنبيهات لولي الأمر بالغياب والدرجات بعد كل حصة", en: "Instant notifications to parents for absences and grades after every session" },
+  "sub_pro_f3": { ar: "لوحة متابعة مستوى الطالب وتفاصيل الواجبات والاختبارات الدورية", en: "Student dashboard with homework details and periodic test analytics" },
+  "sub_pro_f4": { ar: "متابعة الأقساط الشهرية وفواتير سداد الكورسات أونلاين بضغطة زر", en: "Track monthly installments and online course invoices with 1-click" },
+  "sub_vip_f1": { ar: "منصة وبوابة خاصة باسم ونطاق السنتر المستقل (Custom Domain)", en: "Custom branded web portal with independent center domain (Custom Domain)" },
+  "sub_vip_f2": { ar: "مشغل حصص وفيديوهات مشفر ومحمي بالكامل ضد تسجيل وتصوير الشاشة", en: "Encrypted lesson video player fully protected against screen capture and recording" },
+  "sub_vip_f3": { ar: "بنك أسئلة ذكي واختبارات إلكترونية بتصحيح فوري وتحليل أداء بالذكاء الاصطناعي", en: "Smart question bank and online tests with automated grading and AI performance insights" },
+  "sub_vip_f4": { ar: "استيعاب غير محدود للطلاب والمساعدين مع سيرفر مخصص ودعم VIP", en: "Unlimited capacity for students and assistants with dedicated high-speed server & VIP support" }
 };
 
 window.adminT = function(key) {
@@ -3041,14 +3103,15 @@ window.enforceSubscriptionLock = enforceSubscriptionLock;
 function updateSubscriptionSidebarPill() {
   const pill = document.getElementById('subscriptionStatusPill');
   if (!pill) return;
+  const isAr = (currentLang === "ar");
   pill.className = 'sub-status-pill';
   if (!SUBSCRIPTION.loaded) { pill.textContent = ''; return; }
   if (!SUBSCRIPTION.isActive) {
-    pill.classList.add('expired'); pill.textContent = 'منتهي';
+    pill.classList.add('expired'); pill.textContent = isAr ? 'منتهي' : 'Expired';
   } else if (SUBSCRIPTION.daysLeft <= 10) {
-    pill.classList.add('warning'); pill.textContent = SUBSCRIPTION.daysLeft + ' يوم';
+    pill.classList.add('warning'); pill.textContent = isAr ? (SUBSCRIPTION.daysLeft + ' يوم') : (SUBSCRIPTION.daysLeft + ' Days');
   } else {
-    pill.classList.add('active'); pill.textContent = 'نشط';
+    pill.classList.add('active'); pill.textContent = isAr ? 'نشط' : 'Active';
   }
 }
 
@@ -3094,9 +3157,10 @@ window.checkAssistantLimit = checkAssistantLimit;
 window.renderSubscriptionView = function() {
   const card = document.getElementById('subCurrentPlanCard');
   if (!card) return;
+  const isAr = (currentLang === "ar");
 
   if (!SUBSCRIPTION.loaded) {
-    card.innerHTML = '<div class="sub-plan-loading"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل بيانات الاشتراك...</div>';
+    card.innerHTML = `<div class="sub-plan-loading"><i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? "جاري تحميل بيانات الاشتراك..." : "Loading subscription details..."}</div>`;
     setTimeout(() => { if (SUBSCRIPTION.loaded) window.renderSubscriptionView(); }, 1500);
     return;
   }
@@ -3106,10 +3170,25 @@ window.renderSubscriptionView = function() {
   const progress = Math.max(0, Math.min(100, Math.round((daysLeft / totalDays) * 100)));
   const statusClass = isActive ? (daysLeft <= 10 ? 'warning' : 'active') : 'expired';
   const statusIcon  = isActive ? (daysLeft <= 10 ? 'fa-clock' : 'fa-circle-check') : 'fa-circle-xmark';
-  const statusText  = isActive ? (daysLeft <= 10 ? `ينتهي خلال ${daysLeft} يوم` : 'نشط') : 'منتهي';
+  const statusText  = isActive ? (daysLeft <= 10 ? (isAr ? `ينتهي خلال ${daysLeft} يوم` : `Expires in ${daysLeft} Days`) : (isAr ? 'نشط' : 'Active')) : (isAr ? 'منتهي' : 'Expired');
   const progressClass = progress <= 15 ? 'danger' : progress <= 30 ? 'warning' : '';
   const studentCount  = Object.keys(students).length;
   const asstCountDisplay = typeof currentAssistants === 'number' ? currentAssistants : 0;
+
+  // Localized plan display name
+  const localizedPlanName = isAr ? planName : (
+    planKey === 'semi_annual' ? 'Golden Plan (Full Term)' :
+    planKey === 'quarterly' ? 'Comfort Plan (3 Months)' :
+    planKey === 'monthly' ? 'Flexible Plan (1 Month)' : planName
+  );
+
+  const dateFromLbl = isAr ? "من" : "From";
+  const dateToLbl = isAr ? "حتى" : "Until";
+  const studentLbl = isAr ? "طالب" : "Students";
+  const assistantLbl = isAr ? "مساعد" : "Assistants";
+  const progressTitle = isAr ? "استهلاك مدة الاشتراك" : "Subscription Duration Used";
+  const progressSub = isAr ? `${daysLeft} يوم متبقي من ${totalDays}` : `${daysLeft} days remaining of ${totalDays}`;
+  const countdownLbl = isAr ? "يوم متبقي" : "Days Left";
 
   card.innerHTML = `
     <div class="sub-current-inner">
@@ -3117,27 +3196,27 @@ window.renderSubscriptionView = function() {
         <div class="sub-current-badge ${statusClass}">
           <i class="fa-solid ${statusIcon}"></i> ${statusText}
         </div>
-        <div class="sub-current-plan-name">${planName}</div>
+        <div class="sub-current-plan-name">${localizedPlanName}</div>
         <div class="sub-current-date-row">
           <i class="fa-solid fa-calendar-check" style="color:var(--primary)"></i>
-          من <b>${startDate || '—'}</b> &nbsp;حتى&nbsp; <b>${endDate || '—'}</b>
+          ${dateFromLbl} <b>${startDate || '—'}</b> &nbsp;${dateToLbl}&nbsp; <b>${endDate || '—'}</b>
         </div>
         <div class="sub-current-limits">
           <div class="sub-limit-chip">
             <i class="fa-solid fa-users"></i>
             <span class="sub-limit-chip-val">${studentCount} / ${maxStudents}</span>
-            <span class="sub-limit-chip-lbl">طالب</span>
+            <span class="sub-limit-chip-lbl">${studentLbl}</span>
           </div>
           <div class="sub-limit-chip">
             <i class="fa-solid fa-user-shield"></i>
             <span class="sub-limit-chip-val">${asstCountDisplay} / ${maxAssistants}</span>
-            <span class="sub-limit-chip-lbl">مساعد</span>
+            <span class="sub-limit-chip-lbl">${assistantLbl}</span>
           </div>
         </div>
         <div class="sub-progress-wrap">
           <div class="sub-progress-lbl">
-            <span>استهلاك مدة الاشتراك</span>
-            <span>${daysLeft} يوم متبقي من ${totalDays}</span>
+            <span>${progressTitle}</span>
+            <span>${progressSub}</span>
           </div>
           <div class="sub-progress-bar">
             <div class="sub-progress-fill ${progressClass}" style="width:${progress}%"></div>
@@ -3146,7 +3225,7 @@ window.renderSubscriptionView = function() {
       </div>
       <div class="sub-countdown">
         <div class="sub-countdown-days">${daysLeft}</div>
-        <div class="sub-countdown-lbl">يوم متبقي</div>
+        <div class="sub-countdown-lbl">${countdownLbl}</div>
       </div>
     </div>`;
 
@@ -3165,26 +3244,34 @@ window.renderSubscriptionView = function() {
     const btn = activePlanEl.querySelector('.sub-plan-btn');
     if (btn) {
       btn.className = 'sub-plan-btn current-plan-badge';
-      btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> باقتك الحالية';
+      btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${isAr ? "باقتك الحالية" : "Your Current Plan"}`;
       btn.onclick = null;
     }
   }
 };
 
 window.contactForRenewal = function(planKey) {
+  const isAr = (currentLang === "ar");
   const names = {
-    monthly:     'الخطة المرنة (1,999 ج/شهر)',
-    quarterly:   'الخطة المريحة (5,399 ج/3 شهور بدلاً من 6,000 ج)',
-    semi_annual: 'الخطة الذهبية (7,999 ج/ترم كامل بدلاً من 10,000 ج)'
+    monthly:     isAr ? 'الخطة المرنة (1,999 ج/شهر)' : 'Flexible Plan (1,999 EGP/month)',
+    quarterly:   isAr ? 'الخطة المريحة (5,399 ج/3 شهور بدلاً من 6,000 ج)' : 'Comfort Plan (5,399 EGP/3 months instead of 6,000 EGP)',
+    semi_annual: isAr ? 'الخطة الذهبية (7,999 ج/ترم كامل بدلاً من 10,000 ج)' : 'Golden Plan (7,999 EGP/full term instead of 10,000 EGP)'
   };
+  const title = isAr ? 'تجديد / ترقية الاشتراك' : 'Renew / Upgrade Subscription';
+  const desc = isAr 
+    ? `لتفعيل <b>${names[planKey] || planKey}</b>،<br>تواصل مع فريق الدعم الفني وسيتم التفعيل فوراً.`
+    : `To activate <b>${names[planKey] || planKey}</b>,<br>contact our technical support team for immediate activation.`;
+  const waText = isAr ? 'تواصل مع الدعم الفني عبر الواتساب' : 'Contact Technical Support via WhatsApp';
+  const okText = isAr ? 'حسناً' : 'OK';
+
   Swal.fire({
     icon: 'info',
-    title: 'تجديد / ترقية الاشتراك',
-    html: `<p style="color:var(--text-secondary);margin-bottom:14px">لتفعيل <b>${names[planKey] || planKey}</b>،<br>تواصل مع فريق الدعم الفني وسيتم التفعيل فوراً.</p>
+    title: title,
+    html: `<p style="color:var(--text-secondary);margin-bottom:14px">${desc}</p>
       <div style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.3);color:#25D366;padding:12px 18px;border-radius:10px;font-weight:700;font-size:.95em;display:flex;align-items:center;gap:10px;justify-content:center;">
-        <i class="fa-brands fa-whatsapp" style="font-size:1.3em"></i> تواصل مع الدعم الفني عبر الواتساب
+        <i class="fa-brands fa-whatsapp" style="font-size:1.3em"></i> ${waText}
       </div>`,
-    confirmButtonText: 'حسناً',
+    confirmButtonText: okText,
     confirmButtonColor: '#2563EB'
   });
 };

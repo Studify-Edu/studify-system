@@ -86,14 +86,11 @@
         <i class="fa-solid fa-lock"></i>
       </div>
       <div class="lock-badge">Studify — Standard Plan</div>
-      <h1 class="lock-title">انتهت فترة اشتراكك</h1>
-      <p class="lock-desc">
-        عفواً، لقد انتهت فترة اشتراكك في نظام Studify.<br>
-        يرجى التواصل مع الدعم الفني لتجديد الاشتراك والاستمرار في استخدام النظام.
-      </p>
+      <h1 class="lock-title" data-i18n="lock_title">انتهت فترة اشتراكك</h1>
+      <p class="lock-desc" data-i18n="lock_desc">عفواً، لقد انتهت فترة اشتراكك في نظام Studify.<br>يرجى التواصل مع الدعم الفني لتجديد الاشتراك والاستمرار في استخدام النظام.</p>
       <div class="lock-contact-box">
         <i class="fa-brands fa-whatsapp"></i>
-        <span>للتجديد تواصل مع فريق الدعم الفني</span>
+        <span data-i18n="lock_contact_text">للتجديد تواصل مع فريق الدعم الفني</span>
       </div>
       <div class="lock-plan-info" id="lockPlanInfo"></div>
     </div>
@@ -658,7 +655,7 @@
           <!-- Current Plan Status Card -->
           <div id="subCurrentPlanCard" class="sub-current-plan-card">
             <div class="sub-plan-loading">
-              <i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل بيانات الاشتراك...
+              <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n="sub_loading">جاري تحميل بيانات الاشتراك...</span>
             </div>
           </div>
 
@@ -677,10 +674,10 @@
                   <i class="fa-solid fa-calendar"></i>
                 </div>
                 <div>
-                  <div class="sub-plan-name">الخطة المرنة</div>
-                  <div class="sub-plan-duration">اشتراك شهر واحد</div>
+                  <div class="sub-plan-name" data-i18n="sub_monthly_name">الخطة المرنة</div>
+                  <div class="sub-plan-duration" data-i18n="sub_monthly_dur">اشتراك شهر واحد</div>
                 </div>
-                <div class="sub-plan-saving saving-badge plan-badge-gray">الباقة الأساسية</div>
+                <div class="sub-plan-saving saving-badge plan-badge-gray" data-i18n="sub_monthly_badge">الباقة الأساسية</div>
               </div>
               <div class="sub-plan-price-wrap">
                 <div class="sub-price-comparison" style="visibility: hidden; height: 21px;">
@@ -688,18 +685,18 @@
                 </div>
                 <div class="sub-plan-price">
                   <span class="price-amount">1,999</span>
-                  <span class="price-currency">جنيه / شهر</span>
+                  <span class="price-currency" data-i18n="sub_monthly_curr">جنيه / شهر</span>
                 </div>
-                <div class="sub-price-subtext">السعر الأساسي لاشتراك الشهر الواحد</div>
+                <div class="sub-price-subtext" data-i18n="sub_monthly_subtext">السعر الأساسي لاشتراك الشهر الواحد</div>
               </div>
               <ul class="sub-plan-features">
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> النظام التشغيلي والمالي الكامل</li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> الحد الأقصى <b>600 طالب فقط</b></li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> الحد الأقصى <b>2 مساعد فقط</b></li>
-                <li class="feature-no"><i class="fa-solid fa-xmark"></i> حملات التسويق الذكية بالواتساب (مغلقة)</li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_full_system">النظام التشغيلي والمالي الكامل</span></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_max_st_600">الحد الأقصى <b>600 طالب فقط</b></span></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_max_asst_2">الحد الأقصى <b>2 مساعد فقط</b></span></li>
+                <li class="feature-no"><i class="fa-solid fa-xmark"></i> <span data-i18n="sub_feat_wa_locked">حملات التسويق الذكية بالواتساب (مغلقة)</span></li>
               </ul>
               <button class="sub-plan-btn sub-contact-btn" onclick="window.contactForRenewal('monthly')">
-                <i class="fa-solid fa-headset"></i> تواصل للاشتراك
+                <i class="fa-solid fa-headset"></i> <span data-i18n="sub_btn_contact">تواصل للاشتراك</span>
               </button>
             </div>
 
@@ -710,68 +707,68 @@
                   <i class="fa-solid fa-calendar-days"></i>
                 </div>
                 <div>
-                  <div class="sub-plan-name">الخطة المريحة</div>
-                  <div class="sub-plan-duration">اشتراك 3 شهور</div>
+                  <div class="sub-plan-name" data-i18n="sub_quarterly_name">الخطة المريحة</div>
+                  <div class="sub-plan-duration" data-i18n="sub_quarterly_dur">اشتراك 3 شهور</div>
                 </div>
-                <div class="sub-plan-saving saving-badge">وفّر 600 ج</div>
+                <div class="sub-plan-saving saving-badge" data-i18n="sub_quarterly_saving">وفّر 600 ج</div>
               </div>
               <div class="sub-plan-price-wrap">
                 <div class="sub-price-comparison">
-                  <span class="sub-old-price">6,000 ج</span>
-                  <span class="sub-discount-badge green-badge">خصم ربع سنوي</span>
+                  <span class="sub-old-price" data-i18n="sub_quarterly_old_price">6,000 ج</span>
+                  <span class="sub-discount-badge green-badge" data-i18n="sub_quarterly_discount_badge">خصم ربع سنوي</span>
                 </div>
                 <div class="sub-plan-price">
                   <span class="price-amount">5,399</span>
-                  <span class="price-currency">جنيه / 3 شهور</span>
+                  <span class="price-currency" data-i18n="sub_quarterly_curr">جنيه / 3 شهور</span>
                 </div>
-                <div class="sub-price-subtext">يعادل <b>1,799 ج</b> فقط شهرياً</div>
+                <div class="sub-price-subtext" data-i18n="sub_quarterly_subtext">يعادل <b>1,799 ج</b> فقط شهرياً</div>
               </div>
               <ul class="sub-plan-features">
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> النظام التشغيلي والمالي الكامل</li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> الحد الأقصى <b>750 طالب</b></li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> الحد الأقصى <b>4 مساعدين</b></li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> راحة بال من التجديد المتكرر</li>
-                <li class="feature-no"><i class="fa-solid fa-xmark"></i> حملات التسويق الذكية بالواتساب (مغلقة)</li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_full_system">النظام التشغيلي والمالي الكامل</span></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_max_st_750">الحد الأقصى <b>750 طالب</b></span></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_max_asst_4">الحد الأقصى <b>4 مساعدين</b></span></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_peace_mind">راحة بال من التجديد المتكرر</span></li>
+                <li class="feature-no"><i class="fa-solid fa-xmark"></i> <span data-i18n="sub_feat_wa_locked">حملات التسويق الذكية بالواتساب (مغلقة)</span></li>
               </ul>
               <button class="sub-plan-btn sub-contact-btn" onclick="window.contactForRenewal('quarterly')">
-                <i class="fa-solid fa-headset"></i> تواصل للاشتراك
+                <i class="fa-solid fa-headset"></i> <span data-i18n="sub_btn_contact">تواصل للاشتراك</span>
               </button>
             </div>
 
             <!-- Plan 3: Semi-Annual / Term (BEST VALUE) -->
             <div class="sub-plan-card golden-plan" id="subPlanSemiAnnual">
-              <div class="golden-ribbon"><i class="fa-solid fa-crown golden-crown-icon"></i> الأكثر طلباً وتوفيراً</div>
+              <div class="golden-ribbon"><i class="fa-solid fa-crown golden-crown-icon"></i> <span data-i18n="sub_golden_ribbon">الأكثر طلباً وتوفيراً</span></div>
               <div class="sub-plan-header">
                 <div class="sub-plan-icon golden-icon">
                   <i class="fa-solid fa-crown golden-crown-icon"></i>
                 </div>
                 <div>
-                  <div class="sub-plan-name">الخطة الذهبية</div>
-                  <div class="sub-plan-duration">اشتراك ترم كامل (5 شهور)</div>
+                  <div class="sub-plan-name" data-i18n="sub_golden_name">الخطة الذهبية</div>
+                  <div class="sub-plan-duration" data-i18n="sub_golden_dur">اشتراك ترم كامل (5 شهور)</div>
                 </div>
-                <div class="sub-plan-saving saving-badge golden-saving">وفّر 2,000 ج (شهر مجاناً)</div>
+                <div class="sub-plan-saving saving-badge golden-saving" data-i18n="sub_golden_saving">وفّر 2,000 ج (شهر مجاناً)</div>
               </div>
               <div class="sub-plan-price-wrap">
                 <div class="sub-price-comparison">
-                  <span class="sub-old-price golden-old-price">10,000 ج</span>
-                  <span class="sub-discount-badge golden-badge-pulse"><i class="fa-solid fa-gift"></i> شهر كامل مجاناً</span>
+                  <span class="sub-old-price golden-old-price" data-i18n="sub_golden_old_price">10,000 ج</span>
+                  <span class="sub-discount-badge golden-badge-pulse"><i class="fa-solid fa-gift"></i> <span data-i18n="sub_golden_free_month">شهر كامل مجاناً</span></span>
                 </div>
                 <div class="sub-plan-price">
                   <span class="price-amount golden-price">7,999</span>
-                  <span class="price-currency">جنيه / ترم كامل</span>
+                  <span class="price-currency" data-i18n="sub_golden_curr">جنيه / ترم كامل</span>
                 </div>
-                <div class="sub-price-subtext golden-subtext">يعادل <b>1,599 ج</b> فقط شهرياً (وفر 2,000 ج)</div>
+                <div class="sub-price-subtext golden-subtext" data-i18n="sub_golden_subtext">يعادل <b>1,599 ج</b> فقط شهرياً (وفر 2,000 ج)</div>
               </div>
               <ul class="sub-plan-features">
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> النظام التشغيلي والمالي بالكامل</li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> استقرار تام لترم دراسي كامل (5 شهور)</li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> الحد الأقصى <b>1,000 طالب</b></li>
-                <li class="feature-ok"><i class="fa-solid fa-check"></i> الحد الأقصى <b>5 مساعدين</b></li>
-                <li class="feature-ok feature-support"><i class="fa-solid fa-headset"></i> <b>دعم فني متواصل 24 ساعة لحل المشاكل التقنية</b></li>
-                <li class="feature-ok feature-golden"><i class="fa-brands fa-whatsapp whatsapp-animated-icon"></i> <b>حملات التسويق الذكية بالواتساب (ميزة حصرية)</b></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_full_system_all">النظام التشغيلي والمالي بالكامل</span></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_term_stability">استقرار تام لترم دراسي كامل (5 شهور)</span></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_max_st_1000">الحد الأقصى <b>1,000 طالب</b></span></li>
+                <li class="feature-ok"><i class="fa-solid fa-check"></i> <span data-i18n="sub_feat_max_asst_5">الحد الأقصى <b>5 مساعدين</b></span></li>
+                <li class="feature-ok feature-support"><i class="fa-solid fa-headset"></i> <span data-i18n="sub_feat_support_24h"><b>دعم فني متواصل 24 ساعه لحل المشاكل التقنية</b></span></li>
+                <li class="feature-ok feature-golden"><i class="fa-brands fa-whatsapp whatsapp-animated-icon"></i> <span data-i18n="sub_feat_wa_golden"><b>حملات التسويق الذكية بالواتساب (ميزة حصرية)</b></span></li>
               </ul>
               <button class="sub-plan-btn golden-btn" onclick="window.contactForRenewal('semi_annual')">
-                <i class="fa-solid fa-headset"></i> تواصل للاشتراك الذهبي
+                <i class="fa-solid fa-headset"></i> <span data-i18n="sub_btn_contact_golden">تواصل للاشتراك الذهبي</span>
               </button>
             </div>
 
@@ -791,16 +788,16 @@
                   <i class="fa-solid fa-mobile-screen-button"></i>
                 </div>
                 <div class="coming-header-text">
-                  <div class="coming-name">باقة Pro — تطبيق الموبايل الذكي</div>
-                  <div class="coming-subtitle">تطبيق موبايل مخصص للطلاب وأولياء الأمور لمتابعة حضور ومواعيد السنتر لحظياً</div>
+                  <div class="coming-name" data-i18n="sub_pro_name">باقة Pro — تطبيق الموبايل الذكي</div>
+                  <div class="coming-subtitle" data-i18n="sub_pro_subtitle">تطبيق موبايل مخصص للطلاب وأولياء الأمور لمتابعة حضور ومواعيد السنتر لحظياً</div>
                 </div>
-                <div class="coming-badge">قريباً<br>Coming Soon</div>
+                <div class="coming-badge" data-i18n="sub_badge_coming_soon">قريباً<br>Coming Soon</div>
               </div>
               <ul class="coming-features-list">
-                <li><i class="fa-solid fa-qrcode"></i> كارت الطالب الذكي مع كود QR مدمج لتسجيل الحضور الذاتي والسريع</li>
-                <li><i class="fa-solid fa-bell"></i> إشعارات فورية وتنبيهات لولي الأمر بالغياب والدرجات بعد كل حصة</li>
-                <li><i class="fa-solid fa-chart-line"></i> لوحة متابعة مستوى الطالب وتفاصيل الواجبات والاختبارات الدورية</li>
-                <li><i class="fa-solid fa-wallet"></i> متابعة الأقساط الشهرية وفواتير سداد الكورسات أونلاين بضغطة زر</li>
+                <li><i class="fa-solid fa-qrcode"></i> <span data-i18n="sub_pro_f1">كارت الطالب الذكي مع كود QR مدمج لتسجيل الحضور الذاتي والسريع</span></li>
+                <li><i class="fa-solid fa-bell"></i> <span data-i18n="sub_pro_f2">إشعارات فورية وتنبيهات لولي الأمر بالغياب والدرجات بعد كل حصة</span></li>
+                <li><i class="fa-solid fa-chart-line"></i> <span data-i18n="sub_pro_f3">لوحة متابعة مستوى الطالب وتفاصيل الواجبات والاختبارات الدورية</span></li>
+                <li><i class="fa-solid fa-wallet"></i> <span data-i18n="sub_pro_f4">متابعة الأقساط الشهرية وفواتير سداد الكورسات أونلاين بضغطة زر</span></li>
               </ul>
             </div>
 
@@ -811,16 +808,16 @@
                   <i class="fa-solid fa-gem"></i>
                 </div>
                 <div class="coming-header-text">
-                  <div class="coming-name">باقة VIP — المنصة التعليمية المتكاملة</div>
-                  <div class="coming-subtitle">نظام تعليمي وسحابي كامل مع نطاق مخصص وسيرفرات خاصة بالسنتر</div>
+                  <div class="coming-name" data-i18n="sub_vip_name">باقة VIP — المنصة التعليمية المتكاملة</div>
+                  <div class="coming-subtitle" data-i18n="sub_vip_subtitle">نظام تعليمي وسحابي كامل مع نطاق مخصص وسيرفرات خاصة بالسنتر</div>
                 </div>
-                <div class="coming-badge">قريباً<br>Coming Soon</div>
+                <div class="coming-badge" data-i18n="sub_badge_coming_soon">قريباً<br>Coming Soon</div>
               </div>
               <ul class="coming-features-list">
-                <li><i class="fa-solid fa-globe"></i> منصة وبوابة خاصة باسم ونطاق السنتر المستقل (Custom Domain)</li>
-                <li><i class="fa-solid fa-video-slash"></i> مشغل حصص وفيديوهات مشفر ومحمي بالكامل ضد تسجيل وتصوير الشاشة</li>
-                <li><i class="fa-solid fa-brain"></i> بنك أسئلة ذكي واختبارات إلكترونية بتصحيح فوري وتحليل أداء بالذكاء الاصطناعي</li>
-                <li><i class="fa-solid fa-infinity"></i> استيعاب غير محدود للطلاب والمساعدين مع سيرفر مخصص ودعم VIP</li>
+                <li><i class="fa-solid fa-globe"></i> <span data-i18n="sub_vip_f1">منصة وبوابة خاصة باسم ونطاق السنتر المستقل (Custom Domain)</span></li>
+                <li><i class="fa-solid fa-video-slash"></i> <span data-i18n="sub_vip_f2">مشغل حصص وفيديوهات مشفر ومحمي بالكامل ضد تسجيل وتصوير الشاشة</span></li>
+                <li><i class="fa-solid fa-brain"></i> <span data-i18n="sub_vip_f3">بنك أسئلة ذكي واختبارات إلكترونية بتصحيح فوري وتحليل أداء بالذكاء الاصطناعي</span></li>
+                <li><i class="fa-solid fa-infinity"></i> <span data-i18n="sub_vip_f4">استيعاب غير محدود للطلاب والمساعدين مع سيرفر مخصص ودعم VIP</span></li>
               </ul>
             </div>
           </div>
@@ -1069,7 +1066,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V15"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V16"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->
