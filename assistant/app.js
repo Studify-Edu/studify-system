@@ -1569,53 +1569,44 @@ async function loadAll() {
         const studentPackagesMap = cfg.student_packages || {};
         const studentRanksMap = cfg.student_ranks || {};
 
-        if (!stRes.error && stRes.data) {
+        // 1. STUDENTS: Synchronize directly with cloud data
+        if (!stRes.error && Array.isArray(stRes.data)) {
+          const newStudents = {};
+          const newDeleted = {};
+          for (let i = BASE_MIN_ID; i <= BASE_MAX_ID; i++) {
+            newStudents[String(i)] = makeEmptyStudent(i);
+          }
+
           stRes.data.forEach(row => {
             const isCloudEmpty = (!row.name || row.name.trim() === '') && (!row.phone || row.phone.trim() === '');
-            const local = students[row.id];
-            const isLocalValid = local && local.name && local.name.trim() !== '';
+            if (isCloudEmpty) return;
 
-            // CRITICAL MERGE GUARD: An empty cloud row must NEVER overwrite a valid local student!
-            if (isCloudEmpty && isLocalValid) {
-              console.log(`[loadAll] Preserving valid local student #${row.id} (${local.name}) over empty cloud row`);
-              setTimeout(() => { if (typeof saveAll === 'function') saveAll(); }, 2000);
-              return;
-            }
-
-            const restoredPackages = (studentPackagesMap && studentPackagesMap[row.id]) || (local && local.packages) || row.packages || [];
-            const restoredRank = (studentRanksMap && studentRanksMap[row.id]) || (local && local.rank) || row.rank || 'normal';
+            const restoredPackages = (studentPackagesMap && studentPackagesMap[row.id]) || row.packages || [];
+            const restoredRank = (studentRanksMap && studentRanksMap[row.id]) || row.rank || 'normal';
 
             const stObj = {
               id: row.id,
-              name: row.name || (local ? local.name : ''),
-              phone: row.phone || (local ? local.phone : ''),
-              parentPhone: row.parent_phone || row.parentPhone || (local ? local.parentPhone : ''),
-              className: row.class_name || row.className || (local ? local.className : ''),
-              paymentPlan: row.payment_plan || (local ? local.paymentPlan : 'cash'),
-              paid: Number(row.paid) || (local ? local.paid : 0),
-              discount: Number(row.discount) || (local ? local.discount : 0),
-              notes: row.notes || (local ? local.notes : ''),
-              status: row.status || (local ? local.status : 'active'),
+              name: row.name || '',
+              phone: row.phone || '',
+              parentPhone: row.parent_phone || row.parentPhone || '',
+              className: row.class_name || row.className || '',
+              paymentPlan: row.payment_plan || 'cash',
+              paid: Number(row.paid) || 0,
+              discount: Number(row.discount) || 0,
+              notes: row.notes || '',
+              status: row.status || 'active',
               rank: restoredRank,
               packages: Array.isArray(restoredPackages) ? restoredPackages : [],
-              installments: row.installments || (local ? local.installments : []),
-              payments: row.payments || (local ? local.payments : []),
-              attendanceDates: Array.from(new Set(row.attendance_dates || (local ? local.attendanceDates : []))),
-              lastModified: row.last_modified || (local ? local.lastModified : Date.now())
+              installments: row.installments || [],
+              payments: row.payments || [],
+              attendanceDates: Array.from(new Set(row.attendance_dates || [])),
+              lastModified: row.last_modified || Date.now()
             };
 
             if (row.status === 'deleted') {
-              deletedStudents[row.id] = stObj;
-              delete students[row.id];
+              newDeleted[row.id] = stObj;
             } else {
-              // Merge: keep whichever is newer, but always prioritize non-empty data
-              if (!local) {
-                students[row.id] = stObj;
-              } else if (!isCloudEmpty && (row.last_modified >= (local.lastModified || 0))) {
-                students[row.id] = stObj;
-              } else if (!isLocalValid) {
-                students[row.id] = stObj;
-              }
+              newStudents[row.id] = stObj;
             }
 
             // Reconstruct attByDate from student attendanceDates
@@ -1624,56 +1615,42 @@ async function loadAll() {
               if (!attByDate[d].includes(String(row.id))) attByDate[d].push(String(row.id));
             });
           });
+
+          students = newStudents;
+          deletedStudents = newDeleted;
+          await secureSave(K_STUDENTS, students);
+          await secureSave(K_DELETED, deletedStudents);
         }
 
-        if (!pkgRes.error) {
+        // 2. PACKAGES: Cloud packages table is the single source of truth
+        if (!pkgRes.error && Array.isArray(pkgRes.data)) {
           const cfgGroupFees = cfg.group_fees || {};
           const loadedGroupFees = {};
 
-          if (Array.isArray(pkgRes.data)) {
-            pkgRes.data.forEach(p => {
-              const extra = cfgGroupFees[p.name] || {};
-              loadedGroupFees[p.name] = {
-                name: p.name,
-                subject: p.subject || extra.subject || (groupFees[p.name] ? groupFees[p.name].subject : '') || p.name || '',
-                price: Number(p.price) || 0,
-                hasInstallments: !!p.has_installments,
-                installmentPrice: Number(p.installment_price) || 0,
-                expiryType: extra.expiryType || 'none',
-                startDate: extra.startDate || '',
-                endDate: extra.endDate || '',
-                sessionLimit: extra.sessionLimit || 0
-              };
-            });
-          }
-
-          Object.keys(cfgGroupFees).forEach(pkgName => {
-            if (!loadedGroupFees[pkgName]) {
-              const extra = cfgGroupFees[pkgName];
-              const isObj = typeof extra === 'object' && extra !== null;
-              loadedGroupFees[pkgName] = {
-                name: pkgName,
-                subject: isObj ? (extra.subject || pkgName) : pkgName,
-                price: Number(isObj ? extra.price : extra) || 0,
-                hasInstallments: isObj ? !!extra.hasInstallments : false,
-                installmentPrice: isObj ? Number(extra.installmentPrice || 0) : 0,
-                expiryType: isObj ? (extra.expiryType || 'none') : 'none',
-                startDate: isObj ? (extra.startDate || '') : '',
-                endDate: isObj ? (extra.endDate || '') : '',
-                sessionLimit: isObj ? (extra.sessionLimit || 0) : 0
-              };
-            }
+          pkgRes.data.forEach(p => {
+            const extra = cfgGroupFees[p.name] || {};
+            loadedGroupFees[p.name] = {
+              name: p.name,
+              subject: p.subject || extra.subject || p.name || '',
+              price: Number(p.price) || 0,
+              hasInstallments: !!p.has_installments,
+              installmentPrice: Number(p.installment_price) || 0,
+              expiryType: extra.expiryType || 'none',
+              startDate: extra.startDate || '',
+              endDate: extra.endDate || '',
+              sessionLimit: extra.sessionLimit || 0
+            };
           });
 
-          // If cloud data is fetched, synchronize groupFees so deleted packages do not resurrect
-          if (Object.keys(loadedGroupFees).length > 0 || (Array.isArray(pkgRes.data) && pkgRes.data.length === 0 && Object.keys(cfgGroupFees).length === 0)) {
-            groupFees = loadedGroupFees;
-          }
+          groupFees = loadedGroupFees;
+          await secureSave(K_GROUP_FEES, groupFees);
         }
 
-        if (!bRes.error && bRes.data && bRes.data.length > 0) {
+        // 3. BOOKLETS: Cloud booklets table is single source of truth
+        if (!bRes.error && Array.isArray(bRes.data)) {
+          const loadedBooklets = {};
           bRes.data.forEach(b => {
-            bookletsStock[b.id] = {
+            loadedBooklets[b.id] = {
               id: b.id,
               name: b.name,
               price: Number(b.price) || 0,
@@ -1681,6 +1658,8 @@ async function loadAll() {
               sales: b.sales || []
             };
           });
+          bookletsStock = loadedBooklets;
+          await secureSave(K_BOOKLETS, bookletsStock);
         }
 
         if (!centerRes.error && centerRes.data) {

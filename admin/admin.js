@@ -1047,10 +1047,10 @@ async function loadAllAdminData() {
       });
     }
 
-    // Packages (Merged from packages table and settings config)
+    // Packages: Supabase packages table is the single source of truth
     packages = {};
     groupFees = {};
-    if (pkgRes.data) {
+    if (pkgRes.data && Array.isArray(pkgRes.data)) {
       pkgRes.data.forEach(p => {
         packages[p.name] = {
           name: p.name,
@@ -1060,18 +1060,6 @@ async function loadAllAdminData() {
         };
         groupFees[p.name] = Number(p.price) || 0;
       });
-    }
-    for (const pName in cfgGroupFees) {
-      const p = cfgGroupFees[pName];
-      if (!packages[pName]) {
-        packages[pName] = {
-          name: pName,
-          price: Number(p.price) || 0,
-          installmentPrice: Number(p.price) || 0,
-          hasInstallments: false
-        };
-        groupFees[pName] = Number(p.price) || 0;
-      }
     }
 
     // Booklets
