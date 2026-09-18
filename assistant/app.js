@@ -2439,7 +2439,7 @@ window.currentId = id;
 const st = students[id]; 
  if (!st) {
  if ($("notesLockOverlay")) $("notesLockOverlay").style.display = "flex";
- if ($("stNotesListContainer")) $("stNotesListContainer").innerHTML = '<div class="mutedCenter" style="font-size:0.85em;">لا توجد ملاحظات مسجلة لهذا الطالب</div>';
+ if ($("stNotesListContainer")) $("stNotesListContainer").innerHTML = '<div class="mutedCenter" style="font-size:0.85em;">' + (currentLang === 'ar' ? 'لا توجد ملاحظات مسجلة لهذا الطالب' : 'No notes recorded for this student') + '</div>';
  return; 
  }
  
@@ -3352,6 +3352,10 @@ const st = students[id];
  
  // السطر الجديد لتحديث كلمات جوجل درايف فوراً مع تغيير اللغة
  if (typeof updateDriveUI === "function") updateDriveUI();
+  if (typeof window.updateAttendanceUIState === "function") window.updateAttendanceUIState();
+  if (typeof renderBookletsTable === "function") renderBookletsTable();
+  if (typeof renderNotifications === "function") renderNotifications();
+  if (typeof populateSubjectModalList === "function") populateSubjectModalList();
 
   const isEn = (currentLang === 'en');
   if ($("sessRevenueCurr")) $("sessRevenueCurr").textContent = isEn ? "EGP" : "ج";
@@ -4350,7 +4354,8 @@ on("quickAttendBtn", "click", function() {
 
    const keys = Object.keys(groupFees || {});
    if (keys.length === 0) {
-     container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:15px; color:var(--text-secondary); font-size:12px;">لا توجد باقات مسجلة بعد. اضغط على التعديل والإضافة للبدء.</div>`;
+     const isArPk = (currentLang === 'ar');
+   container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:15px; color:var(--text-secondary); font-size:12px;">${isArPk ? 'لا توجد باقات مسجلة بعد. اضغط على التعديل والإضافة للبدء.' : 'No packages registered yet. Click edit & add to get started.'}</div>`;
      return;
    }
 
@@ -7040,7 +7045,8 @@ document.addEventListener("DOMContentLoaded", () => {
  }
  
  if (keys.length === 0) {
- h = `<div class="mutedCenter" style="padding: 30px;">لا توجد مذكرات أو ورق مسجل بالمخزون حالياً .. أضف مذكرة جديدة بالترويسة أعلاه </div>`;
+ const isArBkl = (currentLang === "ar");
+  h = `<div class="mutedCenter" style="padding: 30px;">${isArBkl ? "لا توجد مذكرات أو ورق مسجل بالمخزون حالياً .. أضف مذكرة جديدة بالترويسة أعلاه" : "No booklets or sheets currently in stock. Add a new booklet using the form above."}</div>`;
  }
  
  blist.innerHTML = h;
@@ -7912,17 +7918,18 @@ window.openSubjectSelectionModal = function() {
     
     let html = "";
     if (subjectList.length === 0) {
+        const isArSub = (currentLang === "ar");
         html = `
         <div class="subject-empty-state">
             <div class="subject-empty-icon"><i class="fa-solid fa-folder-open"></i></div>
-            <div class="subject-empty-title">لا توجد مواد أو باقات مسجلة حالياً</div>
-            <div class="subject-empty-desc">يمكنك إضافة المواد والصفوف الدراسية والأسعار بسهولة من قسم الباقات.</div>
+            <div class="subject-empty-title">${isArSub ? "لا توجد مواد أو باقات مسجلة حالياً" : "No subjects or packages registered currently"}</div>
+            <div class="subject-empty-desc">${isArSub ? "يمكنك إضافة المواد والصفوف الدراسية والأسعار بسهولة من قسم الباقات." : "You can easily add subjects, grades, and prices from the Packages & Pricing section."}</div>
             ${(currentUserRole === 'admin' || (typeof currentPermissions !== 'undefined' && currentPermissions.can_manage_packages)) ? `
             <button class="btn primary" onclick="goToPackagesFromSubjectModal()">
-                <i class="fa-solid fa-arrow-left"></i> الانتقال إلى قسم الباقات
+                <i class="fa-solid ${isArSub ? 'fa-arrow-left' : 'fa-arrow-right'}"></i> ${isArSub ? "الانتقال إلى قسم الباقات" : "Go to Packages & Pricing"}
             </button>` : `
             <div style="font-size:0.85em; color:var(--text-secondary); margin-top:8px;">
-                <i class="fa-solid fa-lock"></i> يرجى مراجعة إدارة المركز لإضافة باقات ومواد دراسية.
+                <i class="fa-solid fa-lock"></i> ${isArSub ? "يرجى مراجعة إدارة المركز لإضافة باقات ومواد دراسية." : "Please contact center administration to add packages and subjects."}
             </div>`}
         </div>`;
     } else {
@@ -8742,7 +8749,8 @@ function renderNotifications() {
   }
   
   if (notificationsList.length === 0) {
-    listEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 22px 12px; font-size: 0.9em;"><i class="fa-regular fa-bell-slash" style="font-size:1.8em; margin-bottom:8px; display:block; opacity:0.4;"></i>لا توجد رسائل أو إشعارات حالياً</div>';
+    const isArNotif = (currentLang === "ar");
+    listEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 22px 12px; font-size: 0.9em;"><i class="fa-regular fa-bell-slash" style="font-size:1.8em; margin-bottom:8px; display:block; opacity:0.4;"></i>' + (isArNotif ? 'لا توجد رسائل أو إشعارات حالياً' : 'No messages or notifications currently') + '</div>';
     return;
   }
   
