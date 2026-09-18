@@ -775,12 +775,15 @@ export async function checkAdminAuth() {
 }
 
 window.navigateWithTransition = function(url) {
+  const isAr = (currentLang === "ar");
   const card = document.querySelector('.admin-login-card') || document.querySelector('.login-card');
   if (card) {
     card.classList.add('card-exit-transition');
   }
   const overlay = document.getElementById('pageTransitionOverlay');
   if (overlay) {
+    const txt = overlay.querySelector('.transition-text');
+    if (txt) txt.textContent = isAr ? "جاري الانتقال.." : "Switching Portal...";
     overlay.classList.add('active');
   }
   setTimeout(() => {
@@ -841,11 +844,19 @@ window.handleAdminLogin = async function() {
 };
 
 window.handleAdminLogout = function() {
+  const isAr = (currentLang === "ar");
   const btn = document.getElementById("adminLogoutBtn");
   if (btn) {
     btn.classList.add("logging-out");
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري تسجيل الخروج...</span>';
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${isAr ? "جاري تسجيل الخروج..." : "Logging out..."}</span>`;
+  }
+
+  const overlay = document.getElementById('pageTransitionOverlay');
+  if (overlay) {
+    const txt = overlay.querySelector(".transition-text");
+    if (txt) txt.textContent = isAr ? "جاري تسجيل الخروج..." : "Logging out...";
+    overlay.classList.add('active');
   }
 
   // Close mobile sidebar drawer immediately if open

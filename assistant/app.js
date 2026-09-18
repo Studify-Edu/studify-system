@@ -729,6 +729,18 @@ document.addEventListener('DOMContentLoaded', function() {
  "receipt_sec_code": { ar: "رمز التحقق الأمني", en: "Security Verification Code" },
 
   // Missing Assistant Portal Keys
+    "badge_portal_asst": { ar: "بوابة العمليات والمساعدين", en: "Operations & Assistant Portal" },
+  "lbl_user_asst": { ar: "اسم المستخدم أو البريد (المساعد)", en: "Username or Email (Assistant)" },
+  "plc_user_asst": { ar: "اسم المستخدم أو mohamed@studify.com", en: "Username or mohamed@studify.com" },
+  "lbl_pass_asst": { ar: "كلمة المرور", en: "Password" },
+  "btn_login_asst": { ar: "دخول إلى بوابة المساعد", en: "Sign In to Assistant Portal" },
+  "prompt_switch_to_admin": { ar: "هل أنت مدير النظام؟", en: "Are you a System Admin?" },
+  "action_switch_to_admin": { ar: "الانتقال للوحة تحكم الإدارة العليا", en: "Switch to Executive Admin Panel" },
+  "trans_switching": { ar: "جاري الانتقال..", en: "Switching..." },
+  "trans_switching_theme": { ar: "جاري تبديل المظهر..", en: "Switching Theme..." },
+  "trans_switching_lang": { ar: "جاري تغيير اللغة..", en: "Switching Language..." },
+  "sess_no_students": { ar: "لا يوجد طلاب مسجلين بالحصة لهذا اليوم", en: "No students registered for this session today" },
+  "sess_class_opt": { ar: "حصة فردية (عام)", en: "Single Session (General)" },
   "login_title_assistant": { ar: "بوابة العمليات والمساعدين", en: "Operations & Assistant Portal" },
   "login_desc_assistant": { ar: "تسجيل الحضور اليومي والمهام الميدانية", en: "Daily attendance & operational management" },
   "top_subject_lbl": { ar: "المادة:", en: "Subject:" },
@@ -2175,8 +2187,9 @@ function applyPermissions() {
  if (!select) return;
  
  let currentVal = select.value; 
- let html = `<option value="">-- اختر الباقة / المجموعة --</option>`;
- let sHtml = `<option value="حصة فردية">حصة فردية (عام)</option>`;
+ const isAr = (currentLang === "ar");
+ let html = `<option value="">${isAr ? "-- اختر الباقة / المجموعة --" : "-- Select Package / Group --"}</option>`;
+ let sHtml = `<option value="حصة فردية">${isAr ? "حصة فردية (عام)" : "Single Session (General)"}</option>`;
  
  let hasGroups = false;
  for (let g in groupFees) {
@@ -3552,8 +3565,21 @@ if($("assistantLoginBtn")) {
   });
 }
 window.logout = async function() {
+  const isAr = (currentLang === "ar");
+  const btn = $("logoutBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${isAr ? "جاري تسجيل الخروج..." : "Logging out..."}</span>`;
+  }
+  const overlay = $("pageTransitionOverlay");
+  if (overlay) {
+    const txt = overlay.querySelector(".transition-text");
+    if (txt) txt.textContent = isAr ? "جاري تسجيل الخروج..." : "Logging out...";
+    overlay.classList.add("active");
+  }
+
   if (window.supabaseClient) {
-    await window.supabaseClient.auth.signOut();
+    try { await window.supabaseClient.auth.signOut(); } catch(e) {}
   }
   // Clear IndexedDB (localForage)
   try { await localforage.clear(); } catch(e) { console.error("localForage clear error:", e); }
@@ -3562,7 +3588,10 @@ window.logout = async function() {
   localStorage.removeItem(K_AUTH);
   localStorage.removeItem(K_ROLE);
   localStorage.removeItem("ca_current_username");
-  location.reload();
+  
+  setTimeout(() => {
+    location.reload();
+  }, 250);
 };
 
  if($("logoutBtn")) on("logoutBtn", "click", window.logout);
@@ -4293,73 +4322,96 @@ on("quickAttendBtn", "click", function() {
  };
 
  window.renderGroupFeesModal = function() {
+    const isAr = (currentLang === "ar");
+    const currencySuffix = isAr ? " ج" : " EGP";
     const counts = {};
     Object.values(students || {}).forEach(st => {
       if(!st) return;
-      const pList = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : [st.className || "عام"];
+      const pList = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : [st.className || (isAr ? "عام" : "General")];
       pList.forEach(pName => {
         counts[pName] = (counts[pName] || 0) + 1;
       });
       if (st.className && !pList.includes(st.className)) {
         counts[st.className] = (counts[st.className] || 0) + 1;
-        const altName = "باقة " + st.className;
+        const altName = (isAr ? "باقة " : "Package ") + st.className;
         counts[altName] = (counts[altName] || 0) + 1;
       }
     });
 
+    const builderTitle = isAr ? "إضافة / تعديل باقة جديدة" : "Add / Edit Package";
+    const pkgNamePlc = isAr ? "اسم الباقة (مثال: باقة سبتمبر)" : "Package Name (e.g. September Package)";
+    const pkgSubjectPlc = isAr ? "المادة (مثال: فيزياء)" : "Subject (e.g. Physics)";
+    const pkgPricePlc = isAr ? "السعر (ج.م)" : "Price (EGP)";
+    const expirySystemLbl = isAr ? "نظام الصلاحية وتنبيهات الانتهاء:" : "Validity System & Expiry Alerts:";
+    const optTimeText = isAr ? "بالمدة الزمنية (من تاريخ إلى تاريخ)" : "By Duration (From Date to Date)";
+    const optSessionsText = isAr ? "بعدد الحصص (مثال: 8 حصص)" : "By Session Count (e.g. 8 Sessions)";
+    const pkgDurationLbl = isAr ? "المدة الزمنية للباقة:" : "Package Duration:";
+    const startDateLbl = isAr ? "تاريخ البداية:" : "Start Date:";
+    const endDateLbl = isAr ? "تاريخ النهاية:" : "End Date:";
+    const sessionsAllowedLbl = isAr ? "عدد الحصص المسموحة للمشترك:" : "Allowed Sessions for Subscriber:";
+    const sessionsPlc = isAr ? "عدد الحصص (مثال: 8)" : "Session Count (e.g. 8)";
+    const saveBtnText = isAr ? "حفظ وتحديث الباقة في النظام" : "Save & Update Package";
+    const existingPkgsTitle = isAr ? "الباقات الحالية المُعرفة بالنظام" : "Currently Defined Packages";
+    const noPkgsText = isAr ? "لا توجد باقات معرفة بعد. أضف باقة جديدة أعلاه." : "No packages defined yet. Add a new package above.";
+    const enrolledLabel = isAr ? "المشتركين:" : "Enrolled:";
+    const studentsWord = isAr ? "طالب" : "Students";
+    const deleteBtnTitle = isAr ? "حذف الباقة" : "Delete Package";
+    const sessionsSuffix = isAr ? " حصص" : " Sessions";
+    const toWord = isAr ? " إلي " : " to ";
+
     let h = `
     <div class="pkg-builder-card" style="background:var(--bg-inset); border:1.5px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
       <h4 style="color:var(--primary); margin:0 0 12px 0; font-weight:bold; display:flex; align-items:center; gap:8px;">
-        <i class="fa-solid fa-square-plus"></i> إضافة / تعديل باقة جديدة
+        <i class="fa-solid fa-square-plus"></i> ${builderTitle}
       </h4>
       <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-         <input type="text" id="newPkgName" class="inp" placeholder="اسم الباقة (مثال: باقة سبتمبر)" style="flex:2; min-width:140px;">
-         <input type="text" id="newPkgSubject" class="inp" placeholder="المادة (مثال: فيزياء)" style="flex:2; min-width:140px;">
-         <input type="number" id="newPkgPrice" class="inp" placeholder="السعر (ج.م)" style="flex:1; min-width:90px;">
+         <input type="text" id="newPkgName" class="inp" placeholder="${pkgNamePlc}" style="flex:2; min-width:140px;">
+         <input type="text" id="newPkgSubject" class="inp" placeholder="${pkgSubjectPlc}" style="flex:2; min-width:140px;">
+         <input type="number" id="newPkgPrice" class="inp" placeholder="${pkgPricePlc}" style="flex:1; min-width:90px;">
        </div>
       
       <div style="margin-bottom:12px;">
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">نظام الصلاحية وتنبيهات الانتهاء:</label>
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">${expirySystemLbl}</label>
         <select id="newPkgExpiryType" class="inp" style="margin-bottom:8px;">
-          <option value="time">بالمدة الزمنية (من تاريخ إلى تاريخ)</option>
-          <option value="sessions">بعدد الحصص (مثال: 8 حصص)</option>
+          <option value="time">${optTimeText}</option>
+          <option value="sessions">${optSessionsText}</option>
         </select>
       </div>
 
       <div id="pkgTimeOpts" style="margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">المدة الزمنية للباقة:</label>
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">${pkgDurationLbl}</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <div style="flex:1; min-width:140px;">
-            <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">تاريخ البداية:</label>
+            <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">${startDateLbl}</label>
             <input type="date" id="newPkgStartDate" class="inp" style="width:100%;">
           </div>
           <div style="flex:1; min-width:140px;">
-            <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">تاريخ النهاية:</label>
+            <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">${endDateLbl}</label>
             <input type="date" id="newPkgEndDate" class="inp" style="width:100%;">
           </div>
         </div>
       </div>
 
       <div id="pkgSessionsOpts" style="display:none; margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">عدد الحصص المسموحة للمشترك:</label>
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">${sessionsAllowedLbl}</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <input type="number" id="newPkgSessions" class="inp" placeholder="عدد الحصص (مثال: 8)" value="8" style="flex:1; min-width:120px;">
-          <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=8;">8 حصص</button>
-          <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=12;">12 حصة</button>
+          <input type="number" id="newPkgSessions" class="inp" placeholder="${sessionsPlc}" value="8" style="flex:1; min-width:120px;">
+          <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=8;">${isAr ? "8 حصص" : "8 Sessions"}</button>
+          <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=12;">${isAr ? "12 حصة" : "12 Sessions"}</button>
         </div>
       </div>
 
-      <button class="btn primary w100" id="addNewPkgBtn" style="padding:11px; font-weight:bold; font-size:1em; margin-top:10px;"><i class="fa-solid fa-plus-circle"></i> حفظ وتحديث الباقة في النظام</button>
+      <button class="btn primary w100" id="addNewPkgBtn" style="padding:11px; font-weight:bold; font-size:1em; margin-top:10px;"><i class="fa-solid fa-plus-circle"></i> ${saveBtnText}</button>
     </div>
 
     <h4 style="color:var(--text-primary); margin:0 0 10px 0; font-size:0.95em; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
-      <span><i class="fa-solid fa-list-check"></i> الباقات الحالية المُعرفة بالنظام</span>
+      <span><i class="fa-solid fa-list-check"></i> ${existingPkgsTitle}</span>
     </h4>
     `;
 
     const keys = Object.keys(groupFees || {});
     if (keys.length === 0) {
-      h += `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.9em;">لا توجد باقات معرفة بعد. أضف باقة جديدة أعلاه.</div>`;
+      h += `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.9em;">${noPkgsText}</div>`;
     } else {
        h += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">`;
        keys.forEach(g => {
@@ -4368,9 +4420,9 @@ on("quickAttendBtn", "click", function() {
         
         let badgeInfo = "";
         if (details.expiryType === 'time' && details.startDate && details.endDate) {
-          badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.8em;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} إلي ${details.endDate}</span>`;
+          badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.8em;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} ${toWord} ${details.endDate}</span>`;
         } else if (details.expiryType === 'sessions' && details.sessionLimit > 0) {
-          badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:0.8em;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} حصص</span>`;
+          badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:0.8em;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} ${sessionsSuffix}</span>`;
         }
 
         const subjBadge = details.subject ? `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;"><i class="fa-solid fa-book"></i> ${details.subject}</span>` : '';
@@ -4384,15 +4436,15 @@ on("quickAttendBtn", "click", function() {
               ${badgeInfo}
             </div>
             <div style="font-size:0.8em; color:var(--text-secondary);">
-              <i class="fa-solid fa-users" style="margin-inline-end:3px;"></i> المشتركين: <b>${stCount}</b> طالب
+              <i class="fa-solid fa-users" style="margin-inline-end:3px;"></i> ${enrolledLabel} <b>${stCount}</b> ${studentsWord}
             </div>
           </div>
           
           <div style="display:flex; align-items:center; gap:8px;">
             <div style="font-size:1.05em; font-weight:bold; color:var(--success); background:var(--bg-inset); padding:4px 10px; border-radius:6px; border:1px solid var(--border);">
-              ${details.price} ج
+              ${details.price} ${currencySuffix}
             </div>
-            <button class="btn danger smallBtn iconOnly delete-pkg-btn" data-group="${g}" title="حذف الباقة"><i class="fa-solid fa-trash-can"></i></button>
+            <button class="btn danger smallBtn iconOnly delete-pkg-btn" data-group="${g}" title="${deleteBtnTitle}"><i class="fa-solid fa-trash-can"></i></button>
           </div>
         </div>`;
        });
@@ -4422,15 +4474,15 @@ on("quickAttendBtn", "click", function() {
        const sessions = $("newPkgSessions") ? toInt($("newPkgSessions").value) : 0;
 
        if (!n) {
-         if (typeof showToast === "function") showToast("يرجى كتابة اسم الباقة", "err");
+         if (typeof showToast === "function") showToast(isAr ? "يرجى كتابة اسم الباقة" : "Please enter package name", "err");
          return;
        }
        if (!subject) {
-         if (typeof showToast === "function") showToast("يرجى كتابة المادة", "err");
+         if (typeof showToast === "function") showToast(isAr ? "يرجى كتابة المادة" : "Please enter subject", "err");
          return;
        }
        if (expType === 'time' && (!startDate || !endDate)) {
-         if (typeof showToast === "function") showToast("يرجى تحديد تاريخ البداية والنهاية", "err");
+         if (typeof showToast === "function") showToast(isAr ? "يرجى تحديد تاريخ البداية والنهاية" : "Please specify start and end dates", "err");
          return;
        }
 
@@ -4448,7 +4500,7 @@ on("quickAttendBtn", "click", function() {
        renderGroupFeesModal();
        populatePackages();
        if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
-       if (typeof showToast === "function") showToast("تم حفظ وتحديث الباقة بنجاح");
+       if (typeof showToast === "function") showToast(isAr ? "تم حفظ وتحديث الباقة بنجاح" : "Package saved & updated successfully");
      };
     }
 
@@ -4456,18 +4508,22 @@ on("quickAttendBtn", "click", function() {
      btn.onclick = function() {
        const g = this.getAttribute("data-group");
        const enrolled = Object.values(students || {}).filter(st => st && st.packages && st.packages.includes(g));
-       let textWarning = `هل أنت متأكد من حذف باقة "${g}" من السيستم؟`;
+       let textWarning = isAr ? `هل أنت متأكد من حذف باقة "${g}" من السيستم؟` : `Are you sure you want to delete package "${g}"?`;
        if (enrolled.length > 0) {
-         textWarning = ` تنبيه: هناك (${enrolled.length}) طالب مسجلين حالياً في هذه الباقة.\nحذف الباقة سيقوم بإزالتها تلقائياً من باقات هؤلاء الطلاب لمنع بقاء باقات يتيمة بدون أسعار. هل تريد المتابعة؟`;
+         textWarning = isAr 
+           ? `تنبيه: هناك (${enrolled.length}) طالب مسجلين حالياً في هذه الباقة.
+حذف الباقة سيقوم بإزالتها تلقائياً من باقات هؤلاء الطلاب لمنع بقاء باقات يتيمة بدون أسعار. هل تريد المتابعة؟`
+           : `Warning: There are (${enrolled.length}) students currently enrolled in this package.
+Deleting it will automatically unlink it from these students. Do you want to proceed?`;
        }
        Swal.fire({
-         title: 'تأكيد حذف الباقة',
+         title: isAr ? 'تأكيد حذف الباقة' : 'Confirm Package Deletion',
          text: textWarning,
          icon: enrolled.length > 0 ? 'warning' : 'question',
          showCancelButton: true,
-         confirmButtonText: 'نعم، احذف',
+         confirmButtonText: isAr ? 'نعم، احذف' : 'Yes, Delete',
          confirmButtonColor: '#ef4444',
-         cancelButtonText: 'إلغاء'
+         cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
        }).then((res) => {
          if (res.isConfirmed) {
            if (enrolled.length > 0) {
@@ -4480,14 +4536,12 @@ on("quickAttendBtn", "click", function() {
            renderGroupFeesModal();
            populatePackages();
            if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
-           if (typeof showToast === "function") showToast("تم حذف الباقة وفك ارتباط الطلاب المسجلين بها بنجاح");
+           if (typeof showToast === "function") showToast(isAr ? "تم حذف الباقة وفك ارتباط الطلاب المسجلين بها بنجاح" : "Package deleted and unlinked successfully");
          }
        });
      };
    });
  };
-
- 
 
   on("openGroupFeesBtn", "click", function() {
     const gList = document.getElementById("groupFeesList");
@@ -6536,18 +6590,22 @@ document.addEventListener("DOMContentLoaded", () => {
  <div style="font-size:0.8em; color:var(--text-secondary); margin-top:4px;"> ${item.timestamp || ""} ${item.phone ? `| ${item.phone}` : ""}</div>
  </div>
  <div class="row" style="width:auto; gap:10px;">
- <span style="color:var(--success); font-weight:bold; font-size:1.1em;">+ ${item.amount} ج</span>
+ const isAr = (currentLang === "ar");
+ const currencySuffix = isAr ? " ج" : " EGP";
+ <span style="color:var(--success); font-weight:bold; font-size:1.1em;">+ ${item.amount} ${currencySuffix}</span>
  ${item.phone ? `<button class="btn success smallBtn iconOnly" title="مراسلة واتساب" onclick="window.open('https://wa.me/20${item.phone}', '_blank')"><i class="fa-brands fa-whatsapp"></i></button>` : ""}
  <button class="btn danger smallBtn iconOnly delete-sess-btn" data-date="${d}" data-index="${i}" title="حذف وإلغاء الدفعة"><i class="fa-solid fa-trash-can"></i></button>
  </div>
  </div>`;
  }
 
- if(count === 0) h = `<div class="mutedCenter">لا يوجد طلاب مسجلين بالحصة لهذا اليوم</div>`;
+ const isArSess = (currentLang === "ar");
+ if(count === 0) h = `<div class="mutedCenter" data-i18n="sess_no_students">${isArSess ? "لا يوجد طلاب مسجلين بالحصة لهذا اليوم" : "No students registered for this session today"}</div>`;
  slist.innerHTML = h;
 
  if($("sessCountBadge")) $("sessCountBadge").textContent = count;
  if($("sessRevenueBadge")) $("sessRevenueBadge").textContent = totalRev;
+ if($("sessRevenueCurr")) $("sessRevenueCurr").textContent = (currentLang === "ar" ? "ج" : "EGP");
 
  document.querySelectorAll(".delete-sess-btn").forEach(btn => {
  btn.onclick = function() {
@@ -9248,3 +9306,12 @@ window.printContractDocument = function() {
     }
   }, 350);
 };
+
+// Immediate Language Application
+if (typeof applyLanguage === "function") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", applyLanguage);
+  } else {
+    applyLanguage();
+  }
+}

@@ -164,19 +164,19 @@
  <!-- ============ LANGUAGE SWITCH OVERLAY ============ -->
  <div id="langSwitchOverlay" class="lang-switch-overlay">
  <div class="lang-spinner"></div>
- <div id="langSwitchText" class="lang-switch-text">جاري تغيير اللغة..</div>
+ <div id="langSwitchText" class="lang-switch-text" data-i18n="trans_switching_lang">جاري تغيير اللغة..</div>
  </div>
 
  <!-- ============ THEME SWITCH OVERLAY ============ -->
  <div id="themeSwitchOverlay" class="theme-switch-overlay">
  <div id="themeSwitchIconBox" class="theme-switch-icon-box"></div>
- <div id="themeSwitchText" class="theme-switch-text">جاري تبديل المظهر..</div>
+ <div id="themeSwitchText" class="theme-switch-text" data-i18n="trans_switching_theme">جاري تبديل المظهر..</div>
  </div>
 
  <!-- ============ PAGE TRANSITION OVERLAY ============ -->
  <div id="pageTransitionOverlay" class="page-transition-overlay">
    <div class="transition-spinner"></div>
-   <div class="transition-text">جاري الانتقال..</div>
+   <div class="transition-text" data-i18n="trans_switching">جاري الانتقال..</div>
  </div>
 
   <!-- ============ ASSISTANT HARD LOCK OVERLAY (TOP-LEVEL IMMERSIVE BARRIER) ============ -->
@@ -223,7 +223,7 @@
     <div class="login-card assistant-clean-login">
       <div class="portal-type-badge assistant-badge">
         <i class="fa-solid fa-clipboard-user"></i>
-        <span>بوابة العمليات والمساعدين</span>
+        <span data-i18n="badge_portal_asst">بوابة العمليات والمساعدين</span>
       </div>
 
       <div class="login-logo-area">
@@ -233,15 +233,15 @@
       </div>
 
       <div id="assistantLoginForm" class="login-form-area active">
-        <label class="lbl">اسم المستخدم أو البريد (المساعد)</label>
-        <input id="assistantUser" class="inp" type="text" placeholder="اسم المستخدم أو mohamed@studify.com" autocomplete="username">
-        <label class="lbl">كلمة المرور</label>
+        <label class="lbl" data-i18n="lbl_user_asst">اسم المستخدم أو البريد (المساعد)</label>
+        <input id="assistantUser" class="inp" type="text" placeholder="اسم المستخدم أو mohamed@studify.com" data-i18n-placeholder="plc_user_asst" autocomplete="username">
+        <label class="lbl" data-i18n="lbl_pass_asst">كلمة المرور</label>
         <div class="passWrap">
           <input id="assistantPass" class="inp" type="password" placeholder="Password" autocomplete="current-password">
           <button id="toggleAssistantPass" class="eyeBtn" type="button" onclick="togglePassword('assistantPass')"><i class="fa-solid fa-eye"></i></button>
         </div>
         <button id="assistantLoginBtn" class="btn assistant-action-btn full-btn" style="font-size: 1.05em; font-weight: bold; margin-top: 15px;">
-          <i class="fa-solid fa-right-to-bracket"></i> دخول إلى بوابة المساعد
+          <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="btn_login_asst">دخول إلى بوابة المساعد</span>
         </button>
       </div>
 
@@ -251,8 +251,8 @@
             <i class="fa-solid fa-shield-halved"></i>
           </div>
           <div class="switch-text-group">
-            <span class="switch-prompt">هل أنت مدير النظام؟</span>
-            <span class="switch-action">الانتقال للوحة تحكم الإدارة العليا</span>
+            <span class="switch-prompt" data-i18n="prompt_switch_to_admin">هل أنت مدير النظام؟</span>
+            <span class="switch-action" data-i18n="action_switch_to_admin">الانتقال للوحة تحكم الإدارة العليا</span>
           </div>
           <div class="switch-arrow-circle">
             <i class="fa-solid fa-arrow-left"></i>
@@ -916,7 +916,7 @@
  </div>
  <div class="badges" style="margin-bottom: 15px;">
  <span class="badge"><span data-i18n="badge_count">العدد:</span> <b id="sessCountBadge">0</b></span>
- <span class="badge" style="color: var(--success);"><span data-i18n="badge_rev">إجمالي الإيراد:</span> <b id="sessRevenueBadge">0</b> ج</span>
+ <span class="badge" style="color: var(--success);"><span data-i18n="badge_rev">إجمالي الإيراد:</span> <b id="sessRevenueBadge">0</b> <span id="sessRevenueCurr">ج</span></span>
  </div>
 
  <div id="sessStudentsList" class="list" style="max-height: 400px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px;">
@@ -1809,7 +1809,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V134"></script>
+  <script type="module" src="app.js?v=STUDIFY_V135"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

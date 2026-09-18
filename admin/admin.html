@@ -107,7 +107,7 @@
   <!-- Theme Switch Overlay -->
   <div id="adminThemeSwitchOverlay" class="admin-theme-switch-overlay">
     <div id="adminThemeSwitchIconBox" class="theme-switch-icon-box"></div>
-    <div id="adminThemeSwitchText" class="theme-switch-text">جاري تبديل المظهر..</div>
+    <div id="adminThemeSwitchText" class="theme-switch-text" data-i18n="trans_switching_theme">جاري تبديل المظهر..</div>
   </div>
 
 
@@ -115,7 +115,7 @@
   <!-- Page Transition Overlay -->
   <div id="pageTransitionOverlay" class="page-transition-overlay">
     <div class="transition-spinner"></div>
-    <div class="transition-text">جاري الانتقال..</div>
+    <div class="transition-text" data-i18n="trans_switching">جاري الانتقال..</div>
   </div>
 
   <!-- ======================================================== -->
@@ -150,7 +150,7 @@
         </div>
 
         <button type="submit" id="adminLoginSubmitBtn" class="btn primary full-btn" style="margin-top: 6px; font-size: 1.05em; padding: 13px;">
-          <i class="fa-solid fa-key"></i> دخول مدير النظام
+          <i class="fa-solid fa-key"></i> <span data-i18n="btn_login_admin">دخول مدير النظام</span>
         </button>
       </form>
 
@@ -160,8 +160,8 @@
             <i class="fa-solid fa-users-gear"></i>
           </div>
           <div class="switch-text-group">
-            <span class="switch-prompt">هل أنت مساعد؟</span>
-            <span class="switch-action">الانتقال لبوابة المساعد والعمليات</span>
+            <span class="switch-prompt" data-i18n="prompt_switch_to_asst">هل أنت مساعد؟</span>
+            <span class="switch-action" data-i18n="action_switch_to_asst">الانتقال لبوابة المساعد والعمليات</span>
           </div>
           <div class="switch-arrow-circle">
             <i class="fa-solid fa-arrow-left"></i>
@@ -1066,7 +1066,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V16"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V17"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->
