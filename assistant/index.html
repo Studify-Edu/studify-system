@@ -588,7 +588,7 @@
  <div id="debtWarningContainer" class="hidden" style="margin-top:15px; margin-bottom:15px; background: rgba(255, 69, 58, 0.1); border: 1px solid var(--danger); padding: 12px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
   <i class="fa-solid fa-circle-info" style="color: var(--danger); font-size: 1.2em;"></i>
   <div style="color: var(--danger); font-weight: bold; font-size: 0.95em;">
-    تنبيه: الطالب عليه مديونية متأخرة قدرها <span id="debtAmountDisplay">0</span> جنيه
+    <span data-i18n="debt_warning_prefix">تنبيه: الطالب عليه مديونية متأخرة قدرها</span> <span id="debtAmountDisplay">0</span> <span data-i18n="currency_egp">جنيه</span>
   </div>
 </div>
  
@@ -675,7 +675,7 @@
           <option value="instapay">إنستاباي</option>
           <option value="wallet">فودافون كاش</option>
         </select>
-        <button id="addPaymentBtn" class="btn success" style="padding:0 12px;"><i class="fa-solid fa-money-bill-1-wave"></i> إيداع</button>
+        <button id="addPaymentBtn" class="btn success" style="padding:0 12px;"><i class="fa-solid fa-money-bill-1-wave"></i> <span data-i18n="btn_deposit">إيداع</span></button>
       </div>
     </div>
     
@@ -690,8 +690,8 @@
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
       <h4 id="stPayHistoryTitle" style="font-size:0.9em; color:var(--text-secondary); margin:0;" data-i18n="lbl_pay_history"><i class="fa-solid fa-clock-rotate-left"></i> سجل دفعات الباقة:</h4>
       <div style="display:flex; gap:4px;">
-        <button id="btnPayFilterPkg" type="button" class="btn secondary smallBtn active" style="font-size:0.75em; padding:2px 8px; cursor:pointer;">هذه الباقة</button>
-        <button id="btnPayFilterAll" type="button" class="btn secondary smallBtn" style="font-size:0.75em; padding:2px 8px; cursor:pointer;">كل الدفعات</button>
+        <button id="btnPayFilterPkg" type="button" class="btn secondary smallBtn active" style="font-size:0.75em; padding:2px 8px; cursor:pointer;" data-i18n="filter_this_pkg">هذه الباقة</button>
+        <button id="btnPayFilterAll" type="button" class="btn secondary smallBtn" style="font-size:0.75em; padding:2px 8px; cursor:pointer;" data-i18n="filter_all_pay">كل الدفعات</button>
       </div>
     </div>
     <div id="stPaymentsList" class="list" style="max-height: 200px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px; display:flex; flex-direction:column; gap:8px;">
@@ -708,7 +708,7 @@
  </div>
 
  <label class="lbl" data-i18n="lbl_notes" style="color: var(--primary); font-weight: bold; display: flex; align-items: center; gap: 5px;">
- <span></span> ملاحظات الطالب (منفصلة وقابلة للتعديل)
+ <span></span> <span data-i18n="st_notes_title">ملاحظات الطالب (منفصلة وقابلة للتعديل)</span>
  </label>
  <div class="row">
  <input id="newNoteInp" class="inp" placeholder="اكتب ملحوظة جديدة هنا.." data-i18n-placeholder="note_plc">
@@ -744,7 +744,7 @@
  </div>
  
  <h3 style="margin-top: 20px; font-size: 0.95em; color: var(--text-primary); display:flex; align-items:center; gap:8px;" data-i18n="lbl_history">
-  <i class="fa-solid fa-calendar-check" style="color:var(--success);"></i> سجل حضور الطالب (التواريخ السابقة):
+  <i class="fa-solid fa-calendar-check" style="color:var(--success);"></i> <span data-i18n="st_att_history_title">سجل حضور الطالب (التواريخ السابقة):</span>
 </h3>
 <div id="attList" class="list" style="max-height: 140px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;">..</div>
  </div>
@@ -865,7 +865,7 @@
  <div class="flexBetween" style="margin-bottom: 20px;">
  <div>
  <h1 style="color: var(--primary); display:flex; align-items:center; gap:10px;" data-i18n="sess_main_title">
- <span></span> نظام تسجيل طلاب الحصة الفورية
+ <span></span> <span data-i18n="sess_main_title">نظام تسجيل طلاب الحصة الفورية</span>
  </h1>
  <p style="color: var(--text-secondary); font-size: 0.9em; margin-top: 5px;" data-i18n="sess_main_desc">
  تسجيل الحضور والدفع للطلاب المؤقتين (بدون إصدار كارت أو حجز ID دائم في قاعدة البيانات)
@@ -930,7 +930,7 @@
  <section id="secBooklets" class="tab-section hidden adminOnly">
  <div class="section-header-beautiful" style="margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, var(--bg-surface), var(--bg-inset)); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
  <h2 style="color: var(--primary); margin: 0; font-size: 1.6em; display: flex; align-items: center; gap: 10px;" data-i18n="booklets_main_title">
- <span></span> إدارة مخزون المذكرات والورق
+ <span></span> <span data-i18n="booklets_main_title">إدارة مخزون المذكرات والورق</span>
  </h2>
  <p style="color: var(--text-secondary); margin: 8px 0 0 0; font-size: 0.95em;" data-i18n="booklets_main_desc">
  متابعة حركة طباعة واستلام المذكرات، المباع منها، المخزون المتبقي، وإجمالي العائد المالي بدقة تامة دون هدر.

@@ -38,6 +38,38 @@ window.currentLang = currentLang;
 // =============================================================================
 let _lastToastMsg = "", _lastToastTime = 0;
 window.showToast = function(msg, type = "success") {
+
+  // Auto-translate Arabic toast text when currentLang === 'en'
+  const _ASST_TOAST_EN = {
+    "يرجى إدخال اسم المستخدم وكلمة المرور": "Please enter username and password",
+    "بيانات الدخول غير صحيحة، يرجى التأكد من الحساب وكلمة المرور": "Invalid credentials. Please check your username and password.",
+    "تم تسجيل الدخول بنجاح. مرحباً بك.": "Logged in successfully. Welcome!",
+    "تم تسجيل الحضور بنجاح": "Attendance recorded successfully",
+    "تم تسجيل الدفعة بنجاح": "Payment recorded successfully",
+    "تم حفظ التعديلات بنجاح": "Changes saved successfully",
+    "تم حفظ الطالب بنجاح": "Student saved successfully",
+    "تم تحديث بيانات الطالب بنجاح": "Student updated successfully",
+    "تم حذف الطالب بنجاح": "Student deleted successfully",
+    "تم استرجاع الطالب بنجاح": "Student restored successfully",
+    "تم حفظ وتحديث الباقة بنجاح": "Package saved & updated successfully",
+    "تم تحديث الباقة بنجاح": "Package updated successfully",
+    "تم حفظ الباقة بنجاح": "Package saved successfully",
+    "تم حذف الباقة نهائياً من السحابة والنظام": "Package permanently deleted from cloud & system",
+    "يرجى إدخال اسم وسعر الباقة بشكل صحيح": "Please enter a valid package name and price",
+    "تم تسجيل المصروف بنجاح": "Expense recorded successfully",
+    "تم حفظ وتحديث المنهج بنجاح": "Syllabus saved & updated successfully",
+    "تم إرسال الإعلان لجميع المساعدين": "Announcement broadcasted to all assistants",
+    "تم حفظ الإعدادات بنجاح": "Settings saved successfully",
+    "فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.": "Failed to connect to database. Please check your internet connection."
+  };
+  if (currentLang === 'en') {
+    if (_ASST_TOAST_EN[msg]) {
+      msg = _ASST_TOAST_EN[msg];
+    } else if (/^تم تسجيل حضور الطالب (.+) بنجاح/.test(msg)) {
+      msg = msg.replace(/^تم تسجيل حضور الطالب (.+) بنجاح/, 'Attendance recorded for $1 successfully.');
+    }
+  }
+
   const _now = Date.now();
   if (_now - _lastToastTime < 350 && _lastToastMsg === msg) return;
   _lastToastMsg = msg; _lastToastTime = _now;
@@ -417,6 +449,17 @@ document.addEventListener('DOMContentLoaded', function() {
  // 3. THE COMPREHENSIVE DICTIONARY
  // ==========================================
  const dict = {
+  "debt_warning_prefix": { ar: "تنبيه: الطالب عليه مديونية متأخرة قدرها", en: "Notice: Student has an outstanding debt of" },
+  "currency_egp": { ar: "جنيه", en: "EGP" },
+  "btn_deposit": { ar: "إيداع", en: "Deposit" },
+  "filter_this_pkg": { ar: "هذه الباقة", en: "This Package" },
+  "filter_all_pay": { ar: "كل الدفعات", en: "All Payments" },
+  "st_notes_title": { ar: "ملاحظات الطالب (منفصلة وقابلة للتعديل)", en: "Student Notes (Separated & Editable)" },
+  "st_att_history_title": { ar: "سجل حضور الطالب (التواريخ السابقة):", en: "Student Attendance History:" },
+  "sess_class_opt": { ar: "حصة فردية (عام)", en: "Single Session (General)" },
+  "booklets_main_title": { ar: "إدارة مخزون المذكرات والورق", en: "Booklets & Paper Inventory" },
+  "booklets_main_desc": { ar: "متابعة حركة طباعة واستلام المذكرات، المباع منها، المخزون المتبقي، وإجمالي العائد المالي بدقة تامة دون هدر.", en: "Track printing, booklet receipts, sales, stock, and total revenue with zero waste." },
+
 
   "nav_packages_menu": { ar: "الباقات والأسعار", en: "Packages & Pricing" },
   "nav_installments": { ar: "متابعة الأقساط", en: "Installments Tracker" },
@@ -1583,22 +1626,49 @@ async function loadAll() {
           });
         }
 
-        if (!pkgRes.error && pkgRes.data && pkgRes.data.length > 0) {
+        if (!pkgRes.error) {
           const cfgGroupFees = cfg.group_fees || {};
-          pkgRes.data.forEach(p => {
-            const extra = cfgGroupFees[p.name] || {};
-            groupFees[p.name] = {
-              name: p.name,
-              subject: p.subject || extra.subject || (groupFees[p.name] ? groupFees[p.name].subject : '') || p.name || '',
-              price: Number(p.price) || 0,
-              hasInstallments: !!p.has_installments,
-              installmentPrice: Number(p.installment_price) || 0,
-              expiryType: extra.expiryType || 'none',
-              startDate: extra.startDate || '',
-              endDate: extra.endDate || '',
-              sessionLimit: extra.sessionLimit || 0
-            };
+          const loadedGroupFees = {};
+
+          if (Array.isArray(pkgRes.data)) {
+            pkgRes.data.forEach(p => {
+              const extra = cfgGroupFees[p.name] || {};
+              loadedGroupFees[p.name] = {
+                name: p.name,
+                subject: p.subject || extra.subject || (groupFees[p.name] ? groupFees[p.name].subject : '') || p.name || '',
+                price: Number(p.price) || 0,
+                hasInstallments: !!p.has_installments,
+                installmentPrice: Number(p.installment_price) || 0,
+                expiryType: extra.expiryType || 'none',
+                startDate: extra.startDate || '',
+                endDate: extra.endDate || '',
+                sessionLimit: extra.sessionLimit || 0
+              };
+            });
+          }
+
+          Object.keys(cfgGroupFees).forEach(pkgName => {
+            if (!loadedGroupFees[pkgName]) {
+              const extra = cfgGroupFees[pkgName];
+              const isObj = typeof extra === 'object' && extra !== null;
+              loadedGroupFees[pkgName] = {
+                name: pkgName,
+                subject: isObj ? (extra.subject || pkgName) : pkgName,
+                price: Number(isObj ? extra.price : extra) || 0,
+                hasInstallments: isObj ? !!extra.hasInstallments : false,
+                installmentPrice: isObj ? Number(extra.installmentPrice || 0) : 0,
+                expiryType: isObj ? (extra.expiryType || 'none') : 'none',
+                startDate: isObj ? (extra.startDate || '') : '',
+                endDate: isObj ? (extra.endDate || '') : '',
+                sessionLimit: isObj ? (extra.sessionLimit || 0) : 0
+              };
+            }
           });
+
+          // If cloud data is fetched, synchronize groupFees so deleted packages do not resurrect
+          if (Object.keys(loadedGroupFees).length > 0 || (Array.isArray(pkgRes.data) && pkgRes.data.length === 0 && Object.keys(cfgGroupFees).length === 0)) {
+            groupFees = loadedGroupFees;
+          }
         }
 
         if (!bRes.error && bRes.data && bRes.data.length > 0) {
@@ -3304,6 +3374,14 @@ const st = students[id];
  // السطر الجديد لتحديث كلمات جوجل درايف فوراً مع تغيير اللغة
  if (typeof updateDriveUI === "function") updateDriveUI();
 
+  const isEn = (currentLang === 'en');
+  if ($("sessRevenueCurr")) $("sessRevenueCurr").textContent = isEn ? "EGP" : "ج";
+  if ($("todayRevenue")) {
+    const revVal = $("todayRevenue").getAttribute("data-val") || $("todayRevenue").textContent.replace(/[^0-9.]/g, '');
+    $("todayRevenue").textContent = revVal + (isEn ? " EGP" : " ج");
+  }
+
+
  // السطور الجديدة لترجمة شاشة إدخال المنهج
  if($("saveSyllabusBtn")) $("saveSyllabusBtn").innerText = currentLang === 'ar' ? "حفظ وتحديث المنهج" : "Save & Update Syllabus";
  if($("syllName")) $("syllName").placeholder = currentLang === 'ar' ? "اسم الشابتر / الدرس..." : "Chapter / Lesson Name...";
@@ -4338,7 +4416,12 @@ on("quickAttendBtn", "click", function() {
       }
     });
 
-    const builderTitle = isAr ? "إضافة / تعديل باقة جديدة" : "Add / Edit Package";
+    const isEditing = !!window._editingPkgName;
+    const editTarget = isEditing ? (groupFees[window._editingPkgName] || {}) : null;
+
+    const builderTitle = isEditing 
+      ? (isAr ? `تعديل الباقة: ${window._editingPkgName}` : `Edit Package: ${window._editingPkgName}`)
+      : (isAr ? "إضافة / تعديل باقة جديدة" : "Add / Edit Package");
     const pkgNamePlc = isAr ? "اسم الباقة (مثال: باقة سبتمبر)" : "Package Name (e.g. September Package)";
     const pkgSubjectPlc = isAr ? "المادة (مثال: فيزياء)" : "Subject (e.g. Physics)";
     const pkgPricePlc = isAr ? "السعر (ج.م)" : "Price (EGP)";
@@ -4350,58 +4433,78 @@ on("quickAttendBtn", "click", function() {
     const endDateLbl = isAr ? "تاريخ النهاية:" : "End Date:";
     const sessionsAllowedLbl = isAr ? "عدد الحصص المسموحة للمشترك:" : "Allowed Sessions for Subscriber:";
     const sessionsPlc = isAr ? "عدد الحصص (مثال: 8)" : "Session Count (e.g. 8)";
-    const saveBtnText = isAr ? "حفظ وتحديث الباقة في النظام" : "Save & Update Package";
+    const saveBtnText = isEditing 
+      ? (isAr ? "حفظ التعديلات على الباقة" : "Save Package Changes")
+      : (isAr ? "حفظ وتحديث الباقة في النظام" : "Save & Update Package");
     const existingPkgsTitle = isAr ? "الباقات الحالية المُعرفة بالنظام" : "Currently Defined Packages";
     const noPkgsText = isAr ? "لا توجد باقات معرفة بعد. أضف باقة جديدة أعلاه." : "No packages defined yet. Add a new package above.";
     const enrolledLabel = isAr ? "المشتركين:" : "Enrolled:";
     const studentsWord = isAr ? "طالب" : "Students";
+    const editBtnTitle = isAr ? "تعديل الباقة" : "Edit Package";
     const deleteBtnTitle = isAr ? "حذف الباقة" : "Delete Package";
     const sessionsSuffix = isAr ? " حصص" : " Sessions";
     const toWord = isAr ? " إلي " : " to ";
 
+    const curName = isEditing ? window._editingPkgName : "";
+    const curSubj = isEditing ? (editTarget.subject || "") : "";
+    const curPrice = isEditing ? (editTarget.price || "") : "";
+    const curExp = isEditing ? (editTarget.expiryType || "time") : "time";
+    const curStart = isEditing ? (editTarget.startDate || "") : "";
+    const curEnd = isEditing ? (editTarget.endDate || "") : "";
+    const curSess = isEditing ? (editTarget.sessionLimit || 8) : 8;
+
+    let cancelBtnHtml = isEditing 
+      ? `<button type="button" class="btn secondary" id="cancelEditPkgBtn" style="padding:11px 20px; font-weight:bold;"><i class="fa-solid fa-xmark"></i> ${isAr ? "إلغاء التعديل" : "Cancel Edit"}</button>`
+      : '';
+
     let h = `
-    <div class="pkg-builder-card" style="background:var(--bg-inset); border:1.5px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
+    <div id="pkgBuilderFormCard" class="pkg-builder-card" style="background:var(--bg-inset); border:1.5px solid ${isEditing ? 'var(--primary)' : 'var(--border)'}; border-radius:12px; padding:16px; margin-bottom:20px; transition:border-color 0.2s ease;">
       <h4 style="color:var(--primary); margin:0 0 12px 0; font-weight:bold; display:flex; align-items:center; gap:8px;">
-        <i class="fa-solid fa-square-plus"></i> ${builderTitle}
+        <i class="fa-solid ${isEditing ? 'fa-pen-to-square' : 'fa-square-plus'}"></i> ${builderTitle}
       </h4>
       <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-         <input type="text" id="newPkgName" class="inp" placeholder="${pkgNamePlc}" style="flex:2; min-width:140px;">
-         <input type="text" id="newPkgSubject" class="inp" placeholder="${pkgSubjectPlc}" style="flex:2; min-width:140px;">
-         <input type="number" id="newPkgPrice" class="inp" placeholder="${pkgPricePlc}" style="flex:1; min-width:90px;">
+         <input type="text" id="newPkgName" class="inp" placeholder="${pkgNamePlc}" value="${curName}" style="flex:2; min-width:140px;">
+         <input type="text" id="newPkgSubject" class="inp" placeholder="${pkgSubjectPlc}" value="${curSubj}" style="flex:2; min-width:140px;">
+         <input type="number" id="newPkgPrice" class="inp" placeholder="${pkgPricePlc}" value="${curPrice}" style="flex:1; min-width:90px;">
        </div>
       
       <div style="margin-bottom:12px;">
         <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">${expirySystemLbl}</label>
         <select id="newPkgExpiryType" class="inp" style="margin-bottom:8px;">
-          <option value="time">${optTimeText}</option>
-          <option value="sessions">${optSessionsText}</option>
+          <option value="time" ${curExp==='time'?'selected':''}>${optTimeText}</option>
+          <option value="sessions" ${curExp==='sessions'?'selected':''}>${optSessionsText}</option>
         </select>
       </div>
 
-      <div id="pkgTimeOpts" style="margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
+      <div id="pkgTimeOpts" style="display:${curExp==='time'?'block':'none'}; margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
         <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">${pkgDurationLbl}</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <div style="flex:1; min-width:140px;">
             <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">${startDateLbl}</label>
-            <input type="date" id="newPkgStartDate" class="inp" style="width:100%;">
+            <input type="date" id="newPkgStartDate" class="inp" style="width:100%;" value="${curStart}">
           </div>
           <div style="flex:1; min-width:140px;">
             <label style="font-size:0.8em; color:var(--text-secondary); display:block; margin-bottom:4px;">${endDateLbl}</label>
-            <input type="date" id="newPkgEndDate" class="inp" style="width:100%;">
+            <input type="date" id="newPkgEndDate" class="inp" style="width:100%;" value="${curEnd}">
           </div>
         </div>
       </div>
 
-      <div id="pkgSessionsOpts" style="display:none; margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
+      <div id="pkgSessionsOpts" style="display:${curExp==='sessions'?'block':'none'}; margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
         <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:6px;">${sessionsAllowedLbl}</label>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <input type="number" id="newPkgSessions" class="inp" placeholder="${sessionsPlc}" value="8" style="flex:1; min-width:120px;">
+          <input type="number" id="newPkgSessions" class="inp" placeholder="${sessionsPlc}" value="${curSess}" style="flex:1; min-width:120px;">
           <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=8;">${isAr ? "8 حصص" : "8 Sessions"}</button>
           <button type="button" class="btn secondary smallBtn" onclick="if(document.getElementById('newPkgSessions')) document.getElementById('newPkgSessions').value=12;">${isAr ? "12 حصة" : "12 Sessions"}</button>
         </div>
       </div>
 
-      <button class="btn primary w100" id="addNewPkgBtn" style="padding:11px; font-weight:bold; font-size:1em; margin-top:10px;"><i class="fa-solid fa-plus-circle"></i> ${saveBtnText}</button>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn primary ${isEditing ? '' : 'w100'}" id="addNewPkgBtn" style="padding:11px; font-weight:bold; font-size:1em; flex:1;">
+          <i class="fa-solid ${isEditing ? 'fa-check-circle' : 'fa-plus-circle'}"></i> ${saveBtnText}
+        </button>
+        ${cancelBtnHtml}
+      </div>
     </div>
 
     <h4 style="color:var(--text-primary); margin:0 0 10px 0; font-size:0.95em; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
@@ -4444,6 +4547,7 @@ on("quickAttendBtn", "click", function() {
             <div style="font-size:1.05em; font-weight:bold; color:var(--success); background:var(--bg-inset); padding:4px 10px; border-radius:6px; border:1px solid var(--border);">
               ${details.price} ${currencySuffix}
             </div>
+            <button class="btn primary smallBtn iconOnly edit-pkg-btn" data-group="${g}" title="${editBtnTitle}"><i class="fa-solid fa-pen-to-square"></i></button>
             <button class="btn danger smallBtn iconOnly delete-pkg-btn" data-group="${g}" title="${deleteBtnTitle}"><i class="fa-solid fa-trash-can"></i></button>
           </div>
         </div>`;
@@ -4452,6 +4556,13 @@ on("quickAttendBtn", "click", function() {
      }
 
     if ($("groupFeesList")) $("groupFeesList").innerHTML = h;
+
+    if ($("cancelEditPkgBtn")) {
+      $("cancelEditPkgBtn").onclick = function() {
+        window._editingPkgName = null;
+        renderGroupFeesModal();
+      };
+    }
 
     if ($("newPkgExpiryType")) {
       const handleExpiryTypeChange = () => {
@@ -4464,7 +4575,8 @@ on("quickAttendBtn", "click", function() {
     }
 
     if ($("addNewPkgBtn")) {
-     $("addNewPkgBtn").onclick = function() {
+     $("addNewPkgBtn").onclick = async function() {
+       const oldName = window._editingPkgName;
        const n = $("newPkgName").value.trim();
        const subject = $("newPkgSubject").value.trim();
        const p = toInt($("newPkgPrice").value);
@@ -4486,29 +4598,58 @@ on("quickAttendBtn", "click", function() {
          return;
        }
 
+       // If editing and name changed, clean old package from Supabase and update enrolled students
+       if (oldName && oldName !== n) {
+         if (window.supabaseClient) {
+           try { await window.supabaseClient.from('packages').delete().eq('name', oldName); } catch(e) {}
+         }
+         delete groupFees[oldName];
+         Object.values(students || {}).forEach(st => {
+           if (st && Array.isArray(st.packages) && st.packages.includes(oldName)) {
+             st.packages = st.packages.map(pName => pName === oldName ? n : pName);
+           }
+         });
+       }
+
        groupFees[n] = {
+         name: n,
          subject: subject,
          price: p,
          expiryType: expType,
          startDate: startDate,
          endDate: endDate,
          sessionLimit: sessions,
+         hasInstallments: false,
+         installmentPrice: 0,
          updatedAt: nowDateStr()
        };
 
-       saveAll();
+       window._editingPkgName = null;
+       await saveAll();
        renderGroupFeesModal();
        populatePackages();
        if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
-       if (typeof showToast === "function") showToast(isAr ? "تم حفظ وتحديث الباقة بنجاح" : "Package saved & updated successfully");
+       if (typeof showToast === "function") showToast(isAr ? (oldName ? "تم تحديث الباقة بنجاح" : "تم حفظ الباقة بنجاح") : (oldName ? "Package updated successfully" : "Package saved successfully"));
      };
     }
 
+    // Attach Edit button handler
+    document.querySelectorAll(".edit-pkg-btn").forEach(btn => {
+      btn.onclick = function() {
+        const g = this.getAttribute("data-group");
+        window._editingPkgName = g;
+        renderGroupFeesModal();
+        const card = document.getElementById("pkgBuilderFormCard");
+        if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+    });
+
+    // Attach Delete button handler with cloud deletion
     document.querySelectorAll(".delete-pkg-btn").forEach(btn => {
      btn.onclick = function() {
        const g = this.getAttribute("data-group");
        const enrolled = Object.values(students || {}).filter(st => st && st.packages && st.packages.includes(g));
-       let textWarning = isAr ? `هل أنت متأكد من حذف باقة "${g}" من السيستم؟` : `Are you sure you want to delete package "${g}"?`;
+       let textWarning = isAr ? `هل أنت متأكد من حذف باقة "${g}" نهائياً من السيستم؟` : `Are you sure you want to permanently delete package "${g}"?`;
        if (enrolled.length > 0) {
          textWarning = isAr 
            ? `تنبيه: هناك (${enrolled.length}) طالب مسجلين حالياً في هذه الباقة.
@@ -4521,27 +4662,40 @@ Deleting it will automatically unlink it from these students. Do you want to pro
          text: textWarning,
          icon: enrolled.length > 0 ? 'warning' : 'question',
          showCancelButton: true,
-         confirmButtonText: isAr ? 'نعم، احذف' : 'Yes, Delete',
+         confirmButtonText: isAr ? 'نعم، احذف نهائياً' : 'Yes, Delete Permanently',
          confirmButtonColor: '#ef4444',
          cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
-       }).then((res) => {
+       }).then(async (res) => {
          if (res.isConfirmed) {
            if (enrolled.length > 0) {
              enrolled.forEach(st => {
                st.packages = (st.packages || []).filter(p => p !== g);
              });
            }
+
+           // Explicitly delete from Supabase packages table so it never resurrects!
+           if (window.supabaseClient) {
+             try {
+               await window.supabaseClient.from('packages').delete().eq('name', g);
+             } catch(err) {
+               console.error("Supabase package delete error:", err);
+             }
+           }
+
            delete groupFees[g];
-           saveAll();
+           if (window._editingPkgName === g) window._editingPkgName = null;
+
+           await saveAll();
            renderGroupFeesModal();
            populatePackages();
            if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
-           if (typeof showToast === "function") showToast(isAr ? "تم حذف الباقة وفك ارتباط الطلاب المسجلين بها بنجاح" : "Package deleted and unlinked successfully");
+           if (typeof showToast === "function") showToast(isAr ? "تم حذف الباقة نهائياً من السحابة والنظام" : "Package permanently deleted from cloud & system");
          }
        });
      };
    });
  };
+
 
   on("openGroupFeesBtn", "click", function() {
     const gList = document.getElementById("groupFeesList");

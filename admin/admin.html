@@ -433,14 +433,14 @@
               <div>
                 <h2 style="font-size: 1.25em; font-weight: 800; margin-bottom: 4px;">
                   <i class="fa-solid fa-user-gear" style="color: var(--primary);"></i>
-                  إدارة المساعدين والتحكم في الصلاحيات
+                  <span data-i18n="asst_page_title">إدارة المساعدين والتحكم في الصلاحيات</span>
                 </h2>
-                <p style="font-size: 0.85em; color: var(--text-secondary);">
+                <p style="font-size: 0.85em; color: var(--text-secondary);" data-i18n="asst_page_desc">
                   تحكم بشكل مباشر في الميزات المتاحة لكل مساعد. أي تعديل يتم تطبيقه فورياً ولحظياً في صفحة المساعد المفتوحة.
                 </p>
               </div>
               <button class="btn primary" onclick="window.openAddAssistantModal()">
-                <i class="fa-solid fa-user-plus"></i> إضافة مساعد جديد
+                <i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_add_new_asst">إضافة مساعد جديد</span>
               </button>
             </div>
           </div>
@@ -518,11 +518,11 @@
               <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 14px; align-items: end;">
                 <div id="directDecisionValueWrap">
                   <label id="directDecisionValueLbl" class="lbl" data-i18n="dec_disc_val_lbl">قيمة الخصم المطلوبة (جنيه)</label>
-                  <input type="number" id="directDecisionValueInput" class="inp" min="0" step="10" placeholder="مثال: 100">
+                  <input type="number" id="directDecisionValueInput" class="inp" min="0" step="10" placeholder="مثال: 100" data-i18n-placeholder="dec_val_ph">
                 </div>
                 <div>
                   <label class="lbl" data-i18n="dec_reason_lbl">سبب القرار / ملاحظات المدير (تظهر في السجلات)</label>
-                  <input type="text" id="directDecisionReasonInput" class="inp" placeholder="مثال: قرار مدير - ظرف خاص / تفوق دراسي">
+                  <input type="text" id="directDecisionReasonInput" class="inp" placeholder="مثال: قرار مدير - ظرف خاص / تفوق دراسي" data-i18n-placeholder="dec_reason_ph">
                 </div>
                 <div>
                   <button class="btn success" style="padding: 11px 22px; font-weight: 800;" onclick="window.applyDirectDecision()">
@@ -546,7 +546,7 @@
             </div>
 
             <div id="adminDecisionsList">
-              <div style="text-align: center; color: var(--text-secondary); padding: 30px;">لا توجد طلبات معلقة حالياً</div>
+              <div style="text-align: center; color: var(--text-secondary); padding: 30px;" data-i18n="dec_no_pending">لا توجد طلبات معلقة حالياً</div>
             </div>
           </div>
         </div>
@@ -567,7 +567,7 @@
             </div>
 
             <div id="adminPackagesListContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
-              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل الباقات..</div>
+              <div style="text-align: center; color: var(--text-secondary); padding: 20px;" data-i18n="pkg_loading">جاري تحميل الباقات..</div>
             </div>
           </div>
 
@@ -643,7 +643,7 @@
               <span data-i18n="syl_timeline_title">خريطة الدروس الحالية</span>
             </div>
             <div id="adminSyllabusTimelineContainer">
-              <div style="text-align: center; color: var(--text-secondary); padding: 20px;">جاري تحميل المنهج..</div>
+              <div style="text-align: center; color: var(--text-secondary); padding: 20px;" data-i18n="syll_loading">جاري تحميل المنهج..</div>
             </div>
           </div>
         </div>
@@ -1066,7 +1066,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V17"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V18"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

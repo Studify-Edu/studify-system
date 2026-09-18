@@ -19,6 +19,16 @@ const permChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('studi
 let currentLang = localStorage.getItem("ca_lang") || "ar";
 
 const ADMIN_DICT = {
+  "dec_val_ph": { ar: "مثال: 100", en: "e.g. 100" },
+  "dec_reason_ph": { ar: "مثال: قرار مدير - ظرف خاص / تفوق دراسي", en: "e.g. Manager Decision - Special case / Academic excellence" },
+  "dec_no_pending": { ar: "لا توجد طلبات معلقة حالياً", en: "No pending requests at this time" },
+  "pkg_loading": { ar: "جاري تحميل الباقات..", en: "Loading packages..." },
+  "syll_loading": { ar: "جاري تحميل المنهج..", en: "Loading syllabus..." },
+  "asst_lbl_username": { ar: "اسم المستخدم (حساب الدخول)", en: "Username (Login Account)" },
+  "asst_lbl_password": { ar: "كلمة المرور الأولية للمساعد", en: "Initial Password" },
+  "asst_lbl_display_name": { ar: "الاسم الظاهر للمساعد (الاسم الكامل)", en: "Display Name (Full Name)" },
+  "trans_switching": { ar: "جاري الانتقال..", en: "Switching..." },
+
   // Assistants View & Modals
   "asst_mgmt_title": { ar: "إدارة المساعدين والتحكم في الصلاحيات", en: "Assistants & Permissions Management" },
   "asst_mgmt_desc": { ar: "تحكم بشكل مباشر في الميزات المتاحة لكل مساعد. أي تعديل يتم تطبيقه فوراً ولحظياً في صفحة المساعد المفتوحة.", en: "Directly control permissions available for each assistant. Any modifications are applied instantly to the assistant's active session." },
@@ -114,8 +124,8 @@ const ADMIN_DICT = {
   "th_payment_status": { ar: "حالة السداد", en: "Payment Status" },
 
   // View 3: Assistants
-  "asst_page_title": { ar: "إدارة المساعدين وصلاحيات العمليات", en: "Assistants & Operations Permissions" },
-  "asst_page_desc": { ar: "التحكم في حسابات المساعدين، منح أو حجب الصلاحيات الفردية، وتعديل كلمات المرور.", en: "Manage assistant accounts, grant or revoke individual permissions, and reset passwords." },
+  "asst_page_title": { ar: "إدارة المساعدين والتحكم في الصلاحيات", en: "Assistants & Permissions Management" },
+  "asst_page_desc": { ar: "تحكم بشكل مباشر في الميزات المتاحة لكل مساعد. أي تعديل يتم تطبيقه فورياً ولحظياً في صفحة المساعد المفتوحة.", en: "Directly manage features and permissions for each assistant. Changes apply instantly in real-time." },
   "btn_add_new_asst": { ar: "إضافة مساعد جديد", en: "Add New Assistant" },
   "th_username": { ar: "اسم المستخدم", en: "Username" },
   "th_role": { ar: "الدور الوظيفي", en: "Role" },
@@ -705,8 +715,83 @@ const PERM_GROUPS = [
   { id: "pages", icon: "fa-layer-group", title: { ar: "صلاحيات الصفحات والأدوات", en: "Pages & Tools Permissions" } }
 ];
 
+
+// Universal Toast Translation Engine for English Mode
+const TOAST_EN_MAP = {
+  "يرجى إدخال اسم المستخدم وكلمة المرور": "Please enter username and password",
+  "بيانات الدخول غير صحيحة، يرجى التأكد من الحساب وكلمة المرور": "Invalid credentials. Please verify username and password.",
+  "تم تسجيل الدخول بنجاح. مرحباً بك.": "Logged in successfully. Welcome!",
+  "حدث خطأ أثناء تسجيل الدخول": "An error occurred during login",
+  "تحذير: فشل مزامنة بعض البيانات من السحابة": "Warning: Failed to sync some data from cloud",
+  "تنبيه: حدث بطء في مزامنة السحابة، جاري الإعادة تلقائياً": "Notice: Cloud sync is slow, retrying automatically",
+  "يرجى كتابة سبب تعليق أو رفض اليومية": "Please provide a reason for shift suspension",
+  "فشل تحديث الصلاحية في السحابة": "Failed to update permission in cloud",
+  "اسم المستخدم يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام فقط بدون مسافات": "Username must contain lowercase letters and numbers only without spaces",
+  "فشل الاتصال بالسحابة": "Failed to connect to cloud",
+  "تم إنشاء حساب المساعد بنجاح": "Assistant account created successfully",
+  "فشل إضافة المساعد": "Failed to add assistant",
+  "تم حذف المساعد بنجاح": "Assistant deleted successfully",
+  "فشل حذف المساعد": "Failed to delete assistant",
+  "يرجى إدخال رقم أو اسم الطالب": "Please enter student ID or name",
+  "لم يتم العثور على طالب بهذا الرقم أو الاسم": "No student found with this ID or name",
+  "يرجى اختيار طالب أولاً": "Please select a student first",
+  "يرجى إدخال قيمة خصم صحيحة": "Please enter a valid discount amount",
+  "تمت الموافقة وتطبيق الخصم بنجاح": "Approved and discount applied successfully",
+  "حدث خطأ أثناء اعتماد القرار": "An error occurred while approving decision",
+  "تم رفض الطلب": "Request rejected",
+  "فشل معالجة الرفض": "Failed to process rejection",
+  "تمت إضافة الباقة بنجاح": "Package added successfully",
+  "فشل إضافة الباقة": "Failed to add package",
+  "تم تحديث الباقة بنجاح": "Package updated successfully",
+  "فشل تحديث الباقة": "Failed to update package",
+  "تم حذف الباقة نهائياً من السحابة والنظام": "Package permanently deleted from cloud and system",
+  "فشل حذف الباقة": "Failed to delete package",
+  "يرجى إدخال بند ومبلغ المصروف": "Please enter expense item and amount",
+  "تم تسجيل المصروف بنجاح": "Expense recorded successfully",
+  "يرجى إدخال اسم الدرس / الفصل": "Please enter lesson/chapter name",
+  "تمت إضافة الدرس لخريطة المنهج": "Lesson added to syllabus map",
+  "تم حذف الدرس من المنهج": "Lesson removed from syllabus",
+  "تم تصدير نسخة Excel بنجاح.": "Excel sheet exported successfully",
+  "فشل تصدير البيانات إلى Excel": "Failed to export data to Excel",
+  "تم حفظ وتحديث الباقة بنجاح": "Package saved and updated successfully",
+  "تم حفظ الإعدادات بنجاح": "Settings saved successfully",
+  "فشل حفظ الإعدادات": "Failed to save settings",
+  "مكتبة Excel غير متوفرة": "Excel library not available",
+  "الملف فارغ أو لا يحتوي على بيانات صالحة": "The file is empty or contains no valid data",
+  "تم تصفير حضور ومصاريف الترم بالكامل بنجاح": "Term attendance and expenses reset successfully"
+};
+
+function translateToastIfEnglish(msg) {
+  if (currentLang !== 'en') return msg;
+  if (TOAST_EN_MAP[msg]) return TOAST_EN_MAP[msg];
+  
+  // Dynamic regex matches
+  if (/^تم فتح شيفت يوم ((.+)) بنجاح وبدء عمليات المساعدين./.test(msg)) {
+    return msg.replace(/^تم فتح شيفت يوم ((.+)) بنجاح وبدء عمليات المساعدين./, 'Shift for day ($1) successfully opened and assistant operations active.');
+  }
+  if (/^تم إغلاق شيفت يوم ((.+)) وتجميد العمليات لدى المساعدين فورياً./.test(msg)) {
+    return msg.replace(/^تم إغلاق شيفت يوم ((.+)) وتجميد العمليات لدى المساعدين فورياً./, 'Shift for day ($1) closed and assistant operations frozen.');
+  }
+  if (/^تم تعليق يومية ((.+)) وإرسال الملاحظة للمساعدين/.test(msg)) {
+    return msg.replace(/^تم تعليق يومية ((.+)) وإرسال الملاحظة للمساعدين/, 'Shift for day ($1) suspended and note sent to assistants.');
+  }
+  if (/^تم تطبيق القرار بنجاح للطالب: (.+)/.test(msg)) {
+    return msg.replace(/^تم تطبيق القرار بنجاح للطالب: (.+)/, 'Decision applied successfully for student: $1.');
+  }
+  if (/^تم (تفعيل|تعطيل) صلاحية «(.+)» للمساعد (.+) بنجاح/.test(msg)) {
+    const match = msg.match(/^تم (تفعيل|تعطيل) صلاحية «(.+)» للمساعد (.+) بنجاح/);
+    const action = match[1] === 'تفعيل' ? 'enabled' : 'disabled';
+    return `Permission "${match[2]}" ${action} successfully for assistant ${match[3]}.`;
+  }
+  if (/^تم استيراد (.+) طالب بنجاح/.test(msg)) {
+    return msg.replace(/^تم استيراد (.+) طالب بنجاح/, 'Successfully imported $1 students.');
+  }
+  return msg;
+}
+
 // Helper: Toast
-export function showToast(msg, type = "info") {
+export function showToast(rawMsg, type = "info") {
+  const msg = translateToastIfEnglish(rawMsg);
   const c = document.getElementById("toastContainer");
   if (!c) return;
   const t = document.createElement("div");
@@ -1191,14 +1276,15 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
   const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
 
   if (toActive) {
+    const isAr = (currentLang === "ar");
     const res = await Swal.fire({
-      title: 'فتح الشيفت اليومي (Turn ON)',
-      text: `هل تريد تفعيل وفتح شيفت يوم (${d}) فوراً لجميع المساعدين لبدء تسجيل الحضور والعمليات؟`,
+      title: isAr ? 'فتح الشيفت اليومي (Turn ON)' : 'Open Daily Shift (Turn ON)',
+      text: isAr ? `هل تريد تفعيل وفتح شيفت يوم (${d}) فوراً لجميع المساعدين لبدء تسجيل الحضور والعمليات؟` : `Do you want to activate and open shift for day (${d}) immediately for all assistants?`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، فتح الشيفت (ON)',
+      confirmButtonText: isAr ? 'نعم، فتح الشيفت (ON)' : 'Yes, Open Shift (ON)',
       confirmButtonColor: '#10B981',
-      cancelButtonText: 'إلغاء'
+      cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
     });
     if (!res.isConfirmed) return;
 
@@ -1244,14 +1330,15 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
       showToast("تنبيه: حدث بطء في مزامنة السحابة، جاري الإعادة تلقائياً", "warning");
     }
   } else {
+    const isAr = (currentLang === "ar");
     const res = await Swal.fire({
-      title: 'إغلاق وتجميد الشيفت (Turn OFF)',
-      text: `هل أنت متأكد من إغلاق شيفت يوم (${d}) واعتماد اليومية وتجميد عمليات المساعدين؟`,
+      title: isAr ? 'إغلاق وتجميد الشيفت (Turn OFF)' : 'Close & Freeze Shift (Turn OFF)',
+      text: isAr ? `هل أنت متأكد من إغلاق شيفت يوم (${d}) واعتماد اليومية وتجميد عمليات المساعدين؟` : `Are you sure you want to close shift for day (${d}) and freeze assistant operations?`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'نعم، إغلاق الشيفت (OFF)',
+      confirmButtonText: isAr ? 'نعم، إغلاق الشيفت (OFF)' : 'Yes, Close Shift (OFF)',
       confirmButtonColor: '#EF4444',
-      cancelButtonText: 'إلغاء'
+      cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
     });
     if (!res.isConfirmed) return;
 
@@ -1959,14 +2046,15 @@ window.changeAssistantPassword = function(username) {
 };
 
 window.deleteAssistant = async function(username) {
+  const isAr = (currentLang === "ar");
   const res = await Swal.fire({
-    title: 'تأكيد حذف المساعد',
-    text: `هل أنت متأكد من حذف حساب المساعد (${username}) نهائياً؟`,
+    title: isAr ? 'تأكيد حذف المساعد' : 'Confirm Delete Assistant',
+    text: isAr ? `هل أنت متأكد من حذف حساب المساعد (${username}) نهائياً؟` : `Are you sure you want to permanently delete assistant (${username})?`,
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'نعم، احذف',
+    confirmButtonText: isAr ? 'نعم، احذف' : 'Yes, Delete',
     confirmButtonColor: '#EF4444',
-    cancelButtonText: 'إلغاء'
+    cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
   });
 
   if (res.isConfirmed) {
@@ -2329,80 +2417,355 @@ window.renderAdminPackages = function() {
   const isAr = (currentLang === "ar");
   const currencySuffix = isAr ? " ج" : " EGP";
 
-  if (Object.keys(packages).length === 0) {
-    container.innerHTML = `<div style="color:var(--text-secondary); padding:10px;">${isAr ? "لا توجد باقات مضافة بعد." : "No packages added yet."}</div>`;
+  const keys = Object.keys(packages || {});
+  if (keys.length === 0) {
+    container.innerHTML = `<div style="color:var(--text-secondary); padding:20px; text-align:center;">${isAr ? "لا توجد باقات مضافة بعد." : "No packages added yet."}</div>`;
     return;
   }
 
-  let html = "";
-  Object.values(packages).forEach(p => {
+  let html = `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px;">`;
+  keys.forEach(k => {
+    const p = packages[k];
+    const details = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(k) : (p || {});
+    const subj = details.subject || p.subject || '';
+    const price = details.price || p.price || 0;
+
+    let badgeInfo = "";
+    if (details.expiryType === 'time' && details.startDate && details.endDate) {
+      badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.8em;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} ${isAr ? "إلي" : "to"} ${details.endDate}</span>`;
+    } else if (details.expiryType === 'sessions' && details.sessionLimit > 0) {
+      badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:0.8em;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} ${isAr ? "حصص" : "Sessions"}</span>`;
+    }
+
+    const subjBadge = subj ? `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;"><i class="fa-solid fa-book"></i> ${subj}</span>` : '';
+
     html += `
-      <div style="background:var(--bg-inset); border:1px solid var(--border); border-radius:10px; padding:16px; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h4 style="font-size:1.05em; font-weight:700; color:var(--primary);">${p.name}</h4>
-          <span style="font-size:0.85em; color:var(--text-secondary);">${isAr ? "السعر:" : "Price:"} <b>${p.price}${currencySuffix}</b></span>
+      <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div>
+            <h4 style="font-size:1.1em; font-weight:800; color:var(--text-primary); margin:0 0 6px 0;">${k}</h4>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              ${subjBadge}
+              ${badgeInfo}
+            </div>
+          </div>
+          <div style="font-size:1.1em; font-weight:800; color:var(--success); background:var(--bg-inset); padding:4px 10px; border-radius:8px; border:1px solid var(--border);">
+            ${price}${currencySuffix}
+          </div>
         </div>
-        <button class="btn secondary smallBtn" onclick="window.editPackagePrice('${p.name}', ${p.price})">
-          <i class="fa-solid fa-pen-to-square"></i> ${isAr ? "تعديل" : "Edit"}
-        </button>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">
+          <button class="btn secondary smallBtn" onclick="window.openEditPackageModal('${encodeURIComponent(k)}')">
+            <i class="fa-solid fa-pen-to-square"></i> ${isAr ? "تعديل كامل" : "Full Edit"}
+          </button>
+          <button class="btn danger smallBtn iconOnly" onclick="window.adminDeletePackage('${encodeURIComponent(k)}')" title="${isAr ? "حذف الباقة" : "Delete Package"}">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
       </div>
     `;
   });
+  html += `</div>`;
   container.innerHTML = html;
 };
 
+
 window.openAddPackageModal = async function() {
+  const isAr = (currentLang === "ar");
   const { value: formValues } = await Swal.fire({
-    title: 'إضافة باقة جديدة',
-    html:
-      '<input id="swalPkgName" class="swal2-input" placeholder="اسم الباقة / المجموعة">' +
-      '<input id="swalPkgPrice" type="number" class="swal2-input" placeholder="السعر الإجمالي (ج)">',
+    title: isAr ? 'إضافة باقة جديدة' : 'Add New Package',
+    html: `
+      <div style="display:flex; flex-direction:column; gap:10px; text-align:${isAr ? 'right' : 'left'};">
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "اسم الباقة:" : "Package Name:"}</label>
+        <input id="swalPkgName" class="swal2-input" style="margin:0; width:100%;" placeholder="${isAr ? "مثال: باقة سبتمبر" : "e.g. September Package"}">
+        
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "المادة الدراسية:" : "Subject:"}</label>
+        <input id="swalPkgSubject" class="swal2-input" style="margin:0; width:100%;" placeholder="${isAr ? "مثال: فيزياء" : "e.g. Physics"}">
+        
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "السعر (ج.م):" : "Price (EGP):"}</label>
+        <input id="swalPkgPrice" type="number" class="swal2-input" style="margin:0; width:100%;" placeholder="0">
+        
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "نظام الصلاحية:" : "Validity System:"}</label>
+        <select id="swalPkgExpiryType" class="swal2-input" style="margin:0; width:100%;" onchange="
+          document.getElementById('swalTimeBox').style.display = this.value==='time'?'block':'none';
+          document.getElementById('swalSessBox').style.display = this.value==='sessions'?'block':'none';
+        ">
+          <option value="time">${isAr ? "بالمدة الزمنية (من تاريخ إلى تاريخ)" : "By Duration (From Date to Date)"}</option>
+          <option value="sessions">${isAr ? "بعدد الحصص (مثال: 8 حصص)" : "By Session Count (e.g. 8 Sessions)"}</option>
+        </select>
+        
+        <div id="swalTimeBox" style="display:block; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px;">
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1;">
+              <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "من تاريخ:" : "From Date:"}</label>
+              <input type="date" id="swalPkgStartDate" class="swal2-input" style="margin:0; width:100%;">
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "إلى تاريخ:" : "To Date:"}</label>
+              <input type="date" id="swalPkgEndDate" class="swal2-input" style="margin:0; width:100%;">
+            </div>
+          </div>
+        </div>
+
+        <div id="swalSessBox" style="display:none; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px;">
+          <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "عدد الحصص المسموحة:" : "Allowed Sessions Count:"}</label>
+          <input type="number" id="swalPkgSessions" class="swal2-input" style="margin:0; width:100%;" value="8">
+        </div>
+      </div>
+    `,
     focusConfirm: false,
     showCancelButton: true,
-    confirmButtonText: 'إضافة',
-    cancelButtonText: 'إلغاء',
+    confirmButtonText: isAr ? 'حفظ الباقة' : 'Save Package',
+    cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
     preConfirm: () => {
-      return [
-        document.getElementById('swalPkgName').value.trim(),
-        document.getElementById('swalPkgPrice').value.trim()
-      ];
+      const name = document.getElementById('swalPkgName').value.trim();
+      const subject = document.getElementById('swalPkgSubject').value.trim();
+      const price = Number(document.getElementById('swalPkgPrice').value) || 0;
+      const expiryType = document.getElementById('swalPkgExpiryType').value;
+      const startDate = document.getElementById('swalPkgStartDate').value;
+      const endDate = document.getElementById('swalPkgEndDate').value;
+      const sessions = Number(document.getElementById('swalPkgSessions').value) || 0;
+
+      if (!name) {
+        Swal.showValidationMessage(isAr ? 'يرجى إدخال اسم الباقة' : 'Please enter package name');
+        return false;
+      }
+      return { name, subject, price, expiryType, startDate, endDate, sessions };
     }
   });
 
-  if (formValues && formValues[0] && formValues[1]) {
-    const name = formValues[0];
-    const price = Number(formValues[1]);
+  if (formValues) {
+    const { name, subject, price, expiryType, startDate, endDate, sessions } = formValues;
     try {
       if (!supabase) return;
-      await supabase.from('packages').upsert({ name, price, installment_price: price });
-      packages[name] = { name, price, installmentPrice: price };
+      await supabase.from('packages').upsert({
+        name,
+        price,
+        subject,
+        has_installments: false,
+        installment_price: 0
+      }, { onConflict: 'name' });
+
+      // Also sync to settings.config.group_fees
+      const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+      const cfg = (setRow && setRow.config) ? setRow.config : {};
+      if (!cfg.group_fees) cfg.group_fees = {};
+      cfg.group_fees[name] = {
+        name,
+        subject,
+        price,
+        expiryType,
+        startDate,
+        endDate,
+        sessionLimit: sessions,
+        hasInstallments: false,
+        installmentPrice: 0,
+        updatedAt: nowDateStr()
+      };
+      await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
+
+      packages[name] = { name, subject, price, expiryType, startDate, endDate, sessionLimit: sessions };
       groupFees[name] = price;
-      showToast("تمت إضافة الباقة بنجاح", "success");
+      showToast(isAr ? "تمت إضافة الباقة بنجاح" : "Package added successfully", "success");
       window.renderAdminPackages();
-    } catch(e) { console.error(e); }
+    } catch(e) {
+      console.error(e);
+      showToast(isAr ? "فشل إضافة الباقة" : "Failed to add package", "err");
+    }
   }
 };
 
-window.editPackagePrice = async function(name, currentPrice) {
-  const { value: newPrice } = await Swal.fire({
-    title: `تعديل سعر: ${name}`,
-    input: 'number',
-    inputValue: currentPrice,
-    inputLabel: 'السعر الجديد (ج)',
+window.openEditPackageModal = async function(encodedName) {
+  const name = decodeURIComponent(encodedName);
+  const p = packages[name] || {};
+  const details = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(name) : (p || {});
+  const isAr = (currentLang === "ar");
+
+  const curSubject = details.subject || p.subject || '';
+  const curPrice = details.price || p.price || 0;
+  const curExpiry = details.expiryType || 'time';
+  const curStart = details.startDate || '';
+  const curEnd = details.endDate || '';
+  const curSessions = details.sessionLimit || 8;
+
+  const { value: formValues } = await Swal.fire({
+    title: (isAr ? 'تعديل الباقة: ' : 'Edit Package: ') + name,
+    html: `
+      <div style="display:flex; flex-direction:column; gap:10px; text-align:${isAr ? 'right' : 'left'};">
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "اسم الباقة (تغيير الاسم يحدّث بيانات الطلاب المسجلين):" : "Package Name (updates enrolled students):"}</label>
+        <input id="swalEditPkgName" class="swal2-input" style="margin:0; width:100%;" value="${name}">
+        
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "المادة الدراسية:" : "Subject:"}</label>
+        <input id="swalEditPkgSubject" class="swal2-input" style="margin:0; width:100%;" value="${curSubject}">
+        
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "السعر (ج.م):" : "Price (EGP):"}</label>
+        <input id="swalEditPkgPrice" type="number" class="swal2-input" style="margin:0; width:100%;" value="${curPrice}">
+        
+        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "نظام الصلاحية:" : "Validity System:"}</label>
+        <select id="swalEditPkgExpiryType" class="swal2-input" style="margin:0; width:100%;" onchange="
+          document.getElementById('swalEditTimeBox').style.display = this.value==='time'?'block':'none';
+          document.getElementById('swalEditSessBox').style.display = this.value==='sessions'?'block':'none';
+        ">
+          <option value="time" ${curExpiry==='time'?'selected':''}>${isAr ? "بالمدة الزمنية (من تاريخ إلى تاريخ)" : "By Duration (From Date to Date)"}</option>
+          <option value="sessions" ${curExpiry==='sessions'?'selected':''}>${isAr ? "بعدد الحصص (مثال: 8 حصص)" : "By Session Count (e.g. 8 Sessions)"}</option>
+        </select>
+        
+        <div id="swalEditTimeBox" style="display:${curExpiry==='time'?'block':'none'}; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px;">
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1;">
+              <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "من تاريخ:" : "From Date:"}</label>
+              <input type="date" id="swalEditPkgStartDate" class="swal2-input" style="margin:0; width:100%;" value="${curStart}">
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "إلى تاريخ:" : "To Date:"}</label>
+              <input type="date" id="swalEditPkgEndDate" class="swal2-input" style="margin:0; width:100%;" value="${curEnd}">
+            </div>
+          </div>
+        </div>
+
+        <div id="swalEditSessBox" style="display:${curExpiry==='sessions'?'block':'none'}; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px;">
+          <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "عدد الحصص المسموحة:" : "Allowed Sessions Count:"}</label>
+          <input type="number" id="swalEditPkgSessions" class="swal2-input" style="margin:0; width:100%;" value="${curSessions}">
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
     showCancelButton: true,
-    confirmButtonText: 'حفظ السعر',
-    cancelButtonText: 'إلغاء'
+    confirmButtonText: isAr ? 'حفظ التعديلات' : 'Save Changes',
+    cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+    preConfirm: () => {
+      const newName = document.getElementById('swalEditPkgName').value.trim();
+      const newSubject = document.getElementById('swalEditPkgSubject').value.trim();
+      const newPrice = Number(document.getElementById('swalEditPkgPrice').value) || 0;
+      const newExpiryType = document.getElementById('swalEditPkgExpiryType').value;
+      const newStartDate = document.getElementById('swalEditPkgStartDate').value;
+      const newEndDate = document.getElementById('swalEditPkgEndDate').value;
+      const newSessions = Number(document.getElementById('swalEditPkgSessions').value) || 0;
+
+      if (!newName) {
+        Swal.showValidationMessage(isAr ? 'يرجى إدخال اسم الباقة' : 'Please enter package name');
+        return false;
+      }
+      return { newName, newSubject, newPrice, newExpiryType, newStartDate, newEndDate, newSessions };
+    }
   });
 
-  if (newPrice) {
+  if (formValues) {
+    const { newName, newSubject, newPrice, newExpiryType, newStartDate, newEndDate, newSessions } = formValues;
     try {
       if (!supabase) return;
-      await supabase.from('packages').update({ price: Number(newPrice) }).eq('name', name);
-      packages[name].price = Number(newPrice);
-      groupFees[name] = Number(newPrice);
-      showToast("تم تحديث السعر بنجاح", "success");
+
+      // 1. If renamed, delete old package row from Supabase packages table
+      if (newName !== name) {
+        await supabase.from('packages').delete().eq('name', name);
+        delete packages[name];
+        delete groupFees[name];
+
+        // Update enrolled students
+        Object.values(students || {}).forEach(st => {
+          if (st && Array.isArray(st.packages) && st.packages.includes(name)) {
+            st.packages = st.packages.map(pName => pName === name ? newName : pName);
+          }
+        });
+      }
+
+      // 2. Upsert new package details in packages table
+      await supabase.from('packages').upsert({
+        name: newName,
+        price: newPrice,
+        subject: newSubject,
+        has_installments: false,
+        installment_price: 0
+      }, { onConflict: 'name' });
+
+      // 3. Update settings.config.group_fees
+      const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+      const cfg = (setRow && setRow.config) ? setRow.config : {};
+      if (!cfg.group_fees) cfg.group_fees = {};
+      if (newName !== name) delete cfg.group_fees[name];
+      cfg.group_fees[newName] = {
+        name: newName,
+        subject: newSubject,
+        price: newPrice,
+        expiryType: newExpiryType,
+        startDate: newStartDate,
+        endDate: newEndDate,
+        sessionLimit: newSessions,
+        hasInstallments: false,
+        installmentPrice: 0,
+        updatedAt: nowDateStr()
+      };
+      await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
+
+      // 4. Update local state
+      packages[newName] = { name: newName, subject: newSubject, price: newPrice, expiryType: newExpiryType, startDate: newStartDate, endDate: newEndDate, sessionLimit: newSessions };
+      groupFees[newName] = newPrice;
+
+      showToast(isAr ? "تم تحديث الباقة بنجاح" : "Package updated successfully", "success");
       window.renderAdminPackages();
-    } catch(e) { console.error(e); }
+      if (typeof window.renderTermTable === 'function') window.renderTermTable();
+    } catch(e) {
+      console.error(e);
+      showToast(isAr ? "فشل تحديث الباقة" : "Failed to update package", "err");
+    }
+  }
+};
+
+window.adminDeletePackage = async function(encodedName) {
+  const name = decodeURIComponent(encodedName);
+  const isAr = (currentLang === "ar");
+  const enrolledCount = Object.values(students || {}).filter(st => st && Array.isArray(st.packages) && st.packages.includes(name)).length;
+
+  let warningMsg = isAr 
+    ? `هل أنت متأكد تماماً من حذف باقة "${name}" من النظام نهائياً؟` 
+    : `Are you sure you want to permanently delete package "${name}" from the system?`;
+  if (enrolledCount > 0) {
+    warningMsg += isAr 
+      ? `\n\nتنبيه: يوجد (${enrolledCount}) طالب مسجلين في هذه الباقة، سيتم فك ارتباطهم بها تلقائياً.`
+      : `\n\nNotice: (${enrolledCount}) students are currently enrolled in this package. They will be unlinked automatically.`;
+  }
+
+  const { isConfirmed } = await Swal.fire({
+    title: isAr ? 'تأكيد حذف الباقة' : 'Confirm Package Deletion',
+    text: warningMsg,
+    icon: enrolledCount > 0 ? 'warning' : 'question',
+    showCancelButton: true,
+    confirmButtonText: isAr ? 'نعم، احذف نهائياً' : 'Yes, Delete Permanently',
+    confirmButtonColor: '#ef4444',
+    cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
+  });
+
+  if (isConfirmed) {
+    try {
+      if (!supabase) return;
+
+      // 1. Delete from Supabase packages table
+      await supabase.from('packages').delete().eq('name', name);
+
+      // 2. Remove from settings.config.group_fees
+      const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+      const cfg = (setRow && setRow.config) ? setRow.config : {};
+      if (cfg.group_fees) {
+        delete cfg.group_fees[name];
+        await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
+      }
+
+      // 3. Unlink from local students
+      Object.values(students || {}).forEach(st => {
+        if (st && Array.isArray(st.packages) && st.packages.includes(name)) {
+          st.packages = st.packages.filter(pName => pName !== name);
+        }
+      });
+
+      delete packages[name];
+      delete groupFees[name];
+
+      showToast(isAr ? "تم حذف الباقة نهائياً من السحابة والنظام" : "Package permanently deleted from cloud and system", "success");
+      window.renderAdminPackages();
+      if (typeof window.renderTermTable === 'function') window.renderTermTable();
+    } catch(e) {
+      console.error(e);
+      showToast(isAr ? "فشل حذف الباقة" : "Failed to delete package", "err");
+    }
   }
 };
 
@@ -2534,14 +2897,15 @@ window.importDataFromExcel = async function(event) {
     return showToast("مكتبة Excel غير متوفرة", "err");
   }
 
+  const isAr = (currentLang === "ar");
   const confirmRes = await Swal.fire({
-    title: 'استيراد بيانات الطلاب من Excel',
-    text: 'هل تريد دمج واستيراد بيانات الطلاب من هذا الملف؟ سيتم تحديث الطلاب الحاليين وإضافة الجدد.',
+    title: isAr ? 'استيراد بيانات الطلاب من Excel' : 'Import Students from Excel',
+    text: isAr ? 'هل تريد دمج واستيراد بيانات الطلاب من هذا الملف؟ سيتم تحديث الطلاب الحاليين وإضافة الجدد.' : 'Do you want to merge and import student data from this file? Existing students will be updated and new ones added.',
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: 'نعم، استيراد',
+    confirmButtonText: isAr ? 'نعم، استيراد' : 'Yes, Import',
     confirmButtonColor: '#2563EB',
-    cancelButtonText: 'إلغاء'
+    cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
   });
 
   if (!confirmRes.isConfirmed) {
@@ -2625,14 +2989,15 @@ window.importDataFromExcel = async function(event) {
 };
 
 window.resetTermData = async function() {
+  const isAr = (currentLang === "ar");
   const res = await Swal.fire({
-    title: 'تأكيد تصفير الترم',
-    text: 'هل أنت متأكد من تصفير حضور ومصاريف وإيرادات الترم بالكامل لجميع الطلاب؟ لا يمكن التراجع عن هذه الخطوة إلا بنسخة احتياطية.',
+    title: isAr ? 'تأكيد تصفير الترم' : 'Confirm Term Reset',
+    text: isAr ? 'هل أنت متأكد من تصفير حضور ومصاريف وإيرادات الترم بالكامل لجميع الطلاب؟ لا يمكن التراجع عن هذه الخطوة إلا بنسخة احتياطية.' : 'Are you sure you want to reset attendance, fees, and revenue for the whole term? This action cannot be undone without a backup.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'نعم، صفر بيانات الترم',
+    confirmButtonText: isAr ? 'نعم، صفر بيانات الترم' : 'Yes, Reset Term',
     confirmButtonColor: '#EF4444',
-    cancelButtonText: 'إلغاء'
+    cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
   });
 
   if (!res.isConfirmed) return;
