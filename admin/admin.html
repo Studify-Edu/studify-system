@@ -895,7 +895,7 @@
         <!-- Username Input with @studify.com Addon -->
         <div class="form-group-premium">
           <label class="lbl-premium" for="newAsstUsernameInput">
-            <i class="fa-solid fa-at"></i> اسم المستخدم (حساب الدخول)
+            <i class="fa-solid fa-at"></i> <span data-i18n="asst_lbl_username">اسم المستخدم (حساب الدخول)</span>
           </label>
           <div class="asst-input-group" id="asstUsernameGroup">
             <input 
@@ -911,9 +911,9 @@
             <span class="asst-domain-tag">@studify.com</span>
           </div>
           <div class="asst-input-info">
-            <span class="asst-hint-text"><i class="fa-solid fa-circle-info"></i> اكتب الاسم فقط بحروف إنجليزية صغيرة بدون مسافات.</span>
+            <span class="asst-hint-text"><i class="fa-solid fa-circle-info"></i> <span data-i18n="asst_hint_letters_only">اكتب الاسم فقط بحروف إنجليزية صغيرة بدون مسافات.</span></span>
             <div class="asst-live-preview" id="asstLivePreviewRow">
-              <i class="fa-solid fa-envelope-circle-check"></i> البريد المعتمد للدخول: <span id="asstEmailPreviewText">mohamed@studify.com</span>
+              <i class="fa-solid fa-envelope-circle-check"></i> <span data-i18n="asst_email_preview_prefix">البريد المعتمد للدخول:</span> <span id="asstEmailPreviewText">mohamed@studify.com</span>
             </div>
           </div>
         </div>
@@ -921,14 +921,14 @@
         <!-- Password Input with Eye Toggle -->
         <div class="form-group-premium">
           <label class="lbl-premium" for="newAsstPasswordInput">
-            <i class="fa-solid fa-lock"></i> كلمة المرور
+            <i class="fa-solid fa-lock"></i> <span data-i18n="asst_lbl_password_simple">كلمة المرور</span>
           </label>
           <div class="pass-input-wrapper">
             <input 
               type="password" 
               id="newAsstPasswordInput" 
               class="inp inp-pass-premium" 
-              placeholder="أدخل كلمة مرور قوية للمساعد" 
+              placeholder="أدخل كلمة مرور قوية للمساعد" data-i18n-placeholder="asst_pass_ph" 
               autocomplete="new-password"
             >
             <button 
@@ -936,7 +936,7 @@
               class="asst-eye-btn" 
               id="toggleAsstPassBtn" 
               onclick="window.toggleNewAsstPassword()" 
-              title="إظهار / إخفاء كلمة المرور"
+              title="إظهار / إخفاء كلمة المرور" data-i18n-title="asst_eye_title"
             >
               <i class="fa-regular fa-eye" id="asstPassEyeIcon"></i>
             </button>
@@ -946,10 +946,10 @@
         <!-- Actions -->
         <div class="modal-actions-premium">
           <button type="button" class="btn secondary modal-cancel-btn" onclick="window.closeAddAssistantModal()">
-            <i class="fa-solid fa-xmark"></i> إلغاء
+            <i class="fa-solid fa-xmark"></i> <span data-i18n="modal_btn_cancel">إلغاء</span>
           </button>
           <button type="button" class="btn primary modal-submit-btn" id="submitNewAssistantBtn" onclick="window.submitNewAssistant()">
-            <i class="fa-solid fa-check"></i> إنشاء الحساب
+            <i class="fa-solid fa-check"></i> <span data-i18n="modal_btn_create_asst">إنشاء الحساب</span>
           </button>
         </div>
       </div>
@@ -1066,7 +1066,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V19"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V20"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

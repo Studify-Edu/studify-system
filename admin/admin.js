@@ -19,6 +19,18 @@ const permChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('studi
 let currentLang = localStorage.getItem("ca_lang") || "ar";
 
 const ADMIN_DICT = {
+  "asst_hint_letters_only": { ar: "اكتب الاسم فقط بحروف إنجليزية صغيرة بدون مسافات.", en: "Enter name with lowercase English letters & numbers only." },
+  "asst_email_preview_prefix": { ar: "البريد المعتمد للدخول:", en: "Official Login Email:" },
+  "asst_lbl_password_simple": { ar: "كلمة المرور", en: "Password" },
+  "asst_pass_ph": { ar: "أدخل كلمة مرور قوية للمساعد", en: "Enter a strong password for assistant" },
+  "asst_eye_title": { ar: "إظهار / إخفاء كلمة المرور", en: "Show / Hide password" },
+  "modal_btn_cancel": { ar: "إلغاء", en: "Cancel" },
+  "modal_btn_create_asst": { ar: "إنشاء الحساب", en: "Create Account" },
+  "trans_switching_theme": { ar: "جاري تبديل المظهر..", en: "Switching theme..." },
+  "btn_login_admin": { ar: "دخول مدير النظام", en: "Login as Administrator" },
+  "prompt_switch_to_asst": { ar: "هل أنت مساعد؟", en: "Are you an assistant?" },
+  "action_switch_to_asst": { ar: "الانتقال لبوابة المساعد والعمليات", en: "Go to Assistant Portal & Operations" },
+
   "dec_val_ph": { ar: "مثال: 100", en: "e.g. 100" },
   "dec_reason_ph": { ar: "مثال: قرار مدير - ظرف خاص / تفوق دراسي", en: "e.g. Manager Decision - Special case / Academic excellence" },
   "dec_no_pending": { ar: "لا توجد طلبات معلقة حالياً", en: "No pending requests at this time" },
@@ -367,6 +379,14 @@ window.applyAdminLanguage = function() {
     const key = el.getAttribute("data-i18n-placeholder");
     if (ADMIN_DICT[key] && ADMIN_DICT[key][currentLang]) {
       el.placeholder = ADMIN_DICT[key][currentLang];
+    }
+  });
+
+  // Translate all titles with data-i18n-title
+  document.querySelectorAll("[data-i18n-title]").forEach(el => {
+    const key = el.getAttribute("data-i18n-title");
+    if (ADMIN_DICT[key] && ADMIN_DICT[key][currentLang]) {
+      el.title = ADMIN_DICT[key][currentLang];
     }
   });
 
@@ -1783,6 +1803,7 @@ window.openAddAssistantModal = function() {
   const m = document.getElementById("addAssistantModal");
   if (m) {
     m.classList.remove("hidden");
+    if (typeof window.applyAdminLanguage === "function") window.applyAdminLanguage();
     const uInp = document.getElementById("newAsstUsernameInput");
     const pInp = document.getElementById("newAsstPasswordInput");
     if (uInp) {
@@ -1932,7 +1953,10 @@ window.openEditAssistantPasswordModal = async function(username, currentPass) {
   const newIcon = document.getElementById("newPassEyeIcon");
   if (newIcon) newIcon.className = "fa-regular fa-eye";
 
-  if (modal) modal.classList.remove("hidden");
+  if (modal) {
+    modal.classList.remove("hidden");
+    if (typeof window.applyAdminLanguage === "function") window.applyAdminLanguage();
+  }
 };
 
 window.closeEditAssistantPasswordModal = function() {
@@ -2792,26 +2816,27 @@ window.renderAdminSyllabus = function() {
   const container = document.getElementById("adminSyllabusTimelineContainer");
   if (!container) return;
 
+  const isAr = (currentLang === "ar");
   if (syllabusList.length === 0) {
-    container.innerHTML = '<div style="color:var(--text-secondary); text-align:center; padding:20px;">لا توجد دروس مسجلة في خطة المنهج حتى الآن.</div>';
+    container.innerHTML = `<div style="color:var(--text-secondary); text-align:center; padding:20px;">${isAr ? "لا توجد دروس مسجلة في خطة المنهج حتى الآن." : "No lessons registered in the syllabus roadmap yet."}</div>`;
     return;
   }
 
   let html = "";
   syllabusList.forEach((s, idx) => {
-    let statusBadge = "لم يبدأ";
+    let statusBadge = isAr ? "لم يبدأ" : "Not Started";
     let badgeColor = "var(--text-secondary)";
-    if (s.status === "completed") { statusBadge = "تم الانتهاء "; badgeColor = "var(--success)"; }
-    else if (s.status === "in_progress") { statusBadge = "جاري الشرح "; badgeColor = "var(--warning)"; }
+    if (s.status === "completed") { statusBadge = isAr ? "تم الانتهاء" : "Completed"; badgeColor = "var(--success)"; }
+    else if (s.status === "in_progress") { statusBadge = isAr ? "جاري الشرح" : "In Progress"; badgeColor = "var(--warning)"; }
 
     html += `
       <div class="syllabus-item-card ${s.status}">
         <div style="flex:1;">
           <div style="font-weight:700; font-size:1.05em;">${s.title || s.name}</div>
           <span style="font-size:0.82em; color:${badgeColor}; font-weight:700;">${statusBadge}</span>
-          ${s.notes ? `<p style="font-size:0.82em; color:var(--text-secondary); margin-top:4px;">ملاحظات: ${s.notes}</p>` : ''}
+          ${s.notes ? `<p style="font-size:0.82em; color:var(--text-secondary); margin-top:4px;">${isAr ? 'ملاحظات:' : 'Notes:'} ${s.notes}</p>` : ''}
         </div>
-        <button class="btn danger smallBtn" onclick="window.deleteSyllabusLesson(${idx})">
+        <button class="btn danger smallBtn" onclick="window.deleteSyllabusLesson(${idx})" title="${isAr ? 'حذف الدرس' : 'Delete Lesson'}">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
