@@ -1433,9 +1433,11 @@ async function loadAllAdminData() {
     if (stRes.data) {
       students = {};
       stRes.data.forEach(s => {
-        const pList = (Array.isArray(s.packages) && s.packages.length > 0) 
+        let pList = (Array.isArray(s.packages) && s.packages.length > 0) 
           ? s.packages 
-          : (stPkgsMap[s.id] || (s.class_name ? ["باقة " + s.class_name] : []));
+          : (stPkgsMap[s.id] || (s.class_name ? [s.class_name] : []));
+        if (typeof pList === 'string') pList = [pList];
+        if (!Array.isArray(pList)) pList = [];
 
         students[String(s.id)] = {
           id: s.id,
@@ -2082,15 +2084,39 @@ window.renderTermTable = function() {
 
     matchCount++;
     let req = 0;
-    const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (cls ? ["باقة " + cls, cls] : []);
+    const pkgKeys = Object.keys(packages || {});
+    const normName = str => String(str || '').replace(/^باقة\s+/, '').trim().toLowerCase();
+
+    // Look for matching package price in packages object or groupFees
+    const getPriceForPkg = (candidate) => {
+      if (!candidate) return 0;
+      const clean = normName(candidate);
+      if (packages[candidate]) return Number(packages[candidate].price) || 0;
+      if (groupFees[candidate]) return typeof groupFees[candidate] === 'object' ? (Number(groupFees[candidate].price) || 0) : (Number(groupFees[candidate]) || 0);
+      for (const pk in packages) {
+        if (normName(pk) === clean) return Number(packages[pk].price) || 0;
+      }
+      for (const gk in groupFees) {
+        if (normName(gk) === clean) {
+          return typeof groupFees[gk] === 'object' ? (Number(groupFees[gk].price) || 0) : (Number(groupFees[gk]) || 0);
+        }
+      }
+      return 0;
+    };
+
+    const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : (cls && cls !== 'عام' && cls !== 'General' ? [cls] : []);
+    const checked = new Set();
     stPkgs.forEach(pName => {
-      if (packages[pName]) req += (packages[pName].price || 0);
-      else if (groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
+      const clean = normName(pName);
+      if (!clean || checked.has(clean)) return;
+      checked.add(clean);
+      req += getPriceForPkg(pName);
     });
-    if (req === 0 && cls) {
-      const alt = "باقة " + cls;
-      if (packages[alt]) req += (packages[alt].price || 0);
-      else if (groupFees[alt]) req += (groupFees[alt].price || groupFees[alt] || 0);
+
+    // Fallback: If student has 0 required and the center has exactly 1 package configured, assign that single package
+    if (req === 0 && pkgKeys.length === 1) {
+      const singlePkg = packages[pkgKeys[0]];
+      req = Number(singlePkg?.price) || 0;
     }
     
     const paid = Number(st.paid) || 0;
@@ -2125,7 +2151,7 @@ window.renderTermTable = function() {
         <td style="color:${debt > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${statusText}</td>
         <td style="font-weight:700;">${attCount}</td>
         <td>
-          <a href="../assistant/index.html" style="text-decoration:none;" class="btn secondary smallBtn">
+          <a href="../assistant/index.html?openId=${st.id}" target="_blank" style="text-decoration:none;" class="btn secondary smallBtn">
             <i class="fa-solid fa-folder-open"></i> ${profileBtnText}
           </a>
         </td>
@@ -3057,11 +3083,21 @@ window.renderAdminPackages = function() {
     const subj = details.subject || p.subject || k;
     const price = Number(details.price || p.price || 0);
 
-    // Enrolled students
+    // Enrolled students with robust normalization & single-package fallback
+    const normName = str => String(str || '').replace(/^باقة\s+/, '').trim().toLowerCase();
+    const cleanK = normName(k);
+
     const enrolledStudents = Object.values(students || {}).filter(st => {
-      if (!st) return false;
-      if (Array.isArray(st.packages) && st.packages.includes(k)) return true;
-      if ((!st.packages || st.packages.length === 0) && (st.className === k || ("باقة " + st.className) === k)) return true;
+      if (!st || !st.name) return false;
+      // 1. Check student packages list
+      if (Array.isArray(st.packages) && st.packages.length > 0) {
+        const has = st.packages.some(p => normName(p) === cleanK);
+        if (has) return true;
+      }
+      // 2. Check student className
+      if (st.className && normName(st.className) === cleanK) return true;
+      // 3. Fallback: If center has only 1 package configured, count all students in it
+      if (keys.length === 1) return true;
       return false;
     });
     const count = enrolledStudents.length;
@@ -3074,7 +3110,14 @@ window.renderAdminPackages = function() {
       let totalReq = 0;
       const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : (st.className ? [st.className] : []);
       stPkgs.forEach(pkgName => {
-        totalReq += (packages[pkgName] ? Number(packages[pkgName].price) : (Number(groupFees[pkgName]) || 0));
+        const cleanP = normName(pkgName);
+        let foundPrice = packages[pkgName] ? Number(packages[pkgName].price) : (Number(groupFees[pkgName]) || 0);
+        if (!foundPrice) {
+          for (const pk in packages) {
+            if (normName(pk) === cleanP) { foundPrice = Number(packages[pk].price) || 0; break; }
+          }
+        }
+        totalReq += foundPrice;
       });
       if (totalReq === 0) totalReq = price;
 
@@ -3611,54 +3654,161 @@ window.openRecordExpenseModal = async function(defaultType = 'expense') {
   const isWithdrawal = (defaultType === 'withdrawal');
 
   const { value: formValues } = await Swal.fire({
-    title: isAr 
-      ? (isWithdrawal ? "تسجيل مسحوبات شخصية للمستر" : "تسجيل مصروف تشغيلي للسنتر")
-      : (isWithdrawal ? "Record Owner Withdrawal" : "Record Center Expense"),
+    customClass: {
+      popup: 'swal-expense-modal',
+      confirmButton: 'swal-btn-confirm',
+      cancelButton: 'swal-btn-cancel'
+    },
+    buttonsStyling: false,
+    width: '740px',
+    showCloseButton: true,
     html: `
-      <div style="text-align: right; direction: rtl; display: flex; flex-direction: column; gap: 14px; font-family: 'Cairo', sans-serif;">
-        <div>
-          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">نوع العملية:</label>
-          <div style="display: flex; gap: 10px;">
-            <label style="flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 700;">
-              <input type="radio" name="swalTxType" value="expense" ${!isWithdrawal ? 'checked' : ''} onchange="document.getElementById('swalReasonInp').placeholder='مثال: فواتير كهرباء / طباعة ورق / صيانة';">
-              <span style="color: #ef4444;"><i class="fa-solid fa-receipt"></i> مصروف سنتر</span>
-            </label>
-            <label style="flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 700;">
-              <input type="radio" name="swalTxType" value="withdrawal" ${isWithdrawal ? 'checked' : ''} onchange="document.getElementById('swalReasonInp').placeholder='مثال: سحب أرباح شخصية / مسحوبات المستر';">
-              <span style="color: #f59e0b;"><i class="fa-solid fa-hand-holding-dollar"></i> مسحوبات المستر</span>
-            </label>
+      <div class="swal-expense-wrapper" style="direction: ${isAr ? 'rtl' : 'ltr'}; text-align: ${isAr ? 'right' : 'left'};">
+        <!-- Header -->
+        <div class="swal-expense-header">
+          <div class="swal-expense-icon ${isWithdrawal ? 'is-withdrawal' : 'is-expense'}" id="swalHeaderIcon">
+            <i class="fa-solid ${isWithdrawal ? 'fa-hand-holding-dollar' : 'fa-receipt'}"></i>
+          </div>
+          <div style="flex: 1;">
+            <h3 class="swal-expense-title" id="swalHeaderTitle">
+              ${isWithdrawal ? (isAr ? 'تسجيل مسحوبات شخصية للمستر' : 'Record Owner Withdrawal') : (isAr ? 'تسجيل مصروف تشغيلي للسنتر' : 'Record Center Expense')}
+            </h3>
+            <p class="swal-expense-subtitle" id="swalHeaderSubtitle">
+              ${isWithdrawal ? (isAr ? 'توثيق السحوبات والأرباح الخاصة فورياً من الخزائن' : 'Document center withdrawals directly from vaults') : (isAr ? 'توثيق فواتير ومصروفات التشغيل الميدانية وخصمها من الخزائن' : 'Track daily operational expenses and update vault balances')}
+            </p>
           </div>
         </div>
 
-        <div>
-          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">المبلغ المطلوب (جنيه):</label>
-          <input type="number" id="swalAmtInp" class="swal2-input" placeholder="0" min="1" style="width: 100%; margin: 0; box-sizing: border-box;">
+        <!-- Horizontal Type Switcher (Pill Cards) -->
+        <div class="swal-type-grid">
+          <div class="swal-type-card is-exp ${!isWithdrawal ? 'active-expense' : ''}" id="cardTypeExpense">
+            <input type="radio" name="swalTxType" value="expense" ${!isWithdrawal ? 'checked' : ''}>
+            <div class="card-icon">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div class="card-texts">
+              <span class="card-label">${isAr ? 'مصروف سنتر' : 'Center Expense'}</span>
+              <span class="card-desc">${isAr ? 'فواتير، إيجار، صيانة، طباعة مذكرات' : 'Bills, rent, printing, maintenance'}</span>
+            </div>
+            <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+          </div>
+
+          <div class="swal-type-card is-wth ${isWithdrawal ? 'active-withdrawal' : ''}" id="cardTypeWithdrawal">
+            <input type="radio" name="swalTxType" value="withdrawal" ${isWithdrawal ? 'checked' : ''}>
+            <div class="card-icon">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+            <div class="card-texts">
+              <span class="card-label">${isAr ? 'مسحوبات المستر' : 'Owner Withdrawal'}</span>
+              <span class="card-desc">${isAr ? 'أرباح شخصية وسحوبات خاصة' : 'Personal profits & drawings'}</span>
+            </div>
+            <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+          </div>
         </div>
 
-        <div>
-          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">البيان / سبب الصرف أو السحب:</label>
-          <input type="text" id="swalReasonInp" class="swal2-input" placeholder="${isWithdrawal ? 'مثال: سحب أرباح شخصية للمستر' : 'مثال: فواتير كهرباء / طباعة مذكرات'}" style="width: 100%; margin: 0; box-sizing: border-box;">
-        </div>
+        <!-- 2-Column Fields Grid -->
+        <div class="swal-fields-grid">
+          <!-- Col 1: Amount -->
+          <div class="swal-field-group">
+            <label class="swal-field-label" for="swalAmtInp">
+              <i class="fa-solid fa-coins" style="color: var(--primary);"></i>
+              <span>${isAr ? 'المبلغ المطلوب' : 'Amount'}</span>
+            </label>
+            <div class="swal-input-wrapper">
+              <input type="number" id="swalAmtInp" class="swal-custom-input" placeholder="0" min="1" step="any">
+              <span class="swal-input-badge">${isAr ? 'ج.م' : 'EGP'}</span>
+            </div>
+          </div>
 
-        <div>
-          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">الخزينة المسحوب منها:</label>
-          <select id="swalMethodInp" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box;">
-            <option value="cash">درج الكاش (الخزينة النقدية)</option>
-            <option value="wallet">محفظة فودافون كاش (المحافظ الإلكترونية)</option>
-            <option value="instapay">حساب إنستاباي (InstaPay)</option>
-          </select>
-        </div>
+          <!-- Col 2: Date -->
+          <div class="swal-field-group">
+            <label class="swal-field-label" for="swalDateInp">
+              <i class="fa-regular fa-calendar" style="color: var(--primary);"></i>
+              <span>${isAr ? 'تاريخ العملية' : 'Transaction Date'}</span>
+            </label>
+            <div class="swal-input-wrapper">
+              <input type="date" id="swalDateInp" class="swal-custom-input" value="${nowDateStr()}">
+            </div>
+          </div>
 
-        <div>
-          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">التاريخ:</label>
-          <input type="date" id="swalDateInp" class="swal2-input" value="${nowDateStr()}" style="width: 100%; margin: 0; box-sizing: border-box;">
+          <!-- Col 1 (Row 2): Reason / Purpose -->
+          <div class="swal-field-group">
+            <label class="swal-field-label" for="swalReasonInp">
+              <i class="fa-solid fa-file-pen" style="color: var(--primary);"></i>
+              <span>${isAr ? 'البيان / سبب الصرف أو السحب' : 'Reason / Purpose'}</span>
+            </label>
+            <div class="swal-input-wrapper">
+              <input type="text" id="swalReasonInp" class="swal-custom-input" placeholder="${isWithdrawal ? (isAr ? 'مثال: سحب أرباح شخصية للمستر' : 'e.g. Owner profit withdrawal') : (isAr ? 'مثال: فواتير كهرباء / طباعة مذكرات' : 'e.g. Electricity bill, paper printing')}">
+            </div>
+          </div>
+
+          <!-- Col 2 (Row 2): Vault Selection -->
+          <div class="swal-field-group">
+            <label class="swal-field-label" for="swalMethodInp">
+              <i class="fa-solid fa-vault" style="color: var(--primary);"></i>
+              <span>${isAr ? 'الخزينة المسحوب منها' : 'Source Vault'}</span>
+            </label>
+            <div class="swal-input-wrapper">
+              <select id="swalMethodInp" class="swal-custom-select">
+                <option value="cash">${isAr ? 'درج الكاش (الخزينة النقدية)' : 'Cash Drawer (Vault)'}</option>
+                <option value="wallet">${isAr ? 'محفظة فودافون كاش (المحافظ الإلكترونية)' : 'Vodafone Cash (E-Wallet)'}</option>
+                <option value="instapay">${isAr ? 'حساب إنستاباي (InstaPay)' : 'InstaPay Account'}</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: isAr ? "حفظ وتوثيق الحركة" : "Save Transaction",
-    cancelButtonText: isAr ? "إلغاء" : "Cancel",
+    confirmButtonText: `<i class="fa-solid fa-check"></i> ${isAr ? "حفظ وتوثيق الحركة" : "Save Transaction"}`,
+    cancelButtonText: `<i class="fa-solid fa-xmark"></i> ${isAr ? "إلغاء" : "Cancel"}`,
     focusConfirm: false,
+    didOpen: (popup) => {
+      const cardExp = popup.querySelector('#cardTypeExpense');
+      const cardWth = popup.querySelector('#cardTypeWithdrawal');
+      const radExp = cardExp?.querySelector('input');
+      const radWth = cardWth?.querySelector('input');
+      const reasonInp = popup.querySelector('#swalReasonInp');
+      const headerIcon = popup.querySelector('#swalHeaderIcon');
+      const headerTitle = popup.querySelector('#swalHeaderTitle');
+      const headerSubtitle = popup.querySelector('#swalHeaderSubtitle');
+
+      function setType(type) {
+        if (type === 'expense') {
+          if (radExp) radExp.checked = true;
+          if (radWth) radWth.checked = false;
+          cardExp?.classList.add('active-expense');
+          cardWth?.classList.remove('active-withdrawal');
+          if (headerIcon) {
+            headerIcon.className = 'swal-expense-icon is-expense';
+            headerIcon.innerHTML = '<i class="fa-solid fa-receipt"></i>';
+          }
+          if (headerTitle) headerTitle.textContent = isAr ? 'تسجيل مصروف تشغيلي للسنتر' : 'Record Center Expense';
+          if (headerSubtitle) headerSubtitle.textContent = isAr ? 'توثيق فواتير ومصروفات التشغيل الميدانية وخصمها من الخزائن' : 'Track daily operational expenses and update vault balances';
+          if (reasonInp) reasonInp.placeholder = isAr ? 'مثال: فواتير كهرباء / طباعة مذكرات' : 'e.g. Electricity bill, paper printing';
+        } else {
+          if (radWth) radWth.checked = true;
+          if (radExp) radExp.checked = false;
+          cardWth?.classList.add('active-withdrawal');
+          cardExp?.classList.remove('active-expense');
+          if (headerIcon) {
+            headerIcon.className = 'swal-expense-icon is-withdrawal';
+            headerIcon.innerHTML = '<i class="fa-solid fa-hand-holding-dollar"></i>';
+          }
+          if (headerTitle) headerTitle.textContent = isAr ? 'تسجيل مسحوبات شخصية للمستر' : 'Record Owner Withdrawal';
+          if (headerSubtitle) headerSubtitle.textContent = isAr ? 'توثيق السحوبات والأرباح الخاصة فورياً من الخزائن' : 'Document center withdrawals directly from vaults';
+          if (reasonInp) reasonInp.placeholder = isAr ? 'مثال: سحب أرباح شخصية للمستر' : 'e.g. Owner profit withdrawal';
+        }
+      }
+
+      cardExp?.addEventListener('click', () => setType('expense'));
+      cardWth?.addEventListener('click', () => setType('withdrawal'));
+
+      const amtInp = popup.querySelector('#swalAmtInp');
+      if (amtInp) {
+        setTimeout(() => amtInp.focus(), 150);
+      }
+    },
     preConfirm: () => {
       const type = document.querySelector('input[name="swalTxType"]:checked')?.value || 'expense';
       const amount = Number(document.getElementById('swalAmtInp')?.value || 0);
@@ -3666,7 +3816,7 @@ window.openRecordExpenseModal = async function(defaultType = 'expense') {
       const method = document.getElementById('swalMethodInp')?.value || 'cash';
       const date = document.getElementById('swalDateInp')?.value || nowDateStr();
 
-      if (amount <= 0) {
+      if (!amount || amount <= 0) {
         Swal.showValidationMessage(isAr ? "يرجى إدخال مبلغ صحيح أكبر من صفر" : "Please enter a valid amount");
         return false;
       }

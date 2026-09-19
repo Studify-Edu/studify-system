@@ -7462,6 +7462,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
  function checkQR() {
  const urlParams = new URLSearchParams(window.location.search);
+ const openId = toInt(urlParams.get("openId"));
+ if (openId) {
+   const runOpen = (retries = 10) => {
+     if (students && students[String(openId)]) {
+       window.extOpen(openId);
+       window.history.replaceState(null, null, window.location.pathname);
+     } else if (retries > 0) {
+       setTimeout(() => runOpen(retries - 1), 250);
+     }
+   };
+   runOpen();
+   return;
+ }
  const qrId = toInt(urlParams.get("id"));
  if (qrId && students[String(qrId)]) { 
  addAttendance(qrId, nowDateStr()); 
