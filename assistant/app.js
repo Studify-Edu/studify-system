@@ -5052,41 +5052,138 @@ on("quickAttendBtn", "click", function() {
     if (keys.length === 0) {
       h += `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.9em;">${noPkgsText}</div>`;
     } else {
-       h += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">`;
+       h += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px;">`;
        keys.forEach(g => {
-        const details = window.getPkgDetails(g);
-        const stCount = counts[g] || 0;
-        
-        let badgeInfo = "";
+        const details = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(g) : (groupFees[g] || {});
+        const subj = details.subject || g;
+        const price = Number(details.price || 0);
+
+        // Enrolled students
+        const enrolledStudents = Object.values(students || {}).filter(st => {
+          if (!st) return false;
+          if (Array.isArray(st.packages) && st.packages.includes(g)) return true;
+          if ((!st.packages || st.packages.length === 0) && (st.className === g || ("باقة " + st.className) === g)) return true;
+          return false;
+        });
+        const count = enrolledStudents.length;
+
+        // Financial analytics
+        const expectedRevenue = count * price;
+        let collectedRevenue = 0;
+
+        enrolledStudents.forEach(st => {
+          let totalReq = 0;
+          const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : (st.className ? [st.className] : []);
+          stPkgs.forEach(pkgName => {
+            const pDet = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pkgName) : (groupFees[pkgName] || {});
+            totalReq += Number(pDet.price || pDet || 0);
+          });
+          if (totalReq === 0) totalReq = price;
+
+          const studentPaid = Number(st.paid) || 0;
+          const pkgShare = totalReq > 0 ? Math.min(price, Math.round((price / totalReq) * studentPaid)) : Math.min(price, studentPaid);
+          collectedRevenue += pkgShare;
+        });
+
+        const remainingRevenue = Math.max(0, expectedRevenue - collectedRevenue);
+        const collectedPercent = expectedRevenue > 0 ? Math.min(100, Math.round((collectedRevenue / expectedRevenue) * 100)) : 0;
+
+        // Duration & Validity Badges
+        let validityBadgeHtml = "";
         if (details.expiryType === 'time' && details.startDate && details.endDate) {
           const durObj = formatPackageDuration(details.startDate, details.endDate, isAr);
-          const durPill = durObj ? `<span class="badge" style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.25);"><i class="fa-solid fa-clock"></i> ${durObj.short}</span>` : '';
-          badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.8em;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} ${toWord} ${details.endDate}</span> ${durPill}`;
+          const durShort = durObj ? durObj.short : '';
+          validityBadgeHtml = `
+            <span class="admin-pkg-validity-badge" title="${isAr ? 'المدة الزمنية للباقة' : 'Package Duration'}">
+              <i class="fa-regular fa-calendar-days"></i> ${details.startDate} ${toWord} ${details.endDate}
+            </span>
+            ${durShort ? `<span class="admin-pkg-duration-pill"><i class="fa-solid fa-clock"></i> ${durShort}</span>` : ''}
+          `;
         } else if (details.expiryType === 'sessions' && details.sessionLimit > 0) {
-          badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:0.8em;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} ${sessionsSuffix}</span>`;
+          validityBadgeHtml = `
+            <span class="admin-pkg-validity-badge" style="color:#ec4899;">
+              <i class="fa-solid fa-ticket"></i> ${details.sessionLimit} ${sessionsSuffix}
+            </span>
+          `;
+        } else {
+          validityBadgeHtml = `
+            <span class="admin-pkg-validity-badge">
+              <i class="fa-solid fa-infinity"></i> ${isAr ? "مفتوحة بدون انتهاء" : "Unlimited Validity"}
+            </span>
+          `;
         }
 
-        const subjBadge = details.subject ? `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;"><i class="fa-solid fa-book"></i> ${details.subject}</span>` : '';
+        const subjBadge = subj ? `<span class="admin-pkg-subj-badge"><i class="fa-solid fa-book-bookmark"></i> ${subj}</span>` : '';
 
         h += `
-        <div class="pkg-item-card" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
-          <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <strong style="font-size:1em; color:var(--text-primary);">${g}</strong>
-              ${subjBadge}
-              ${badgeInfo}
+        <div class="admin-pkg-card">
+          <div class="admin-pkg-card-top">
+            <div style="flex:1; min-width:0;">
+              <div class="admin-pkg-title-wrap">
+                <h4 class="admin-pkg-name">${g}</h4>
+                ${subjBadge}
+              </div>
+              <div class="admin-pkg-validity-wrap">
+                ${validityBadgeHtml}
+              </div>
             </div>
-            <div style="font-size:0.8em; color:var(--text-secondary);">
-              <i class="fa-solid fa-users" style="margin-inline-end:3px;"></i> ${enrolledLabel} <b>${stCount}</b> ${studentsWord}
+            <div class="admin-pkg-price-pill">
+              <span class="admin-pkg-price-num">${price}</span>
+              <span class="admin-pkg-price-curr">${currencySuffix}</span>
             </div>
           </div>
-          
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div style="font-size:1.05em; font-weight:bold; color:var(--success); background:var(--bg-inset); padding:4px 10px; border-radius:6px; border:1px solid var(--border);">
-              ${details.price} ${currencySuffix}
+
+          <div class="admin-pkg-metrics-grid">
+            <div class="admin-pkg-metric-cell metric-subscribers">
+              <div class="metric-icon"><i class="fa-solid fa-user-graduate"></i></div>
+              <div class="metric-content">
+                <span class="metric-lbl">${isAr ? "المشتركين" : "Students"}</span>
+                <span class="metric-val">${count} <small>${isAr ? "طالب" : "st"}</small></span>
+              </div>
             </div>
-            <button class="btn primary smallBtn iconOnly edit-pkg-btn" data-group="${g}" title="${editBtnTitle}"><i class="fa-solid fa-pen-to-square"></i></button>
-            <button class="btn danger smallBtn iconOnly delete-pkg-btn" data-group="${g}" title="${deleteBtnTitle}"><i class="fa-solid fa-trash-can"></i></button>
+
+            <div class="admin-pkg-metric-cell metric-collected">
+              <div class="metric-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+              <div class="metric-content">
+                <span class="metric-lbl">${isAr ? "المحصل" : "Collected"}</span>
+                <span class="metric-val">${collectedRevenue} <small>${currencySuffix}</small></span>
+              </div>
+            </div>
+
+            <div class="admin-pkg-metric-cell metric-remaining">
+              <div class="metric-icon"><i class="fa-solid fa-receipt"></i></div>
+              <div class="metric-content">
+                <span class="metric-lbl">${isAr ? "المتبقي" : "Remaining"}</span>
+                <span class="metric-val">${remainingRevenue} <small>${currencySuffix}</small></span>
+              </div>
+            </div>
+
+            <div class="admin-pkg-metric-cell metric-expected">
+              <div class="metric-icon"><i class="fa-solid fa-calculator"></i></div>
+              <div class="metric-content">
+                <span class="metric-lbl">${isAr ? "الإجمالي المتوقع" : "Expected Total"}</span>
+                <span class="metric-val">${expectedRevenue} <small>${currencySuffix}</small></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-pkg-progress-wrap">
+            <div class="admin-pkg-progress-header">
+              <span>${isAr ? "نسبة التحصيل" : "Collection Rate"}</span>
+              <b>${collectedPercent}% (${collectedRevenue} ${currencySuffix} ${isAr ? "من" : "of"} ${expectedRevenue} ${currencySuffix})</b>
+            </div>
+            <div class="admin-pkg-progress-bar">
+              <div class="admin-pkg-progress-fill" style="width:${collectedPercent}%;"></div>
+            </div>
+          </div>
+
+          <div class="admin-pkg-actions">
+            <button class="btn secondary smallBtn btn-pkg-edit edit-pkg-btn" data-group="${g}">
+              <i class="fa-solid fa-pen-to-square"></i> ${isAr ? "تعديل كامل" : "Full Edit"}
+            </button>
+            <button class="btn danger smallBtn iconOnly btn-pkg-delete delete-pkg-btn" data-group="${g}" title="${deleteBtnTitle}">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
           </div>
         </div>`;
        });
