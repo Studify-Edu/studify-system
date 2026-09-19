@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V87">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V88">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -427,7 +427,7 @@
  </div>
  
  <!-- Notifications Dropdown -->
- <div id="notificationsDropdown" class="user-profile-dropdown hidden" style="position: absolute; top: 110%; inset-inline-end: 40px; width: 320px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;">
+ <div id="notificationsDropdown" class="user-profile-dropdown notifications-dropdown-menu hidden" style="position: absolute; top: 110%; inset-inline-end: 40px; width: 330px; max-width: 92vw; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 35px rgba(0,0,0,0.28); padding: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;">
  <div style="font-weight: bold; font-size: 0.95em; color: var(--primary); padding: 6px 8px; border-bottom: 1px solid var(--border); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
     <span data-i18n="notif_title"><i class="fa-regular fa-bell"></i> رسائل وإشعارات</span>
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -1324,7 +1324,7 @@
         <h2><i class="fa-solid fa-boxes-packing"></i> <span data-i18n="packages_title">الباقات والأسعار</span></h2>
         <p class="text-secondary" data-i18n="packages_desc">حدد اسم وسعر وصلاحية الباقات المتاحة للمركز مع قواعد التنبيه التلقائي.</p>
       </div>
-      <button class="btn warning" style="padding:8px 16px; font-weight:800; border-radius:10px; display:inline-flex; align-items:center; gap:8px;" onclick="window.openDecisionRequestModal()"><i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="modal_dec_req_title">تقديم طلب قرار للمدير (خصم / إعفاء)</span></button>
+      <button id="btnDecisionRequestInPackages" class="btn warning" style="padding:8px 16px; font-weight:800; border-radius:10px; display:inline-flex; align-items:center; gap:8px;" onclick="window.openDecisionRequestModal()"><i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="modal_dec_req_title">تقديم طلب قرار للمدير (خصم / إعفاء)</span></button>
     </div>
     <div class="content-body" style="max-width: 1200px; margin: 0 auto;">
       <div id="groupFeesList" style="padding-bottom: 30px;"></div>
@@ -1865,7 +1865,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V142"></script>
+  <script type="module" src="app.js?v=STUDIFY_V143"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
@@ -1953,35 +1953,43 @@
     </div>
 
 
-   <!-- Package Selection Modal -->
-   <div id="packageSelectionModal" class="modal hidden" style="z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.6);">
-     <div class="modal-content" style="max-width: 850px; width: 95%; max-height: 90vh; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-radius: 20px; padding: 0; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease-out;">
-       
-       <div style="padding: 20px 25px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent);">
-         <h2 style="margin: 0; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; font-size: 1.5em;">
-           <span><i class="fa-solid fa-layer-group" style="color: #10b981; margin-left: 10px;"></i> اختيار الباقات</span>
-           <button class="btn iconOnly" style="background: transparent; color: var(--text-secondary);" onclick="closePackageSelectionModal()"><i class="fa-solid fa-xmark"></i></button>
-         </h2>
-         <div style="color: var(--text-secondary); margin-top: 5px; font-size: 0.9em;">
-           <span data-i18n="psm_desc_prefix">تحديد الباقات والمجموعات للطالب:</span> <span id="psmStudentName" style="color: var(--text-primary); font-weight: bold;"></span>
-         </div>
-       </div>
+    <!-- Package Selection Modal -->
+    <div id="packageSelectionModal" class="modal hidden" style="z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.65);">
+      <div class="modal-content" style="max-width: 860px; width: 95%; max-height: 90vh; background: var(--bg-surface); border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-radius: 20px; padding: 0; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease-out;">
+        
+        <div style="padding: 20px 25px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(6, 182, 212, 0.05));">
+          <h2 style="margin: 0; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; font-size: 1.35em;">
+            <span><i class="fa-solid fa-layer-group" style="color: var(--primary); margin-inline-end: 10px;"></i> اختيار وتعيين باقات الطالب</span>
+            <button class="btn iconOnly" style="background: transparent; color: var(--text-secondary);" onclick="closePackageSelectionModal()"><i class="fa-solid fa-xmark"></i></button>
+          </h2>
+          <div style="color: var(--text-secondary); margin-top: 6px; font-size: 0.9em;">
+            <span data-i18n="psm_desc_prefix">تحديد الباقات والمجموعات للطالب:</span> <span id="psmStudentName" style="color: var(--text-primary); font-weight: bold;"></span>
+          </div>
+        </div>
 
-       <div style="padding: 20px 25px; overflow-y: auto; flex: 1; background: var(--bg-body);">
-         <div id="psmGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
-            <!-- Cards generated dynamically -->
-         </div>
-       </div>
+        <div style="padding: 20px 25px; overflow-y: auto; flex: 1; background: var(--bg-inset);">
+          <div id="psmGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px;">
+             <!-- Cards generated dynamically -->
+          </div>
+        </div>
 
-       <div style="padding: 15px 25px; border-top: 1px solid var(--border); background: var(--bg-card); display: flex; justify-content: space-between; align-items: center;">
-         <div style="font-size: 1.1em;">
-           إجمالي التكلفة: <span id="psmTotalCost" style="color: #10b981; font-weight: bold; font-size: 1.2em;">0</span> <span style="font-size: 0.8em; color: var(--text-secondary);">جنيهاً</span>
-         </div>
-         <div style="display: flex; gap: 10px;">
-           <button class="btn secondary" onclick="closePackageSelectionModal()" style="border-radius: 25px; padding: 8px 20px;">إلغاء</button>
-           <button class="btn success" onclick="savePackageSelection()" style="border-radius: 25px; padding: 8px 25px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); font-weight: bold;"><i class="fa-solid fa-check"></i> تأكيد وحفظ</button>
-         </div>
-       </div>
+        <div style="padding: 16px 25px; border-top: 1px solid var(--border); background: var(--bg-surface); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 0.95em;">
+            <div style="background: var(--bg-inset); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);">
+              <span style="color: var(--text-secondary); font-size: 0.85em;">إجمالي الباقات:</span> <span id="psmTotalCost" style="color: var(--text-primary); font-weight: 800;">0</span> <span style="font-size: 0.8em; color: var(--text-secondary);">ج</span>
+            </div>
+            <div style="background: var(--bg-inset); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);">
+              <span style="color: var(--text-secondary); font-size: 0.85em;">المسدد:</span> <span id="psmTotalPaid" style="color: #10b981; font-weight: 800;">0</span> <span style="font-size: 0.8em; color: var(--text-secondary);">ج</span>
+            </div>
+            <div style="background: var(--bg-inset); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);">
+              <span style="color: var(--text-secondary); font-size: 0.85em;">المتبقي:</span> <span id="psmTotalRemain" style="color: #f59e0b; font-weight: 800;">0</span> <span style="font-size: 0.8em; color: var(--text-secondary);">ج</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn secondary" onclick="closePackageSelectionModal()" style="border-radius: 25px; padding: 8px 20px;">إلغاء</button>
+            <button class="btn success" onclick="savePackageSelection()" style="border-radius: 25px; padding: 8px 25px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); font-weight: bold;"><i class="fa-solid fa-check"></i> تأكيد وحفظ</button>
+          </div>
+        </div>
        
      </div>
     </div>

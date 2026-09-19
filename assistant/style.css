@@ -17,6 +17,7 @@
   /* Cinematic Dark (Default) */
   --bg-body: #0B1120;
   --bg-surface: #151F32;
+  --bg-card: #151F32;
   --bg-sidebar: #0D1526;
   --bg-inset: #0F172A;
   --bg-hover: #1A2640;
@@ -75,6 +76,7 @@
 [data-theme="light"] {
   --bg-body: #F1F5F9;
   --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
   --bg-sidebar: #FFFFFF;
   --bg-inset: #F8FAFC;
   --bg-hover: #F1F5F9;
@@ -5662,3 +5664,276 @@ body.system-hard-locked #loginBox {
   border-radius: 10px;
   padding: 9px 14px;
 }
+
+/* ==========================================================================
+   NOTIFICATIONS DROPDOWN & CARDS (LIGHT & DARK THEME)
+   ========================================================================== */
+.notifications-dropdown-menu {
+  position: absolute;
+  top: 110%;
+  inset-inline-end: 40px;
+  width: 340px;
+  max-width: 92vw;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28);
+  padding: 12px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notification-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.notification-item:hover {
+  transform: translateY(-1.5px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Unread notification item */
+.notification-item.is-unread {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+[data-theme="dark"] .notification-item.is-unread {
+  background: rgba(37, 99, 235, 0.14);
+  border-color: rgba(37, 99, 235, 0.45);
+}
+
+[data-theme="light"] .notification-item.is-unread {
+  background: #f0f7ff !important;
+  border-color: #bfdbfe !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
+}
+
+/* Read notification item */
+.notification-item.is-read {
+  background: var(--bg-inset);
+  border-color: var(--border);
+  opacity: 0.82;
+}
+
+[data-theme="light"] .notification-item.is-read {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  opacity: 0.85;
+}
+
+.notification-item .notif-text {
+  font-size: 0.88em;
+  line-height: 1.45;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.notification-item.is-unread .notif-text {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.notification-item.is-read .notif-text {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Activation / Approval */
+.notification-item.type-activation.is-unread {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+[data-theme="light"] .notification-item.type-activation.is-unread {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+/* Deactivation / Warning / Rejection */
+.notification-item.type-warning.is-unread {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+[data-theme="light"] .notification-item.type-warning.is-unread {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+}
+
+/* Badge dot */
+.notif-badge-new {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.12);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+[data-theme="light"] .notif-badge-new {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* ==========================================================================
+   LOCKED DECISION REQUEST BUTTONS
+   ========================================================================== */
+.btn-decision-locked {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+  border: 1px dashed var(--border) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  opacity: 0.65 !important;
+}
+
+.btn-decision-locked i {
+  color: var(--warning) !important;
+}
+
+/* ==========================================================================
+   PACKAGE SELECTION MODAL & RICH CARDS
+   ========================================================================== */
+.pkg-card {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+}
+
+.pkg-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.pkg-card.selected {
+  background: var(--bg-surface);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), var(--shadow-md);
+}
+
+[data-theme="light"] .pkg-card.selected {
+  background: #f8fbff;
+}
+
+.pkg-card .check-icon {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;
+  font-size: 1.25rem;
+  color: var(--border);
+  transition: all 0.2s;
+}
+
+.pkg-card.selected .check-icon {
+  color: var(--primary);
+}
+
+.pkg-card-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  padding-inline-end: 28px;
+}
+
+.pkg-card-subject {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--bg-inset);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: inline-block;
+}
+
+.pkg-card-pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.pkg-card-price {
+  font-size: 1.28rem;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.pkg-card-price small {
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: var(--text-secondary);
+}
+
+.pkg-financial-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.pkg-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-inset);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-top: 2px;
+}
+
+.pkg-progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.pkg-status-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pkg-status-badge.paid {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.pkg-status-badge.remain {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pkg-status-badge.unsubscribed {
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
