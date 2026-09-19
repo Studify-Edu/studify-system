@@ -3213,3 +3213,259 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
 .pkg-duration-info-box i {
   font-size: 1.1rem;
 }
+
+/* ======================================================== */
+/* LIVE TREASURIES (TERM REPORT DASHBOARD) */
+/* ======================================================== */
+.admin-treasuries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.admin-treasury-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.admin-treasury-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.treasury-cash {
+  border-inline-start: 4px solid #10b981;
+}
+
+.treasury-wallet {
+  border-inline-start: 4px solid #ef4444;
+}
+
+.treasury-instapay {
+  border-inline-start: 4px solid #0284c7;
+}
+
+.treasury-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.treasury-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.treasury-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.treasury-cash .treasury-icon {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.treasury-wallet .treasury-icon {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.treasury-instapay .treasury-icon {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+.treasury-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.treasury-sub {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.treasury-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.pill-cash {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.pill-wallet {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.pill-instapay {
+  background: rgba(2, 132, 199, 0.15);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.3);
+}
+
+.treasury-flow-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg-inset);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.flow-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.flow-lbl {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.flow-val {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.text-success { color: #10b981 !important; }
+.text-danger { color: #ef4444 !important; }
+.text-warning { color: #f59e0b !important; }
+
+.treasury-balance-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border);
+}
+
+.treasury-cash .treasury-balance-box {
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.treasury-wallet .treasury-balance-box {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.treasury-instapay .treasury-balance-box {
+  background: rgba(2, 132, 199, 0.06);
+  border-color: rgba(2, 132, 199, 0.25);
+}
+
+.balance-lbl {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.balance-val {
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.treasury-cash .balance-val { color: #10b981; }
+.treasury-wallet .balance-val { color: #ef4444; }
+.treasury-instapay .balance-val { color: #0284c7; }
+
+/* Filter Pills for Transactions */
+.tx-filter-pills {
+  display: flex;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.tx-filter-btn {
+  background: none;
+  border: none;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tx-filter-btn:hover {
+  color: var(--text-primary);
+}
+
+.tx-filter-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.badge-expense {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.badge-withdrawal {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.badge-treasury {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+

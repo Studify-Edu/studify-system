@@ -73,7 +73,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V14">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V15">
 </head>
 <body>
 
@@ -205,8 +205,8 @@
           <span id="adminDecisionsBadge" class="admin-badge hidden">0</span>
         </button>
         <button id="navBtnPackages" class="admin-nav-item" onclick="window.switchAdminTab('packages')">
-          <i class="fa-solid fa-box-archive"></i>
-          <span data-i18n="nav_packages">الباقات والمصاريف</span>
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <span data-i18n="nav_packages">إدارة الباقات</span>
         </button>
         <button id="navBtnSyllabus" class="admin-nav-item" onclick="window.switchAdminTab('syllabus')">
           <i class="fa-solid fa-book-open"></i>
@@ -369,23 +369,182 @@
         <!-- VIEW 2: TERM FINANCIAL REPORT -->
         <!-- ==================================================== -->
         <div id="viewTermReport" class="admin-view hidden">
-          <div class="stats-grid">
-            <div class="stat-card" style="--stat-color: var(--primary);">
+          <!-- 1. Executive Master Financial KPIs (6 Cards) -->
+          <div class="stats-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+            <div class="stat-card" style="--stat-color: #3b82f6; --stat-bg: rgba(59, 130, 246, 0.12);">
               <div class="stat-card-icon"><i class="fa-solid fa-users"></i></div>
               <div class="stat-card-val" id="statTermStudents">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_students">إجمالي الطلاب المسجلين</div>
             </div>
 
-            <div class="stat-card" style="--stat-color: var(--success); --stat-bg: var(--bg-success-subtle);">
+            <div class="stat-card" style="--stat-color: #10b981; --stat-bg: rgba(16, 185, 129, 0.12);">
               <div class="stat-card-icon"><i class="fa-solid fa-wallet"></i></div>
               <div class="stat-card-val" id="statTermRevenue">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_rev">إجمالي الإيرادات المحصلة (ج)</div>
             </div>
 
-            <div class="stat-card" style="--stat-color: var(--danger); --stat-bg: var(--bg-danger-subtle);">
+            <div class="stat-card" style="--stat-color: #ef4444; --stat-bg: rgba(239, 68, 68, 0.12);">
+              <div class="stat-card-icon"><i class="fa-solid fa-receipt"></i></div>
+              <div class="stat-card-val" id="statTermExpenses">—</div>
+              <div class="stat-card-lbl" data-i18n="stat_term_total_exp">إجمالي المصروفات التشغيلية (ج)</div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: #f59e0b; --stat-bg: rgba(245, 158, 11, 0.12);">
               <div class="stat-card-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+              <div class="stat-card-val" id="statTermWithdrawals">—</div>
+              <div class="stat-card-lbl" data-i18n="stat_term_total_withdrawals">مسحوبات المستر / الشخصية (ج)</div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: #8b5cf6; --stat-bg: rgba(139, 92, 246, 0.12);">
+              <div class="stat-card-icon"><i class="fa-solid fa-vault"></i></div>
+              <div class="stat-card-val" id="statTermNetVault">—</div>
+              <div class="stat-card-lbl" data-i18n="stat_term_net_vault">صافي رصيد الخزائن المتاح (ج)</div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: #ec4899; --stat-bg: rgba(236, 72, 153, 0.12);">
+              <div class="stat-card-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
               <div class="stat-card-val" id="statTermDebt">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_debt">إجمالي المتبقي والديون (ج)</div>
+            </div>
+          </div>
+
+          <!-- 2. Live Treasuries Breakdown (الخزائن الحقيقية وتقفيل الأرصدة) -->
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-vault" style="color: var(--primary);"></i>
+                <span data-i18n="term_vaults_title">أرصدة الخزائن الحية وحركة التدفق المالي</span>
+              </div>
+              <div class="text-secondary" style="font-size: 0.85em; font-weight: 600;">
+                <i class="fa-solid fa-rotate"></i> تحديث فوري وتزامني لكافة وسائل الدفع
+              </div>
+            </div>
+
+            <div class="admin-treasuries-grid">
+              <!-- Cash Drawer Card -->
+              <div class="admin-treasury-card treasury-cash">
+                <div class="treasury-card-top">
+                  <div class="treasury-name-wrap">
+                    <div class="treasury-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+                    <div>
+                      <div class="treasury-name" data-i18n="vault_cash_drawer">درج الكاش (الخزينة النقدية)</div>
+                      <div class="treasury-sub">المقبوضات والمصروفات الورقية</div>
+                    </div>
+                  </div>
+                  <span class="treasury-pill pill-cash">كاش</span>
+                </div>
+                <div class="treasury-flow-row">
+                  <div class="flow-cell">
+                    <span class="flow-lbl">المقبوض نقداً:</span>
+                    <b class="flow-val text-success" id="termCashIn">0 ج</b>
+                  </div>
+                  <div class="flow-cell">
+                    <span class="flow-lbl">المنصرف / المسحوب:</span>
+                    <b class="flow-val text-danger" id="termCashOut">0 ج</b>
+                  </div>
+                </div>
+                <div class="treasury-balance-box">
+                  <span class="balance-lbl">الرصيد الفعلي الحالي بالدرج:</span>
+                  <span class="balance-val" id="termCashBalance">0 ج</span>
+                </div>
+              </div>
+
+              <!-- Vodafone Cash / Wallet Card -->
+              <div class="admin-treasury-card treasury-wallet">
+                <div class="treasury-card-top">
+                  <div class="treasury-name-wrap">
+                    <div class="treasury-icon"><i class="fa-solid fa-wallet"></i></div>
+                    <div>
+                      <div class="treasury-name" data-i18n="vault_wallet_account">محفظة فودافون كاش</div>
+                      <div class="treasury-sub">المحافظ الإلكترونية الذكية</div>
+                    </div>
+                  </div>
+                  <span class="treasury-pill pill-wallet">محفظة</span>
+                </div>
+                <div class="treasury-flow-row">
+                  <div class="flow-cell">
+                    <span class="flow-lbl">المقبوض بالمحفظة:</span>
+                    <b class="flow-val text-success" id="termWalletIn">0 ج</b>
+                  </div>
+                  <div class="flow-cell">
+                    <span class="flow-lbl">المنصرف / المسحوب:</span>
+                    <b class="flow-val text-danger" id="termWalletOut">0 ج</b>
+                  </div>
+                </div>
+                <div class="treasury-balance-box">
+                  <span class="balance-lbl">الرصيد الفعلي الحالي بالمحفظة:</span>
+                  <span class="balance-val" id="termWalletBalance">0 ج</span>
+                </div>
+              </div>
+
+              <!-- InstaPay Card -->
+              <div class="admin-treasury-card treasury-instapay">
+                <div class="treasury-card-top">
+                  <div class="treasury-name-wrap">
+                    <div class="treasury-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                    <div>
+                      <div class="treasury-name" data-i18n="vault_instapay_account">حساب إنستاباي (InstaPay)</div>
+                      <div class="treasury-sub">التحويلات البنكية اللحظية</div>
+                    </div>
+                  </div>
+                  <span class="treasury-pill pill-instapay">InstaPay</span>
+                </div>
+                <div class="treasury-flow-row">
+                  <div class="flow-cell">
+                    <span class="flow-lbl">المقبوض بإنستاباي:</span>
+                    <b class="flow-val text-success" id="termInstapayIn">0 ج</b>
+                  </div>
+                  <div class="flow-cell">
+                    <span class="flow-lbl">المنصرف / المسحوب:</span>
+                    <b class="flow-val text-danger" id="termInstapayOut">0 ج</b>
+                  </div>
+                </div>
+                <div class="treasury-balance-box">
+                  <span class="balance-lbl">الرصيد الفعلي الحالي بإنستاباي:</span>
+                  <span class="balance-val" id="termInstapayBalance">0 ج</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Transactions & Withdrawals Management Card -->
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+              <div class="card-title">
+                <i class="fa-solid fa-receipt" style="color: var(--danger);"></i>
+                <span data-i18n="term_tx_title">سجل المصروفات ومسحوبات المستر</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div class="tx-filter-pills">
+                  <button class="tx-filter-btn active" data-tx-filter="all" onclick="window.filterTransactions('all')">الكل</button>
+                  <button class="tx-filter-btn" data-tx-filter="expense" onclick="window.filterTransactions('expense')">مصروفات سنتر</button>
+                  <button class="tx-filter-btn" data-tx-filter="withdrawal" onclick="window.filterTransactions('withdrawal')">مسحوبات المستر</button>
+                </div>
+                <button class="btn danger smallBtn" onclick="window.openRecordExpenseModal('expense')">
+                  <i class="fa-solid fa-plus-circle"></i> <span data-i18n="btn_record_center_exp">تسجيل مصروف سنتر</span>
+                </button>
+                <button class="btn warning smallBtn" onclick="window.openRecordExpenseModal('withdrawal')">
+                  <i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="btn_record_withdrawal">تسجيل مسحوبات المستر</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>التاريخ</th>
+                    <th>النوع</th>
+                    <th>البيان / السبب</th>
+                    <th>الخزينة المستخدمة</th>
+                    <th>المبلغ</th>
+                    <th>الإجراء</th>
+                  </tr>
+                </thead>
+                <tbody id="termTransactionsTableBody">
+                  <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">لا توجد حركات مسجلة حتى الآن</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -568,35 +727,6 @@
 
             <div id="adminPackagesListContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px;">
               <div style="text-align: center; color: var(--text-secondary); padding: 20px;" data-i18n="pkg_loading">جاري تحميل الباقات..</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">
-                <i class="fa-solid fa-receipt" style="color: var(--danger);"></i>
-                <span data-i18n="exp_title">تسجيل ومتابعة المصروفات</span>
-              </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
-              <div>
-                <label class="lbl" data-i18n="exp_reason_lbl">بند المصروف / السبب</label>
-                <input type="text" id="expenseReasonInput" class="inp" placeholder="مثال: فواتير كهرباء / طباعة ورق" data-i18n-placeholder="exp_reason_ph">
-              </div>
-              <div>
-                <label class="lbl" data-i18n="exp_amount_lbl">المبلغ (ج)</label>
-                <input type="number" id="expenseAmountInput" class="inp" placeholder="0" min="1">
-              </div>
-              <div>
-                <label class="lbl" data-i18n="exp_date_lbl">التاريخ</label>
-                <input type="date" id="expenseDateInput" class="inp">
-              </div>
-              <div style="display: flex; align-items: flex-end;">
-                <button class="btn danger full-btn" onclick="window.recordNewExpense()">
-                  <i class="fa-solid fa-plus-circle"></i> <span data-i18n="exp_record_btn">تسجيل المصروف</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -1066,7 +1196,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V21"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V22"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

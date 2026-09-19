@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V84">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V85">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -1372,6 +1372,62 @@
      </div>
   </div>
 
+  <!-- ====== EXPENSES MANAGEMENT (تسجيل ومتابعة مصروفات السنتر) ====== -->
+  <div class="card" style="margin-bottom:25px; background:var(--bg-surface); border:1px solid var(--border);">
+     <div class="flexBetween" style="margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+        <h3 style="color:var(--danger); margin:0;"><i class="fa-solid fa-receipt"></i> <span data-i18n="asst_exp_title">تسجيل ومتابعة مصروفات السنتر</span></h3>
+        <span class="badge" style="background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.25); font-weight:700;">مصاريف تشغيلية</span>
+     </div>
+
+     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;">
+        <div>
+           <label class="lbl" data-i18n="asst_exp_reason_lbl">بند المصروف / السبب</label>
+           <input type="text" id="asstExpenseReasonInp" class="inp" placeholder="مثال: طباعة ورق / فواتير / مستلزمات">
+        </div>
+        <div>
+           <label class="lbl" data-i18n="asst_exp_amt_lbl">المبلغ (ج)</label>
+           <input type="number" id="asstExpenseAmtInp" class="inp" placeholder="0" min="1">
+        </div>
+        <div>
+           <label class="lbl" data-i18n="asst_exp_method_lbl">الخزينة المصروف منها</label>
+           <select id="asstExpenseMethodInp" class="inp">
+              <option value="cash">درج الكاش (الخزينة النقدية)</option>
+              <option value="wallet">محفظة فودافون كاش</option>
+              <option value="instapay">حساب إنستاباي (InstaPay)</option>
+           </select>
+        </div>
+        <div>
+           <label class="lbl" data-i18n="asst_exp_date_lbl">التاريخ</label>
+           <input type="date" id="asstExpenseDateInp" class="inp">
+        </div>
+     </div>
+
+     <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+        <button id="asstSaveExpenseBtn" class="btn danger" style="padding:10px 24px; font-weight:800; border-radius:10px;">
+           <i class="fa-solid fa-plus-circle"></i> <span data-i18n="asst_btn_save_exp">تسجيل المصروف</span>
+        </button>
+     </div>
+
+     <!-- جدول أحدث المصروفات -->
+     <h4 style="color:var(--text-primary); font-size:0.95em; margin:0 0 10px 0; font-weight:700;"><i class="fa-solid fa-list-check"></i> سجل المصروفات المسجلة</h4>
+     <div class="tableWrap">
+        <table id="asstExpensesTable">
+           <thead>
+              <tr>
+                 <th>التاريخ</th>
+                 <th>بند المصروف</th>
+                 <th>الخزينة</th>
+                 <th>المبلغ</th>
+                 <th>الإجراء</th>
+              </tr>
+           </thead>
+           <tbody id="asstExpensesTableBody">
+              <tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-secondary);">لا توجد مصروفات مسجلة بعد</td></tr>
+           </tbody>
+        </table>
+     </div>
+  </div>
+
   <h2 data-i18n="term_fin_summary"> الملخص المالي التحليلي للترم</h2>
  <div class="finance-grid" style="margin-bottom: 30px;">
  <div class="finance-card" style="border-inline-start: 4px solid var(--primary);">
@@ -1804,7 +1860,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V138"></script>
+  <script type="module" src="app.js?v=STUDIFY_V139"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

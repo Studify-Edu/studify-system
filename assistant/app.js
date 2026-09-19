@@ -3273,24 +3273,55 @@ const st = students[id];
  }
  }
 
- let expTotal = 0;
- for(let d in expensesByDate) {
- for(let k = 0; k < expensesByDate[d].length; k++) {
- expTotal += expensesByDate[d][k].amount;
- }
- }
+  let expTotal = 0;
+  let expCashTotal = 0, expWalletTotal = 0, expInstapayTotal = 0;
+  let expCashToday = 0, expWalletToday = 0, expInstapayToday = 0;
 
- if($("vaultCashToday")) $("vaultCashToday").textContent = cashToday;
- if($("vaultInstapayToday")) $("vaultInstapayToday").textContent = instapayToday;
- if($("vaultWalletToday")) $("vaultWalletToday").textContent = walletToday;
+  for(let d in expensesByDate) {
+    const list = expensesByDate[d] || [];
+    for(let k = 0; k < list.length; k++) {
+      const it = list[k];
+      const amt = toInt(it.amount);
+      const m = it.method || "cash";
+      expTotal += amt;
+      if (m === "cash") {
+        expCashTotal += amt;
+        if (d === today) expCashToday += amt;
+      } else if (m === "wallet") {
+        expWalletTotal += amt;
+        if (d === today) expWalletToday += amt;
+      } else if (m === "instapay") {
+        expInstapayTotal += amt;
+        if (d === today) expInstapayToday += amt;
+      } else {
+        expCashTotal += amt;
+        if (d === today) expCashToday += amt;
+      }
+    }
+  }
 
- if($("vaultCashTotal")) $("vaultCashTotal").textContent = cashTotal;
- if($("vaultCashExp")) $("vaultCashExp").textContent = expTotal;
- if($("vaultCashNet")) $("vaultCashNet").textContent = (cashTotal - expTotal);
+  const isArCurr = (currentLang === "ar");
+  const currSuffix = isArCurr ? " ج" : " EGP";
 
- if($("vaultInstapayTotal")) $("vaultInstapayTotal").textContent = instapayTotal;
- if($("vaultWalletTotal")) $("vaultWalletTotal").textContent = walletTotal;
- }
+  if($("vaultCashToday")) $("vaultCashToday").textContent = cashToday + currSuffix;
+  if($("vaultInstapayToday")) $("vaultInstapayToday").textContent = instapayToday + currSuffix;
+  if($("vaultWalletToday")) $("vaultWalletToday").textContent = walletToday + currSuffix;
+
+  // Real Net Balances in Vaults: Inflow - Outflow
+  if($("vaultCashAll")) $("vaultCashAll").textContent = Math.max(0, cashTotal - expCashTotal) + currSuffix;
+  if($("vaultInstapayAll")) $("vaultInstapayAll").textContent = Math.max(0, instapayTotal - expInstapayTotal) + currSuffix;
+  if($("vaultWalletAll")) $("vaultWalletAll").textContent = Math.max(0, walletTotal - expWalletTotal) + currSuffix;
+
+  if($("vaultCashTotal")) $("vaultCashTotal").textContent = cashTotal;
+  if($("vaultCashExp")) $("vaultCashExp").textContent = expTotal;
+  if($("vaultCashNet")) $("vaultCashNet").textContent = (cashTotal - expTotal);
+
+  if($("vaultInstapayTotal")) $("vaultInstapayTotal").textContent = instapayTotal;
+  if($("vaultWalletTotal")) $("vaultWalletTotal").textContent = walletTotal;
+
+  if (typeof renderAssistantExpensesTable === "function") renderAssistantExpensesTable();
+  if ($("asstExpenseDateInp") && !$("asstExpenseDateInp").value) $("asstExpenseDateInp").value = nowDateStr();
+  }
 
  function renderCharts() {
  const box = $("weeklyChartBox"); if(!box) return;
@@ -4848,19 +4879,110 @@ on("quickAttendBtn", "click", function() {
     }
   });
 
-  on("saveExpenseBtn", "click", function() {
- if (!$("expenseAmtInp") || !$("expenseReasonInp")) return;
- const a = toInt($("expenseAmtInp").value);
- const r = $("expenseReasonInp").value.trim();
- if(!a || !r) { showToast("يرجى ملء كافة البيانات", "err"); return; }
- 
- const today = nowDateStr(); 
- if(!expensesByDate[today]) expensesByDate[today] = [];
- expensesByDate[today].push({amount:a, reason:r, method:m}); saveAll();
- 
- $("expenseAmtInp").value = ""; $("expenseReasonInp").value = ""; 
- showToast(t("msg_exp_saved")); renderReport(today);
- });
+  // Operational Expense recording for Assistant
+  on("asstSaveExpenseBtn", "click", function() {
+    if (!$("asstExpenseAmtInp") || !$("asstExpenseReasonInp")) return;
+    const a = toInt($("asstExpenseAmtInp").value);
+    const r = $("asstExpenseReasonInp").value.trim();
+    const m = $("asstExpenseMethodInp") ? $("asstExpenseMethodInp").value : "cash";
+    const d = $("asstExpenseDateInp") && $("asstExpenseDateInp").value ? $("asstExpenseDateInp").value : nowDateStr();
+    const isAr = (currentLang === "ar");
+
+    if (!a || a <= 0) { showToast(isAr ? "يرجى إدخال مبلغ صحيح للمصروف" : "Please enter a valid amount", "err"); return; }
+    if (!r) { showToast(isAr ? "يرجى إدخال بند أو سبب المصروف" : "Please enter expense reason", "err"); return; }
+
+    if (!expensesByDate[d]) expensesByDate[d] = [];
+    expensesByDate[d].push({
+      id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      amount: a,
+      reason: r,
+      method: m,
+      type: "expense",
+      date: d,
+      timestamp: Date.now()
+    });
+
+    saveAll();
+    $("asstExpenseAmtInp").value = "";
+    $("asstExpenseReasonInp").value = "";
+    showToast(isAr ? "تم تسجيل المصروف بنجاح وتحديث الخزائن" : "Expense recorded successfully", "success");
+    if (typeof renderAssistantExpensesTable === "function") renderAssistantExpensesTable();
+    if (typeof renderReport === "function") renderReport(d);
+  });
+
+  window.renderAssistantExpensesTable = function() {
+    const tbody = $("asstExpensesTableBody");
+    if (!tbody) return;
+    const isAr = (currentLang === "ar");
+    const currencySuffix = isAr ? " ج" : " EGP";
+
+    const allExp = [];
+    for (const d in expensesByDate) {
+      const list = expensesByDate[d] || [];
+      list.forEach((item, idx) => {
+        if (item) allExp.push({ ...item, _date: d, _idx: idx });
+      });
+    }
+
+    allExp.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    if (allExp.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-secondary);">${isAr ? "لا توجد مصروفات مسجلة بعد" : "No expenses recorded yet"}</td></tr>`;
+      return;
+    }
+
+    const methodMap = {
+      cash: { ar: "درج الكاش", en: "Cash Drawer", icon: "fa-money-bill-wave", color: "#10b981" },
+      wallet: { ar: "فودافون كاش", en: "Vodafone Cash", icon: "fa-wallet", color: "#ef4444" },
+      instapay: { ar: "إنستاباي", en: "InstaPay", icon: "fa-mobile-screen-button", color: "#0284c7" }
+    };
+
+    let html = "";
+    allExp.forEach(it => {
+      const mInfo = methodMap[it.method || "cash"] || methodMap.cash;
+      const isWd = (it.type === "withdrawal" || it.isWithdrawal);
+      const reasonLabel = isWd ? `<span style="color:#f59e0b; font-weight:700;">[مسحوبات]</span> ${it.reason}` : it.reason;
+
+      html += `
+        <tr>
+          <td style="font-weight:700; white-space:nowrap;">${it._date || "—"}</td>
+          <td style="font-weight:700;">${reasonLabel || "—"}</td>
+          <td><span class="badge" style="color:${mInfo.color}; background:var(--bg-inset);"><i class="fa-solid ${mInfo.icon}"></i> ${isAr ? mInfo.ar : mInfo.en}</span></td>
+          <td style="font-weight:900; color:#ef4444; white-space:nowrap;">${Number(it.amount || 0).toLocaleString()} ${currencySuffix}</td>
+          <td>
+            <button class="btn danger smallBtn iconOnly" onclick="window.deleteAssistantExpense('${it._date}', ${it._idx})" title="${isAr ? "حذف المصروف" : "Delete"}">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  };
+
+  window.deleteAssistantExpense = async function(d, idx) {
+    const isAr = (currentLang === "ar");
+    if (!expensesByDate[d] || !expensesByDate[d][idx]) return;
+
+    const conf = await Swal.fire({
+      title: isAr ? "تأكيد حذف المصروف" : "Confirm Deletion",
+      text: isAr ? "هل أنت متأكد من حذف هذا المصروف؟ سيتم استرجاع المبلغ للخزينة فورياً." : "Delete this expense?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: isAr ? "نعم، حذف" : "Yes, delete",
+      cancelButtonText: isAr ? "إلغاء" : "Cancel",
+      confirmButtonColor: "#ef4444"
+    });
+
+    if (conf.isConfirmed) {
+      expensesByDate[d].splice(idx, 1);
+      if (expensesByDate[d].length === 0) delete expensesByDate[d];
+      saveAll();
+      showToast(isAr ? "تم حذف المصروف وتحديث الخزينة" : "Expense deleted", "success");
+      if (typeof renderAssistantExpensesTable === "function") renderAssistantExpensesTable();
+      if (typeof renderReport === "function") renderReport(d);
+    }
+  };
 
  window.renderManagerPackagesCard = function() {
 

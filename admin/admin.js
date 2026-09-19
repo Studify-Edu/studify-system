@@ -69,7 +69,7 @@ const ADMIN_DICT = {
   "nav_sec_management": { ar: "الإدارة والمساعدين", en: "Management & Assistants" },
   "nav_assistants": { ar: "إدارة المساعدين والصلاحيات", en: "Assistants & Permissions" },
   "nav_decisions": { ar: "طلبات القرارات", en: "Decision Requests" },
-  "nav_packages": { ar: "الباقات والمصاريف", en: "Packages & Expenses" },
+  "nav_packages": { ar: "إدارة الباقات", en: "Packages Management" },
   "nav_syllabus": { ar: "خريطة سير المنهج", en: "Syllabus Roadmap" },
   "nav_sec_system": { ar: "إعدادات النظام", en: "System Settings" },
   "nav_settings": { ar: "الإعدادات المتقدمة والنسخ الاحتياطي", en: "Advanced Settings & Backup" },
@@ -410,7 +410,7 @@ window.applyAdminLanguage = function() {
     termReport:   { title: isAr ? "تقرير الترم المالي" : "Term Financial Report", icon: "fa-chart-line" },
     assistants:   { title: isAr ? "إدارة المساعدين والصلاحيات" : "Assistants & Permissions", icon: "fa-user-shield" },
     decisions:    { title: isAr ? "صندوق طلبات القرارات" : "Decision Requests Inbox", icon: "fa-bell" },
-    packages:     { title: isAr ? "إدارة الباقات والمصاريف" : "Packages & Expenses", icon: "fa-box-archive" },
+    packages:     { title: isAr ? "إدارة الباقات" : "Packages Management", icon: "fa-boxes-stacked" },
     syllabus:     { title: isAr ? "خريطة سير المنهج" : "Syllabus Roadmap", icon: "fa-book-open" },
     settings:     { title: isAr ? "الإعدادات المتقدمة والنسخ الاحتياطي" : "Advanced Settings & Backup", icon: "fa-sliders" },
     subscription: { title: isAr ? "خطة الاشتراك والباقة" : "Subscription Plan & Status", icon: "fa-crown" }
@@ -603,7 +603,16 @@ if (supabase) {
                 const items = cfg.expenses_by_date[dateKey];
                 if (Array.isArray(items)) {
                   items.forEach(item => {
-                    if (item) flatList.push({ date: item.date || dateKey, reason: item.reason || '', amount: Number(item.amount) || 0, timestamp: item.timestamp || Date.now() });
+                    if (item) flatList.push({
+                      id: item.id || `tx_${item.timestamp || Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                      date: item.date || dateKey,
+                      reason: item.reason || '',
+                      amount: Number(item.amount) || 0,
+                      method: item.method || 'cash',
+                      type: item.type || (item.isWithdrawal ? 'withdrawal' : 'expense'),
+                      recipient: item.recipient || '',
+                      timestamp: item.timestamp || Date.now()
+                    });
                   });
                 }
               }
@@ -1525,9 +1534,13 @@ async function loadAllAdminData() {
             items.forEach(item => {
               if (item) {
                 flatList.push({
+                  id: item.id || `tx_${item.timestamp || Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
                   date: item.date || dateKey,
                   reason: item.reason || '',
                   amount: Number(item.amount) || 0,
+                  method: item.method || 'cash',
+                  type: item.type || (item.isWithdrawal ? 'withdrawal' : 'expense'),
+                  recipient: item.recipient || '',
                   timestamp: item.timestamp || Date.now()
                 });
               }
@@ -1580,7 +1593,7 @@ window.switchAdminTab = function(tabKey) {
     termReport:   { view: "viewTermReport",   btn: "navBtnTermReport",   title: isAr ? "تقرير الترم المالي" : "Term Financial Report", icon: "fa-chart-line" },
     assistants:   { view: "viewAssistants",   btn: "navBtnAssistants",   title: isAr ? "إدارة المساعدين والصلاحيات" : "Assistants & Permissions", icon: "fa-user-shield" },
     decisions:    { view: "viewDecisions",    btn: "navBtnDecisions",    title: isAr ? "صندوق طلبات القرارات" : "Decision Requests Inbox", icon: "fa-bell" },
-    packages:     { view: "viewPackages",     btn: "navBtnPackages",     title: isAr ? "إدارة الباقات والمصاريف" : "Packages & Expenses", icon: "fa-box-archive" },
+    packages:     { view: "viewPackages",     btn: "navBtnPackages",     title: isAr ? "إدارة الباقات" : "Packages Management", icon: "fa-boxes-stacked" },
     syllabus:     { view: "viewSyllabus",     btn: "navBtnSyllabus",     title: isAr ? "خريطة سير المنهج" : "Syllabus Roadmap", icon: "fa-book-open" },
     settings:     { view: "viewSettings",     btn: "navBtnSettings",     title: isAr ? "الإعدادات المتقدمة والنسخ الاحتياطي" : "Advanced Settings & Backup", icon: "fa-sliders" },
     subscription: { view: "viewSubscription", btn: "navBtnSubscription", title: isAr ? "خطة الاشتراك والباقة" : "Subscription Plan & Status", icon: "fa-crown" }
@@ -1946,6 +1959,75 @@ window.loadDailyReport = function(dateStr) {
 // ========================================================
 // 5. TERM FINANCIAL REPORT
 // ========================================================
+window.currentTxFilter = 'all';
+
+window.filterTransactions = function(filter) {
+  window.currentTxFilter = filter || 'all';
+  document.querySelectorAll(".tx-filter-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.txFilter === window.currentTxFilter);
+  });
+  window.renderTermTransactionsTable();
+};
+
+window.renderTermTransactionsTable = function() {
+  const tbody = document.getElementById("termTransactionsTableBody");
+  if (!tbody) return;
+
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
+  const list = Array.isArray(expensesByDate) ? [...expensesByDate] : [];
+
+  list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  const filtered = list.filter(item => {
+    if (!item) return false;
+    const isWd = (item.type === 'withdrawal' || item.isWithdrawal);
+    if (window.currentTxFilter === 'expense') return !isWd;
+    if (window.currentTxFilter === 'withdrawal') return isWd;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-secondary);">${isAr ? "لا توجد حركات مسجلة" : "No recorded transactions"}</td></tr>`;
+    return;
+  }
+
+  const methodLabels = {
+    cash: { ar: "درج الكاش", en: "Cash Drawer", icon: "fa-money-bill-wave", color: "#10b981" },
+    wallet: { ar: "فودافون كاش", en: "Vodafone Cash", icon: "fa-wallet", color: "#ef4444" },
+    instapay: { ar: "إنستاباي", en: "InstaPay", icon: "fa-mobile-screen-button", color: "#0284c7" }
+  };
+
+  let html = "";
+  filtered.forEach((item, idx) => {
+    const isWd = (item.type === 'withdrawal' || item.isWithdrawal);
+    const mInfo = methodLabels[item.method || 'cash'] || methodLabels.cash;
+    const typeBadge = isWd 
+      ? `<span class="badge-withdrawal"><i class="fa-solid fa-hand-holding-dollar"></i> ${isAr ? "مسحوبات المستر" : "Owner Withdrawal"}</span>`
+      : `<span class="badge-expense"><i class="fa-solid fa-receipt"></i> ${isAr ? "مصروف سنتر" : "Center Expense"}</span>`;
+    
+    const methodBadge = `<span class="badge-treasury" style="color:${mInfo.color};"><i class="fa-solid ${mInfo.icon}"></i> ${isAr ? mInfo.ar : mInfo.en}</span>`;
+    const amtColor = isWd ? "#f59e0b" : "#ef4444";
+    const rawId = item.id || String(item.timestamp || idx);
+
+    html += `
+      <tr>
+        <td style="font-weight:700; white-space:nowrap;">${item.date || '—'}</td>
+        <td>${typeBadge}</td>
+        <td style="font-weight:700; color:var(--text-primary);">${item.reason || '—'}</td>
+        <td>${methodBadge}</td>
+        <td style="font-weight:900; color:${amtColor}; white-space:nowrap;">${Number(item.amount || 0).toLocaleString()} ${currencySuffix}</td>
+        <td>
+          <button class="btn danger smallBtn iconOnly" onclick="window.deleteTermTransaction('${rawId}')" title="${isAr ? 'حذف الحركة' : 'Delete'}">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+};
+
 window.renderTermTable = function() {
   const isAr = (currentLang === "ar");
   const currencySuffix = isAr ? " ج" : " EGP";
@@ -1967,11 +2049,33 @@ window.renderTermTable = function() {
     });
   }
 
+  // 1. Calculate Student Revenue, Debts & Treasuries Inflow
   let totalRev = 0, totalDebt = 0, matchCount = 0;
+  let cashIn = 0, walletIn = 0, instapayIn = 0;
   let rowsHtml = "";
 
   Object.values(students).forEach(st => {
     if (!st || !st.name) return;
+
+    // Track Payments into Treasuries (all enrolled students)
+    if (st.payments && Array.isArray(st.payments) && st.payments.length > 0) {
+      st.payments.forEach(p => {
+        const pAmt = Number(p.amount) || 0;
+        const pMethod = p.method || 'cash';
+        if (pMethod === 'cash') cashIn += pAmt;
+        else if (pMethod === 'wallet') walletIn += pAmt;
+        else if (pMethod === 'instapay') instapayIn += pAmt;
+        else cashIn += pAmt;
+      });
+    } else if (Number(st.paid) > 0) {
+      const pAmt = Number(st.paid) || 0;
+      const pMethod = st.paymentPlan || 'cash';
+      if (pMethod === 'cash') cashIn += pAmt;
+      else if (pMethod === 'wallet') walletIn += pAmt;
+      else if (pMethod === 'instapay') instapayIn += pAmt;
+      else cashIn += pAmt;
+    }
+
     if (search && !st.name.toLowerCase().includes(search) && !String(st.id).includes(search)) return;
     const cls = (st.className || (isAr ? "عام" : "General")).trim();
     if (clsFilter && cls !== clsFilter) return;
@@ -2029,17 +2133,85 @@ window.renderTermTable = function() {
     `;
   });
 
+  // 2. Add Session Students Inflow to Treasuries
+  for (const d in sessionStudentsByDate) {
+    const sList = sessionStudentsByDate[d] || [];
+    sList.forEach(it => {
+      const amt = Number(it.amount) || 0;
+      const m = it.method || 'cash';
+      if (m === 'cash') cashIn += amt;
+      else if (m === 'wallet') walletIn += amt;
+      else if (m === 'instapay') instapayIn += amt;
+      else cashIn += amt;
+      totalRev += amt;
+    });
+  }
+
+  // 3. Process Expenses & Withdrawals
+  let totalExpenses = 0;
+  let totalWithdrawals = 0;
+  let cashOut = 0, walletOut = 0, instapayOut = 0;
+
+  const txList = Array.isArray(expensesByDate) ? expensesByDate : [];
+  txList.forEach(e => {
+    if (!e) return;
+    const amt = Number(e.amount) || 0;
+    const m = e.method || 'cash';
+    const isWd = (e.type === 'withdrawal' || e.isWithdrawal);
+
+    if (isWd) {
+      totalWithdrawals += amt;
+    } else {
+      totalExpenses += amt;
+    }
+
+    if (m === 'cash') cashOut += amt;
+    else if (m === 'wallet') walletOut += amt;
+    else if (m === 'instapay') instapayOut += amt;
+    else cashOut += amt;
+  });
+
+  // 4. Balances Calculations
+  const netVaultBalance = totalRev - (totalExpenses + totalWithdrawals);
+  const cashBalance = cashIn - cashOut;
+  const walletBalance = walletIn - walletOut;
+  const instapayBalance = instapayIn - instapayOut;
+
+  // 5. Update KPI Cards
   const statTermSt = document.getElementById("statTermStudents");
   const statTermRev = document.getElementById("statTermRevenue");
+  const statTermExp = document.getElementById("statTermExpenses");
+  const statTermWd = document.getElementById("statTermWithdrawals");
+  const statTermNet = document.getElementById("statTermNetVault");
   const statTermDbt = document.getElementById("statTermDebt");
 
   if (statTermSt) statTermSt.textContent = matchCount;
   if (statTermRev) statTermRev.textContent = totalRev.toLocaleString() + currencySuffix;
+  if (statTermExp) statTermExp.textContent = totalExpenses.toLocaleString() + currencySuffix;
+  if (statTermWd) statTermWd.textContent = totalWithdrawals.toLocaleString() + currencySuffix;
+  if (statTermNet) statTermNet.textContent = netVaultBalance.toLocaleString() + currencySuffix;
   if (statTermDbt) statTermDbt.textContent = totalDebt.toLocaleString() + currencySuffix;
 
+  // 6. Update Treasuries Cards
+  if (document.getElementById("termCashIn")) document.getElementById("termCashIn").textContent = cashIn.toLocaleString() + currencySuffix;
+  if (document.getElementById("termCashOut")) document.getElementById("termCashOut").textContent = cashOut.toLocaleString() + currencySuffix;
+  if (document.getElementById("termCashBalance")) document.getElementById("termCashBalance").textContent = cashBalance.toLocaleString() + currencySuffix;
+
+  if (document.getElementById("termWalletIn")) document.getElementById("termWalletIn").textContent = walletIn.toLocaleString() + currencySuffix;
+  if (document.getElementById("termWalletOut")) document.getElementById("termWalletOut").textContent = walletOut.toLocaleString() + currencySuffix;
+  if (document.getElementById("termWalletBalance")) document.getElementById("termWalletBalance").textContent = walletBalance.toLocaleString() + currencySuffix;
+
+  if (document.getElementById("termInstapayIn")) document.getElementById("termInstapayIn").textContent = instapayIn.toLocaleString() + currencySuffix;
+  if (document.getElementById("termInstapayOut")) document.getElementById("termInstapayOut").textContent = instapayOut.toLocaleString() + currencySuffix;
+  if (document.getElementById("termInstapayBalance")) document.getElementById("termInstapayBalance").textContent = instapayBalance.toLocaleString() + currencySuffix;
+
+  // 7. Render Student Table
   if (tbody) {
     tbody.innerHTML = rowsHtml || `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">${isAr ? "لا توجد نتائج مطابقة" : "No matching records found"}</td></tr>`;
   }
+
+  // 8. Render Transactions Table
+  window.renderTermTransactionsTable();
 };
 
 // ========================================================
@@ -3434,32 +3606,174 @@ window.adminDeletePackage = async function(encodedName) {
   }
 };
 
-window.recordNewExpense = async function() {
-  const reason = document.getElementById("expenseReasonInput")?.value.trim();
-  const amount = Number(document.getElementById("expenseAmountInput")?.value || 0);
-  const date = document.getElementById("expenseDateInput")?.value || nowDateStr();
+window.openRecordExpenseModal = async function(defaultType = 'expense') {
+  const isAr = (currentLang === "ar");
+  const isWithdrawal = (defaultType === 'withdrawal');
 
-  if (!reason || amount <= 0) return showToast("يرجى إدخال بند ومبلغ المصروف", "err");
+  const { value: formValues } = await Swal.fire({
+    title: isAr 
+      ? (isWithdrawal ? "تسجيل مسحوبات شخصية للمستر" : "تسجيل مصروف تشغيلي للسنتر")
+      : (isWithdrawal ? "Record Owner Withdrawal" : "Record Center Expense"),
+    html: `
+      <div style="text-align: right; direction: rtl; display: flex; flex-direction: column; gap: 14px; font-family: 'Cairo', sans-serif;">
+        <div>
+          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">نوع العملية:</label>
+          <div style="display: flex; gap: 10px;">
+            <label style="flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 700;">
+              <input type="radio" name="swalTxType" value="expense" ${!isWithdrawal ? 'checked' : ''} onchange="document.getElementById('swalReasonInp').placeholder='مثال: فواتير كهرباء / طباعة ورق / صيانة';">
+              <span style="color: #ef4444;"><i class="fa-solid fa-receipt"></i> مصروف سنتر</span>
+            </label>
+            <label style="flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 700;">
+              <input type="radio" name="swalTxType" value="withdrawal" ${isWithdrawal ? 'checked' : ''} onchange="document.getElementById('swalReasonInp').placeholder='مثال: سحب أرباح شخصية / مسحوبات المستر';">
+              <span style="color: #f59e0b;"><i class="fa-solid fa-hand-holding-dollar"></i> مسحوبات المستر</span>
+            </label>
+          </div>
+        </div>
 
-  const newExp = { reason, amount, date, timestamp: Date.now() };
+        <div>
+          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">المبلغ المطلوب (جنيه):</label>
+          <input type="number" id="swalAmtInp" class="swal2-input" placeholder="0" min="1" style="width: 100%; margin: 0; box-sizing: border-box;">
+        </div>
+
+        <div>
+          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">البيان / سبب الصرف أو السحب:</label>
+          <input type="text" id="swalReasonInp" class="swal2-input" placeholder="${isWithdrawal ? 'مثال: سحب أرباح شخصية للمستر' : 'مثال: فواتير كهرباء / طباعة مذكرات'}" style="width: 100%; margin: 0; box-sizing: border-box;">
+        </div>
+
+        <div>
+          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">الخزينة المسحوب منها:</label>
+          <select id="swalMethodInp" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box;">
+            <option value="cash">درج الكاش (الخزينة النقدية)</option>
+            <option value="wallet">محفظة فودافون كاش (المحافظ الإلكترونية)</option>
+            <option value="instapay">حساب إنستاباي (InstaPay)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 0.85em; font-weight: 700; display: block; margin-bottom: 6px; color: var(--text-secondary);">التاريخ:</label>
+          <input type="date" id="swalDateInp" class="swal2-input" value="${nowDateStr()}" style="width: 100%; margin: 0; box-sizing: border-box;">
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: isAr ? "حفظ وتوثيق الحركة" : "Save Transaction",
+    cancelButtonText: isAr ? "إلغاء" : "Cancel",
+    focusConfirm: false,
+    preConfirm: () => {
+      const type = document.querySelector('input[name="swalTxType"]:checked')?.value || 'expense';
+      const amount = Number(document.getElementById('swalAmtInp')?.value || 0);
+      const reason = document.getElementById('swalReasonInp')?.value.trim();
+      const method = document.getElementById('swalMethodInp')?.value || 'cash';
+      const date = document.getElementById('swalDateInp')?.value || nowDateStr();
+
+      if (amount <= 0) {
+        Swal.showValidationMessage(isAr ? "يرجى إدخال مبلغ صحيح أكبر من صفر" : "Please enter a valid amount");
+        return false;
+      }
+      if (!reason) {
+        Swal.showValidationMessage(isAr ? "يرجى كتابة سبب أو بيان العملية" : "Please enter the reason/purpose");
+        return false;
+      }
+      return { type, amount, reason, method, date };
+    }
+  });
+
+  if (formValues) {
+    await window.saveTransactionRecord(formValues);
+  }
+};
+
+window.saveTransactionRecord = async function({ type, amount, reason, method, date }) {
+  const isAr = (currentLang === "ar");
+  const newTx = {
+    id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    type: type || 'expense',
+    amount: Number(amount) || 0,
+    reason: reason || '',
+    method: method || 'cash',
+    date: date || nowDateStr(),
+    timestamp: Date.now()
+  };
+
   if (!Array.isArray(expensesByDate)) expensesByDate = [];
-  expensesByDate.push(newExp);
+  expensesByDate.push(newTx);
 
   const expObj = {};
   expensesByDate.forEach(e => {
     if (!e) return;
     const k = e.date || date;
     if (!expObj[k]) expObj[k] = [];
-    expObj[k].push({ amount: Number(e.amount) || 0, reason: e.reason || '', method: e.method || 'cash', date: k, timestamp: e.timestamp || Date.now() });
+    expObj[k].push({
+      id: e.id || `tx_${e.timestamp || Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      amount: Number(e.amount) || 0,
+      reason: e.reason || '',
+      method: e.method || 'cash',
+      type: e.type || (e.isWithdrawal ? 'withdrawal' : 'expense'),
+      recipient: e.recipient || '',
+      date: k,
+      timestamp: e.timestamp || Date.now()
+    });
   });
 
   try {
     await saveCenterConfig({ expenses_by_date: expObj });
-    showToast("تم تسجيل المصروف بنجاح", "success");
-    document.getElementById("expenseReasonInput").value = "";
-    document.getElementById("expenseAmountInput").value = "";
-    window.loadDailyReport(date);
-  } catch(e) { console.error(e); }
+    showToast(isAr ? "تم حفظ وتوثيق الحركة بنجاح" : "Transaction saved successfully", "success");
+    if (typeof window.renderTermTable === 'function') window.renderTermTable();
+    if (typeof window.loadDailyReport === 'function') window.loadDailyReport(date);
+  } catch(e) {
+    console.error("saveTransactionRecord Error:", e);
+    showToast(isAr ? "حدث خطأ أثناء الحفظ" : "Error saving transaction", "err");
+  }
+};
+
+window.deleteTermTransaction = async function(rawId) {
+  const isAr = (currentLang === "ar");
+  const result = await Swal.fire({
+    title: isAr ? "تأكيد حذف الحركة" : "Confirm Deletion",
+    text: isAr ? "هل أنت متأكد من حذف هذه المعاملة؟ سيتم استرجاع الرصيد وتحديث الخزائن فورياً." : "Are you sure you want to delete this transaction? Vault balances will update immediately.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: isAr ? "نعم، حذف الآن" : "Yes, delete",
+    cancelButtonText: isAr ? "إلغاء" : "Cancel",
+    confirmButtonColor: "#ef4444"
+  });
+
+  if (!result.isConfirmed) return;
+
+  if (Array.isArray(expensesByDate)) {
+    const idx = expensesByDate.findIndex(e => (e.id === rawId || String(e.timestamp) === rawId));
+    if (idx !== -1) {
+      expensesByDate.splice(idx, 1);
+    }
+  }
+
+  const expObj = {};
+  expensesByDate.forEach(e => {
+    if (!e) return;
+    const k = e.date || nowDateStr();
+    if (!expObj[k]) expObj[k] = [];
+    expObj[k].push({
+      id: e.id || `tx_${e.timestamp || Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      amount: Number(e.amount) || 0,
+      reason: e.reason || '',
+      method: e.method || 'cash',
+      type: e.type || (e.isWithdrawal ? 'withdrawal' : 'expense'),
+      recipient: e.recipient || '',
+      date: k,
+      timestamp: e.timestamp || Date.now()
+    });
+  });
+
+  try {
+    await saveCenterConfig({ expenses_by_date: expObj });
+    showToast(isAr ? "تم حذف الحركة وتحديث الخزائن" : "Transaction deleted and vaults updated", "success");
+    if (typeof window.renderTermTable === 'function') window.renderTermTable();
+    const dInput = document.getElementById("adminDailyDateInput");
+    if (typeof window.loadDailyReport === 'function') window.loadDailyReport(dInput ? dInput.value : nowDateStr());
+  } catch(e) {
+    console.error("deleteTermTransaction Error:", e);
+    showToast(isAr ? "فشل حذف الحركة" : "Failed to delete transaction", "err");
+  }
 };
 
 // ========================================================
