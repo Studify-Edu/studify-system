@@ -416,7 +416,7 @@
                 <span data-i18n="term_vaults_title">أرصدة الخزائن الحية وحركة التدفق المالي</span>
               </div>
               <div class="text-secondary" style="font-size: 0.85em; font-weight: 600;">
-                <i class="fa-solid fa-rotate"></i> تحديث فوري وتزامني لكافة وسائل الدفع
+                <i class="fa-solid fa-rotate"></i> <span data-i18n="term_vaults_sync_subtitle">تحديث فوري وتزامني لكافة وسائل الدفع</span>
               </div>
             </div>
 
@@ -428,23 +428,23 @@
                     <div class="treasury-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
                     <div>
                       <div class="treasury-name" data-i18n="vault_cash_drawer">درج الكاش (الخزينة النقدية)</div>
-                      <div class="treasury-sub">المقبوضات والمصروفات الورقية</div>
+                      <div class="treasury-sub" data-i18n="vault_cash_sub">المقبوضات والمصروفات الورقية</div>
                     </div>
                   </div>
-                  <span class="treasury-pill pill-cash">كاش</span>
+                  <span class="treasury-pill pill-cash" data-i18n="pill_cash">كاش</span>
                 </div>
                 <div class="treasury-flow-row">
                   <div class="flow-cell">
-                    <span class="flow-lbl">المقبوض نقداً:</span>
+                    <span class="flow-lbl" data-i18n="lbl_cash_in">المقبوض نقداً:</span>
                     <b class="flow-val text-success" id="termCashIn">0 ج</b>
                   </div>
                   <div class="flow-cell">
-                    <span class="flow-lbl">المنصرف / المسحوب:</span>
+                    <span class="flow-lbl" data-i18n="lbl_cash_out">المنصرف / المسحوب:</span>
                     <b class="flow-val text-danger" id="termCashOut">0 ج</b>
                   </div>
                 </div>
                 <div class="treasury-balance-box">
-                  <span class="balance-lbl">الرصيد الفعلي الحالي بالدرج:</span>
+                  <span class="balance-lbl" data-i18n="lbl_cash_balance">الرصيد الفعلي الحالي بالدرج:</span>
                   <span class="balance-val" id="termCashBalance">0 ج</span>
                 </div>
               </div>
@@ -456,23 +456,23 @@
                     <div class="treasury-icon"><i class="fa-solid fa-wallet"></i></div>
                     <div>
                       <div class="treasury-name" data-i18n="vault_wallet_account">محفظة فودافون كاش</div>
-                      <div class="treasury-sub">المحافظ الإلكترونية الذكية</div>
+                      <div class="treasury-sub" data-i18n="vault_wallet_sub">المحافظ الإلكترونية الذكية</div>
                     </div>
                   </div>
-                  <span class="treasury-pill pill-wallet">محفظة</span>
+                  <span class="treasury-pill pill-wallet" data-i18n="pill_wallet">محفظة</span>
                 </div>
                 <div class="treasury-flow-row">
                   <div class="flow-cell">
-                    <span class="flow-lbl">المقبوض بالمحفظة:</span>
+                    <span class="flow-lbl" data-i18n="lbl_wallet_in">المقبوض بالمحفظة:</span>
                     <b class="flow-val text-success" id="termWalletIn">0 ج</b>
                   </div>
                   <div class="flow-cell">
-                    <span class="flow-lbl">المنصرف / المسحوب:</span>
+                    <span class="flow-lbl" data-i18n="lbl_wallet_out">المنصرف / المسحوب:</span>
                     <b class="flow-val text-danger" id="termWalletOut">0 ج</b>
                   </div>
                 </div>
                 <div class="treasury-balance-box">
-                  <span class="balance-lbl">الرصيد الفعلي الحالي بالمحفظة:</span>
+                  <span class="balance-lbl" data-i18n="lbl_wallet_balance">الرصيد الفعلي الحالي بالمحفظة:</span>
                   <span class="balance-val" id="termWalletBalance">0 ج</span>
                 </div>
               </div>
@@ -484,23 +484,23 @@
                     <div class="treasury-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
                     <div>
                       <div class="treasury-name" data-i18n="vault_instapay_account">حساب إنستاباي (InstaPay)</div>
-                      <div class="treasury-sub">التحويلات البنكية اللحظية</div>
+                      <div class="treasury-sub" data-i18n="vault_instapay_sub">التحويلات البنكية اللحظية</div>
                     </div>
                   </div>
-                  <span class="treasury-pill pill-instapay">InstaPay</span>
+                  <span class="treasury-pill pill-instapay" data-i18n="pill_instapay">InstaPay</span>
                 </div>
                 <div class="treasury-flow-row">
                   <div class="flow-cell">
-                    <span class="flow-lbl">المقبوض بإنستاباي:</span>
+                    <span class="flow-lbl" data-i18n="lbl_instapay_in">المقبوض بإنستاباي:</span>
                     <b class="flow-val text-success" id="termInstapayIn">0 ج</b>
                   </div>
                   <div class="flow-cell">
-                    <span class="flow-lbl">المنصرف / المسحوب:</span>
+                    <span class="flow-lbl" data-i18n="lbl_instapay_out">المنصرف / المسحوب:</span>
                     <b class="flow-val text-danger" id="termInstapayOut">0 ج</b>
                   </div>
                 </div>
                 <div class="treasury-balance-box">
-                  <span class="balance-lbl">الرصيد الفعلي الحالي بإنستاباي:</span>
+                  <span class="balance-lbl" data-i18n="lbl_instapay_balance">الرصيد الفعلي الحالي بإنستاباي:</span>
                   <span class="balance-val" id="termInstapayBalance">0 ج</span>
                 </div>
               </div>
@@ -516,9 +516,9 @@
               </div>
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <div class="tx-filter-pills">
-                  <button class="tx-filter-btn active" data-tx-filter="all" onclick="window.filterTransactions('all')">الكل</button>
-                  <button class="tx-filter-btn" data-tx-filter="expense" onclick="window.filterTransactions('expense')">مصروفات سنتر</button>
-                  <button class="tx-filter-btn" data-tx-filter="withdrawal" onclick="window.filterTransactions('withdrawal')">مسحوبات المستر</button>
+                  <button class="tx-filter-btn active" data-tx-filter="all" onclick="window.filterTransactions('all')" data-i18n="tx_filter_all">الكل</button>
+                  <button class="tx-filter-btn" data-tx-filter="expense" onclick="window.filterTransactions('expense')" data-i18n="tx_filter_expense">مصروفات سنتر</button>
+                  <button class="tx-filter-btn" data-tx-filter="withdrawal" onclick="window.filterTransactions('withdrawal')" data-i18n="tx_filter_withdrawal">مسحوبات المستر</button>
                 </div>
                 <button class="btn danger smallBtn" onclick="window.openRecordExpenseModal('expense')">
                   <i class="fa-solid fa-plus-circle"></i> <span data-i18n="btn_record_center_exp">تسجيل مصروف سنتر</span>
@@ -533,16 +533,16 @@
               <table class="admin-table">
                 <thead>
                   <tr>
-                    <th>التاريخ</th>
-                    <th>النوع</th>
-                    <th>البيان / السبب</th>
-                    <th>الخزينة المستخدمة</th>
-                    <th>المبلغ</th>
-                    <th>الإجراء</th>
+                    <th data-i18n="th_date">التاريخ</th>
+                    <th data-i18n="th_type">النوع</th>
+                    <th data-i18n="th_reason">البيان / السبب</th>
+                    <th data-i18n="th_vault">الخزينة المستخدمة</th>
+                    <th data-i18n="th_amount">المبلغ</th>
+                    <th data-i18n="th_action">الإجراء</th>
                   </tr>
                 </thead>
                 <tbody id="termTransactionsTableBody">
-                  <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">لا توجد حركات مسجلة حتى الآن</td></tr>
+                  <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);" data-i18n="tx_empty">لا توجد حركات مسجلة حتى الآن</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1196,7 +1196,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V23"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V24"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->
