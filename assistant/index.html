@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V86">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V87">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -493,7 +493,7 @@
      <div class="bento-field-group">
        <label class="bento-input-lbl"><i class="fa-solid fa-id-card"></i> <span data-i18n="lbl_student_id">معرّف الطالب (ID)</span></label>
        <div class="bento-input-action-row">
-         <input id="quickAttendId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)">
+         <input id="quickAttendId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)" autocomplete="off">
          <button id="quickAttendBtn" class="btn primary" style="min-width: 105px;" data-i18n="btn_record">سجل حضور</button>
        </div>
      </div>
@@ -517,7 +517,7 @@
      <div class="bento-field-group">
        <label class="bento-input-lbl"><i class="fa-solid fa-hashtag"></i> <span data-i18n="lbl_open_id_direct">فتح مباشر برقم الـ ID</span></label>
        <div class="bento-input-action-row">
-         <input id="openId" class="inp" inputmode="numeric" placeholder="ID (ex: 101)">
+         <input id="openId" class="inp" inputmode="numeric" placeholder="ID (ex: 101)" autocomplete="off">
          <button id="openBtn" class="btn primary" style="min-width: 80px;" data-i18n="btn_open">فتح</button>
        </div>
      </div>
@@ -527,7 +527,7 @@
      <div class="bento-divider"></div>
      <div class="bento-field-group" style="margin-bottom:0;">
        <label class="bento-input-lbl"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="lbl_smart_search">بحث ذكي متعدد</span></label>
-       <input id="searchAny" class="inp" placeholder="الاسم / الرقم / الكود.." data-i18n-placeholder="search_plc">
+       <input id="searchAny" class="inp" placeholder="الاسم / الرقم / الكود.." data-i18n-placeholder="search_plc" autocomplete="off">
        <div id="searchMsg" class="msg"></div>
      </div>
    </div>
@@ -542,7 +542,7 @@
      <div class="bento-field-group">
        <label class="bento-input-lbl"><i class="fa-solid fa-user-plus"></i> <span data-i18n="lbl_new_student_id">رقم الـ ID للطالب الجديد</span></label>
        <div class="bento-input-action-row">
-         <input id="newId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)">
+         <input id="newId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)" autocomplete="off">
          <button id="addNewBtn" class="btn success" style="min-width: 110px;" data-i18n="btn_add_open">إضافة وفتح</button>
        </div>
      </div>
@@ -591,7 +591,7 @@
 </div>
  
  <label class="lbl" data-i18n="lbl_name">الاسم</label>
- <input id="stName" class="inp" placeholder="اسم الطالب بالكامل" data-i18n-placeholder="plc_student_name">
+ <input id="stName" class="inp" placeholder="اسم الطالب بالكامل" data-i18n-placeholder="plc_student_name" autocomplete="off">
  
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; margin-top:10px;">
     <label class="lbl" style="margin:0;" data-i18n="lbl_student_packages">الباقات المشترك بها الطالب</label>
@@ -608,7 +608,7 @@
     <div style="flex:1; min-width:200px;">
       <label class="lbl" data-i18n="lbl_phone">رقم الطالب</label>
       <div class="row">
-        <input id="stPhone" class="inp" inputmode="tel" placeholder="01xxxxxxxxx">
+        <input id="stPhone" class="inp" inputmode="tel" placeholder="01xxxxxxxxx" autocomplete="off">
         <button id="waBtn" class="btn success" title="مراسلة الطالب عبر واتساب" aria-label="واتساب"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></button>
       </div>
     </div>
@@ -616,7 +616,7 @@
     <div style="flex:1; min-width:200px;">
       <label class="lbl" data-i18n="lbl_parent_phone">رقم ولي الأمر</label>
       <div class="row">
-        <input id="stParentPhone" class="inp" inputmode="tel" placeholder="01xxxxxxxxx">
+        <input id="stParentPhone" class="inp" inputmode="tel" placeholder="01xxxxxxxxx" autocomplete="off">
         <button id="waParentBtn" class="btn success" title="مراسلة ولي الأمر عبر واتساب" aria-label="واتساب ولي الأمر"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></button>
       </div>
     </div>
@@ -1865,7 +1865,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V140"></script>
+  <script type="module" src="app.js?v=STUDIFY_V141"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

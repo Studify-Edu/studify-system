@@ -605,6 +605,34 @@ setupConnectionTracker();
 
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Direct Enter key listeners on Bento inputs
+  ["openId", "newId", "quickAttendId", "searchAny"].forEach(inputId => {
+    const el = document.getElementById(inputId);
+    if (el) {
+      el.setAttribute("autocomplete", "off");
+      el.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          if (inputId === "openId") (document.getElementById("openBtn") || document.getElementById("openIdBtn"))?.click();
+          else if (inputId === "newId") document.getElementById("addNewBtn")?.click();
+          else if (inputId === "quickAttendId") document.getElementById("quickAttendBtn")?.click();
+          else if (inputId === "searchAny") {
+            const firstItem = document.querySelector("#searchMsg .item");
+            if (firstItem) firstItem.click();
+            else {
+              const numVal = toInt(el.value);
+              if (numVal > 0) {
+                if (document.getElementById("openId")) document.getElementById("openId").value = numVal;
+                document.getElementById("openBtn")?.click();
+              }
+            }
+          }
+        }
+      });
+    }
+  });
+
  console.log("V-PRO MAX Engine: Initializing System...");
  
  // Sync UI with Mute State
@@ -835,20 +863,56 @@ document.addEventListener('DOMContentLoaded', function() {
  if (e.key === 'Enter') {
  const target = e.target;
  if (target.id === 'searchAny') {
+   e.preventDefault();
    const firstItem = document.querySelector('#searchMsg .item');
    if (firstItem) firstItem.click();
-   else document.getElementById('searchBtn')?.click();
+   else {
+     const numVal = toInt(target.value);
+     if (numVal > 0) {
+       if (document.getElementById('openId')) document.getElementById('openId').value = numVal;
+       document.getElementById('openBtn')?.click();
+     } else {
+       document.getElementById('searchBtn')?.click();
+     }
+   }
  }
- else if (target.id === 'openId') (document.getElementById('openBtn') || document.getElementById('openIdBtn'))?.click();
- else if (target.id === 'quickAttendId') { e.preventDefault(); document.getElementById("quickAttendBtn")?.click(); }
- else if (target.id === 'newId') document.getElementById("addNewBtn")?.click();
- else if (target.id === 'stName' || target.id === 'stPhone') document.getElementById("saveStudentBtn")?.click();
- else if (target.id === 'newPaymentInput') document.getElementById("addPaymentBtn")?.click();
- else if (target.id === 'sessStName' || target.id === 'sessStPhone' || target.id === 'sessStAmount') document.getElementById("saveSessionStBtn")?.click();
- else if (target.id === 'managerUser' || target.id === 'managerPass') document.getElementById("managerLoginBtn")?.click();
- else if (target.id === 'assistantCenterCode' || target.id === 'assistantUser' || target.id === 'assistantPass') document.getElementById("assistantLoginBtn")?.click();
- else if (target.id === 'customPassInput') document.getElementById("customPassConfirm")?.click();
- else if (target.id === 'tableSearchInp') target.blur(); 
+ else if (target.id === 'openId') {
+   e.preventDefault();
+   (document.getElementById('openBtn') || document.getElementById('openIdBtn'))?.click();
+ }
+ else if (target.id === 'quickAttendId') {
+   e.preventDefault();
+   document.getElementById('quickAttendBtn')?.click();
+ }
+ else if (target.id === 'newId') {
+   e.preventDefault();
+   document.getElementById('addNewBtn')?.click();
+ }
+ else if (target.id === 'stName' || target.id === 'stPhone') {
+   e.preventDefault();
+   document.getElementById('saveStudentBtn')?.click();
+ }
+ else if (target.id === 'newPaymentInput') {
+   e.preventDefault();
+   document.getElementById('addPaymentBtn')?.click();
+ }
+ else if (target.id === 'sessStName' || target.id === 'sessStPhone' || target.id === 'sessStAmount') {
+   e.preventDefault();
+   document.getElementById('saveSessionStBtn')?.click();
+ }
+ else if (target.id === 'managerUser' || target.id === 'managerPass') {
+   e.preventDefault();
+   document.getElementById('managerLoginBtn')?.click();
+ }
+ else if (target.id === 'assistantCenterCode' || target.id === 'assistantUser' || target.id === 'assistantPass') {
+   e.preventDefault();
+   document.getElementById('assistantLoginBtn')?.click();
+ }
+ else if (target.id === 'customPassInput') {
+   e.preventDefault();
+   document.getElementById('customPassConfirm')?.click();
+ }
+ else if (target.id === 'tableSearchInp') target.blur();
  }
  });
 
@@ -1698,6 +1762,18 @@ function showToast(msg, type = "success") {
  closeMobileSidebar(false);
  };
 
+ window.isStudentRegistered = function(st) {
+   if (!st) return false;
+   const hasName = Boolean(st.name && st.name.trim() !== "");
+   const hasPhone = Boolean(st.phone && st.phone.trim() !== "");
+   const hasPaid = Number(st.paid || 0) > 0;
+   const hasPayments = Array.isArray(st.payments) && st.payments.length > 0;
+   const hasAttendance = Array.isArray(st.attendanceDates) && st.attendanceDates.length > 0;
+   const hasClass = Boolean(st.className && st.className.trim() !== "");
+   return hasName || hasPhone || hasPaid || hasPayments || hasAttendance || hasClass;
+ };
+ const isStudentRegistered = window.isStudentRegistered;
+
  window.showStudentCard = function() {
    const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
    if (card) {
@@ -1706,6 +1782,17 @@ function showToast(msg, type = "success") {
  };
 
  window.hideStudentCard = function() {
+   if (window.isPendingNewStudent && students[window.isPendingNewStudent]) {
+     const pendingSt = students[window.isPendingNewStudent];
+     if (!window.isStudentRegistered(pendingSt)) {
+       if (toInt(window.isPendingNewStudent) > BASE_MAX_ID) {
+         delete students[window.isPendingNewStudent];
+       } else {
+         students[window.isPendingNewStudent] = makeEmptyStudent(toInt(window.isPendingNewStudent));
+       }
+     }
+     window.isPendingNewStudent = null;
+   }
    currentId = null;
    window.currentId = null;
    window.justAddedStudentId = null;
@@ -4352,13 +4439,43 @@ on("quickAttendBtn", "click", function() {
  });
 
  on("openBtn", "click", function() {
- let openVal = toInt($("openId").value);
- if ($("openId") && openVal && students[String(openVal)]) {
- window.extOpen(openVal);
- } else {
- showToast("الطالب غير موجود", "err");
- triggerShake("openId"); // الاهتزاز عند الخطأ
- }
+   const openVal = $("openId") ? toInt($("openId").value) : 0;
+   if (!openVal) {
+     triggerShake("openId");
+     return;
+   }
+   const existing = students[String(openVal)];
+   if (window.isStudentRegistered(existing)) {
+     window.extOpen(openVal);
+     if ($("openId")) $("openId").value = "";
+   } else {
+     // الطالب غير مسجل ولا توجد له بيانات - نفتح استمارة تسجيل جديدة بهذا الرقم مباشرة دون حفظ فارغ
+     const maxSt = window.SUBSCRIPTION?.maxStudents;
+     if (maxSt) {
+       const curCount = Object.values(students || {}).filter(s => window.isStudentRegistered(s)).length;
+       if (curCount >= maxSt) {
+         showToast(`تم الوصول للحد الأقصى للطلاب (${maxSt})`, "err");
+         return;
+       }
+     }
+     if (!students[String(openVal)]) {
+       students[String(openVal)] = makeEmptyStudent(openVal);
+     }
+     window.justAddedStudentId = String(openVal);
+     window.isPendingNewStudent = String(openVal);
+     showToast(currentLang === "ar" ? `هذا الـ ID (#${openVal}) غير مسجل، تم فتح استمارة تسجيل طالب جديد` : `ID #${openVal} is not registered. Opened new student form.`, "info");
+     window.showStudentCard();
+     updateStudentUI(String(openVal));
+     if ($("openId")) $("openId").value = "";
+     if ($("newId")) $("newId").value = "";
+     const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+     if (card) {
+       setTimeout(() => {
+         card.scrollIntoView({ behavior: "smooth", block: "start" });
+         if ($("stName")) $("stName").focus();
+       }, 120);
+     }
+   }
  });
 
  on("searchAny", "input", function(e) {
@@ -4387,67 +4504,80 @@ on("quickAttendBtn", "click", function() {
  });
 
  on("addNewBtn", "click", function() {
- if (currentUserRole !== "admin" && (!currentPermissions || !currentPermissions.can_add_student)) {
- showToast("عفواً، إضافة طالب جديد مقفلة من المدير ", "err");
- return;
- }
- const maxSt = window.SUBSCRIPTION?.maxStudents;
- if (maxSt) {
-   const curCount = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.className)).length;
-   if (curCount >= maxSt) {
-     if (typeof Swal !== 'undefined') {
-       Swal.fire({
-         icon: 'warning',
-         title: 'تم الوصول للحد الأقصى للطلاب',
-         text: `باقتكم الحالية تسمح بحد أقصى ${maxSt} طالب. يرجى من الإدارة ترقية الاشتراك لإضافة المزيد من الطلاب.`,
-         confirmButtonText: 'إغلاق',
-         confirmButtonColor: '#2563EB'
-       });
-     } else {
-       showToast(`تم الوصول للحد الأقصى للطلاب (${maxSt})`, 'err');
-     }
+   if (currentUserRole !== "admin" && (!currentPermissions || !currentPermissions.can_add_student)) {
+     showToast("عفواً، إضافة طالب جديد مقفلة من المدير ", "err");
      return;
    }
- }
- const id = $("newId") ? toInt($("newId").value) : 0;
- if(!id) return;
- 
- let existing = students[String(id)];
- if (existing) {
- let hasName = existing.name && existing.name.trim() !== "";
- let hasPaid = existing.paid > 0;
- let hasPayments = existing.payments && existing.payments.length > 0;
- let hasAttendance = existing.attendanceDates && existing.attendanceDates.length > 0;
- let hasNotes = existing.notes && existing.notes.trim() !== "";
- let hasClassName = existing.className && existing.className.trim() !== "";
- 
- if (hasName || hasPaid || hasPayments || hasAttendance || hasNotes || hasClassName) {
- triggerShake("newId");
- showToast(" هذا الكود محجوز ومسجل به بيانات بالفعل", "err");
- playSound("error");
- window.extOpen(id);
- if ($("newId")) $("newId").value = "";
- return;
- }
- }
- 
- students[String(id)] = makeEmptyStudent(id); 
- if(id > BASE_MAX_ID) extraIds.push(id);
- window.justAddedStudentId = String(id);
- saveAll(); window.extOpen(id); showToast(t("msg_added"));
- if ($("newId")) $("newId").value = "";
+   const maxSt = window.SUBSCRIPTION?.maxStudents;
+   if (maxSt) {
+     const curCount = Object.values(students || {}).filter(s => window.isStudentRegistered(s)).length;
+     if (curCount >= maxSt) {
+       if (typeof Swal !== "undefined") {
+         Swal.fire({
+           icon: "warning",
+           title: "تم الوصول للحد الأقصى للطلاب",
+           text: `باقتكم الحالية تسمح بحد أقصى ${maxSt} طالب. يرجى من الإدارة ترقية الاشتراك لإضافة المزيد من الطلاب.`,
+           confirmButtonText: "إغلاق",
+           confirmButtonColor: "#2563EB"
+         });
+       } else {
+         showToast(`تم الوصول للحد الأقصى للطلاب (${maxSt})`, "err");
+       }
+       return;
+     }
+   }
+   const id = $("newId") ? toInt($("newId").value) : 0;
+   if (!id) {
+     triggerShake("newId");
+     return;
+   }
+   let existing = students[String(id)];
+   if (window.isStudentRegistered(existing)) {
+     triggerShake("newId");
+     showToast(" هذا الكود محجوز ومسجل به بيانات بالفعل", "err");
+     playSound("error");
+     window.extOpen(id);
+     if ($("newId")) $("newId").value = "";
+     return;
+   }
+   if (!students[String(id)]) {
+     students[String(id)] = makeEmptyStudent(id);
+   }
+   window.justAddedStudentId = String(id);
+   window.isPendingNewStudent = String(id);
+   showToast(currentLang === "ar" ? `تم فتح استمارة طالب جديد برقم #${id}، يرجى كتابة البيانات والضغط على حفظ` : `Opened new student profile #${id}`, "info");
+   window.showStudentCard();
+   updateStudentUI(String(id));
+   if ($("newId")) $("newId").value = "";
+   const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+   if (card) {
+     setTimeout(() => {
+       card.scrollIntoView({ behavior: "smooth", block: "start" });
+       if ($("stName")) $("stName").focus();
+     }, 120);
+   }
  });
 
  on("saveStudentBtn", "click", function() {
- if(!currentId) return;
- const s = students[currentId]; if (!s) return;
- window.justAddedStudentId = null;
- if ($("newBadge")) $("newBadge").classList.add("hidden");
- if ($("stName")) s.name = $("stName").value.trim(); 
- if ($("stClass")) s.className = $("stClass").value.trim(); 
- if ($("stPhone")) s.phone = $("stPhone").value.trim();
- if ($("stParentPhone")) s.parentPhone = $("stParentPhone").value.trim();
- s.lastModified = Date.now();
+   if (!currentId) return;
+   const s = students[currentId]; if (!s) return;
+   const nameVal = $("stName") ? $("stName").value.trim() : "";
+   if (!nameVal) {
+     triggerShake("stName");
+     showToast(currentLang === "ar" ? "يرجى كتابة اسم الطالب أولاً لحفظ البيانات" : "Please enter student name first", "warning");
+     if ($("stName")) $("stName").focus();
+     return;
+   }
+   s.name = nameVal;
+   if ($("stClass")) s.className = $("stClass").value.trim();
+   if ($("stPhone")) s.phone = $("stPhone").value.trim();
+   if ($("stParentPhone")) s.parentPhone = $("stParentPhone").value.trim();
+   s.lastModified = Date.now();
+   const curNum = toInt(currentId);
+   if (curNum > BASE_MAX_ID && !extraIds.includes(curNum)) extraIds.push(curNum);
+   window.isPendingNewStudent = null;
+   window.justAddedStudentId = null;
+   if ($("newBadge")) $("newBadge").classList.add("hidden");
  playSound("click");
  saveAll(); showToast(t("msg_saved")); updateStudentUI(currentId);
  
