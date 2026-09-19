@@ -1803,6 +1803,7 @@ function showToast(msg, type = "success") {
    const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
    if (card) {
      card.classList.add("hidden");
+   card.classList.remove("rank-card-vip", "rank-card-warn", "rank-card-normal");
    }
    if ($("openId")) $("openId").value = "";
    if ($("searchAny")) $("searchAny").value = "";
@@ -2946,6 +2947,53 @@ function applyPermissions() {
       }
   };
 
+  window.updateStudentCardRankTheme = function(r) {
+    const card = $("studentDetailsCard") || document.querySelector(".studentCard");
+    if (!card) return;
+    card.classList.remove("rank-card-vip", "rank-card-warn", "rank-card-normal");
+    if (r === "vip") {
+      card.classList.add("rank-card-vip");
+    } else if (r === "warn") {
+      card.classList.add("rank-card-warn");
+    } else {
+      card.classList.add("rank-card-normal");
+    }
+  };
+
+  window.updatePaymentMethodTheme = function(method) {
+    const box = $("newPaymentBox") || document.querySelector(".payRow");
+    const iconEl = $("newPaymentMethodIcon");
+    const btnEl = $("addPaymentBtn");
+    const methodInp = $("newPaymentMethod");
+    const m = method || (methodInp ? methodInp.value : "cash");
+
+    if (box) {
+      box.classList.remove("pay-method-cash", "pay-method-instapay", "pay-method-wallet");
+      box.classList.add(`pay-method-${m}`);
+    }
+
+    if (iconEl) {
+      if (m === "instapay") {
+        iconEl.innerHTML = '<i class="fa-solid fa-bolt-lightning" style="color:#8b5cf6;"></i>';
+      } else if (m === "wallet") {
+        iconEl.innerHTML = '<i class="fa-solid fa-mobile-screen-button" style="color:#ef4444;"></i>';
+      } else {
+        iconEl.innerHTML = '<i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i>';
+      }
+    }
+
+    if (btnEl) {
+      const isDepositText = (typeof t === "function") ? t("btn_deposit") : "إيداع";
+      if (m === "instapay") {
+        btnEl.innerHTML = `<i class="fa-solid fa-bolt-lightning"></i> <span>${isDepositText}</span>`;
+      } else if (m === "wallet") {
+        btnEl.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i> <span>${isDepositText}</span>`;
+      } else {
+        btnEl.innerHTML = `<i class="fa-solid fa-money-bill-1-wave"></i> <span>${isDepositText}</span>`;
+      }
+    }
+  };
+
   window.renderStudentPaymentsUI = function(st, selectedPkg) {
       const listEl = $("stPaymentsList");
       if (!listEl) return;
@@ -2996,16 +3044,16 @@ function applyPermissions() {
           const m = p.method || "cash";
           let mLabel = "كاش";
           let mIcon = "fa-money-bill-wave";
-          let badgeStyle = "background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;";
+          let badgeStyle = "background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-weight:700;";
           
           if (m === "instapay") {
               mLabel = "إنستاباي";
-              mIcon = "fa-bolt";
-              badgeStyle = "background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff;";
+              mIcon = "fa-bolt-lightning";
+              badgeStyle = "background:rgba(139,92,246,0.12); color:#8b5cf6; border:1px solid rgba(139,92,246,0.3); font-weight:700;";
           } else if (m === "wallet") {
-              mLabel = "محفظة إلكترونية";
-              mIcon = "fa-mobile-screen";
-              badgeStyle = "background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;";
+              mLabel = "فودافون كاش";
+              mIcon = "fa-mobile-screen-button";
+              badgeStyle = "background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.3); font-weight:700;";
           }
 
           const delBtn = isAdmin 
@@ -3225,6 +3273,8 @@ const st = students[id];
  if($("rankNormalBtn")) $("rankNormalBtn").className = "st-rank-btn " + (r === "normal" ? "active-normal" : "");
  if($("rankVipBtn")) $("rankVipBtn").className = "st-rank-btn " + (r === "vip" ? "active-vip" : "");
  if($("rankWarnBtn")) $("rankWarnBtn").className = "st-rank-btn " + (r === "warn" ? "active-warn" : "");
+ if (typeof window.updateStudentCardRankTheme === "function") window.updateStudentCardRankTheme(r);
+ if (typeof window.updatePaymentMethodTheme === "function") window.updatePaymentMethodTheme();
 
  const today = nowDateStr();
  const dates = st.attendanceDates || [];
@@ -4720,18 +4770,21 @@ on("quickAttendBtn", "click", function() {
  on("rankNormalBtn", "click", function() {
  if(!currentId) return;
  students[currentId].rank = "normal";
+ if (typeof window.updateStudentCardRankTheme === "function") window.updateStudentCardRankTheme("normal");
  saveAll(); updateStudentUI(currentId); showToast("تم التحديث لـ عادي ");
  });
 
  on("rankVipBtn", "click", function() {
  if(!currentId) return;
  students[currentId].rank = "vip";
+ if (typeof window.updateStudentCardRankTheme === "function") window.updateStudentCardRankTheme("vip");
  saveAll(); updateStudentUI(currentId); showToast("تم الترقية لـ VIP ");
  });
 
  on("rankWarnBtn", "click", function() {
  if(!currentId) return;
  students[currentId].rank = "warn";
+ if (typeof window.updateStudentCardRankTheme === "function") window.updateStudentCardRankTheme("warn");
  saveAll(); updateStudentUI(currentId); showToast("تم إعطاء إنذار ", "warning");
  });
  
@@ -4796,6 +4849,15 @@ on("quickAttendBtn", "click", function() {
       });
   }
 
+  const payMethodSelect = document.getElementById("newPaymentMethod");
+  if (payMethodSelect) {
+      payMethodSelect.addEventListener("change", function() {
+          if (typeof window.updatePaymentMethodTheme === "function") {
+              window.updatePaymentMethodTheme(this.value);
+          }
+      });
+  }
+
   on("addPaymentBtn", "click", function() {
   if(!currentId) return;
   const payInp = $("newPaymentInput"); if (!payInp) return;
@@ -4838,6 +4900,7 @@ on("quickAttendBtn", "click", function() {
 
   saveAll();
   updateStudentUI(currentId);
+  if (payInp) payInp.value = "";
   
   if(req > 0 && pkgPaid >= req) fireConfetti();
   playSound("money");

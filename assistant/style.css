@@ -5969,3 +5969,147 @@ body.system-hard-locked #loginBox {
     display: none !important;
   }
 }
+
+/* ── STUDENT CARD DYNAMIC TINTS (VIP / WARN / NORMAL) ── */
+#studentDetailsCard, .studentCard {
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* 1. VIP (Subtle Warm Gold Shimmer) */
+#studentDetailsCard.rank-card-vip,
+.studentCard.rank-card-vip {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  box-shadow: 0 10px 30px -6px rgba(245, 158, 11, 0.08), 0 0 0 1px rgba(245, 158, 11, 0.15) !important;
+}
+:root #studentDetailsCard.rank-card-vip,
+:root .studentCard.rank-card-vip,
+[data-theme="dark"] #studentDetailsCard.rank-card-vip,
+[data-theme="dark"] .studentCard.rank-card-vip {
+  background: linear-gradient(160deg, #151f32 0%, #151f32 60%, rgba(65, 46, 16, 0.35) 100%) !important;
+}
+[data-theme="light"] #studentDetailsCard.rank-card-vip,
+[data-theme="light"] .studentCard.rank-card-vip {
+  background: linear-gradient(160deg, #ffffff 0%, #ffffff 60%, rgba(254, 243, 199, 0.45) 100%) !important;
+}
+
+/* 2. Warning (Subtle Crimson Warning Aura) */
+#studentDetailsCard.rank-card-warn,
+.studentCard.rank-card-warn {
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  box-shadow: 0 10px 30px -6px rgba(239, 68, 68, 0.08), 0 0 0 1px rgba(239, 68, 68, 0.15) !important;
+}
+:root #studentDetailsCard.rank-card-warn,
+:root .studentCard.rank-card-warn,
+[data-theme="dark"] #studentDetailsCard.rank-card-warn,
+[data-theme="dark"] .studentCard.rank-card-warn {
+  background: linear-gradient(160deg, #151f32 0%, #151f32 60%, rgba(65, 20, 24, 0.35) 100%) !important;
+}
+[data-theme="light"] #studentDetailsCard.rank-card-warn,
+[data-theme="light"] .studentCard.rank-card-warn {
+  background: linear-gradient(160deg, #ffffff 0%, #ffffff 60%, rgba(254, 226, 226, 0.42) 100%) !important;
+}
+
+/* 3. Normal */
+#studentDetailsCard.rank-card-normal,
+.studentCard.rank-card-normal {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* ── DYNAMIC PAYMENT METHOD ACCENTS (CASH / INSTAPAY / VODAFONE CASH) ── */
+.payRow, #newPaymentBox {
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+/* Cash (Emerald Green) */
+.payRow.pay-method-cash,
+#newPaymentBox.pay-method-cash {
+  background: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+}
+.payRow.pay-method-cash #newPaymentInput,
+#newPaymentBox.pay-method-cash #newPaymentInput {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.02) !important;
+}
+.payRow.pay-method-cash #newPaymentInput:focus,
+#newPaymentBox.pay-method-cash #newPaymentInput:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22) !important;
+}
+.payRow.pay-method-cash #newPaymentMethod,
+#newPaymentBox.pay-method-cash #newPaymentMethod {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+  font-weight: 700 !important;
+  background: rgba(16, 185, 129, 0.08) !important;
+}
+.payRow.pay-method-cash #addPaymentBtn,
+#newPaymentBox.pay-method-cash #addPaymentBtn {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+
+/* InstaPay (Mauve / Violet) */
+.payRow.pay-method-instapay,
+#newPaymentBox.pay-method-instapay {
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+.payRow.pay-method-instapay #newPaymentInput,
+#newPaymentBox.pay-method-instapay #newPaymentInput {
+  border-color: #8b5cf6 !important;
+  background: rgba(139, 92, 246, 0.02) !important;
+}
+.payRow.pay-method-instapay #newPaymentInput:focus,
+#newPaymentBox.pay-method-instapay #newPaymentInput:focus {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25) !important;
+}
+.payRow.pay-method-instapay #newPaymentMethod,
+#newPaymentBox.pay-method-instapay #newPaymentMethod {
+  border-color: #8b5cf6 !important;
+  color: #8b5cf6 !important;
+  font-weight: 700 !important;
+  background: rgba(139, 92, 246, 0.08) !important;
+}
+.payRow.pay-method-instapay #addPaymentBtn,
+#newPaymentBox.pay-method-instapay #addPaymentBtn {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35) !important;
+}
+
+/* Vodafone Cash / Wallet (Vodafone Crimson Red) */
+.payRow.pay-method-wallet,
+#newPaymentBox.pay-method-wallet {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.payRow.pay-method-wallet #newPaymentInput,
+#newPaymentBox.pay-method-wallet #newPaymentInput {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.02) !important;
+}
+.payRow.pay-method-wallet #newPaymentInput:focus,
+#newPaymentBox.pay-method-wallet #newPaymentInput:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+}
+.payRow.pay-method-wallet #newPaymentMethod,
+#newPaymentBox.pay-method-wallet #newPaymentMethod {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  font-weight: 700 !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+.payRow.pay-method-wallet #addPaymentBtn,
+#newPaymentBox.pay-method-wallet #addPaymentBtn {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35) !important;
+}
+
