@@ -1446,18 +1446,43 @@ async function loadAllAdminData() {
       });
     }
 
-    // Packages: Supabase packages table is the single source of truth
+    // Packages: Load and merge from settings.config.group_fees and packages table
     packages = {};
     groupFees = {};
+
+    // 1. Base from settings.config.group_fees (contains subject, expiryType, dates, sessions)
+    Object.keys(cfgGroupFees).forEach(pkgName => {
+      const extra = cfgGroupFees[pkgName] || {};
+      packages[pkgName] = {
+        name: pkgName,
+        subject: extra.subject || pkgName || '',
+        price: Number(extra.price) || 0,
+        installmentPrice: Number(extra.installmentPrice) || Number(extra.price) || 0,
+        hasInstallments: !!extra.hasInstallments,
+        expiryType: extra.expiryType || 'time',
+        startDate: extra.startDate || '',
+        endDate: extra.endDate || '',
+        sessionLimit: Number(extra.sessionLimit) || 8
+      };
+      groupFees[pkgName] = Number(extra.price) || 0;
+    });
+
+    // 2. Overlay from packages table (authoritative for price, subject, installments)
     if (pkgRes.data && Array.isArray(pkgRes.data)) {
       pkgRes.data.forEach(p => {
+        const existing = packages[p.name] || {};
         packages[p.name] = {
           name: p.name,
-          price: Number(p.price) || 0,
-          installmentPrice: Number(p.installment_price) || Number(p.price) || 0,
-          hasInstallments: !!p.has_installments
+          subject: p.subject || existing.subject || p.name || '',
+          price: Number(p.price) || existing.price || 0,
+          installmentPrice: Number(p.installment_price) || existing.installmentPrice || Number(p.price) || 0,
+          hasInstallments: !!p.has_installments,
+          expiryType: existing.expiryType || 'time',
+          startDate: existing.startDate || '',
+          endDate: existing.endDate || '',
+          sessionLimit: existing.sessionLimit || 8
         };
-        groupFees[p.name] = Number(p.price) || 0;
+        groupFees[p.name] = Number(p.price) || existing.price || 0;
       });
     }
 
@@ -2800,8 +2825,47 @@ window.rejectDecision = async function(reqId, studentId) {
 };
 
 // ========================================================
-// 8. PACKAGES & EXPENSES
+// 8. PACKAGES & EXPENSES (ENHANCED WITH ANALYTICS & WIDE MODAL)
 // ========================================================
+
+function formatPackageDuration(startDate, endDate, isAr) {
+  if (!startDate || !endDate) return null;
+  const d1 = new Date(startDate);
+  const d2 = new Date(endDate);
+  const diffTime = d2 - d1;
+  if (isNaN(diffTime) || diffTime < 0) return null;
+  const days = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  const months = Math.floor(days / 30);
+  const remDays = days % 30;
+
+  if (isAr) {
+    let breakdown = [];
+    if (months > 0) breakdown.push(`${months} ${months === 1 ? 'شهر' : (months === 2 ? 'شهران' : (months <= 10 ? 'أشهر' : 'شهراً'))}`);
+    if (remDays > 0) breakdown.push(`${remDays} ${remDays === 1 ? 'يوم' : (remDays === 2 ? 'يومان' : (remDays <= 10 ? 'أيام' : 'يوماً'))}`);
+    const summary = breakdown.length > 0 ? breakdown.join(' و ') : `${days} يوم`;
+    return {
+      days,
+      text: `${days} يوماً (${summary})`,
+      short: `${days} يوم`
+    };
+  } else {
+    let breakdown = [];
+    if (months > 0) breakdown.push(`${months} month${months > 1 ? 's' : ''}`);
+    if (remDays > 0) breakdown.push(`${remDays} day${remDays > 1 ? 's' : ''}`);
+    const summary = breakdown.length > 0 ? breakdown.join(' and ') : `${days} days`;
+    return {
+      days,
+      text: `${days} days (${summary})`,
+      short: `${days} d`
+    };
+  }
+}
+window.formatPackageDuration = formatPackageDuration;
+
+window.getPkgDetails = function(name) {
+  return packages[name] || {};
+};
+
 window.renderAdminPackages = function() {
   const container = document.getElementById("adminPackagesListContainer");
   if (!container) return;
@@ -2814,98 +2878,230 @@ window.renderAdminPackages = function() {
     return;
   }
 
-  let html = `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px;">`;
+  let html = "";
   keys.forEach(k => {
-    const p = packages[k];
-    const details = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(k) : (p || {});
-    const subj = details.subject || p.subject || '';
-    const price = details.price || p.price || 0;
+    const p = packages[k] || {};
+    const details = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(k) : p;
+    const subj = details.subject || p.subject || k;
+    const price = Number(details.price || p.price || 0);
 
-    let badgeInfo = "";
+    // Enrolled students
+    const enrolledStudents = Object.values(students || {}).filter(st => {
+      if (!st) return false;
+      if (Array.isArray(st.packages) && st.packages.includes(k)) return true;
+      if ((!st.packages || st.packages.length === 0) && (st.className === k || ("باقة " + st.className) === k)) return true;
+      return false;
+    });
+    const count = enrolledStudents.length;
+
+    // Financial analytics calculation
+    const expectedRevenue = count * price;
+    let collectedRevenue = 0;
+
+    enrolledStudents.forEach(st => {
+      let totalReq = 0;
+      const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : (st.className ? [st.className] : []);
+      stPkgs.forEach(pkgName => {
+        totalReq += (packages[pkgName] ? Number(packages[pkgName].price) : (Number(groupFees[pkgName]) || 0));
+      });
+      if (totalReq === 0) totalReq = price;
+
+      const studentPaid = Number(st.paid) || 0;
+      const pkgShare = totalReq > 0 ? Math.min(price, Math.round((price / totalReq) * studentPaid)) : Math.min(price, studentPaid);
+      collectedRevenue += pkgShare;
+    });
+
+    const remainingRevenue = Math.max(0, expectedRevenue - collectedRevenue);
+    const collectedPercent = expectedRevenue > 0 ? Math.min(100, Math.round((collectedRevenue / expectedRevenue) * 100)) : 0;
+
+    // Duration & Validity Badges
+    let validityBadgeHtml = "";
     if (details.expiryType === 'time' && details.startDate && details.endDate) {
-      badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.8em;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} ${isAr ? "إلي" : "to"} ${details.endDate}</span>`;
+      const durObj = formatPackageDuration(details.startDate, details.endDate, isAr);
+      const durShort = durObj ? durObj.short : '';
+      validityBadgeHtml = `
+        <span class="admin-pkg-validity-badge" title="${isAr ? 'المدة الزمنية للباقة' : 'Package Duration'}">
+          <i class="fa-regular fa-calendar-days"></i> ${details.startDate} ${isAr ? "إلى" : "to"} ${details.endDate}
+        </span>
+        ${durShort ? `<span class="admin-pkg-duration-pill"><i class="fa-solid fa-clock"></i> ${durShort}</span>` : ''}
+      `;
     } else if (details.expiryType === 'sessions' && details.sessionLimit > 0) {
-      badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:0.8em;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} ${isAr ? "حصص" : "Sessions"}</span>`;
+      validityBadgeHtml = `
+        <span class="admin-pkg-validity-badge" style="color:#ec4899;">
+          <i class="fa-solid fa-ticket"></i> ${details.sessionLimit} ${isAr ? "حصص مسموحة" : "Allowed Sessions"}
+        </span>
+      `;
+    } else {
+      validityBadgeHtml = `
+        <span class="admin-pkg-validity-badge">
+          <i class="fa-solid fa-infinity"></i> ${isAr ? "مفتوحة بدون انتهاء" : "Unlimited Validity"}
+        </span>
+      `;
     }
 
-    const subjBadge = subj ? `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;"><i class="fa-solid fa-book"></i> ${subj}</span>` : '';
+    const subjBadge = subj ? `<span class="admin-pkg-subj-badge"><i class="fa-solid fa-book-bookmark"></i> ${subj}</span>` : '';
 
     html += `
-      <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-          <div>
-            <h4 style="font-size:1.1em; font-weight:800; color:var(--text-primary); margin:0 0 6px 0;">${k}</h4>
-            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+      <div class="admin-pkg-card">
+        <div class="admin-pkg-card-top">
+          <div style="flex:1; min-width:0;">
+            <div class="admin-pkg-title-wrap">
+              <h4 class="admin-pkg-name">${k}</h4>
               ${subjBadge}
-              ${badgeInfo}
+            </div>
+            <div class="admin-pkg-validity-wrap">
+              ${validityBadgeHtml}
             </div>
           </div>
-          <div style="font-size:1.1em; font-weight:800; color:var(--success); background:var(--bg-inset); padding:4px 10px; border-radius:8px; border:1px solid var(--border);">
-            ${price}${currencySuffix}
+          <div class="admin-pkg-price-pill">
+            <span class="admin-pkg-price-num">${price}</span>
+            <span class="admin-pkg-price-curr">${currencySuffix}</span>
           </div>
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">
-          <button class="btn secondary smallBtn" onclick="window.openEditPackageModal('${encodeURIComponent(k)}')">
+
+        <div class="admin-pkg-metrics-grid">
+          <div class="admin-pkg-metric-cell metric-subscribers">
+            <div class="metric-icon"><i class="fa-solid fa-user-graduate"></i></div>
+            <div class="metric-content">
+              <span class="metric-lbl">${isAr ? "المشتركين" : "Students"}</span>
+              <span class="metric-val">${count} <small>${isAr ? "طالب" : "st"}</small></span>
+            </div>
+          </div>
+
+          <div class="admin-pkg-metric-cell metric-collected">
+            <div class="metric-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+            <div class="metric-content">
+              <span class="metric-lbl">${isAr ? "المحصل" : "Collected"}</span>
+              <span class="metric-val">${collectedRevenue} <small>${currencySuffix}</small></span>
+            </div>
+          </div>
+
+          <div class="admin-pkg-metric-cell metric-remaining">
+            <div class="metric-icon"><i class="fa-solid fa-receipt"></i></div>
+            <div class="metric-content">
+              <span class="metric-lbl">${isAr ? "المتبقي" : "Remaining"}</span>
+              <span class="metric-val">${remainingRevenue} <small>${currencySuffix}</small></span>
+            </div>
+          </div>
+
+          <div class="admin-pkg-metric-cell metric-expected">
+            <div class="metric-icon"><i class="fa-solid fa-calculator"></i></div>
+            <div class="metric-content">
+              <span class="metric-lbl">${isAr ? "الإجمالي المتوقع" : "Expected Total"}</span>
+              <span class="metric-val">${expectedRevenue} <small>${currencySuffix}</small></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-pkg-progress-wrap">
+          <div class="admin-pkg-progress-header">
+            <span>${isAr ? "نسبة التحصيل" : "Collection Rate"}</span>
+            <b>${collectedPercent}% (${collectedRevenue} ${currencySuffix} ${isAr ? "من" : "of"} ${expectedRevenue} ${currencySuffix})</b>
+          </div>
+          <div class="admin-pkg-progress-bar">
+            <div class="admin-pkg-progress-fill" style="width:${collectedPercent}%;"></div>
+          </div>
+        </div>
+
+        <div class="admin-pkg-actions">
+          <button class="btn secondary smallBtn btn-pkg-edit" onclick="window.openEditPackageModal('${encodeURIComponent(k)}')">
             <i class="fa-solid fa-pen-to-square"></i> ${isAr ? "تعديل كامل" : "Full Edit"}
           </button>
-          <button class="btn danger smallBtn iconOnly" onclick="window.adminDeletePackage('${encodeURIComponent(k)}')" title="${isAr ? "حذف الباقة" : "Delete Package"}">
+          <button class="btn danger smallBtn iconOnly btn-pkg-delete" onclick="window.adminDeletePackage('${encodeURIComponent(k)}')" title="${isAr ? "حذف الباقة" : "Delete Package"}">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         </div>
       </div>
     `;
   });
-  html += `</div>`;
+
   container.innerHTML = html;
 };
-
 
 window.openAddPackageModal = async function() {
   const isAr = (currentLang === "ar");
   const { value: formValues } = await Swal.fire({
     title: isAr ? 'إضافة باقة جديدة' : 'Add New Package',
+    customClass: { popup: 'swal-wide-package-modal' },
     html: `
-      <div style="display:flex; flex-direction:column; gap:10px; text-align:${isAr ? 'right' : 'left'};">
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "اسم الباقة:" : "Package Name:"}</label>
-        <input id="swalPkgName" class="swal2-input" style="margin:0; width:100%;" placeholder="${isAr ? "مثال: باقة سبتمبر" : "e.g. September Package"}">
+      <div style="display:flex; flex-direction:column; gap:14px; text-align:${isAr ? 'right' : 'left'};">
+        <!-- 3-Column Top Row -->
+        <div class="pkg-edit-grid-3">
+          <div class="pkg-field-group">
+            <label class="pkg-field-label">${isAr ? "اسم الباقة:" : "Package Name:"}</label>
+            <input id="swalPkgName" class="pkg-field-input" placeholder="${isAr ? "مثال: باقة سبتمبر" : "e.g. September Package"}">
+          </div>
+          
+          <div class="pkg-field-group">
+            <label class="pkg-field-label">${isAr ? "المادة الدراسية:" : "Subject:"}</label>
+            <input id="swalPkgSubject" class="pkg-field-input" placeholder="${isAr ? "مثال: علوم" : "e.g. Science"}">
+          </div>
+          
+          <div class="pkg-field-group">
+            <label class="pkg-field-label">${isAr ? "السعر (ج.م):" : "Price (EGP):"}</label>
+            <input id="swalPkgPrice" type="number" class="pkg-field-input" placeholder="0">
+          </div>
+        </div>
         
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "المادة الدراسية:" : "Subject:"}</label>
-        <input id="swalPkgSubject" class="swal2-input" style="margin:0; width:100%;" placeholder="${isAr ? "مثال: فيزياء" : "e.g. Physics"}">
+        <!-- Validity System Selector -->
+        <div class="pkg-field-group">
+          <label class="pkg-field-label">${isAr ? "نظام الصلاحية وتنبيهات الانتهاء:" : "Validity System & Expiry Alerts:"}</label>
+          <select id="swalPkgExpiryType" class="pkg-field-input" onchange="
+            const isT = (this.value === 'time');
+            document.getElementById('swalTimeBox').style.display = isT ? 'block' : 'none';
+            document.getElementById('swalSessBox').style.display = (this.value === 'sessions') ? 'block' : 'none';
+          ">
+            <option value="time">${isAr ? "بالمدة الزمنية (من تاريخ إلى تاريخ)" : "By Duration (From Date to Date)"}</option>
+            <option value="sessions">${isAr ? "بعدد الحصص (مثال: 8 حصص)" : "By Session Count (e.g. 8 Sessions)"}</option>
+          </select>
+        </div>
         
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "السعر (ج.م):" : "Price (EGP):"}</label>
-        <input id="swalPkgPrice" type="number" class="swal2-input" style="margin:0; width:100%;" placeholder="0">
-        
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "نظام الصلاحية:" : "Validity System:"}</label>
-        <select id="swalPkgExpiryType" class="swal2-input" style="margin:0; width:100%;" onchange="
-          document.getElementById('swalTimeBox').style.display = this.value==='time'?'block':'none';
-          document.getElementById('swalSessBox').style.display = this.value==='sessions'?'block':'none';
-        ">
-          <option value="time">${isAr ? "بالمدة الزمنية (من تاريخ إلى تاريخ)" : "By Duration (From Date to Date)"}</option>
-          <option value="sessions">${isAr ? "بعدد الحصص (مثال: 8 حصص)" : "By Session Count (e.g. 8 Sessions)"}</option>
-        </select>
-        
-        <div id="swalTimeBox" style="display:block; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px;">
-          <div style="display:flex; gap:8px;">
-            <div style="flex:1;">
-              <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "من تاريخ:" : "From Date:"}</label>
-              <input type="date" id="swalPkgStartDate" class="swal2-input" style="margin:0; width:100%;">
+        <!-- Duration Box -->
+        <div id="swalTimeBox" style="display:block; background:var(--bg-inset); padding:12px; border-radius:12px; border:1px solid var(--border);">
+          <div style="font-size:0.85rem; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">
+            ${isAr ? "المدة الزمنية للباقة:" : "Package Duration:"}
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="pkg-field-group">
+              <label class="pkg-field-label" style="font-size:0.78rem;">${isAr ? "تاريخ البداية:" : "Start Date:"}</label>
+              <input type="date" id="swalPkgStartDate" class="pkg-field-input">
             </div>
-            <div style="flex:1;">
-              <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "إلى تاريخ:" : "To Date:"}</label>
-              <input type="date" id="swalPkgEndDate" class="swal2-input" style="margin:0; width:100%;">
+            <div class="pkg-field-group">
+              <label class="pkg-field-label" style="font-size:0.78rem;">${isAr ? "تاريخ النهاية:" : "End Date:"}</label>
+              <input type="date" id="swalPkgEndDate" class="pkg-field-input">
             </div>
+          </div>
+          <div class="pkg-duration-info-box" id="swalAddDurationBox">
+            <i class="fa-solid fa-clock"></i>
+            <span id="swalAddDurationText">${isAr ? "يرجى تحديد تاريخ البداية والنهاية" : "Please select start and end dates"}</span>
           </div>
         </div>
 
-        <div id="swalSessBox" style="display:none; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px;">
-          <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "عدد الحصص المسموحة:" : "Allowed Sessions Count:"}</label>
-          <input type="number" id="swalPkgSessions" class="swal2-input" style="margin:0; width:100%;" value="8">
+        <!-- Sessions Box -->
+        <div id="swalSessBox" style="display:none; background:var(--bg-inset); padding:12px; border-radius:12px; border:1px solid var(--border);">
+          <div class="pkg-field-group">
+            <label class="pkg-field-label">${isAr ? "عدد الحصص المسموحة للمشترك:" : "Allowed Sessions for Subscriber:"}</label>
+            <input type="number" id="swalPkgSessions" class="pkg-field-input" value="8">
+          </div>
         </div>
       </div>
     `,
+    didOpen: () => {
+      const sInp = document.getElementById('swalPkgStartDate');
+      const eInp = document.getElementById('swalPkgEndDate');
+      const dText = document.getElementById('swalAddDurationText');
+      const updateDurationLive = () => {
+        if (!sInp || !eInp || !dText) return;
+        const res = formatPackageDuration(sInp.value, eInp.value, isAr);
+        dText.textContent = res ? res.text : (isAr ? "يرجى تحديد تاريخ البداية والنهاية" : "Please select start and end dates");
+      };
+      if (sInp) sInp.addEventListener('input', updateDurationLive);
+      if (eInp) eInp.addEventListener('input', updateDurationLive);
+    },
     focusConfirm: false,
     showCancelButton: true,
     confirmButtonText: isAr ? 'حفظ الباقة' : 'Save Package',
+    confirmButtonColor: '#2563eb',
     cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
     preConfirm: () => {
       const name = document.getElementById('swalPkgName').value.trim();
@@ -2918,6 +3114,14 @@ window.openAddPackageModal = async function() {
 
       if (!name) {
         Swal.showValidationMessage(isAr ? 'يرجى إدخال اسم الباقة' : 'Please enter package name');
+        return false;
+      }
+      if (!subject) {
+        Swal.showValidationMessage(isAr ? 'يرجى إدخال المادة الدراسية' : 'Please enter subject');
+        return false;
+      }
+      if (expiryType === 'time' && (!startDate || !endDate)) {
+        Swal.showValidationMessage(isAr ? 'يرجى تحديد تاريخ البداية وتاريخ النهاية' : 'Please select start and end dates');
         return false;
       }
       return { name, subject, price, expiryType, startDate, endDate, sessions };
@@ -2954,10 +3158,11 @@ window.openAddPackageModal = async function() {
       };
       await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
 
-      packages[name] = { name, subject, price, expiryType, startDate, endDate, sessionLimit: sessions };
+      packages[name] = { name, subject, price, expiryType, startDate, endDate, sessionLimit: sessions, hasInstallments: false, installmentPrice: 0 };
       groupFees[name] = price;
       showToast(isAr ? "تمت إضافة الباقة بنجاح" : "Package added successfully", "success");
       window.renderAdminPackages();
+      if (typeof window.renderTermTable === 'function') window.renderTermTable();
     } catch(e) {
       console.error(e);
       showToast(isAr ? "فشل إضافة الباقة" : "Failed to add package", "err");
@@ -2971,57 +3176,98 @@ window.openEditPackageModal = async function(encodedName) {
   const details = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(name) : (p || {});
   const isAr = (currentLang === "ar");
 
-  const curSubject = details.subject || p.subject || '';
+  const curSubject = details.subject || p.subject || name || '';
   const curPrice = details.price || p.price || 0;
   const curExpiry = details.expiryType || 'time';
   const curStart = details.startDate || '';
   const curEnd = details.endDate || '';
   const curSessions = details.sessionLimit || 8;
 
+  const initialDurObj = formatPackageDuration(curStart, curEnd, isAr);
+  const initialDurText = initialDurObj ? initialDurObj.text : (isAr ? "يرجى تحديد تاريخ البداية والنهاية" : "Please select start and end dates");
+
   const { value: formValues } = await Swal.fire({
     title: (isAr ? 'تعديل الباقة: ' : 'Edit Package: ') + name,
+    customClass: { popup: 'swal-wide-package-modal' },
     html: `
-      <div style="display:flex; flex-direction:column; gap:10px; text-align:${isAr ? 'right' : 'left'};">
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "اسم الباقة (تغيير الاسم يحدّث بيانات الطلاب المسجلين):" : "Package Name (updates enrolled students):"}</label>
-        <input id="swalEditPkgName" class="swal2-input" style="margin:0; width:100%;" value="${name}">
+      <div style="display:flex; flex-direction:column; gap:14px; text-align:${isAr ? 'right' : 'left'};">
+        <!-- 3-Column Top Row -->
+        <div class="pkg-edit-grid-3">
+          <div class="pkg-field-group">
+            <label class="pkg-field-label">${isAr ? "اسم الباقة (تغيير الاسم يحدّث الطلاب):" : "Package Name:"}</label>
+            <input id="swalEditPkgName" class="pkg-field-input" value="${name}">
+          </div>
+          
+          <div class="pkg-field-group">
+            <label class="pkg-field-label">${isAr ? "المادة الدراسية:" : "Subject:"}</label>
+            <input id="swalEditPkgSubject" class="pkg-field-input" value="${curSubject}">
+          </div>
+          
+          <div class="pkg-field-group">
+            <label class="pkg-field-label">${isAr ? "السعر (ج.م):" : "Price (EGP):"}</label>
+            <input id="swalEditPkgPrice" type="number" class="pkg-field-input" value="${curPrice}">
+          </div>
+        </div>
         
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "المادة الدراسية:" : "Subject:"}</label>
-        <input id="swalEditPkgSubject" class="swal2-input" style="margin:0; width:100%;" value="${curSubject}">
+        <!-- Validity System Selector -->
+        <div class="pkg-field-group">
+          <label class="pkg-field-label">${isAr ? "نظام الصلاحية وتنبيهات الانتهاء:" : "Validity System & Expiry Alerts:"}</label>
+          <select id="swalEditPkgExpiryType" class="pkg-field-input" onchange="
+            const isT = (this.value === 'time');
+            document.getElementById('swalEditTimeBox').style.display = isT ? 'block' : 'none';
+            document.getElementById('swalEditSessBox').style.display = (this.value === 'sessions') ? 'block' : 'none';
+          ">
+            <option value="time" ${curExpiry==='time'?'selected':''}>${isAr ? "بالمدة الزمنية (من تاريخ إلى تاريخ)" : "By Duration (From Date to Date)"}</option>
+            <option value="sessions" ${curExpiry==='sessions'?'selected':''}>${isAr ? "بعدد الحصص (مثال: 8 حصص)" : "By Session Count (e.g. 8 Sessions)"}</option>
+          </select>
+        </div>
         
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "السعر (ج.م):" : "Price (EGP):"}</label>
-        <input id="swalEditPkgPrice" type="number" class="swal2-input" style="margin:0; width:100%;" value="${curPrice}">
-        
-        <label style="font-size:0.85em; font-weight:bold; color:var(--text-secondary);">${isAr ? "نظام الصلاحية:" : "Validity System:"}</label>
-        <select id="swalEditPkgExpiryType" class="swal2-input" style="margin:0; width:100%;" onchange="
-          document.getElementById('swalEditTimeBox').style.display = this.value==='time'?'block':'none';
-          document.getElementById('swalEditSessBox').style.display = this.value==='sessions'?'block':'none';
-        ">
-          <option value="time" ${curExpiry==='time'?'selected':''}>${isAr ? "بالمدة الزمنية (من تاريخ إلى تاريخ)" : "By Duration (From Date to Date)"}</option>
-          <option value="sessions" ${curExpiry==='sessions'?'selected':''}>${isAr ? "بعدد الحصص (مثال: 8 حصص)" : "By Session Count (e.g. 8 Sessions)"}</option>
-        </select>
-        
-        <div id="swalEditTimeBox" style="display:${curExpiry==='time'?'block':'none'}; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px;">
-          <div style="display:flex; gap:8px;">
-            <div style="flex:1;">
-              <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "من تاريخ:" : "From Date:"}</label>
-              <input type="date" id="swalEditPkgStartDate" class="swal2-input" style="margin:0; width:100%;" value="${curStart}">
+        <!-- Duration Box -->
+        <div id="swalEditTimeBox" style="display:${curExpiry==='time'?'block':'none'}; background:var(--bg-inset); padding:12px; border-radius:12px; border:1px solid var(--border);">
+          <div style="font-size:0.85rem; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">
+            ${isAr ? "المدة الزمنية للباقة:" : "Package Duration:"}
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="pkg-field-group">
+              <label class="pkg-field-label" style="font-size:0.78rem;">${isAr ? "تاريخ البداية:" : "Start Date:"}</label>
+              <input type="date" id="swalEditPkgStartDate" class="pkg-field-input" value="${curStart}">
             </div>
-            <div style="flex:1;">
-              <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "إلى تاريخ:" : "To Date:"}</label>
-              <input type="date" id="swalEditPkgEndDate" class="swal2-input" style="margin:0; width:100%;" value="${curEnd}">
+            <div class="pkg-field-group">
+              <label class="pkg-field-label" style="font-size:0.78rem;">${isAr ? "تاريخ النهاية:" : "End Date:"}</label>
+              <input type="date" id="swalEditPkgEndDate" class="pkg-field-input" value="${curEnd}">
             </div>
+          </div>
+          <div class="pkg-duration-info-box" id="swalEditDurationBox">
+            <i class="fa-solid fa-clock"></i>
+            <span id="swalEditDurationText">${initialDurText}</span>
           </div>
         </div>
 
-        <div id="swalEditSessBox" style="display:${curExpiry==='sessions'?'block':'none'}; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px;">
-          <label style="font-size:0.75em; color:var(--text-secondary);">${isAr ? "عدد الحصص المسموحة:" : "Allowed Sessions Count:"}</label>
-          <input type="number" id="swalEditPkgSessions" class="swal2-input" style="margin:0; width:100%;" value="${curSessions}">
+        <!-- Sessions Box -->
+        <div id="swalEditSessBox" style="display:${curExpiry==='sessions'?'block':'none'}; background:var(--bg-inset); padding:12px; border-radius:12px; border:1px solid var(--border);">
+          <div class="pkg-field-group">
+            <label class="pkg-field-label">${isAr ? "عدد الحصص المسموحة للمشترك:" : "Allowed Sessions for Subscriber:"}</label>
+            <input type="number" id="swalEditPkgSessions" class="pkg-field-input" value="${curSessions}">
+          </div>
         </div>
       </div>
     `,
+    didOpen: () => {
+      const sInp = document.getElementById('swalEditPkgStartDate');
+      const eInp = document.getElementById('swalEditPkgEndDate');
+      const dText = document.getElementById('swalEditDurationText');
+      const updateDurationLive = () => {
+        if (!sInp || !eInp || !dText) return;
+        const res = formatPackageDuration(sInp.value, eInp.value, isAr);
+        dText.textContent = res ? res.text : (isAr ? "يرجى تحديد تاريخ البداية والنهاية" : "Please select start and end dates");
+      };
+      if (sInp) sInp.addEventListener('input', updateDurationLive);
+      if (eInp) eInp.addEventListener('input', updateDurationLive);
+    },
     focusConfirm: false,
     showCancelButton: true,
     confirmButtonText: isAr ? 'حفظ التعديلات' : 'Save Changes',
+    confirmButtonColor: '#2563eb',
     cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
     preConfirm: () => {
       const newName = document.getElementById('swalEditPkgName').value.trim();
@@ -3036,6 +3282,14 @@ window.openEditPackageModal = async function(encodedName) {
         Swal.showValidationMessage(isAr ? 'يرجى إدخال اسم الباقة' : 'Please enter package name');
         return false;
       }
+      if (!newSubject) {
+        Swal.showValidationMessage(isAr ? 'يرجى إدخال المادة الدراسية' : 'Please enter subject');
+        return false;
+      }
+      if (newExpiryType === 'time' && (!newStartDate || !newEndDate)) {
+        Swal.showValidationMessage(isAr ? 'يرجى تحديد تاريخ البداية وتاريخ النهاية' : 'Please select start and end dates');
+        return false;
+      }
       return { newName, newSubject, newPrice, newExpiryType, newStartDate, newEndDate, newSessions };
     }
   });
@@ -3045,18 +3299,28 @@ window.openEditPackageModal = async function(encodedName) {
     try {
       if (!supabase) return;
 
-      // 1. If renamed, delete old package row from Supabase packages table
+      // 1. If renamed, handle clean rename across packages, students, and settings
       if (newName !== name) {
         await supabase.from('packages').delete().eq('name', name);
         delete packages[name];
         delete groupFees[name];
 
-        // Update enrolled students
+        // Update enrolled students locally and in Supabase
+        const studentsToUpdate = [];
         Object.values(students || {}).forEach(st => {
           if (st && Array.isArray(st.packages) && st.packages.includes(name)) {
             st.packages = st.packages.map(pName => pName === name ? newName : pName);
+            studentsToUpdate.push(st);
           }
         });
+
+        for (const st of studentsToUpdate) {
+          try {
+            await supabase.from('students').update({ packages: st.packages }).eq('id', st.id);
+          } catch(err) {
+            console.warn('Failed to update student packages in cloud:', err);
+          }
+        }
       }
 
       // 2. Upsert new package details in packages table
@@ -3088,10 +3352,20 @@ window.openEditPackageModal = async function(encodedName) {
       await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
 
       // 4. Update local state
-      packages[newName] = { name: newName, subject: newSubject, price: newPrice, expiryType: newExpiryType, startDate: newStartDate, endDate: newEndDate, sessionLimit: newSessions };
+      packages[newName] = {
+        name: newName,
+        subject: newSubject,
+        price: newPrice,
+        expiryType: newExpiryType,
+        startDate: newStartDate,
+        endDate: newEndDate,
+        sessionLimit: newSessions,
+        hasInstallments: false,
+        installmentPrice: 0
+      };
       groupFees[newName] = newPrice;
 
-      showToast(isAr ? "تم تحديث الباقة بنجاح" : "Package updated successfully", "success");
+      showToast(isAr ? "تم تحديث الباقة بنجاح وحفظها سحابياً" : "Package updated and synced successfully", "success");
       window.renderAdminPackages();
       if (typeof window.renderTermTable === 'function') window.renderTermTable();
     } catch(e) {

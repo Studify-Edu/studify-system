@@ -2063,6 +2063,23 @@ async function loadAll() {
             };
           });
 
+          Object.keys(cfgGroupFees).forEach(pkgName => {
+            if (!loadedGroupFees[pkgName]) {
+              const extra = cfgGroupFees[pkgName] || {};
+              loadedGroupFees[pkgName] = {
+                name: pkgName,
+                subject: extra.subject || pkgName || '',
+                price: Number(extra.price) || 0,
+                hasInstallments: !!extra.hasInstallments,
+                installmentPrice: Number(extra.installmentPrice) || 0,
+                expiryType: extra.expiryType || 'none',
+                startDate: extra.startDate || '',
+                endDate: extra.endDate || '',
+                sessionLimit: extra.sessionLimit || 0
+              };
+            }
+          });
+
           groupFees = loadedGroupFees;
           await secureSave(K_GROUP_FEES, groupFees);
         }
@@ -4881,6 +4898,40 @@ on("quickAttendBtn", "click", function() {
    container.innerHTML = h;
  };
 
+ function formatPackageDuration(startDate, endDate, isAr) {
+    if (!startDate || !endDate) return null;
+    const d1 = new Date(startDate);
+    const d2 = new Date(endDate);
+    const diffTime = d2 - d1;
+    if (isNaN(diffTime) || diffTime < 0) return null;
+    const days = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const months = Math.floor(days / 30);
+    const remDays = days % 30;
+
+    if (isAr) {
+      let breakdown = [];
+      if (months > 0) breakdown.push(`${months} ${months === 1 ? 'شهر' : (months === 2 ? 'شهران' : (months <= 10 ? 'أشهر' : 'شهراً'))}`);
+      if (remDays > 0) breakdown.push(`${remDays} ${remDays === 1 ? 'يوم' : (remDays === 2 ? 'يومان' : (remDays <= 10 ? 'أيام' : 'يوماً'))}`);
+      const summary = breakdown.length > 0 ? breakdown.join(' و ') : `${days} يوم`;
+      return {
+        days,
+        text: `المدة الزمنية للباقة: ${days} يوماً (${summary})`,
+        short: `${days} يوم`
+      };
+    } else {
+      let breakdown = [];
+      if (months > 0) breakdown.push(`${months} month${months > 1 ? 's' : ''}`);
+      if (remDays > 0) breakdown.push(`${remDays} day${remDays > 1 ? 's' : ''}`);
+      const summary = breakdown.length > 0 ? breakdown.join(' and ') : `${days} days`;
+      return {
+        days,
+        text: `Package Duration: ${days} days (${summary})`,
+        short: `${days} d`
+      };
+    }
+  }
+  window.formatPackageDuration = formatPackageDuration;
+
  window.renderGroupFeesModal = function() {
     const isAr = (currentLang === "ar");
     const currencySuffix = isAr ? " ج" : " EGP";
@@ -4970,6 +5021,9 @@ on("quickAttendBtn", "click", function() {
             <input type="date" id="newPkgEndDate" class="inp" style="width:100%;" value="${curEnd}">
           </div>
         </div>
+        <div id="pkgDurationDisplay" style="margin-top:10px; padding:8px 12px; background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.2); border-radius:8px; font-weight:700; color:var(--primary); font-size:0.88em; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-clock"></i> <span id="pkgDurationDisplayText"></span>
+        </div>
       </div>
 
       <div id="pkgSessionsOpts" style="display:${curExp==='sessions'?'block':'none'}; margin-bottom:12px; background:var(--bg-surface); padding:10px; border-radius:8px; border:1px solid var(--border);">
@@ -5005,7 +5059,9 @@ on("quickAttendBtn", "click", function() {
         
         let badgeInfo = "";
         if (details.expiryType === 'time' && details.startDate && details.endDate) {
-          badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.8em;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} ${toWord} ${details.endDate}</span>`;
+          const durObj = formatPackageDuration(details.startDate, details.endDate, isAr);
+          const durPill = durObj ? `<span class="badge" style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.25);"><i class="fa-solid fa-clock"></i> ${durObj.short}</span>` : '';
+          badgeInfo = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.8em;"><i class="fa-solid fa-calendar-days"></i> ${details.startDate} ${toWord} ${details.endDate}</span> ${durPill}`;
         } else if (details.expiryType === 'sessions' && details.sessionLimit > 0) {
           badgeInfo = `<span class="badge" style="background:#fce7f3; color:#9d174d; font-size:0.8em;"><i class="fa-solid fa-ticket"></i> ${details.sessionLimit} ${sessionsSuffix}</span>`;
         }
@@ -5055,6 +5111,19 @@ on("quickAttendBtn", "click", function() {
       $("newPkgExpiryType").onchange = handleExpiryTypeChange;
       handleExpiryTypeChange();
     }
+
+    const updateAsstDurationLive = () => {
+      const sInp = $("newPkgStartDate");
+      const eInp = $("newPkgEndDate");
+      const dBox = $("pkgDurationDisplayText");
+      if (!sInp || !eInp || !dBox) return;
+      const res = formatPackageDuration(sInp.value, eInp.value, isAr);
+      dBox.textContent = res ? res.text : (isAr ? "يرجى تحديد تاريخ البداية والنهاية لحساب المدة" : "Please select start and end dates");
+    };
+
+    if ($("newPkgStartDate")) $("newPkgStartDate").addEventListener('input', updateAsstDurationLive);
+    if ($("newPkgEndDate")) $("newPkgEndDate").addEventListener('input', updateAsstDurationLive);
+    updateAsstDurationLive();
 
     if ($("addNewPkgBtn")) {
      $("addNewPkgBtn").onclick = async function() {
