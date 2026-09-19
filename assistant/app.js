@@ -980,7 +980,7 @@ document.addEventListener('DOMContentLoaded', function() {
  "flt_all_classes": { ar: "كل المجموعات", en: "All Groups" },
  "flt_all_fin": { ar: "كل الحالات المالية", en: "All Finance" },
  "flt_paid": { ar: "خالص", en: "Paid" },
- "flt_partial": { ar: "جزء", en: "Partial" },
+ "flt_partial": { ar: "سدد جزء (متبقي)", en: "Partial Paid" },
  "flt_unpaid": { ar: "لم يدفع", en: "Unpaid" },
  "flt_all_att": { ar: "كل الحضور", en: "All Attendance" },
  "flt_att_only": { ar: "الحضور فقط", en: "Present Only" },
@@ -1245,9 +1245,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Students Table & Filters
   "btn_blank_form_short": { ar: "استمارة فارغة", en: "Blank Form" },
+  "btn_blank_form_new_students": { ar: "طباعة استمارة تقديم فارغة للطلاب الجدد", en: "Print Blank Form for New Students" },
   "flt_all": { ar: "الكل", en: "All" },
   "flt_debt": { ar: "عليهم متبقي", en: "With Debt" },
   "flt_paid_full": { ar: "مسدد بالكامل", en: "Fully Paid" },
+  "flt_unpaid_full": { ar: "لم يسدد إطلاقاً", en: "Zero Paid (Unpaid)" },
   "flt_present_today": { ar: "حضروا اليوم", en: "Attended Today" },
   "tbl_packages": { ar: "الباقات المشترك بها", en: "Subscribed Packages" },
 
@@ -3331,6 +3333,8 @@ const st = students[id];
  if (filterStatusEl) fStatus = filterStatusEl.value;
  if (filterAttendEl) fAttend = filterAttendEl.value;
  
+ if (typeof syncQuickFilterPills === "function") syncQuickFilterPills();
+ 
  if(filterClassEl) { 
   const isAr = (currentLang === "ar");
   const curVal = filterClassEl.value || "all";
@@ -3399,7 +3403,7 @@ const st = students[id];
      if(fStatus !== "all") {
         if(fStatus === "paid" && (remainAmt > 0 || totalReq === 0)) isValid = false;
         if(fStatus === "partial" && (remainAmt === 0 || totalPaid === 0 || totalReq === 0)) isValid = false;
-        if(fStatus === "unpaid" && totalPaid > 0) isValid = false;
+        if(fStatus === "unpaid" && (totalPaid > 0 || totalReq === 0)) isValid = false;
         if(fStatus === "debt" && (remainAmt === 0 || totalReq === 0)) isValid = false;
      }
  
@@ -3432,12 +3436,40 @@ const st = students[id];
  }
 
  
+  // Synchronize Quick Filter Pills with Dropdowns (Two-way sync)
+  function syncQuickFilterPills() {
+    const fStatusEl = $("filterStatus");
+    const fAttendEl = $("filterAttend");
+    const fStatus = fStatusEl ? fStatusEl.value : "all";
+    const fAttend = fAttendEl ? fAttendEl.value : "all";
+
+    document.querySelectorAll(".quick-flt-btn").forEach(b => b.classList.remove("active"));
+
+    if (fAttend === "present" && fStatus === "all") {
+      const p = document.querySelector('.quick-flt-btn[data-flt="present"]');
+      if (p) p.classList.add("active");
+    } else if (fAttend === "all") {
+      if (fStatus === "debt") {
+        const p = document.querySelector('.quick-flt-btn[data-flt="debt"]');
+        if (p) p.classList.add("active");
+      } else if (fStatus === "paid") {
+        const p = document.querySelector('.quick-flt-btn[data-flt="paid"]');
+        if (p) p.classList.add("active");
+      } else if (fStatus === "unpaid") {
+        const p = document.querySelector('.quick-flt-btn[data-flt="unpaid"]');
+        if (p) p.classList.add("active");
+      } else if (fStatus === "all") {
+        const p = document.querySelector('.quick-flt-btn[data-flt="all"]');
+        if (p) p.classList.add("active");
+      }
+    }
+  }
+  window.syncQuickFilterPills = syncQuickFilterPills;
+
   // Setup Quick Filter Buttons
   function setupQuickFilterButtons() {
     document.querySelectorAll(".quick-flt-btn").forEach(btn => {
       btn.onclick = function() {
-        document.querySelectorAll(".quick-flt-btn").forEach(b => b.classList.remove("active"));
-        this.classList.add("active");
         const flt = this.getAttribute("data-flt");
         const fStatusEl = $("filterStatus");
         const fAttendEl = $("filterAttend");
@@ -3450,10 +3482,14 @@ const st = students[id];
         } else if (flt === "paid") {
           if (fStatusEl) fStatusEl.value = "paid";
           if (fAttendEl) fAttendEl.value = "all";
+        } else if (flt === "unpaid") {
+          if (fStatusEl) fStatusEl.value = "unpaid";
+          if (fAttendEl) fAttendEl.value = "all";
         } else if (flt === "present") {
           if (fStatusEl) fStatusEl.value = "all";
           if (fAttendEl) fAttendEl.value = "present";
         }
+        syncQuickFilterPills();
         renderList(false);
       };
     });

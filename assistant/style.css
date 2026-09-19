@@ -5254,3 +5254,122 @@ body.system-hard-locked #loginBox {
   margin-left: 0;
   margin-right: auto;
 }
+
+/* ======================================================== */
+/* PROMINENT BLANK FORM BUTTON & QUICK FILTER PILLS */
+/* ======================================================== */
+.btn-blank-form-highlight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #4f46e5 0%, #2563eb 50%, #06b6d4 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+
+.btn-blank-form-highlight:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #1d4ed8 50%, #0891b2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: #ffffff !important;
+}
+
+.btn-blank-form-highlight:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-blank-form-highlight i {
+  font-size: 1.05rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+  transition: transform 0.25s ease;
+}
+
+.btn-blank-form-highlight:hover i {
+  transform: scale(1.15) rotate(-6deg);
+}
+
+/* Quick Filter Pills */
+.quick-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.quick-flt-btn {
+  border-radius: 20px !important;
+  padding: 6px 14px !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  border: 1px solid var(--border) !important;
+  background: var(--bg-inset) !important;
+  color: var(--text-secondary) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-flt-btn:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+  transform: translateY(-1px);
+}
+
+.quick-flt-btn.active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.quick-flt-btn[data-flt="all"].active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);
+}
+
+.quick-flt-btn[data-flt="debt"].active {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);
+}
+
+.quick-flt-btn[data-flt="paid"].active {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+}
+
+.quick-flt-btn[data-flt="unpaid"].active {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
+}
+
+.quick-flt-btn[data-flt="present"].active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+}
+
+.quick-flt-btn[data-flt="debt"]:not(.active) i { color: #ef4444; }
+.quick-flt-btn[data-flt="paid"]:not(.active) i { color: #10b981; }
+.quick-flt-btn[data-flt="unpaid"]:not(.active) i { color: #f59e0b; }
+.quick-flt-btn[data-flt="present"]:not(.active) i { color: #3b82f6; }
+
