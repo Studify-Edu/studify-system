@@ -4633,8 +4633,13 @@ on("quickAttendBtn", "click", function() {
  const st = students[currentId]; if (!st) return;
 
  if ($("receiptCenterName")) $("receiptCenterName").textContent = evalData.centerName || "إدارة السنتر";
- if ($("receiptManagerName")) $("receiptManagerName").textContent = evalData.manager ? `إشراف أ/ ${evalData.manager}` : "المدير المسئول";
+ 
+ // Official collector name (Logged-in assistant or Manager)
+ const asstName = localStorage.getItem("ca_current_username") || (evalData.manager ? evalData.manager : "المدير المسئول");
+ if ($("receiptCollectorName")) $("receiptCollectorName").textContent = `المستلم المسؤول: أ/ ${asstName}`;
+ 
  if ($("receiptDate")) $("receiptDate").textContent = `التاريخ: ${nowDateStr()}`;
+ if ($("receiptAuthDate")) $("receiptAuthDate").textContent = `اعتماد رقمي موثق • ${nowDateStr()}`;
  
  if ($("receiptStudentName")) $("receiptStudentName").textContent = st.name || "طالب بدون اسم";
  if ($("receiptStudentID")) $("receiptStudentID").textContent = `#${st.id}`;
@@ -4642,15 +4647,22 @@ on("quickAttendBtn", "click", function() {
    const pkgsStr = (st.packages && st.packages.length > 0) ? st.packages.join(" + ") : (st.className || "عام");
    $("receiptStudentClass").textContent = pkgsStr;
  }
- if ($("receiptStudentPhone")) $("receiptStudentPhone").textContent = st.phone ? `0${st.phone}` : "غير مسجل";
+ 
+ // Fix phone double-zero bug
+ let cleanPhone = "غير مسجل";
+ if (st.phone) {
+   const pStr = String(st.phone).trim();
+   cleanPhone = pStr.startsWith("0") ? pStr : ("0" + pStr);
+ }
+ if ($("receiptStudentPhone")) $("receiptStudentPhone").textContent = cleanPhone;
 
  const recTbody = $("receiptPackagesTbody");
  if (recTbody) {
    let rRows = "";
    const enrolledPkgs = (st.packages && st.packages.length > 0) ? st.packages : [st.className || "عام"];
    enrolledPkgs.forEach(pName => {
-     const pDet = window.getPkgDetails(pName);
-     const reqPrice = toInt(pDet.price);
+     const pDet = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pName) : null;
+     const reqPrice = pDet && pDet.price ? toInt(pDet.price) : 0;
      let pPaid = 0;
      if (st.payments) {
        st.payments.forEach(pay => {
@@ -4658,13 +4670,21 @@ on("quickAttendBtn", "click", function() {
          if (matchedPkg === pName) pPaid += toInt(pay.amount);
        });
      }
-     const isFull = (reqPrice > 0 && pPaid >= reqPrice);
+     let pkgDisc = 0;
+     if (st.packageDiscounts && st.packageDiscounts[pName]) {
+       pkgDisc = toInt(st.packageDiscounts[pName]);
+     }
+     const netRequired = Math.max(0, reqPrice - pkgDisc);
+     const isFull = (netRequired > 0 && pPaid >= netRequired) || (reqPrice > 0 && pPaid >= reqPrice);
      const badgeHtml = isFull 
-       ? '<span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.85em; font-weight:bold;">مسددة بالكامل </span>'
-       : `<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.85em; font-weight:bold;">متبقي: ${Math.max(0, reqPrice - pPaid)} ج</span>`;
+       ? '<span class="badge" style="background:rgba(16,185,129,0.12); color:#10b981; font-size:0.85em; font-weight:800; padding:4px 10px; border-radius:6px;">مسددة بالكامل ✓</span>'
+       : `<span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; font-size:0.85em; font-weight:800; padding:4px 10px; border-radius:6px;">متبقي: ${Math.max(0, netRequired - pPaid)} ج</span>`;
      rRows += `
        <tr style="border-bottom: 1px solid var(--border);">
-         <td style="padding: 10px 8px; font-weight: bold; color: var(--text); font-size:1em;">${pName}</td>
+         <td style="padding: 10px 8px; font-weight: bold; color: var(--text); font-size:1em;">
+           ${pName}
+           ${pkgDisc > 0 ? `<div style="font-size:0.75em; color:var(--warning); font-weight:700;">(خصم معتمد: ${pkgDisc} ج)</div>` : ''}
+         </td>
          <td style="padding: 10px 8px; text-align: center;">${reqPrice} ج</td>
          <td style="padding: 10px 8px; text-align: center; color: var(--success); font-weight: bold;">${pPaid} ج</td>
          <td style="padding: 10px 8px; text-align: center;">${badgeHtml}</td>
@@ -4678,33 +4698,24 @@ on("quickAttendBtn", "click", function() {
  let methodsStr = "طرق الدفع: ";
  let mMap = {};
  if (st.payments && st.payments.length > 0) {
- for(let i=0; i<st.payments.length; i++) {
- let m = st.payments[i].method || "cash";
- mMap[m] = (mMap[m] || 0) + toInt(st.payments[i].amount);
- }
- let arr = [];
- if(mMap["cash"]) arr.push(`كاش (${mMap["cash"]} ج)`);
- if(mMap["instapay"]) arr.push(`إنستاباي (${mMap["instapay"]} ج)`);
- if(mMap["wallet"]) arr.push(`محافظ/فودافون كاش (${mMap["wallet"]} ج)`);
- methodsStr += arr.join(" + ");
+   for(let i=0; i<st.payments.length; i++) {
+     let m = st.payments[i].method || "cash";
+     mMap[m] = (mMap[m] || 0) + toInt(st.payments[i].amount);
+   }
+   let arr = [];
+   if(mMap["cash"]) arr.push(`كاش (${mMap["cash"]} ج)`);
+   if(mMap["instapay"]) arr.push(`إنستاباي (${mMap["instapay"]} ج)`);
+   if(mMap["wallet"]) arr.push(`محافظ/فودافون كاش (${mMap["wallet"]} ج)`);
+   methodsStr += arr.join(" + ");
  } else {
- methodsStr += "كاش";
+   methodsStr += "كاش";
  }
  if ($("receiptPaymentMethods")) $("receiptPaymentMethods").textContent = methodsStr;
  
- togglePhotoView(false);
  if ($("receiptModal")) $("receiptModal").classList.remove("hidden");
  });
 
- window.togglePhotoView = function(isPhoto) {
- if (isPhoto) {
- if ($("receiptModalActions")) $("receiptModalActions").style.display = "none";
- if ($("photoViewTip")) $("photoViewTip").style.display = "block";
- } else {
- if ($("receiptModalActions")) $("receiptModalActions").style.display = "flex";
- if ($("photoViewTip")) $("photoViewTip").style.display = "none";
- }
- };
+ window.togglePhotoView = function() {};
 
  on("rankNormalBtn", "click", function() {
  if(!currentId) return;
@@ -7220,6 +7231,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeSel) typeSel.value = "discount";
     window.handleDiscReqTypeChange("discount");
 
+    const notFoundEl = document.getElementById("discReqNotFoundAlert");
+    if (notFoundEl) notFoundEl.classList.add("hidden");
+    const pkgSelect = document.getElementById("discReqTargetPackage");
+    if (pkgSelect) pkgSelect.innerHTML = '<option value="">-- اختر الباقة المراد تطبيق الخصم عليها --</option>';
+
     let st = null;
     if (studentId && typeof students !== 'undefined') {
       st = students[String(studentId)];
@@ -7250,10 +7266,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const q = String(val || '').trim().toLowerCase();
     const details = document.getElementById("discReqStudentDetails");
     const idInp = document.getElementById("discReqStudentId");
+    const notFoundEl = document.getElementById("discReqNotFoundAlert");
+    const pkgSelect = document.getElementById("discReqTargetPackage");
 
     if (!q) {
       if (details) details.classList.add("hidden");
+      if (notFoundEl) notFoundEl.classList.add("hidden");
       if (idInp) idInp.value = "";
+      if (pkgSelect) pkgSelect.innerHTML = '<option value="">-- اختر الباقة المراد تطبيق الخصم عليها --</option>';
       window.selectedDiscReqStudent = null;
       return;
     }
@@ -7274,11 +7294,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (found) {
+      if (notFoundEl) notFoundEl.classList.add("hidden");
       if (idInp) idInp.value = found.id;
       window.displayDiscReqStudent(found);
     } else {
       if (details) details.classList.add("hidden");
+      if (notFoundEl) notFoundEl.classList.remove("hidden");
       if (idInp) idInp.value = "";
+      if (pkgSelect) pkgSelect.innerHTML = '<option value="">-- اختر الباقة المراد تطبيق الخصم عليها --</option>';
       window.selectedDiscReqStudent = null;
     }
   };
@@ -7289,9 +7312,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!details) return;
 
     let req = 0;
-    const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
+    const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? [st.className] : []);
     stPkgs.forEach(pName => {
-      if (typeof packages !== 'undefined' && packages && packages[pName]) req += (packages[pName].price || 0);
+      const pDet = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pName) : null;
+      if (pDet && pDet.price) req += toInt(pDet.price);
+      else if (typeof packages !== 'undefined' && packages && packages[pName]) req += (packages[pName].price || 0);
       else if (typeof groupFees !== 'undefined' && groupFees && groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
     });
     if (req === 0 && st.paid) req = Number(st.paid);
@@ -7300,19 +7325,51 @@ document.addEventListener("DOMContentLoaded", () => {
     const curPaid = Number(st.paid) || 0;
     const remaining = Math.max(0, req - curDisc - curPaid);
 
+    const idEl = document.getElementById("discReqStIdBadge");
     const nameEl = document.getElementById("discReqStNameBadge");
     const classEl = document.getElementById("discReqStClassBadge");
     const reqEl = document.getElementById("discReqStRequired");
     const discEl = document.getElementById("discReqStCurrentDisc");
     const remEl = document.getElementById("discReqStRemaining");
+    const pkgsListEl = document.getElementById("discReqPkgsList");
 
-    if (nameEl) nameEl.textContent = (st.name || 'طالب بدون اسم') + " (ID: " + st.id + ")";
+    if (idEl) idEl.textContent = `ID: #${st.id}`;
+    if (nameEl) nameEl.textContent = st.name || 'طالب بدون اسم';
     if (classEl) classEl.textContent = st.className || 'غير محدد';
     if (reqEl) reqEl.textContent = req + " ج";
     if (discEl) discEl.textContent = curDisc + " ج";
     if (remEl) remEl.textContent = remaining + " ج";
 
+    if (pkgsListEl) {
+      if (stPkgs.length > 0) {
+        pkgsListEl.innerHTML = `<span style="font-weight:700; color:var(--text-primary); margin-inline-end:6px;">الباقات:</span>` + 
+          stPkgs.map(p => `<span style="background:var(--bg-inset); padding:2px 8px; border-radius:6px; border:1px solid var(--border); margin-inline-end:4px; font-weight:700;">${p}</span>`).join("");
+      } else {
+        pkgsListEl.innerHTML = `<span>لا توجد باقات محددة للطالب</span>`;
+      }
+    }
+
+    // Populate target package selector
+    const pkgSelect = document.getElementById("discReqTargetPackage");
+    if (pkgSelect) {
+      let optHtml = '<option value="">-- اختر الباقة المراد تطبيق الخصم عليها --</option>';
+      stPkgs.forEach(pName => {
+        const pDet = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pName) : null;
+        const pPrice = pDet && pDet.price ? toInt(pDet.price) : 0;
+        optHtml += `<option value="${pName}">${pName} (${pPrice > 0 ? pPrice + ' ج' : 'سعر مخصص'})</option>`;
+      });
+      optHtml += '<option value="all">كافة الباقات والاشتراكات المقررة (خصم إجمالي)</option>';
+      pkgSelect.innerHTML = optHtml;
+      if (stPkgs.length === 1) {
+        pkgSelect.value = stPkgs[0];
+      }
+    }
+
     details.classList.remove("hidden");
+  };
+
+  window.handleDiscReqPkgChange = function(pkgVal) {
+    // Optional hook when assistant switches targeted package
   };
 
   window.handleDiscReqTypeChange = function(type) {
@@ -7335,6 +7392,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!st) {
       showToast("يرجى اختيار طالب أولاً من البحث", "warn");
+      return;
+    }
+
+    const targetPkg = document.getElementById("discReqTargetPackage") ? document.getElementById("discReqTargetPackage").value : "";
+    if (!targetPkg) {
+      showToast("يرجى اختيار الباقة المستهدفة بالقرار", "warn");
       return;
     }
 
@@ -7365,6 +7428,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const reqId = "req_" + Date.now();
     const assistantName = localStorage.getItem("ca_current_username") || "مساعد";
+    const pkgLabel = targetPkg === "all" ? "كافة الباقات" : targetPkg;
+    const fullMessage = `[الباقة: ${pkgLabel}] ${reason}`;
 
     try {
       const { error } = await window.supabaseClient.from('communications').insert([{
@@ -7372,8 +7437,9 @@ document.addEventListener("DOMContentLoaded", () => {
         type: 'manager_request',
         title: type,
         student_id: String(st.id),
+        target_pkg: targetPkg,
         amount: amount,
-        message: reason,
+        message: fullMessage,
         sender_name: assistantName,
         status: "pending",
         created_at: new Date().toISOString()
@@ -7384,7 +7450,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if ('BroadcastChannel' in window) {
         try {
           const bc = new BroadcastChannel('studify_permissions_sync');
-          bc.postMessage({ type: 'NEW_DECISION_REQUEST', student_id: st.id, sender: assistantName });
+          bc.postMessage({ type: 'NEW_DECISION_REQUEST', student_id: st.id, sender: assistantName, target_pkg: targetPkg });
         } catch(e) {}
       }
 

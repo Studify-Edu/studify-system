@@ -1549,8 +1549,6 @@
  </div>
  </div>
 
-
-
  <div id="revenueModal" class="modal hidden">
  <div class="modalContent" style="max-width: 600px;">
  <div class="flexBetween" style="border-bottom: 2px solid var(--border); padding-bottom: 10px;">
@@ -1559,9 +1557,6 @@
  </div>
  <div id="revenueModalBody" style="max-height: 60vh; overflow-y: auto; padding: 15px 0;"></div>
  </div>
- </div>
-
-
  </div>
 
    <style>
@@ -1666,106 +1661,100 @@
   </style>
 
  <!-- نافذة معاينة وطباعة إيصال الدفع النهائي -->
- <div id="receiptModal" class="modal hidden" style="z-index: 99999;">
- <div class="modalContent hugeContent receipt-card" style="max-width: 650px; background: var(--bg-surface); border: 2px solid var(--border); border-radius: 16px; padding: 30px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4); text-align: center; position: relative;">
+ <div id="receiptModal" class="modal hidden" style="z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.65);">
+ <div class="modalContent hugeContent receipt-card" style="max-width: 660px; width: 95%; max-height: 90vh; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; background: var(--bg-surface); border: 2px solid var(--border); border-radius: 18px; padding: 28px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4); text-align: center; position: relative;">
  
- <!-- أزرار الإجراءات العلوية (لن تظهر في الطباعة أو وضع التصوير) -->
- <div class="flexBetween no-print" id="receiptModalActions" style="border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 25px;">
+ <!-- أزرار الإجراءات العلوية -->
+ <div class="flexBetween no-print" id="receiptModalActions" style="border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 20px;">
  <div class="row" style="gap: 10px;">
- <button class="btn success" style="display:flex; align-items:center; gap:5px; font-weight:bold; padding:8px 15px;" onclick="window.print()" data-i18n="btn_print"> طباعة (A4 / إيصال)</button>
- <button id="togglePhotoViewStateBtn" class="btn primary" style="display:flex; align-items:center; gap:5px; font-weight:bold; padding:8px 15px;" onclick="togglePhotoView(true)" data-i18n="btn_photo_mode"> وضع التصوير بالهاتف</button>
+ <button class="btn success" style="display:flex; align-items:center; gap:8px; font-weight:bold; padding:8px 18px;" onclick="window.print()" data-i18n="btn_print"><i class="fa-solid fa-print"></i> طباعة (A4 / إيصال)</button>
  </div>
- <button class="btn danger smallBtn" onclick="document.getElementById('receiptModal').classList.add('hidden'); togglePhotoView(false);" data-i18n="btn_close_rec"> إغلاق</button>
- </div>
-
- <!-- تلميح وضع التصوير (للخروج منه) -->
- <div id="photoViewTip" class="no-print" style="display:none; background:#f59e0b; color:#000; padding:8px; border-radius:6px; font-size:0.9em; font-weight:bold; margin-bottom:20px; cursor:pointer;" onclick="togglePhotoView(false)" data-i18n="photo_mode_tip">
- الشاشة الآن في وضع التصوير الصافي للطالب . اضغط هنا لإعادة إظهار أزرار الإغلاق والطباعة 
+ <button class="btn danger smallBtn" onclick="document.getElementById('receiptModal').classList.add('hidden');" data-i18n="btn_close_rec"><i class="fa-solid fa-xmark"></i> إغلاق</button>
  </div>
 
  <!-- جسم الإيصال الرسمي -->
- <div id="printableReceiptArea" style="padding: 20px 10px; text-align: right; font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;">
+ <div id="printableReceiptArea" style="padding: 10px 5px; text-align: right; font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif; scrollbar-width: none; -ms-overflow-style: none;">
  <!-- الترويسة والشعار -->
- <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px dashed var(--border); padding-bottom: 20px; margin-bottom: 25px;">
+ <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px dashed var(--border); padding-bottom: 18px; margin-bottom: 22px; flex-wrap: wrap; gap: 12px;">
  <div style="text-align: right;">
- <h2 id="receiptCenterName" style="color: var(--primary); margin: 0; font-size: 1.8em; font-weight: 900;">إدارة السنتر</h2>
- <span id="receiptManagerName" style="color: var(--text-secondary); font-size: 1em;">المدير المسئول</span>
+ <h2 id="receiptCenterName" style="color: var(--primary); margin: 0; font-size: 1.7em; font-weight: 900;">إدارة السنتر</h2>
+ <div id="receiptCollectorName" style="color: var(--text-secondary); font-size: 0.95em; font-weight: 600; margin-top: 4px;">المستلم المسؤول: أ/ المدير</div>
  </div>
  <div style="text-align: left;">
- <div style="display: inline-block; background: #10b981; color: #ffffff; font-weight: 900; font-size: 1.2em; padding: 8px 20px; border-radius: 50px; letter-spacing: 1px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);" data-i18n="receipt_paid_full">
- خالص السداد 
+ <div style="display: inline-block; background: #10b981; color: #ffffff; font-weight: 900; font-size: 1.15em; padding: 6px 18px; border-radius: 50px; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);" data-i18n="receipt_paid_full">
+ خالص السداد ✓
  </div>
- <div style="font-size: 0.85em; color: var(--text-secondary); margin-top: 8px; text-align: center;" id="receiptDate">التاريخ: 2026-06-29</div>
+ <div style="font-size: 0.85em; color: var(--text-secondary); margin-top: 6px; text-align: center;" id="receiptDate">التاريخ: 2026-06-29</div>
  </div>
  </div>
 
  <!-- معلومات الطالب الأساسية -->
- <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
- <h3 style="margin-top: 0; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 20px; font-size: 1.3em;" data-i18n="receipt_st_details_title">
+ <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 22px;">
+ <h3 style="margin-top: 0; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 16px; font-size: 1.2em;" data-i18n="receipt_st_details_title">
  بيانات التسجيل والسداد
  </h3>
  
- <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 1.1em;">
- <div style="display: flex; flex-direction: column; gap: 5px;">
+ <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 1.05em;">
+ <div style="display: flex; flex-direction: column; gap: 4px;">
  <span style="color: var(--text-secondary); font-size: 0.85em;" data-i18n="receipt_lbl_name">اسم الطالب:</span>
- <strong id="receiptStudentName" class="receipt-value" style="color: var(--text); font-size: 1.2em;">---</strong>
+ <strong id="receiptStudentName" class="receipt-value" style="color: var(--text); font-size: 1.15em;">---</strong>
  </div>
- <div style="display: flex; flex-direction: column; gap: 5px;">
+ <div style="display: flex; flex-direction: column; gap: 4px;">
  <span style="color: var(--text-secondary); font-size: 0.85em;" data-i18n="receipt_lbl_id">كود التعريف (ID):</span>
- <strong id="receiptStudentID" class="receipt-value" style="color: var(--text); font-size: 1.2em;">#---</strong>
+ <strong id="receiptStudentID" class="receipt-value" style="color: var(--text); font-size: 1.15em;">#---</strong>
  </div>
- <div style="display: flex; flex-direction: column; gap: 5px;">
+ <div style="display: flex; flex-direction: column; gap: 4px;">
  <span style="color: var(--text-secondary); font-size: 0.85em;" data-i18n="receipt_lbl_class">الباقة / المجموعة:</span>
- <strong id="receiptStudentClass" class="receipt-value" style="color: var(--text); font-size: 1.2em;">---</strong>
+ <strong id="receiptStudentClass" class="receipt-value" style="color: var(--text); font-size: 1.15em;">---</strong>
  </div>
- <div style="display: flex; flex-direction: column; gap: 5px;">
+ <div style="display: flex; flex-direction: column; gap: 4px;">
  <span style="color: var(--text-secondary); font-size: 0.85em;" data-i18n="receipt_lbl_phone">رقم الموبايل:</span>
- <strong id="receiptStudentPhone" class="receipt-value" style="color: var(--text); font-size: 1.2em;">---</strong>
+ <strong id="receiptStudentPhone" class="receipt-value" style="color: var(--text); font-size: 1.15em; font-family: monospace; letter-spacing: 0.5px;">---</strong>
  </div>
  </div>
  </div>
 
-   <!-- تفاصيل الباقات والخدمات المسجلة -->
-  <div id="receiptPackagesContainer" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 25px;">
-    <h4 style="margin: 0 0 12px 0; font-size: 1.05em; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px; display:flex; align-items:center; gap:8px;">
-      <i class="fa-solid fa-list-check" style="color:var(--primary);"></i> تفاصيل الباقات والاشتراكات المقررة:
-    </h4>
-    <table style="width: 100%; border-collapse: collapse; text-align: right; font-size: 0.95em;">
-      <thead>
-        <tr style="border-bottom: 1.5px solid var(--border); color: var(--text-secondary); font-size: 0.9em;">
-          <th style="padding: 8px 6px;">الباقة / الخدمة</th>
-          <th style="padding: 8px 6px; text-align: center;">السعر المقرر</th>
-          <th style="padding: 8px 6px; text-align: center;">المدفوع</th>
-          <th style="padding: 8px 6px; text-align: center;">الحالة</th>
-        </tr>
-      </thead>
-      <tbody id="receiptPackagesTbody">
-        <!-- Dynamic Rows -->
-      </tbody>
-    </table>
-  </div>
+ <!-- تفاصيل الباقات والخدمات المسجلة -->
+ <div id="receiptPackagesContainer" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 22px;">
+ <h4 style="margin: 0 0 12px 0; font-size: 1.05em; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px; display:flex; align-items:center; gap:8px;">
+ <i class="fa-solid fa-list-check" style="color:var(--primary);"></i> تفاصيل الباقات والاشتراكات المقررة:
+ </h4>
+ <table style="width: 100%; border-collapse: collapse; text-align: right; font-size: 0.95em;">
+ <thead>
+ <tr style="border-bottom: 1.5px solid var(--border); color: var(--text-secondary); font-size: 0.9em;">
+ <th style="padding: 8px 6px;">الباقة / الخدمة</th>
+ <th style="padding: 8px 6px; text-align: center;">السعر المقرر</th>
+ <th style="padding: 8px 6px; text-align: center;">المدفوع</th>
+ <th style="padding: 8px 6px; text-align: center;">الحالة</th>
+ </tr>
+ </thead>
+ <tbody id="receiptPackagesTbody">
+ <!-- Dynamic Rows -->
+ </tbody>
+ </table>
+ </div>
 
-  <!-- التفاصيل المالية -->
- <div style="background: rgba(16, 185, 129, 0.05); border: 2px solid #10b981; border-radius: 12px; padding: 25px; margin-bottom: 30px; text-align: center;">
+ <!-- التفاصيل المالية -->
+ <div style="background: rgba(16, 185, 129, 0.05); border: 2px solid #10b981; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
  <span style="font-size: 0.95em; color: #10b981; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;" data-i18n="receipt_lbl_total">المبلغ الكلي المدفوع</span>
- <div style="font-size: 2.8em; font-weight: 900; color: #10b981; margin: 10px 0;" id="receiptTotalPaid">0 ج</div>
+ <div style="font-size: 2.6em; font-weight: 900; color: #10b981; margin: 8px 0;" id="receiptTotalPaid">0 ج</div>
  <div style="font-size: 0.9em; color: var(--text-secondary);" id="receiptPaymentMethods" data-i18n="receipt_inc_methods">شامل طرق الدفع المسجلة بالسنتر</div>
  </div>
 
- <!-- قسم الختم والاعتماد -->
- <div style="display: flex; align-items: center; justify-content: space-between; border-top: 2px dashed var(--border); padding-top: 20px; color: var(--text-secondary); font-size: 0.9em;">
+ <!-- قسم الختم والاعتماد الرسمي وتوقيع ستوديفاي -->
+ <div style="display: flex; align-items: center; justify-content: space-between; border-top: 2px dashed var(--border); padding-top: 16px; color: var(--text-secondary); font-size: 0.9em; flex-wrap: wrap; gap: 12px;">
+ <div style="display: flex; align-items: center; gap: 10px;">
+ <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.25em;">
+ <i class="fa-solid fa-shield-check"></i>
+ </div>
  <div style="text-align: right;">
- <div><strong data-i18n="receipt_auth_title"> اعتماد إلكتروني معتمد</strong></div>
- <div data-i18n="receipt_auth_sub">توقيع الموظف / المحاسب المسئول</div>
+ <div style="font-weight: 800; color: var(--text); font-size: 0.95em;">اعتماد إلكتروني معتمد</div>
+ <div style="font-size: 0.78em; color: var(--text-secondary);" id="receiptAuthDate">سجل إلكتروني رسمي موثق</div>
  </div>
- <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
- <!-- رمز QR وهمي جميل للاعتماد -->
- <div style="width: 50px; height: 50px; background: var(--text); padding: 5px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.8em;">
- 
  </div>
- <div style="text-align: right; font-size: 0.85em;">
- <span data-i18n="receipt_sec_code">رمز التحقق الأمني</span><br>
- <strong style="color: var(--primary); font-family: monospace;">AUTH-V3-100%</strong>
+ <div style="text-align: left; display: flex; align-items: center; gap: 8px;">
+ <div style="font-size: 0.85em; font-weight: 700; color: var(--primary); background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.25); padding: 5px 12px; border-radius: 8px;">
+ <i class="fa-solid fa-bolt" style="color: #06b6d4; margin-inline-end: 4px;"></i> Powered by Studify Edu
  </div>
  </div>
  </div>
@@ -1773,9 +1762,6 @@
  
  </div>
  </div>
-
-
-
 
   <!-- نافذة معاينة وطباعة إقرار وتعهد الطالب / الاستمارة الفارغة -->
   <div id="contractModal" class="modal hidden" style="z-index: 99999;">
@@ -1800,72 +1786,125 @@
     </div>
   </div>
 
- <!-- ====== MODAL: Decision / Discount Request (from Assistant) ====== -->
-  <div id="discountRequestModal" class="modal hidden">
-    <div class="modalContent" style="max-width:480px; width:95%; background:var(--bg-surface); border-radius:16px; border:1px solid var(--border); padding:22px; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px;">
-        <h3 style="margin:0; display:flex; align-items:center; gap:10px; font-size:1.15em; color:var(--text-primary);">
+  <!-- ====== MODAL: Decision / Discount Request (Horizontal Premium Design) ====== -->
+  <div id="discountRequestModal" class="modal hidden" style="z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.65);">
+    <div class="modalContent" style="max-width:850px; width:95%; max-height:92vh; background:var(--bg-surface); border-radius:18px; border:1px solid var(--border); padding:24px; box-shadow:0 25px 50px rgba(0,0,0,0.4); display:flex; flex-direction:column; gap:16px; overflow-y:auto;">
+      
+      <!-- Modal Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:14px;">
+        <h3 style="margin:0; display:flex; align-items:center; gap:10px; font-size:1.25em; color:var(--text-primary);">
           <i class="fa-solid fa-hand-holding-dollar" style="color:var(--warning);"></i>
-          تقديم طلب قرار للمدير (خصم / إعفاء)
+          <span>تقديم طلب قرار للمدير (خصم / إعفاء مخصص)</span>
         </h3>
-        <button type="button" class="iconBtn" onclick="document.getElementById('discountRequestModal').classList.add('hidden')" style="font-size:1.3em; color:var(--text-secondary); cursor:pointer; background:none; border:none;">&times;</button>
+        <button type="button" class="iconBtn" onclick="document.getElementById('discountRequestModal').classList.add('hidden')" style="font-size:1.3em; color:var(--text-secondary); cursor:pointer; background:none; border:none;"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <input type="hidden" id="discReqStudentId">
-      
-      <label class="lbl" data-i18n="modal_dec_req_st_lbl">رقم الطالب (ID) أو الاسم</label>
-      <div style="display:flex; gap:8px; margin-bottom:10px;">
-        <input type="text" id="discReqStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." data-i18n-placeholder="modal_dec_req_st_plc" oninput="window.handleDiscReqSearch(this.value)">
-      </div>
 
-      <!-- Student Info Card (Live Loaded) -->
-      <div id="discReqStudentDetails" class="hidden" style="background:var(--bg-inset); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span id="discReqStNameBadge" style="font-weight:800; color:var(--text-primary);">اسم الطالب</span>
-          <span id="discReqStClassBadge" style="background:rgba(37,99,235,0.1); color:var(--primary); padding:2px 8px; border-radius:6px; font-size:0.8em; font-weight:700;">الصف</span>
+      <!-- 2-Column Responsive Body -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(350px, 1fr)); gap:20px; align-items:start;">
+        
+        <!-- Column 1: Student Search & Profile Info -->
+        <div style="background:var(--bg-inset); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <label class="lbl" style="font-weight:700; margin-bottom:6px;" data-i18n="modal_dec_req_st_lbl">رقم الطالب (ID) أو الاسم</label>
+            <div style="position:relative;">
+              <input type="text" id="discReqStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." data-i18n-placeholder="modal_dec_req_st_plc" oninput="window.handleDiscReqSearch(this.value)" autocomplete="off">
+              <i class="fa-solid fa-magnifying-glass" style="position:absolute; inset-inline-end:12px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
+            </div>
+          </div>
+
+          <!-- Student Not Found Alert -->
+          <div id="discReqNotFoundAlert" class="hidden" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; padding:12px 14px; border-radius:10px; font-size:0.88em; font-weight:700; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-circle-xmark" style="font-size:1.1em;"></i>
+            <span>الطالب غير مسجل بالنظام (يرجى التأكد من صحة الكود أو الاسم)</span>
+          </div>
+
+          <!-- Student Info Card (Live Loaded) -->
+          <div id="discReqStudentDetails" class="hidden" style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span id="discReqStIdBadge" style="background:var(--primary); color:#fff; font-size:0.8em; font-weight:800; padding:2px 8px; border-radius:6px;">ID: -</span>
+                <span id="discReqStNameBadge" style="font-weight:800; color:var(--text-primary); font-size:1.05em;">اسم الطالب</span>
+              </div>
+              <span id="discReqStClassBadge" style="background:rgba(37,99,235,0.1); color:var(--primary); padding:2px 8px; border-radius:6px; font-size:0.8em; font-weight:700;">الصف</span>
+            </div>
+
+            <!-- Financials Summary -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+              <div style="background:var(--bg-inset); padding:8px 6px; border-radius:8px; border:1px solid var(--border);">
+                <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_req_lbl">المطلوب</div>
+                <div id="discReqStRequired" style="font-weight:800; color:var(--text-primary); font-size:1em;">0 ج</div>
+              </div>
+              <div style="background:var(--bg-inset); padding:8px 6px; border-radius:8px; border:1px solid var(--border);">
+                <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_disc_lbl">الخصم الحالي</div>
+                <div id="discReqStCurrentDisc" style="font-weight:800; color:var(--warning); font-size:1em;">0 ج</div>
+              </div>
+              <div style="background:var(--bg-inset); padding:8px 6px; border-radius:8px; border:1px solid var(--border);">
+                <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_rem_lbl">المتبقي</div>
+                <div id="discReqStRemaining" style="font-weight:800; color:var(--danger); font-size:1em;">0 ج</div>
+              </div>
+            </div>
+
+            <!-- Enrolled Packages Quick List -->
+            <div id="discReqPkgsList" style="font-size:0.82em; color:var(--text-secondary); border-top:1px dashed var(--border); padding-top:8px;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
-          <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
-            <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_req_lbl">المطلوب</div>
-            <div id="discReqStRequired" style="font-weight:700; color:var(--text-primary); font-size:0.95em;">0 ج</div>
+
+        <!-- Column 2: Decision Details & Specific Package Target -->
+        <div style="background:var(--bg-inset); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:14px;">
+          
+          <!-- Package Selector -->
+          <div>
+            <label class="lbl" style="font-weight:700; margin-bottom:6px;">
+              <i class="fa-solid fa-boxes-packing" style="color:var(--primary); margin-inline-end:4px;"></i> الباقة المستهدفة بالخصم <span style="color:var(--danger);">*</span>
+            </label>
+            <select id="discReqTargetPackage" class="inp" onchange="window.handleDiscReqPkgChange(this.value)">
+              <option value="">-- اختر الباقة المراد تطبيق الخصم عليها --</option>
+            </select>
           </div>
-          <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
-            <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_disc_lbl">الخصم الحالي</div>
-            <div id="discReqStCurrentDisc" style="font-weight:700; color:var(--warning); font-size:0.95em;">0 ج</div>
+
+          <!-- Decision Type -->
+          <div>
+            <label class="lbl" style="font-weight:700; margin-bottom:6px;" data-i18n="modal_dec_req_type_lbl">نوع القرار المطلوب</label>
+            <select id="discReqType" class="inp" onchange="window.handleDiscReqTypeChange(this.value)">
+              <option value="discount" data-i18n="modal_dec_req_type_disc">خصم مالي محدد على الباقة (جنيه)</option>
+              <option value="exemption" data-i18n="modal_dec_req_type_exemp">إعفاء كامل من مصاريف الباقة (100%)</option>
+            </select>
           </div>
-          <div style="background:var(--bg-surface); padding:6px; border-radius:6px; border:1px solid var(--border);">
-            <div style="font-size:0.75em; color:var(--text-secondary);" data-i18n="modal_dec_req_rem_lbl">المتبقي</div>
-            <div id="discReqStRemaining" style="font-weight:700; color:var(--danger); font-size:0.95em;">0 ج</div>
+
+          <!-- Discount Amount Input -->
+          <div id="discReqAmountWrap">
+            <label class="lbl" style="font-weight:700; margin-bottom:6px;" data-i18n="modal_dec_req_amt_lbl">قيمة الخصم المقترحة (جنيه) <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="discReqAmount" class="inp" placeholder="مثال: 100" min="1" step="10">
           </div>
+
+          <!-- Reason Input -->
+          <div>
+            <label class="lbl" style="font-weight:700; margin-bottom:6px;" data-i18n="modal_dec_req_rsn_lbl">سبب الطلب / ملاحظات للمدير <span style="color:var(--danger);">*</span></label>
+            <input type="text" id="discReqReason" class="inp" placeholder="اكتب سبب طلب الخصم أو الإعفاء..." data-i18n-placeholder="modal_dec_req_rsn_plc">
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+            <button type="button" class="btn secondary" onclick="document.getElementById('discountRequestModal').classList.add('hidden')" data-i18n="modal_dec_req_cancel">إلغاء</button>
+            <button type="button" id="submitDiscountRequestBtn" class="btn primary" onclick="window.submitDecisionRequest()" style="display:inline-flex; align-items:center; gap:8px; font-weight:800; padding:10px 20px;">
+              <i class="fa-solid fa-paper-plane"></i> <span data-i18n="modal_dec_req_submit">إرسال الطلب للمدير</span>
+            </button>
+          </div>
+
         </div>
+
       </div>
 
-      <label class="lbl" data-i18n="modal_dec_req_type_lbl">نوع القرار المطلوب</label>
-      <select id="discReqType" class="inp" onchange="window.handleDiscReqTypeChange(this.value)">
-        <option value="discount" data-i18n="modal_dec_req_type_disc">خصم مالي محدد (جنيه)</option>
-        <option value="exemption" data-i18n="modal_dec_req_type_exemp">إعفاء كامل من المصاريف (100%)</option>
-      </select>
-
-      <div id="discReqAmountWrap" style="margin-top:12px;">
-        <label class="lbl" data-i18n="modal_dec_req_amt_lbl">قيمة الخصم المقترحة (جنيه)</label>
-        <input type="number" id="discReqAmount" class="inp" placeholder="مثال: 100" min="1" step="10">
-      </div>
-
-      <label class="lbl" style="margin-top:12px;" data-i18n="modal_dec_req_rsn_lbl">سبب الطلب / ملاحظات للمدير <span style="color:var(--danger);">*</span></label>
-      <input type="text" id="discReqReason" class="inp" placeholder="اكتب سبب طلب الخصم أو الإعفاء..." data-i18n-placeholder="modal_dec_req_rsn_plc">
-
-      <div class="row" style="margin-top:20px; justify-content:flex-end; gap:10px;">
-        <button type="button" class="btn secondary" onclick="document.getElementById('discountRequestModal').classList.add('hidden')" data-i18n="modal_dec_req_cancel">إلغاء</button>
-        <button type="button" id="submitDiscountRequestBtn" class="btn primary" onclick="window.submitDecisionRequest()" style="display:inline-flex; align-items:center; gap:6px;">
-          <i class="fa-solid fa-paper-plane"></i> <span data-i18n="modal_dec_req_submit">إرسال الطلب للمدير</span>
-        </button>
-      </div>
     </div>
   </div>
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V143"></script>
+  <script type="module" src="app.js?v=STUDIFY_V144"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

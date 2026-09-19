@@ -34,6 +34,7 @@ const ADMIN_DICT = {
   "dec_val_ph": { ar: "مثال: 100", en: "e.g. 100" },
   "dec_reason_ph": { ar: "مثال: قرار مدير - ظرف خاص / تفوق دراسي", en: "e.g. Manager Decision - Special case / Academic excellence" },
   "dec_no_pending": { ar: "لا توجد طلبات معلقة حالياً", en: "No pending requests at this time" },
+  "stat_term_total_discounts": { ar: "إجمالي الخصومات والإعفاءات (ج)", en: "Total Discounts & Exemptions (EGP)" },
   "pkg_loading": { ar: "جاري تحميل الباقات..", en: "Loading packages..." },
   "syll_loading": { ar: "جاري تحميل المنهج..", en: "Loading syllabus..." },
   "asst_lbl_username": { ar: "اسم المستخدم (حساب الدخول)", en: "Username (Login Account)" },
@@ -2087,7 +2088,7 @@ window.renderTermTable = function() {
   }
 
   // 1. Calculate Student Revenue, Debts & Treasuries Inflow
-  let totalRev = 0, totalDebt = 0, matchCount = 0;
+  let totalRev = 0, totalDebt = 0, totalDiscounts = 0, matchCount = 0;
   let cashIn = 0, walletIn = 0, instapayIn = 0;
   let rowsHtml = "";
 
@@ -2165,6 +2166,7 @@ window.renderTermTable = function() {
 
     totalRev += paid;
     totalDebt += debt;
+    totalDiscounts += discount;
 
     const discountBadge = discount > 0 
       ? `<span style="display:inline-block; font-size:0.75em; background:rgba(245,158,11,0.15); color:#F59E0B; padding:1px 5px; border-radius:4px; margin-inline-start:4px;">(${isAr ? 'خصم ' + discount + ' ج' : 'Disc. ' + discount + ' EGP'})</span>`
@@ -2245,6 +2247,7 @@ window.renderTermTable = function() {
   const statTermWd = document.getElementById("statTermWithdrawals");
   const statTermNet = document.getElementById("statTermNetVault");
   const statTermDbt = document.getElementById("statTermDebt");
+  const statTermDisc = document.getElementById("statTermTotalDiscounts");
 
   if (statTermSt) statTermSt.textContent = matchCount;
   if (statTermRev) statTermRev.textContent = totalRev.toLocaleString() + currencySuffix;
@@ -2252,6 +2255,7 @@ window.renderTermTable = function() {
   if (statTermWd) statTermWd.textContent = totalWithdrawals.toLocaleString() + currencySuffix;
   if (statTermNet) statTermNet.textContent = netVaultBalance.toLocaleString() + currencySuffix;
   if (statTermDbt) statTermDbt.textContent = totalDebt.toLocaleString() + currencySuffix;
+  if (statTermDisc) statTermDisc.textContent = totalDiscounts.toLocaleString() + currencySuffix;
 
   // 6. Update Treasuries Cards
   if (document.getElementById("termCashIn")) document.getElementById("termCashIn").textContent = cashIn.toLocaleString() + currencySuffix;
@@ -2819,6 +2823,21 @@ window.displayDirectDecisionStudent = function(st) {
   const valInp = document.getElementById("directDecisionValueInput");
   if (valInp) valInp.value = curDisc || "";
 
+  // Populate Target Package Selector
+  const pkgSelect = document.getElementById("directDecisionTargetPackage");
+  if (pkgSelect) {
+    let optHtml = `<option value="">-- ${isAr ? 'اختر الباقة المستهدفة' : 'Select Targeted Package'} --</option>`;
+    stPkgs.forEach(pName => {
+      let pPrice = 0;
+      if (packages && packages[pName]) pPrice = packages[pName].price || 0;
+      else if (groupFees && groupFees[pName]) pPrice = groupFees[pName].price || groupFees[pName] || 0;
+      optHtml += `<option value="${pName}">${pName} (${pPrice > 0 ? pPrice + currencySuffix : (isAr ? 'سعر مخصص' : 'Custom')})</option>`;
+    });
+    optHtml += `<option value="all">${isAr ? 'كافة الباقات والاشتراكات المقررة (خصم إجمالي)' : 'All Packages (Global Discount)'}</option>`;
+    pkgSelect.innerHTML = optHtml;
+    if (stPkgs.length === 1) pkgSelect.value = stPkgs[0];
+  }
+
   card.classList.remove("hidden");
 };
 
@@ -2853,6 +2872,12 @@ window.applyDirectDecision = async function() {
     return;
   }
 
+  const targetPkg = document.getElementById("directDecisionTargetPackage")?.value;
+  if (!targetPkg) {
+    showToast("يرجى اختيار الباقة المستهدفة بالقرار", "warn");
+    return;
+  }
+
   const type = document.getElementById("directDecisionType")?.value || "discount";
   const val = Number(document.getElementById("directDecisionValueInput")?.value) || 0;
   const reason = document.getElementById("directDecisionReasonInput")?.value.trim() || "قرار مباشر من المدير";
@@ -2866,25 +2891,30 @@ window.applyDirectDecision = async function() {
   if (req === 0 && st.paid) req = Number(st.paid);
 
   let newDiscount = Number(st.discount) || 0;
+  const pkgLabel = targetPkg === "all" ? "كافة الباقات" : targetPkg;
   let summaryText = "";
 
   if (type === "exemption") {
     newDiscount = req;
-    summaryText = `إعفاء كامل من المصاريف (المطلوب: ${req} ج)`;
+    summaryText = `إعفاء كامل من المصاريف [${pkgLabel}] (المطلوب: ${req} ج)`;
   } else if (type === "custom_fee") {
     newDiscount = Math.max(0, req - val);
-    summaryText = `تحديد مصاريف جديدة بقيمة ${val} ج (خصم: ${newDiscount} ج)`;
+    summaryText = `تحديد مصاريف جديدة بقيمة ${val} ج [${pkgLabel}] (خصم: ${newDiscount} ج)`;
   } else {
     if (val <= 0) {
       showToast("يرجى إدخال قيمة خصم صحيحة", "warn");
       return;
     }
     newDiscount = Math.min(req, val);
-    summaryText = `خصم مالي بقيمة ${val} ج`;
+    summaryText = `خصم مالي بقيمة ${val} ج [${pkgLabel}]`;
   }
 
   try {
     st.discount = newDiscount;
+    if (targetPkg !== "all") {
+      st.packageDiscounts = st.packageDiscounts || {};
+      st.packageDiscounts[targetPkg] = (type === "exemption") ? req : (type === "custom_fee" ? newDiscount : val);
+    }
     st.lastModified = Date.now();
 
     await supabase.from('students').upsert({
@@ -2899,9 +2929,10 @@ window.applyDirectDecision = async function() {
       type: 'manager_request',
       title: type,
       student_id: String(st.id),
+      target_pkg: targetPkg,
       amount: type === "exemption" ? req : val,
       sender_name: 'مدير المركز (قرار مباشر)',
-      message: reason,
+      message: `[الباقة: ${pkgLabel}] ${reason}`,
       status: 'approved',
       created_at: new Date().toISOString()
     }]);
@@ -2968,16 +2999,26 @@ window.fetchDecisions = async function() {
       const approveText = isAr ? "موافقة" : "Approve";
       const rejectText = isAr ? "رفض" : "Reject";
 
+      // Targeted package badge
+      let targetPkgName = r.target_pkg || "";
+      if (!targetPkgName && r.message && r.message.startsWith("[الباقة:")) {
+        const match = r.message.match(/\[الباقة:\s*(.*?)\]/);
+        if (match) targetPkgName = match[1];
+      }
+      const pkgBadgeHtml = targetPkgName 
+        ? `<span class="badge" style="background:rgba(37,99,235,0.12); color:var(--primary); font-size:0.82em; font-weight:700; padding:2px 8px; border-radius:6px; margin-inline-start:6px;"><i class="fa-solid fa-boxes-packing"></i> ${targetPkgName === 'all' ? (isAr ? 'كافة الباقات' : 'All Packages') : targetPkgName}</span>`
+        : '';
+
       html += `
         <div class="decision-card">
           <div class="decision-card-info">
-            <div class="decision-student-name">${studentCodeTitle}</div>
+            <div class="decision-student-name">${studentCodeTitle} ${pkgBadgeHtml}</div>
             <div class="decision-meta">${typeLabel} • ${requestedByLabel} <b>${senderTitle}</b> • ${date}</div>
             <div class="decision-meta" style="margin-top: 4px; color: var(--text-primary);">${reasonLabel} ${r.message || '—'}</div>
           </div>
           <div class="decision-amount">${amountText}</div>
           <div class="decision-actions">
-            <button class="btn success smallBtn" onclick="window.approveDecision('${r.id}', '${r.student_id}', '${subType}', ${r.amount || 0})">
+            <button class="btn success smallBtn" onclick="window.approveDecision('${r.id}', '${r.student_id}', '${subType}', ${r.amount || 0}, '${targetPkgName || ''}')">
               <i class="fa-solid fa-check"></i> ${approveText}
             </button>
             <button class="btn danger smallBtn" onclick="window.rejectDecision('${r.id}', '${r.student_id}')">
@@ -2996,7 +3037,7 @@ window.fetchDecisions = async function() {
   }
 };
 
-window.approveDecision = async function(reqId, studentId, subType, amount) {
+window.approveDecision = async function(reqId, studentId, subType, amount, targetPkg) {
   try {
     if (!supabase) return;
     
@@ -3015,6 +3056,12 @@ window.approveDecision = async function(reqId, studentId, subType, amount) {
       } else {
         st.discount = Math.min(req, (Number(st.discount) || 0) + Number(amount));
       }
+
+      if (targetPkg && targetPkg !== 'all') {
+        st.packageDiscounts = st.packageDiscounts || {};
+        st.packageDiscounts[targetPkg] = (subType === "exemption") ? req : ((Number(st.packageDiscounts[targetPkg]) || 0) + Number(amount));
+      }
+
       st.lastModified = Date.now();
       await supabase.from('students').upsert({
         id: st.id,
@@ -3027,21 +3074,21 @@ window.approveDecision = async function(reqId, studentId, subType, amount) {
     await supabase.from('communications').update({ status: 'approved' }).eq('id', reqId);
 
     // 3. Notify assistant
+    const pkgText = (targetPkg && targetPkg !== 'all') ? ` [${targetPkg}]` : '';
     await supabase.from('communications').insert([{
       id: "msg_" + Date.now(),
       type: 'assistant_message',
-      title: ' تمت الموافقة على طلب الخصم',
-      message: `وافق المدير على طلب الطالب (${studentId}) بقيمة ${subType === "exemption" ? "إعفاء كامل" : amount + " ج"}`,
+      title: ' تمت الموافقة على طلب القرار',
+      message: `وافق المدير على طلب الطالب (${studentId})${pkgText} بقيمة ${subType === "exemption" ? "إعفاء كامل" : amount + " ج"}`,
       status: 'unread'
     }]);
 
-    showToast("تمت الموافقة وتطبيق الخصم بنجاح", "success");
+    showToast("تمت الموافقة وتطبيق القرار بنجاح", "success");
     window.renderTermTable();
     window.fetchDecisions();
-
   } catch(err) {
     console.error(err);
-    showToast("حدث خطأ أثناء اعتماد القرار", "err");
+    showToast("فشل اعتماد القرار: " + err.message, "err");
   }
 };
 

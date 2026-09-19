@@ -406,6 +406,12 @@
               <div class="stat-card-val" id="statTermDebt">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_debt">إجمالي المتبقي والديون (ج)</div>
             </div>
+
+            <div class="stat-card" style="--stat-color: #06b6d4; --stat-bg: rgba(6, 182, 212, 0.12);">
+              <div class="stat-card-icon"><i class="fa-solid fa-tags"></i></div>
+              <div class="stat-card-val" id="statTermTotalDiscounts">—</div>
+              <div class="stat-card-lbl" data-i18n="stat_term_total_discounts">إجمالي الخصومات والإعفاءات (ج)</div>
+            </div>
           </div>
 
           <!-- 2. Live Treasuries Breakdown (الخزائن الحقيقية وتقفيل الأرصدة) -->
@@ -671,6 +677,17 @@
                   <div style="font-size: 0.75em; color: var(--text-secondary);" data-i18n="dec_lbl_rem">المتبقي بعد السداد</div>
                   <div id="ddsRemaining" style="font-size: 1.15em; font-weight: 800; color: var(--danger);">0 ج</div>
                 </div>
+              </div>
+
+              <!-- Target Package Selector -->
+              <div style="margin-bottom: 14px;">
+                <label class="lbl" style="font-weight: 700; margin-bottom: 6px;">
+                  <i class="fa-solid fa-boxes-packing" style="color: var(--primary); margin-inline-end: 4px;"></i>
+                  <span>الباقة المستهدفة بالقرار</span> <span style="color: var(--danger);">*</span>
+                </label>
+                <select id="directDecisionTargetPackage" class="inp" style="font-weight: 600;">
+                  <option value="">-- اختر الباقة المستهدفة --</option>
+                </select>
               </div>
 
               <!-- Action Controls Row -->
@@ -1196,7 +1213,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V24"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V25"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

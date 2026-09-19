@@ -5937,3 +5937,35 @@ body.system-hard-locked #loginBox {
   border: 1px solid var(--border);
 }
 
+/* ── RECEIPT MODAL & PRINT CLEANUP ── */
+#receiptModal .modalContent,
+#receiptModal .receipt-card,
+#printableReceiptArea {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+#receiptModal .modalContent::-webkit-scrollbar,
+#receiptModal .receipt-card::-webkit-scrollbar,
+#printableReceiptArea::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+@media print {
+  #receiptModal,
+  #receiptModal .modalContent,
+  #receiptModal .receipt-card,
+  #printableReceiptArea {
+    overflow: visible !important;
+    scrollbar-width: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  #receiptModal .modalContent::-webkit-scrollbar,
+  #receiptModal .receipt-card::-webkit-scrollbar,
+  #printableReceiptArea::-webkit-scrollbar {
+    display: none !important;
+  }
+}
