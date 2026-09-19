@@ -3079,10 +3079,13 @@ const st = students[id];
  window.renderStudentPaymentsUI(st, currentSelectedPkg);
  
  if($("newBadge")) {
- if(dates.length === 0 && st.name) $("newBadge").classList.remove("hidden"); 
- else $("newBadge").classList.add("hidden");
- }
- }
+  if(dates.length === 0 && st.name) $("newBadge").classList.remove("hidden"); 
+  else $("newBadge").classList.add("hidden");
+  }
+  if (typeof window.updateAttendanceUIState === 'function') {
+    window.updateAttendanceUIState();
+  }
+}
 
  function addAttendance(id, d) {
     const selectedSubject = window.currentGlobalSubject || "";
@@ -3591,15 +3594,19 @@ const st = students[id];
  }
 
  function handleBulk() {
- const boxes = document.querySelectorAll(".stCheckbox:checked");
- if ($("selectedCount")) $("selectedCount").textContent = boxes.length;
- 
- const bulkBar = $("bulkActionBar");
- if (bulkBar) {
- if(boxes.length > 0) bulkBar.classList.remove("hidden");
- else bulkBar.classList.add("hidden");
- }
- }
+  const boxes = document.querySelectorAll(".stCheckbox:checked");
+  if ($("selectedCount")) $("selectedCount").textContent = boxes.length;
+  
+  const bulkBar = $("bulkActionBar");
+  if (bulkBar) {
+    if(boxes.length > 0) {
+      bulkBar.classList.remove("hidden");
+      if (typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState();
+    } else {
+      bulkBar.classList.add("hidden");
+    }
+  }
+}
 
  function renderReport(d) {
  const list = $("reportList"); 
@@ -4179,11 +4186,15 @@ on("quickAttendBtn", "click", function() {
   setTimeout(() => { _quickAttendLock = false; }, 600);
  // 1. Check subject selection first
  if (!window.currentGlobalSubject || !String(window.currentGlobalSubject).trim()) {
-   showToast("يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً", "warning");
-   if (typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
-   if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
-   return;
- }
+    showToast(currentLang === 'en' ? "Please select attendance subject from the top menu first" : "يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً", "warning");
+    if (typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
+    if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      if (typeof window.openSubjectSelectionModal === 'function') window.openSubjectSelectionModal();
+    }, 250);
+    return;
+  }
 
  // 2. Check student ID
  const idInp = $("quickAttendId");
@@ -4415,8 +4426,27 @@ on("quickAttendBtn", "click", function() {
  });
  
  on("markTodayBtn", "click", function() { 
- if(currentId) { addAttendance(currentId, nowDateStr()); updateStudentUI(currentId); renderReport(nowDateStr()); }
- });
+  const selectedSubject = window.currentGlobalSubject || "";
+  if (!selectedSubject || !String(selectedSubject).trim()) {
+    showToast(currentLang === 'en' ? "Please select attendance subject from the top menu first" : "يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً", "warning");
+    if (typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      if (typeof window.openSubjectSelectionModal === 'function') window.openSubjectSelectionModal();
+    }, 250);
+    return;
+  }
+  if(currentId) {
+    const res = addAttendance(currentId, nowDateStr());
+    if (res && !res.ok) {
+      showToast(res.msg, "warning");
+      return;
+    }
+    showToast(t("msg_att_ok"), "success");
+    updateStudentUI(currentId);
+    renderReport(nowDateStr());
+  }
+});
 
  on("unmarkTodayBtn", "click", function() { 
  if(currentId) { removeAttendance(currentId, nowDateStr()); updateStudentUI(currentId); renderReport(nowDateStr()); }
@@ -5580,13 +5610,32 @@ on("importExcelInput", "change", async function(e) {
  });
 
  on("bulkAttendBtn", "click", function() { 
- let count = 0; const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
- for (let i = 0; i < checkedBoxes.length; i++) {
- let res = addAttendance(checkedBoxes[i].getAttribute("data-id"), nowDateStr());
- if (res.ok) count++;
- }
- showToast(t("msg_att_ok")); renderList(true); handleBulk(); 
- });
+  const selectedSubject = window.currentGlobalSubject || "";
+  if (!selectedSubject || !String(selectedSubject).trim()) {
+    showToast(currentLang === 'en' ? "Please select attendance subject from the top menu first" : "يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً", "warning");
+    if (typeof triggerShake === 'function') triggerShake("openSubjectModalBtn");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      if (typeof window.openSubjectSelectionModal === 'function') window.openSubjectSelectionModal();
+    }, 250);
+    return;
+  }
+  let count = 0;
+  let lastError = "";
+  const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
+  for (let i = 0; i < checkedBoxes.length; i++) {
+    let res = addAttendance(checkedBoxes[i].getAttribute("data-id"), nowDateStr());
+    if (res && res.ok) count++;
+    else if (res && res.msg) lastError = res.msg;
+  }
+  if (count > 0) {
+    showToast(t("msg_att_ok"), "success");
+  } else if (lastError) {
+    showToast(lastError, "warning");
+  }
+  renderList(true);
+  handleBulk(); 
+});
 
  on("bulkAbsentBtn", "click", function() { 
  const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
@@ -8998,29 +9047,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 window.updateAttendanceUIState = function() {
-    const btn = document.getElementById("quickAttendBtn");
-    const input = document.getElementById("quickAttendId");
-    if (!btn) return;
-    
     const isAr = (currentLang === "ar");
     const hasSelected = !!(window.currentGlobalSubject && String(window.currentGlobalSubject).trim());
-    if (input) {
-        input.placeholder = hasSelected ? (isAr ? "ID (مثال: 101)" : "ID (e.g. 101)") : (isAr ? "اختر مادة أولاً" : "Select Subject First");
+
+    // 1. Quick Attend Button (QR card)
+    const qBtn = document.getElementById("quickAttendBtn");
+    const qInput = document.getElementById("quickAttendId");
+    if (qInput) {
+        qInput.placeholder = hasSelected ? (isAr ? "ID (مثال: 101)" : "ID (e.g. 101)") : (isAr ? "اختر مادة أولاً" : "Select Subject First");
+    }
+    const qText = isAr ? "سجل حضور" : "Record";
+    if (qBtn) {
+        if (!hasSelected) {
+            qBtn.classList.add("btn-attend-pending");
+            qBtn.innerHTML = `<i class="fa-solid fa-lock" style="margin-inline-end: 6px;"></i> ${qText}`;
+            qBtn.title = isAr ? "اختر مادة الحضور أولاً" : "Select attendance subject first";
+        } else {
+            qBtn.classList.remove("btn-attend-pending");
+            qBtn.innerHTML = qText;
+            qBtn.title = "";
+            qBtn.style.removeProperty("background");
+            qBtn.style.removeProperty("background-image");
+            qBtn.style.removeProperty("color");
+            qBtn.style.removeProperty("box-shadow");
+            qBtn.style.removeProperty("border");
+        }
     }
 
-    const recordText = isAr ? "سجل حضور" : "Record";
-    if (!hasSelected) {
-        btn.classList.add("btn-attend-pending");
-        btn.innerHTML = `<i class="fa-solid fa-lock" style="margin-inline-end: 6px;"></i> ${recordText}`;
-    } else {
-        btn.classList.remove("btn-attend-pending");
-        btn.innerHTML = recordText;
-        // Clean any lingering inline styles
-        btn.style.removeProperty("background");
-        btn.style.removeProperty("background-image");
-        btn.style.removeProperty("color");
-        btn.style.removeProperty("box-shadow");
-        btn.style.removeProperty("border");
+    // 2. Student Card Attend Button
+    const stAttendBtn = document.getElementById("markTodayBtn");
+    if (stAttendBtn) {
+        const attendText = isAr ? "حضور" : "Present";
+        if (!hasSelected) {
+            stAttendBtn.classList.add("btn-attend-pending");
+            stAttendBtn.innerHTML = `<i class="fa-solid fa-lock" style="margin-inline-end: 6px;"></i> ${attendText}`;
+            stAttendBtn.title = isAr ? "اختر مادة الحضور أولاً من القائمة العلوية" : "Select attendance subject first from top menu";
+        } else {
+            stAttendBtn.classList.remove("btn-attend-pending");
+            stAttendBtn.innerHTML = `<i class="fa-solid fa-user-check" style="margin-inline-end: 6px;"></i> ${attendText}`;
+            stAttendBtn.title = isAr ? "تسجيل حضور الطالب اليوم" : "Mark student present today";
+            stAttendBtn.style.removeProperty("background");
+            stAttendBtn.style.removeProperty("background-image");
+            stAttendBtn.style.removeProperty("color");
+            stAttendBtn.style.removeProperty("box-shadow");
+            stAttendBtn.style.removeProperty("border");
+        }
+    }
+
+    // 3. Bulk Attend Button (Students List Table)
+    const bulkBtn = document.getElementById("bulkAttendBtn");
+    if (bulkBtn) {
+        const bulkText = isAr ? "حضور" : "Present";
+        if (!hasSelected) {
+            bulkBtn.classList.add("btn-attend-pending");
+            bulkBtn.innerHTML = `<i class="fa-solid fa-lock" style="margin-inline-end: 4px;"></i> ${bulkText}`;
+            bulkBtn.title = isAr ? "اختر مادة الحضور أولاً من القائمة العلوية" : "Select attendance subject first from top menu";
+        } else {
+            bulkBtn.classList.remove("btn-attend-pending");
+            bulkBtn.innerHTML = `<i class="fa-solid fa-user-check" style="margin-inline-end: 4px;"></i> ${bulkText}`;
+            bulkBtn.title = isAr ? "تسجيل حضور الطلاب المحددين" : "Mark selected students present";
+            bulkBtn.style.removeProperty("background");
+            bulkBtn.style.removeProperty("background-image");
+            bulkBtn.style.removeProperty("color");
+            bulkBtn.style.removeProperty("box-shadow");
+            bulkBtn.style.removeProperty("border");
+        }
     }
 };
 
