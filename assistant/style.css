@@ -1050,7 +1050,23 @@ tr:hover td { background: var(--bg-hover); }
 .group-revenue-card:hover { border-color: var(--success); transform: translateX(-3px); }
 
 /* ── 13. STUDENT DETAILS ── */
-.studentCard { position: relative; }
+.studentCard {
+  position: relative;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.studentCard:not(.hidden) {
+  animation: studentCardIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes studentCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .avatarIcon {
   width: 50px; height: 50px;

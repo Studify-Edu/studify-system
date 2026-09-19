@@ -834,8 +834,12 @@ document.addEventListener('DOMContentLoaded', function() {
  document.addEventListener('keydown', function(e) {
  if (e.key === 'Enter') {
  const target = e.target;
- if (target.id === 'searchAny') document.getElementById("searchBtn")?.click();
- else if (target.id === 'openId') document.getElementById("openIdBtn")?.click();
+ if (target.id === 'searchAny') {
+   const firstItem = document.querySelector('#searchMsg .item');
+   if (firstItem) firstItem.click();
+   else document.getElementById('searchBtn')?.click();
+ }
+ else if (target.id === 'openId') (document.getElementById('openBtn') || document.getElementById('openIdBtn'))?.click();
  else if (target.id === 'quickAttendId') { e.preventDefault(); document.getElementById("quickAttendBtn")?.click(); }
  else if (target.id === 'newId') document.getElementById("addNewBtn")?.click();
  else if (target.id === 'stName' || target.id === 'stPhone') document.getElementById("saveStudentBtn")?.click();
@@ -868,6 +872,7 @@ document.addEventListener('DOMContentLoaded', function() {
  // ==========================================
  const dict = {
   "debt_warning_prefix": { ar: "تنبيه: الطالب عليه مديونية متأخرة قدرها", en: "Notice: Student has an outstanding debt of" },
+  "btn_close_profile": { ar: "إغلاق الملف", en: "Close File" },
   "currency_egp": { ar: "جنيه", en: "EGP" },
   "btn_deposit": { ar: "إيداع", en: "Deposit" },
   "filter_this_pkg": { ar: "هذه الباقة", en: "This Package" },
@@ -1693,6 +1698,36 @@ function showToast(msg, type = "success") {
  closeMobileSidebar(false);
  };
 
+ window.showStudentCard = function() {
+   const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+   if (card) {
+     card.classList.remove("hidden");
+   }
+ };
+
+ window.hideStudentCard = function() {
+   currentId = null;
+   window.currentId = null;
+   window.justAddedStudentId = null;
+   const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+   if (card) {
+     card.classList.add("hidden");
+   }
+   if ($("openId")) $("openId").value = "";
+   if ($("searchAny")) $("searchAny").value = "";
+   if ($("searchMsg")) $("searchMsg").style.display = "none";
+   if ($("notesLockOverlay")) $("notesLockOverlay").style.display = "flex";
+   if ($("newBadge")) $("newBadge").classList.add("hidden");
+   if ($("studentIdPill")) $("studentIdPill").textContent = "ID: —";
+   if ($("todayStatus")) $("todayStatus").textContent = "—";
+   if ($("daysCount")) $("daysCount").textContent = "—";
+   if ($("stName")) $("stName").value = "";
+   if ($("stPhone")) $("stPhone").value = "";
+   if ($("stParentPhone")) $("stParentPhone").value = "";
+   if ($("stClass")) $("stClass").value = "";
+   window.scrollTo({ top: 0, behavior: "smooth" });
+ };
+
  window.extOpen = function(id) {
  if(!id || !students[String(id)]) {
  showToast(currentLang === 'ar' ? "الطالب غير مسجل" : "Student not found", "err");
@@ -1703,6 +1738,7 @@ function showToast(msg, type = "success") {
  if($("searchAny")) $("searchAny").value = ""; 
  if($("searchMsg")) $("searchMsg").style.display = "none";
  
+ window.showStudentCard();
  updateStudentUI(String(id)); 
  
  const card = document.querySelector(".studentCard"); 
@@ -2887,12 +2923,18 @@ function applyPermissions() {
 function updateStudentUI(id) {
 currentId = id;
 window.currentId = id;
+if (!id) {
+  window.hideStudentCard();
+  return;
+}
 const st = students[id]; 
  if (!st) {
  if ($("notesLockOverlay")) $("notesLockOverlay").style.display = "flex";
  if ($("stNotesListContainer")) $("stNotesListContainer").innerHTML = '<div class="mutedCenter" style="font-size:0.85em;">' + (currentLang === 'ar' ? 'لا توجد ملاحظات مسجلة لهذا الطالب' : 'No notes recorded for this student') + '</div>';
+ window.hideStudentCard();
  return; 
  }
+ window.showStudentCard();
  
  if ($("notesLockOverlay")) $("notesLockOverlay").style.display = "none";
  if (typeof renderStudentNotes === "function") renderStudentNotes(id);
@@ -3098,9 +3140,13 @@ const st = students[id];
  window.renderStudentPaymentsUI(st, currentSelectedPkg);
  
  if($("newBadge")) {
-  if(dates.length === 0 && st.name) $("newBadge").classList.remove("hidden"); 
-  else $("newBadge").classList.add("hidden");
-  }
+   const isJustCreated = (window.justAddedStudentId && String(window.justAddedStudentId) === String(st.id));
+   if(isJustCreated && (!st.attendanceDates || st.attendanceDates.length === 0)) {
+     $("newBadge").classList.remove("hidden");
+   } else {
+     $("newBadge").classList.add("hidden");
+   }
+ }
   if (typeof window.updateAttendanceUIState === 'function') {
     window.updateAttendanceUIState();
   }
@@ -4297,6 +4343,12 @@ on("quickAttendBtn", "click", function() {
  showToast(res.msg, res.ok ? "success" : "warning");
  updateStudentUI(id); updateTopStats(); 
  idInp.value = ""; idInp.focus();
+ const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+ if(card) {
+   setTimeout(() => {
+     card.scrollIntoView({behavior: "smooth", block: "start"});
+   }, 120);
+ }
  });
 
  on("openBtn", "click", function() {
@@ -4381,6 +4433,7 @@ on("quickAttendBtn", "click", function() {
  
  students[String(id)] = makeEmptyStudent(id); 
  if(id > BASE_MAX_ID) extraIds.push(id);
+ window.justAddedStudentId = String(id);
  saveAll(); window.extOpen(id); showToast(t("msg_added"));
  if ($("newId")) $("newId").value = "";
  });
@@ -4388,6 +4441,8 @@ on("quickAttendBtn", "click", function() {
  on("saveStudentBtn", "click", function() {
  if(!currentId) return;
  const s = students[currentId]; if (!s) return;
+ window.justAddedStudentId = null;
+ if ($("newBadge")) $("newBadge").classList.add("hidden");
  if ($("stName")) s.name = $("stName").value.trim(); 
  if ($("stClass")) s.className = $("stClass").value.trim(); 
  if ($("stPhone")) s.phone = $("stPhone").value.trim();
@@ -7735,6 +7790,12 @@ document.addEventListener("DOMContentLoaded", () => {
  showToast(res.msg, res.ok ? "success" : "warning");
  updateStudentUI(scannedId);
  updateTopStats();
+ const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+ if(card) {
+   setTimeout(() => {
+     card.scrollIntoView({behavior: "smooth", block: "start"});
+   }, 120);
+ }
  } else if (scannedId) {
  showToast("الطالب غير مسجل: " + scannedId, "err");
  showFullscreenFeedback(false, false);

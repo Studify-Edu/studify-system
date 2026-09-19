@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=STUDIFY_V85">
+ <link rel="stylesheet" href="style.css?v=STUDIFY_V86">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -557,14 +557,19 @@
    </div>
  </div>
 
- <div class="card bento-full studentCard">
- <div class="flexBetween">
- <h2 style="display:flex; align-items:center; gap:10px;">
- <span data-i18n="st_details">بيانات الطالب</span> 
- <span id="newBadge" class="newBadge hidden" data-i18n="badge_new">جديد</span>
- </h2>
- <div id="stAvatar" class="avatarIcon"></div>
- </div>
+  <div id="studentDetailsCard" class="card bento-full studentCard hidden">
+  <div class="flexBetween" style="margin-bottom: 12px;">
+  <h2 style="display:flex; align-items:center; gap:10px; margin:0;">
+  <span data-i18n="st_details">بيانات الطالب</span> 
+  <span id="newBadge" class="newBadge hidden" data-i18n="badge_new">جديد</span>
+  </h2>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <button type="button" class="btn secondary smallBtn" id="closeStudentCardBtn" onclick="window.hideStudentCard()" title="إغلاق ملف الطالب" style="border-radius:8px; padding:6px 12px; font-size:0.85em; display:inline-flex; align-items:center; gap:6px; background:var(--bg-surface); border:1px solid var(--border); color:var(--text-secondary); cursor:pointer;">
+      <i class="fa-solid fa-xmark"></i> <span data-i18n="btn_close_profile">إغلاق الملف</span>
+    </button>
+    <div id="stAvatar" class="avatarIcon"></div>
+  </div>
+  </div>
 
  <div style="display:flex; gap:10px; margin-bottom: 15px; justify-content:center;">
  <button class="st-rank-btn active-normal" id="rankNormalBtn" data-i18n="rank_normal"> عادي</button>
@@ -1860,7 +1865,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V139"></script>
+  <script type="module" src="app.js?v=STUDIFY_V140"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
