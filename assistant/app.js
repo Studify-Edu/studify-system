@@ -34,42 +34,460 @@ const K_LANG = "ca_lang";
 let currentLang = localStorage.getItem(K_LANG) || "ar";
 window.currentLang = currentLang;
 // =============================================================================
-// GLOBAL NOTIFICATION & INTERCEPTOR ENGINE (ZERO NATIVE BROWSER POPUPS)
+// GLOBAL NOTIFICATION & INTERCEPTOR ENGINE (FULL ARABIC & ENGLISH LOCALIZATION)
 // =============================================================================
-let _lastToastMsg = "", _lastToastTime = 0;
-window.showToast = function(msg, type = "success") {
+const GLOBAL_NOTIF_DICT = {
+  "يرجى إدخال اسم المستخدم وكلمة المرور": "Please enter username and password",
+  "أدخل اسم المستخدم وكلمة المرور": "Please enter username and password",
+  "أدخل البريد الإلكتروني وكلمة المرور": "Please enter email and password",
+  "أدخل كلمة المرور": "Please enter password",
+  "بيانات الدخول غير صحيحة، يرجى التأكد من الحساب وكلمة المرور": "Invalid credentials. Please verify your username and password.",
+  "خطأ في بيانات الدخول: الرجاء التأكد من الحساب وكلمة المرور": "Login error: Please check your username and password.",
+  "حساب المساعد غير موجود أو كلمة المرور خاطئة.": "Assistant account not found or password incorrect.",
+  "تم تسجيل الدخول بنجاح. مرحباً بك.": "Logged in successfully. Welcome!",
+  "تم تسجيل الدخول بنجاح. جاري التوجيه إلى لوحة الإدارة...": "Logged in successfully. Redirecting to admin portal...",
+  "تم تسجيل الخروج بنجاح": "Logged out successfully",
+  "تم تسجيل الخروج": "Logged out",
+  "حدث خطأ أثناء تسجيل الدخول": "An error occurred during login",
+  "يرجى إدخال كلمة المرور": "Please enter password",
+  "كلمة المرور غير صحيحة": "Incorrect password",
+  "يرجى كتابة كلمة المرور للمتابعة": "Please enter password to proceed",
+  "يرجى إدخال كلمة مرور المدير": "Please enter manager password",
+  "كلمة مرور المدير غير صحيحة!": "Incorrect manager password!",
+  "كلمة المرور غير صحيحة!": "Incorrect password!",
+  "يجب تسجيل الدخول كمدير أولاً": "Must login as manager first",
+  "تم فتح الشيفت بنجاح": "Shift opened successfully",
+  "تم إغلاق الشيفت بنجاح": "Shift closed successfully",
+  "يرجى كتابة سبب تعليق أو رفض اليومية": "Please specify the reason for suspending or rejecting the daily shift",
+  "تم حفظ قرار اعتماد اليومية": "Daily shift approval saved",
+  "تم رفض اليومية": "Daily shift rejected",
+  "تنبيه: اليومية معلقة حالياً": "Warning: Daily shift is currently suspended",
+  "تم فتح شيفت جديد": "New shift opened",
+  "تم تعليق اليومية": "Daily shift suspended",
+  "تم اعتماد اليومية بنجاح": "Daily shift approved successfully",
+  "تم تأكيد استلام النقدية وإغلاق اليومية": "Cash receipt confirmed and daily shift closed",
+  "تم فتح الشيفت واليومية بنجاح من قِبل المدير.": "Shift and daily register opened successfully by manager.",
+  "اليومية معتمدة والنظام مفتوح للعمل": "Daily register approved and system open for work",
+  "اليومية معلقة وفي انتظار اعتماد المدير": "Daily register suspended awaiting manager approval",
+  "هذه الميزة مقفولة من قِبَل المدير": "This feature is locked by the manager",
+  "عفواً، قسم الباقات والأسعار مقفل من المدير": "Sorry, Packages & Pricing is locked by manager",
+  "عفواً، قسم الباقات والأسعار مقفل من قِبَل المدير": "Sorry, Packages & Pricing is locked by manager",
+  "عفواً، قسم المنهج مقفل من المدير": "Sorry, Syllabus is locked by manager",
+  "عفواً، قسم التقارير مقفل من المدير": "Sorry, Reports section is locked by manager",
+  "عفواً، قسم أدوات التسويق مقفل من المدير": "Sorry, Marketing Tools section is locked by manager",
+  "عفواً، قسم طلاب الحصة مقفل من المدير": "Sorry, Session Students section is locked by manager",
+  "عفواً، قسم مخزون المذكرات مقفل من المدير": "Sorry, Booklets Inventory is locked by manager",
+  "عفواً، قسم الإعدادات مقفل من المدير": "Sorry, Settings section is locked by manager",
+  "عفواً، إضافة طالب جديد مقفلة من المدير": "Sorry, adding new students is locked by manager",
+  "عفواً، تعديل الباقات والأسعار مقفل من المدير": "Sorry, editing packages is locked by manager",
+  "عفواً، خصم/إعفاء الطلاب مقفل من المدير": "Sorry, student discount/exemption is locked by manager",
+  "إرسال طلبات القرارات مقفل من قِبل المدير": "Sending decision requests is locked by manager",
+  "فشل تحديث الصلاحية في السحابة": "Failed to update permission in cloud",
+  "تم تحديث الصلاحيات من قِبل المدير فورياً": "Permissions updated by manager instantly",
+  "تم تحديث صلاحية المساعد بنجاح": "Assistant permission updated successfully",
+  "فشل تحديث الصلاحية": "Failed to update permission",
+  "تم تسجيل الحضور بنجاح": "Attendance recorded successfully",
+  "يرجى تحديد مادة الحضور من القائمة بالأعلى أولاً": "Please select attendance subject from the top menu first",
+  "الطالب غير مسجل": "Student not registered",
+  "الطالب غير موجود": "Student not found",
+  "تم تسجيل الغياب بنجاح": "Absence recorded successfully",
+  "الطالب مسجل حضور بالفعل اليوم": "Student is already marked present today",
+  "تم إلغاء تسجيل الحضور": "Attendance cancelled",
+  "تم إلغاء تسجيل الحضور والمبلغ بنجاح": "Attendance and payment cancelled successfully",
+  "تم إلغاء تسجيل الحضور والمبلغ": "Attendance and payment cancelled",
+  "تم تسجيل حضور الطالب بنجاح": "Student attendance recorded successfully",
+  "تم تسجيل حضور الحصة وتحصيل المبلغ بنجاح": "Session attendance recorded and payment collected successfully",
+  "تم إعطاء إنذار": "Warning issued",
+  "تم تسجيل الإنذار بنجاح": "Warning recorded successfully",
+  "تم إلغاء الإنذار": "Warning cancelled",
+  "إلغاء الحضور المالي": "Cancel Financial Attendance",
+  "هل أنت متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟": "Are you sure you want to cancel and delete this student's financial attendance for today?",
+  "نعم، إلغاء الحضور": "Yes, cancel attendance",
+  "تم حفظ الطالب بنجاح": "Student saved successfully",
+  "تم تحديث بيانات الطالب بنجاح": "Student updated successfully",
+  "تم حذف الطالب بنجاح": "Student deleted successfully",
+  "تم استرجاع الطالب بنجاح": "Student restored successfully",
+  "تم الاسترجاع": "Restored successfully",
+  "هذا الكود محجوز ومسجل به بيانات بالفعل": "This ID is already registered",
+  "يرجى إدخال اسم الطالب": "Please enter student name",
+  "يرجى إدخال كود الطالب": "Please enter student ID",
+  "كود الطالب غير صحيح": "Invalid student ID",
+  "يرجى إدخال رقم الطالب أولاً": "Please enter student phone number first",
+  "يرجى إدخال رقم ولي الأمر أولاً": "Please enter parent phone number first",
+  "يرجى ملء كافة البيانات": "Please fill in all required fields",
+  "يرجى إدخال رقم أو اسم الطالب": "Please enter student name or phone number",
+  "لم يتم العثور على طالب بهذا الرقم أو الاسم": "No student found with this name or number",
+  "يرجى اختيار طالب أولاً": "Please select a student first",
+  "يرجى اختيار طالب أولاً من البحث": "Please select a student from search first",
+  "يرجى اختيار أو فتح ملف طالب أولاً": "Please select or open a student file first",
+  "يرجى اختيار أو فتح ملف طالب أولاً لطباعة الإقرار": "Please select or open a student file first to print acknowledgment",
+  "تم التحديث لـ عادي": "Updated to Standard member",
+  "تم الترقية لـ VIP": "Upgraded to VIP member",
+  "تم تحديث حالة العضوية": "Membership status updated",
+  "تم حفظ التقييم بنجاح": "Student evaluation saved successfully",
+  "تم تحديث باقات الطالب بنجاح": "Student packages updated successfully",
+  "نشطة": "Active",
+  "تمت الموافقة وتطبيق الخصم": "Discount approved and applied",
+  "تمت الموافقة وتطبيق الخصم بنجاح": "Discount approved and applied successfully",
+  "تمت الموافقة على طلب الخصم": "Discount request approved",
+  "تمت الموافقة على طلبك": "Your request was approved",
+  "فشل تنفيذ الطلب": "Failed to execute request",
+  "تم رفض الطلب": "Request rejected",
+  "تم رفض طلبك": "Your request was rejected",
+  "فشل في الرفض": "Failed to reject request",
+  "فشل معالجة الرفض": "Failed to process rejection",
+  "حدث خطأ أثناء اعتماد القرار": "Error occurred while approving decision",
+  "يرجى كتابة قيمة الخصم المقترحة بالجنيه": "Please enter proposed discount amount in EGP",
+  "يرجى إدخال قيمة خصم صحيحة": "Please enter a valid discount amount",
+  "يرجى كتابة سبب طلب القرار ليعتمده المدير": "Please enter reason for decision request",
+  "تم إرسال طلب القرار للمدير بنجاح، وستصلك الموافقة فور اعتمادها من الإدارة": "Decision request sent to manager successfully",
+  "لا توجد طلبات معلقة": "No pending requests",
+  "تم اعتماد وتطبيق القرار بنجاح": "Decision approved and applied successfully",
+  "قرار خصم مباشر من الإدارة": "Direct discount decision from management",
+  "حملات التسويق متاحة حصرياً في الخطة الذهبية - يرجى ترقية باقة الاشتراك للوصول إلى هذه الميزة": "Marketing campaigns are exclusive to Golden Plan. Please upgrade your subscription.",
+  "تم الوصول للحد الأقصى للطلاب": "Maximum student limit reached",
+  "تم تجاوز الحد الأقصى للمساعدين المسموح به": "Maximum assistants limit reached for your plan",
+  "تم الوصول للحد الأقصى للمساعدين": "Maximum assistants limit reached",
+  "تم قفل النظام: انتهت فترة الاشتراك": "System locked: Subscription has expired",
+  "انتهاء صلاحية اشتراك النظام": "System Subscription Expired",
+  "تواصل للتجديد الفوري": "Contact for Instant Renewal",
+  "عرض خطط الاشتراك": "View Subscription Plans",
+  "تم تسجيل الدفعة بنجاح": "Payment recorded successfully",
+  "تم حفظ التعديلات بنجاح": "Changes saved successfully",
+  "يرجى إدخال مبلغ صحيح": "Please enter a valid amount",
+  "يرجى إدخال اسم الطالب والمبلغ بشكل صحيح": "Please enter student name and amount correctly",
+  "يرجى اختيار الباقة المراد الدفع لها": "Please select the package to pay for",
+  "تم تصحيح الدفعة بنجاح": "Payment corrected successfully",
+  "تم حذف الدفعة بنجاح": "Payment deleted successfully",
+  "تم إضافة الرصيد بنجاح": "Balance added successfully",
+  "تم خصم المبلغ بنجاح": "Amount deducted successfully",
+  "تم حفظ وتحديث الباقة بنجاح": "Package saved & updated successfully",
+  "تم تحديث الباقة بنجاح": "Package updated successfully",
+  "تم حفظ الباقة بنجاح": "Package saved successfully",
+  "تم حذف الباقة نهائياً من السحابة والنظام": "Package permanently deleted from cloud & system",
+  "تم حذف الباقة بنجاح": "Package deleted successfully",
+  "يرجى إدخال اسم وسعر الباقة بشكل صحيح": "Please enter a valid package name and price",
+  "يرجى إدخال اسم الباقة": "Please enter package name",
+  "سعر الباقة يجب أن يكون رقماً": "Package price must be a number",
+  "تم تسجيل المصروف بنجاح": "Expense recorded successfully",
+  "تم حذف المصروف بنجاح": "Expense deleted successfully",
+  "يرجى كتابة بند وقيمة المصروف": "Please enter expense item and amount",
+  "يرجى إدخال بند ومبلغ المصروف": "Please enter expense item and amount",
+  "تم حفظ وتحديث المنهج بنجاح": "Syllabus saved & updated successfully",
+  "تم حفظ الدرس بنجاح": "Lesson saved successfully",
+  "تمت إضافة الدرس لخريطة المنهج": "Lesson added to syllabus map",
+  "تم تحديث حالة الدرس بنجاح": "Lesson status updated successfully",
+  "تم حذف الدرس من المنهج بنجاح": "Lesson deleted from syllabus successfully",
+  "تم حذف الدرس من المنهج": "Lesson deleted from syllabus",
+  "يرجى إدخال عنوان الدرس": "Please enter lesson title",
+  "يرجى إدخال اسم الدرس / الفصل": "Please enter lesson / chapter name",
+  "تم بيع المذكرة بنجاح": "Booklet sold successfully",
+  "تم استرجاع المذكرة للمخزون": "Booklet returned to inventory",
+  "تم تحديث كمية المخزون بنجاح": "Inventory quantity updated successfully",
+  "تم تحديث العدد الكلي بنجاح": "Total count updated successfully",
+  "تم حفظ بيانات المذكرة بنجاح": "Booklet saved successfully",
+  "تم حذف المذكرة بنجاح": "Booklet deleted successfully",
+  "تم حذف المذكرة من قائمة المخزون": "Booklet deleted from inventory list",
+  "الكمية المتاحة في المخزون لا تكفي": "Insufficient stock quantity available",
+  "المخزون فارغ حالياً": "Inventory is currently out of stock",
+  "يرجى إدخال اسم المذكرة أو الورق": "Please enter booklet or paper name",
+  "يرجى إدخال عدد النسخ المستلمة": "Please enter received copies count",
+  "تم استلام وإضافة المذكرة للمخزون بنجاح": "Booklet received and added to inventory successfully",
+  "انتهى مخزون هذه المذكرة، يرجى تعديل العدد الكلي إذا قمت بطباعة نسخ إضافية.": "Stock depleted for this booklet. Please update total count if extra copies are printed.",
+  "لم يتم بيع أي نسخة من هذه المذكرة لإرجاعها": "No copies of this booklet have been sold to return",
+  "تعديل رصيد المذكرة": "Edit Booklet Stock",
+  "حفظ التعديل": "Save Changes",
+  "حفظ التعديل <i class=\"fa-solid fa-check\"></i>": "Save Changes <i class=\"fa-solid fa-check\"></i>",
+  "حذف مذكرة من الجرد": "Delete Booklet from Inventory",
+  "نعم، حذف المذكرة": "Yes, delete booklet",
+  "تم تصفية الأرقام المستهدفة بنجاح": "Target numbers filtered successfully",
+  "قائمة الأرقام فارغة، قم بتصفية داتا الطلاب أولاً.": "Numbers list is empty, filter students data first.",
+  "فشل النسخ المباشر، يرجى تكرار المحاولة": "Direct copy failed, please try again",
+  "بدء تشغيل البث التلقائي الآمن، يرجى السماح بالنوافذ المنبثقة (Pop-ups)": "Starting safe auto broadcast, please allow pop-ups",
+  "تم إيقاف البث مؤقتاً": "Broadcast paused",
+  "تم استئناف البث التلقائي ▶": "Auto broadcast resumed ▶",
+  "تم إرسال الإعلان لجميع المساعدين": "Announcement broadcasted to all assistants",
+  "تم حذف الإعلان بنجاح": "Announcement deleted successfully",
+  "يرجى كتابة نص الإعلان": "Please write the announcement text",
+  "تم تحديد كافة الرسائل كمقروءة": "All messages marked as read",
+  "لا توجد رسائل مقروءة لمسحها": "No read messages to clear",
+  "تم مسح الرسائل المقروءة بنجاح": "Read messages cleared successfully",
+  "فشل مسح الرسائل المقروءة": "Failed to clear read messages",
+  "تم حفظ الإعدادات بنجاح": "Settings saved successfully",
+  "تم ترقية قاعدة البيانات المحلية بنجاح": "Local database successfully upgraded",
+  "حدث خطأ أثناء حفظ البيانات.": "An error occurred while saving data.",
+  "فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.": "Failed to connect to database. Please check your internet.",
+  "فشل الاتصال بقاعدة البيانات السحابية": "Failed to connect to cloud database",
+  "فشل الاتصال بالسحابة": "Cloud connection failed",
+  "فشل الاتصال": "Connection failed",
+  "تحذير: فشل مزامنة بعض البيانات من السحابة": "Warning: Some cloud data failed to sync",
+  "تنبيه: حدث بطء في مزامنة السحابة، جاري الإعادة تلقائياً": "Notice: Cloud sync delayed, retrying automatically",
+  "عاد الاتصال بالإنترنت جاري المزامنة مع السحابة...": "Internet restored. Syncing with cloud...",
+  "تمت المزامنة مع السحابة بنجاح": "Cloud sync completed successfully",
+  "تم عمل نسخة احتياطية بنجاح": "Backup created successfully",
+  "تم تصدير نسخة احتياطية شاملة": "Comprehensive backup exported successfully",
+  "تم استعادة النسخة الاحتياطية بنجاح": "Backup restored successfully",
+  "تم تصفير حضور ومصاريف الترم بالكامل بنجاح": "Term attendance and expenses reset successfully",
+  "الملف فارغ أو لا يحتوي على بيانات صالحة": "The file is empty or contains no valid data",
+  "مكتبة الإكسيل غير موجودة، تأكد من وجود ملف xlsx.full.min.js في فولدر assets": "Excel library missing. Please check xlsx.full.min.js in assets folder",
+  "مكتبة الإكسيل غير موجودة": "Excel library not found",
+  "مكتبة Excel غير متوفرة": "Excel library not available",
+  "تم تصدير نسخة Excel بنجاح.": "Excel file exported successfully.",
+  "فشل تصدير البيانات إلى Excel": "Failed to export data to Excel",
+  "جاري المزامنة والرفع إلى السحابة...": "Syncing and uploading to cloud...",
+  "تمت المزامنة وتحديث الصلاحيات بنجاح": "Sync and permissions update completed successfully",
+  "تمت المزامنة ورفع البيانات إلى السحابة بنجاح": "Sync and data upload to cloud completed successfully",
+  "خطأ في المزامنة، تحقق من الاتصال": "Sync error, check connection",
+  "عميل Supabase غير مهيأ": "Supabase client not initialized",
+  "جاري رفع جميع البيانات المحلية إلى Supabase...": "Uploading all local data to Supabase...",
+  "تم رفع جميع البيانات بنجاح إلى Supabase.": "All data successfully uploaded to Supabase.",
+  "إعادة تهيئة النظام وضبط المصنع": "Reset System to Factory Settings",
+  "تحذير شديد الخطورة: سيتم مسح كافة بيانات الطلاب والباقات والحضور والمصروفات بالكامل. اكتب \"مسح\" للتأكيد:": "Extreme danger: All student data, packages, attendance, and expenses will be completely wiped. Type \"مسح\" to confirm:",
+  "تأكيد الحذف الشامل": "Confirm Complete Wipe",
+  "تم ضبط المصنع": "Factory Reset Complete",
+  "تم مسح كافة البيانات بنجاح وإعادة تشغيل النظام.": "All data successfully erased and system restarted.",
+  "تم إنشاء حساب المساعد بنجاح": "Assistant account created successfully",
+  "جاري إنشاء حساب المساعد... الرجاء الانتظار": "Creating assistant account... Please wait",
+  "تم إضافة المساعد بنجاح.": "Assistant added successfully.",
+  "تم إضافة المساعد بنجاح": "Assistant added successfully",
+  "تم تحديث كلمة مرور المساعد بنجاح": "Assistant password updated successfully",
+  "تم تحديث كلمة المرور بنجاح": "Password updated successfully",
+  "فشل تحديث كلمة المرور": "Failed to update password",
+  "تم حذف المساعد": "Assistant deleted",
+  "تم حذف المساعد بنجاح": "Assistant deleted successfully",
+  "تم حذف حساب المساعد بنجاح": "Assistant account deleted successfully",
+  "فشل في حذف المساعد.": "Failed to delete assistant.",
+  "فشل حذف المساعد": "Failed to delete assistant",
+  "اسم المستخدم يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام فقط بدون مسافات": "Username must contain lowercase English letters & numbers only without spaces",
+  "اسم المستخدم يجب أن يكون بحروف إنجليزية فقط وبدون مسافات": "Username must be English letters only without spaces",
+  "يجب أن تكون مديراً لإضافة مساعدين.": "You must be a manager to add assistants.",
+  "فشل إضافة المساعد": "Failed to add assistant",
+  "تم نسخ كلمة المرور الحالية إلى الحافظة": "Current password copied to clipboard",
+  "تم نسخ كلمة المرور": "Password copied to clipboard",
+  "يرجى كتابة كلمة المرور الجديدة": "Please enter the new password",
+  "كلمة المرور يجب أن تتكون من 6 خانات على الأقل": "Password must be at least 6 characters",
+  "تغيير كلمة المرور": "Change Password",
+  "حفظ كلمة المرور": "Save Password",
+  "تغيير كلمة المرور الخاصة بك": "Change Your Password",
+  "الرجاء إدخال كلمة المرور الجديدة": "Please enter the new password",
+  "تغيير": "Change",
+  "جاري تغيير كلمة المرور...": "Changing password...",
+  "تم تغيير كلمة المرور بنجاح.": "Password changed successfully.",
+  "جاري جلب بيانات المساعد...": "Fetching assistant data...",
+  "تأكيد": "Confirm",
+  "تأكيد الحذف": "Confirm Delete",
+  "تأكيد الاستيراد": "Confirm Import",
+  "نعم، استبدل": "Yes, replace",
+  "تأكيد الخصم": "Confirm Discount",
+  "تأكيد التصفير": "Confirm Reset",
+  "نعم، صفر": "Yes, reset",
+  "تأكيد ضبط المصنع": "Confirm Factory Reset",
+  "نعم، امسح كل شيء": "Yes, erase everything",
+  "تحذير شديد": "Severe Warning",
+  "نعم، استرجع البيانات": "Yes, restore data",
+  "نعم، احذف": "Yes, delete",
+  "إلغاء": "Cancel",
+  "تراجع": "Cancel",
+  "حفظ": "Save",
+  "إغلاق": "Close",
+  "تم": "Done",
+  "خطأ": "Error",
+  "تحذير": "Warning",
+  "نجاح": "Success",
+  "هل أنت متأكد؟": "Are you sure?",
+  "هل أنت متأكد من الحذف؟": "Are you sure you want to delete?",
+  "لا يمكن التراجع عن هذه الخطوة!": "This action cannot be undone!",
+  "تنبيه": "Notice",
+  "تنبيه عام": "General Notice",
+  "هل أنت متأكد من تصفير الترم؟": "Are you sure you want to reset the term?",
+  "سيتم مسح سجل الحضور والمصروفات بالكامل!": "All attendance records and expenses will be wiped!",
+  "نعم، صفر الترم": "Yes, reset term",
+  "التقرير اليومي": "Daily Report",
+  "تقرير الترم": "Term Report",
+  "إدارة المساعدين": "Assistant Management",
+  "صلاحيات المساعد": "Assistant Permissions",
+  "طلبات القرارات": "Decision Requests",
+  "إدارة الباقات والمصاريف": "Packages & Expenses Management",
+  "الإعدادات المتقدمة": "Advanced Settings",
+  "<i class='fa-solid fa-money-bill-wave'></i> الصلاحيات المالية": "<i class='fa-solid fa-money-bill-wave'></i> Financial Permissions",
+  "<i class='fa-solid fa-server'></i> إدارة البيانات والنظام": "<i class='fa-solid fa-server'></i> Data & System Management",
+  "<i class='fa-regular fa-file-lines'></i> صلاحيات الصفحات والأدوات": "<i class='fa-regular fa-file-lines'></i> Pages & Tools Permissions"
+};
 
-  // Auto-translate Arabic toast text when currentLang === 'en'
-  const _ASST_TOAST_EN = {
-    "يرجى إدخال اسم المستخدم وكلمة المرور": "Please enter username and password",
-    "بيانات الدخول غير صحيحة، يرجى التأكد من الحساب وكلمة المرور": "Invalid credentials. Please check your username and password.",
-    "تم تسجيل الدخول بنجاح. مرحباً بك.": "Logged in successfully. Welcome!",
-    "تم تسجيل الحضور بنجاح": "Attendance recorded successfully",
-    "تم تسجيل الدفعة بنجاح": "Payment recorded successfully",
-    "تم حفظ التعديلات بنجاح": "Changes saved successfully",
-    "تم حفظ الطالب بنجاح": "Student saved successfully",
-    "تم تحديث بيانات الطالب بنجاح": "Student updated successfully",
-    "تم حذف الطالب بنجاح": "Student deleted successfully",
-    "تم استرجاع الطالب بنجاح": "Student restored successfully",
-    "تم حفظ وتحديث الباقة بنجاح": "Package saved & updated successfully",
-    "تم تحديث الباقة بنجاح": "Package updated successfully",
-    "تم حفظ الباقة بنجاح": "Package saved successfully",
-    "تم حذف الباقة نهائياً من السحابة والنظام": "Package permanently deleted from cloud & system",
-    "يرجى إدخال اسم وسعر الباقة بشكل صحيح": "Please enter a valid package name and price",
-    "تم تسجيل المصروف بنجاح": "Expense recorded successfully",
-    "تم حفظ وتحديث المنهج بنجاح": "Syllabus saved & updated successfully",
-    "تم إرسال الإعلان لجميع المساعدين": "Announcement broadcasted to all assistants",
-    "تم حفظ الإعدادات بنجاح": "Settings saved successfully",
-    "فشل الاتصال بقاعدة البيانات. تأكد من الإنترنت.": "Failed to connect to database. Please check your internet connection."
-  };
-  if (currentLang === 'en') {
-    if (_ASST_TOAST_EN[msg]) {
-      msg = _ASST_TOAST_EN[msg];
-    } else if (/^تم تسجيل حضور الطالب (.+) بنجاح/.test(msg)) {
-      msg = msg.replace(/^تم تسجيل حضور الطالب (.+) بنجاح/, 'Attendance recorded for $1 successfully.');
+const DYNAMIC_NOTIF_RULES = [
+  {
+    pattern: /^تم الوصول للحد الأقصى للطلاب( \((.*?)\))?/i,
+    replace: (m, p1, p2) => p2 ? `Maximum student limit reached (${p2})` : `Maximum student limit reached`
+  },
+  {
+    pattern: /^الطالب غير مسجل:(.*)/i,
+    replace: (m, p1) => `Student not registered: ${p1}`
+  },
+  {
+    pattern: /^باقتكم الحالية تسمح بحد أقصى (.*?) طالب/i,
+    replace: (m, p1) => `Your current plan allows a maximum of ${p1} students. Please contact management to upgrade.`
+  },
+  {
+    pattern: /^تم تطبيق الخصم على (.*)$/i,
+    replace: (m, p1) => `Discount applied to ${p1}`
+  },
+  {
+    pattern: /^تم تطبيق القرار بنجاح للطالب:(.*)$/i,
+    replace: (m, p1) => `Decision applied successfully for student:${p1}`
+  },
+  {
+    pattern: /^تم استيراد (.*?) طالب بنجاح/i,
+    replace: (m, p1) => `Successfully imported ${p1} students`
+  },
+  {
+    pattern: /^تم بيع نسخة من (.*) وإضافة (.*?) ج للخزينة كاش$/i,
+    replace: (m, p1, p2) => `Sold 1 copy of ${p1}, added ${p2} EGP cash to treasury`
+  },
+  {
+    pattern: /^تم إرجاع نسخة من (.*) بنجاح$/i,
+    replace: (m, p1) => `1 copy of ${p1} returned successfully`
+  },
+  {
+    pattern: /^تم نسخ (.*?) رقم موبايل بنجاح/i,
+    replace: (m, p1) => `Copied ${p1} mobile numbers successfully`
+  },
+  {
+    pattern: /^تم فتح شيفت يوم \((.*?)\) بنجاح/i,
+    replace: (m, p1) => `Shift for day (${p1}) opened successfully and assistant operations resumed.`
+  },
+  {
+    pattern: /^تم إغلاق شيفت يوم \((.*?)\) وتجميد العمليات/i,
+    replace: (m, p1) => `Shift for day (${p1}) closed and assistant operations frozen immediately.`
+  },
+  {
+    pattern: /^تم تعليق يومية \((.*?)\) وإرسال الملاحظة/i,
+    replace: (m, p1) => `Daily register (${p1}) suspended and notice sent to assistants`
+  },
+  {
+    pattern: /^أدخل كلمة المرور الجديدة للمساعد \((.*)\):$/i,
+    replace: (m, p1) => `Enter new password for assistant (${p1}):`
+  },
+  {
+    pattern: /^أدخل العدد الكلي المستلم لمذكرة \((.*)\):$/i,
+    replace: (m, p1) => `Enter total received count for booklet (${p1}):`
+  },
+  {
+    pattern: /^هل أنت متأكد من حذف مذكرة \((.*)\) من قائمة الجرد؟$/i,
+    replace: (m, p1) => `Are you sure you want to delete booklet (${p1}) from inventory?`
+  },
+  {
+    pattern: /^تم (تفعيل|تعطيل|تحديث) صلاحية «(.*?)» للمساعد (.*?) بنجاح/i,
+    replace: (m, p1, p2, p3) => `Successfully ${p1 === 'تفعيل' ? 'enabled' : (p1 === 'تعطيل' ? 'disabled' : 'updated')} permission "${p2}" for assistant ${p3}`
+  },
+  {
+    pattern: /^حدث خطأ أثناء تطبيق القرار:(.*)/i,
+    replace: (m, p1) => `Error occurred while applying decision: ${p1}`
+  },
+  {
+    pattern: /^حدث خطأ أثناء الرفع:(.*)/i,
+    replace: (m, p1) => `Error occurred during upload: ${p1}`
+  },
+  {
+    pattern: /^فشل إرسال الطلب:(.*)/i,
+    replace: (m, p1) => `Failed to send request: ${p1}`
+  },
+  {
+    pattern: /^حدث خطأ أثناء قراءة ملف Excel:(.*)/i,
+    replace: (m, p1) => `Error reading Excel file: ${p1}`
+  },
+  {
+    pattern: /^حدث خطأ أثناء التصفير:(.*)/i,
+    replace: (m, p1) => `Error resetting data: ${p1}`
+  },
+  {
+    pattern: /^فشل ضبط المصنع:(.*)/i,
+    replace: (m, p1) => `Factory reset failed: ${p1}`
+  },
+  {
+    pattern: /^الباقة منتهية/i,
+    replace: () => `Package expired`
+  },
+  {
+    pattern: /^على وشك الانتهاء/i,
+    replace: () => `About to expire`
+  },
+  {
+    pattern: /^تم تسجيل حضور الطالب (.+) بنجاح/i,
+    replace: (m, p1) => `Attendance recorded for ${p1} successfully.`
+  },
+  {
+    pattern: /انتهت فترة صلاحية اشتراك المركز بالكامل/i,
+    replace: () => `<p style="color:var(--text-secondary);margin-bottom:12px">Center subscription has expired completely.</p><p style="font-size:0.9em;color:#EF4444;font-weight:700">Operations are suspended until renewed by management.</p>`
+  },
+  {
+    pattern: /انتهت فترة صلاحية الاشتراك الخاصة بنظام السنتر بالكامل/i,
+    replace: () => `<p style="color:var(--text-secondary);margin-bottom:12px">Center subscription has expired completely.</p><p style="font-size:0.9em;color:#EF4444;font-weight:700">All operations are suspended until renewed by management.</p>`
+  },
+  {
+    pattern: /باقتك الحالية تسمح بحد أقصى <b>(.*?) طالب<\/b>/is,
+    replace: (m, p1) => `<p style="color:var(--text-secondary);margin-bottom:12px">Your current plan allows a maximum of <b>${p1} students</b>.</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> Please upgrade your plan to add more students.</p>`
+  },
+  {
+    pattern: /باقتك الحالية تسمح بحد أقصى <b>(.*?) مساعد<\/b>/is,
+    replace: (m, p1) => `<p style="color:var(--text-secondary);margin-bottom:12px">Your current plan allows a maximum of <b>${p1} assistants</b>.</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> Please upgrade your plan to add more assistant accounts.</p>`
+  },
+  {
+    pattern: /كلمة المرور الحالية للمساعد <b>(.*?)<\/b> هي:/i,
+    replace: (m, p1) => `<div style="text-align: left; margin-bottom: 15px;">Current password for assistant <b>${p1}</b> is:</div>`
+  }
+];
+
+function translateNotification(msg) {
+  if (!msg || typeof msg !== 'string') return msg;
+  const isEn = (window.currentLang === 'en' || (typeof currentLang !== 'undefined' && currentLang === 'en'));
+  if (!isEn) return msg;
+
+  const trimmed = msg.trim();
+  if (GLOBAL_NOTIF_DICT[trimmed]) {
+    return GLOBAL_NOTIF_DICT[trimmed];
+  }
+
+  for (let i = 0; i < DYNAMIC_NOTIF_RULES.length; i++) {
+    const rule = DYNAMIC_NOTIF_RULES[i];
+    if (rule.pattern.test(trimmed)) {
+      return trimmed.replace(rule.pattern, rule.replace);
     }
   }
 
+  return msg;
+}
+window.translateNotification = translateNotification;
+
+function installSwalInterceptor() {
+  if (window.Swal && !window._swalIntercepted) {
+    window._swalIntercepted = true;
+    const _origSwalFire = window.Swal.fire;
+    window.Swal.fire = function(...args) {
+      const isEn = (window.currentLang === 'en' || (typeof currentLang !== 'undefined' && currentLang === 'en'));
+      if (isEn) {
+        if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null) {
+          const opt = { ...args[0] };
+          if (typeof opt.title === 'string') opt.title = translateNotification(opt.title);
+          if (typeof opt.text === 'string') opt.text = translateNotification(opt.text);
+          if (typeof opt.html === 'string') opt.html = translateNotification(opt.html);
+          if (typeof opt.confirmButtonText === 'string') opt.confirmButtonText = translateNotification(opt.confirmButtonText);
+          if (typeof opt.cancelButtonText === 'string') opt.cancelButtonText = translateNotification(opt.cancelButtonText);
+          return _origSwalFire.call(window.Swal, opt);
+        } else if (typeof args[0] === 'string') {
+          args[0] = translateNotification(args[0]);
+          if (typeof args[1] === 'string') args[1] = translateNotification(args[1]);
+          if (typeof args[2] === 'string') args[2] = translateNotification(args[2]);
+        }
+      }
+      return _origSwalFire.apply(window.Swal, args);
+    };
+  }
+}
+installSwalInterceptor();
+
+let _lastToastMsg = "", _lastToastTime = 0;
+window.showToast = function(msg, type = "success") {
+  msg = translateNotification(msg);
   const _now = Date.now();
   if (_now - _lastToastTime < 350 && _lastToastMsg === msg) return;
   _lastToastMsg = msg; _lastToastTime = _now;
@@ -1468,7 +1886,8 @@ async function saveAttendanceOnly() {
 
     await Promise.all([
       secureSave(K_STUDENTS, students),
-      secureSave(K_ATT_BY_DATE, attByDate)
+      secureSave(K_ATT_BY_DATE, attByDate),
+      secureSave(K_SESSION_STUDENTS, sessionStudentsByDate)
     ]);
     updateTopStats();
 
@@ -1689,9 +2108,22 @@ async function loadAll() {
             }
           }
           const expSrc = cd.expenses_by_date || cfg.expenses_by_date;
-          if (expSrc) {
+          if (expSrc && typeof expSrc === 'object') {
             for (const d in expSrc) {
-              if (!expensesByDate[d]) expensesByDate[d] = expSrc[d];
+              if (!expensesByDate[d]) {
+                expensesByDate[d] = expSrc[d] || [];
+              } else if (Array.isArray(expSrc[d])) {
+                const localList = expensesByDate[d] || [];
+                const localSignatures = new Set(localList.map(e => `${e.amount}_${e.reason}_${e.timestamp || ''}`));
+                expSrc[d].forEach(cloudExp => {
+                  const sig = `${cloudExp.amount}_${cloudExp.reason}_${cloudExp.timestamp || ''}`;
+                  if (!localSignatures.has(sig)) {
+                    localList.push(cloudExp);
+                    localSignatures.add(sig);
+                  }
+                });
+                expensesByDate[d] = localList;
+              }
             }
           }
           const attSrc = cd.att_by_date || cfg.att_by_date || cfg.attendance_by_date;
@@ -8655,6 +9087,12 @@ window.CLOUD_MONITOR_SECTIONS = [
     label: "تصنيفات الطلاب (VIP / إنذار)",
     localCount: () => Object.values(students || {}).filter(s => s && s.rank && s.rank !== 'normal').length,
     cloudTable: "settings (config.student_ranks)"
+  },
+  {
+    id: "eval_data",
+    label: "بيانات تقييم الطلاب",
+    localCount: () => (evalData && Object.keys(evalData).length > 0 ? 1 : 0),
+    cloudTable: "settings (config.eval_data)"
   }
 ];
 
