@@ -6220,3 +6220,371 @@ body.system-hard-locked #loginBox {
   border-color: var(--primary) !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
 }
+
+/* ==========================================================================
+   MARKETING CAMPAIGNS & TARGET NUMBERS STYLING
+   ========================================================================== */
+.mkt-nav-item {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+}
+.mkt-nav-badge {
+  font-size: 0.65em;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b, #ec4899);
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+  animation: mktBadgePulse 2s infinite ease-in-out;
+}
+@keyframes mktBadgePulse {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.08); opacity: 1; box-shadow: 0 3px 12px rgba(236, 72, 153, 0.6); }
+}
+
+.mkt-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 200px;
+}
+
+.mkt-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mkt-student-card {
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  transition: all 0.25s ease;
+}
+.mkt-student-card:hover {
+  border-color: var(--primary);
+  background: var(--bg-surface);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.mkt-card-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 250px;
+}
+
+.mkt-student-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(6, 182, 212, 0.15));
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15em;
+  flex-shrink: 0;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.mkt-student-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mkt-student-name {
+  font-size: 1.05em;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.3;
+}
+.mkt-student-id {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.mkt-student-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.88em;
+  line-height: 1.4;
+}
+
+.mkt-meta-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+  font-family: monospace;
+  font-size: 0.95em;
+}
+.mkt-meta-phone:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.mkt-meta-phone .mkt-copy-icon {
+  font-size: 0.85em;
+  opacity: 0.6;
+}
+
+.mkt-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 6px;
+  font-size: 0.84em;
+  font-weight: 700;
+}
+.mkt-meta-badge.badge-vip {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.mkt-meta-badge.badge-warning {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.mkt-meta-badge.badge-debt {
+  background: rgba(249, 115, 22, 0.15);
+  color: #ea580c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+.mkt-meta-badge.badge-paid {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.mkt-meta-badge.badge-present {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.mkt-meta-badge.badge-absent {
+  background: rgba(148, 163, 184, 0.15);
+  color: #64748b;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+.mkt-meta-badge.badge-session {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+.mkt-meta-badge.badge-normal {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.mkt-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mkt-wa-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff !important;
+  text-decoration: none !important;
+  font-weight: 700;
+  font-size: 0.9em;
+  padding: 8px 18px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.mkt-wa-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(16, 185, 129, 0.4);
+}
+
+.mkt-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.mkt-page-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.88em;
+  padding: 7px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.mkt-page-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.mkt-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mkt-page-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88em;
+  color: var(--text-secondary);
+}
+.mkt-page-range {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.mkt-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+.mkt-empty-state i {
+  font-size: 2.5em;
+  opacity: 0.35;
+  margin-bottom: 12px;
+  display: block;
+}
+.mkt-empty-state p {
+  margin: 0;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+/* ======================================================== */
+/* MARKETING TAB PREMIUM BADGE & GLOW ANIMATION */
+/* ======================================================== */
+#btnTabMarketing {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#btnTabMarketing::after {
+  content: "PRO";
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 12px;
+  transform: translateY(-50%);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+  pointer-events: none;
+  animation: mktProPulse 2.5s infinite ease-in-out;
+}
+
+@keyframes mktProPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(236, 72, 153, 0.4);
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(139, 92, 246, 0.7);
+    transform: translateY(-50%) scale(1.05);
+  }
+}
+
+#btnTabMarketing:hover {
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.12), rgba(139, 92, 246, 0.08)) !important;
+  border-inline-start: 3px solid #ec4899 !important;
+}
+
+#btnTabMarketing.active {
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.2), rgba(139, 92, 246, 0.15)) !important;
+  border-inline-start: 3px solid #ec4899 !important;
+  color: #ffffff !important;
+}
+
+/* Marketing Message Textarea - Strict Resize None & SaaS Polish */
+#marketingMsgBody {
+  resize: none !important;
+  min-height: 110px !important;
+  font-family: inherit !important;
+  line-height: 1.6 !important;
+  font-size: 0.95em !important;
+  padding: 12px 14px !important;
+  border-radius: 10px !important;
+  border: 1.5px solid var(--border) !important;
+  background: var(--bg-inset) !important;
+  color: var(--text-primary) !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+#marketingMsgBody:focus {
+  outline: none !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+}
+
+/* Marketing Target Selects Styling */
+#marketingTargetFilter,
+#marketingTargetGroupSelect {
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  border: 1.5px solid var(--border) !important;
+  background-color: var(--bg-inset) !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+#marketingTargetFilter:focus,
+#marketingTargetGroupSelect:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+  outline: none !important;
+}
+
+

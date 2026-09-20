@@ -376,8 +376,27 @@ const DYNAMIC_NOTIF_RULES = [
     replace: (m, p1) => `Are you sure you want to delete booklet (${p1}) from inventory?`
   },
   {
-    pattern: /^تم (تفعيل|تعطيل|تحديث) صلاحية «(.*?)» للمساعد (.*?) بنجاح/i,
-    replace: (m, p1, p2, p3) => `Successfully ${p1 === 'تفعيل' ? 'enabled' : (p1 === 'تعطيل' ? 'disabled' : 'updated')} permission "${p2}" for assistant ${p3}`
+    pattern: /^تم (تفعيل|تعطيل|تحديث) صلاحية «(.*?)» للمساعد ([^\s.]+)(\.)?( بنجاح)?/i,
+    replace: (m, p1, p2, p3) => {
+      const act = p1 === 'تفعيل' ? 'enabled' : (p1 === 'تعطيل' ? 'disabled' : 'updated');
+      const permMap = {
+        'إظهار الإيراد اليومي': 'Show Daily Revenue',
+        'عرض الإيرادات والخزينة': 'Show Revenue & Treasury',
+        'الاعتماد اليومي للإيرادات': 'Daily Approval of Revenue',
+        'إضافة وتعديل بيانات الطلاب': 'Add & Edit Student Data',
+        'طلب خصم أو إعفاء': 'Request Discount or Exemption',
+        'إدارة الباقات والاشتراكات': 'Manage Packages & Subscriptions',
+        'إعدادات النظام والنسخ الاحتياطي': 'System Settings & Backup',
+        'خريطة المنهج الدراسي': 'Syllabus Map',
+        'التقارير والحسابات المالية': 'Financial Reports & Accounts',
+        'حملات التسويق بالواتساب': 'WhatsApp Marketing Campaigns',
+        'طلاب الحصة والغياب السريع': 'Session Students & Quick Attendance',
+        'إدارة ومبيعات المذكرات': 'Booklets Inventory & Sales',
+        'حذف الطلاب': 'Delete Students'
+      };
+      const pName = permMap[p2] || p2;
+      return `Successfully ${act} permission "${pName}" for assistant ${p3}`;
+    }
   },
   {
     pattern: /^حدث خطأ أثناء تطبيق القرار:(.*)/i,
@@ -1756,12 +1775,19 @@ function showToast(msg, type = "success") {
  document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
  const activeBtn = $("btnTab" + tabId); 
  if(activeBtn) {
- activeBtn.classList.add('active');
- const activeGroup = activeBtn.closest('.nav-group');
- if (activeGroup) {
- document.querySelectorAll('.nav-group').forEach(g => g.classList.add('collapsed'));
- activeGroup.classList.remove('collapsed');
+   activeBtn.classList.add('active');
+   const activeGroup = activeBtn.closest('.nav-group');
+   if (activeGroup) {
+     document.querySelectorAll('.nav-group').forEach(g => g.classList.add('collapsed'));
+     activeGroup.classList.remove('collapsed');
+   }
  }
+ if (tabId === "Marketing") {
+   if (typeof window.populateMarketingGroups === 'function') window.populateMarketingGroups();
+   if (typeof window.filterCampaignTarget === 'function') window.filterCampaignTarget();
+ }
+ if (tabId === "Settings" || tabId === "Admin") {
+   if (typeof window.initCenterNotebook === 'function') window.initCenterNotebook();
  }
  closeMobileSidebar(false);
  };
@@ -1850,6 +1876,8 @@ function showToast(msg, type = "success") {
     updateSyncUI('pending', 'جاري الحفظ...');
 
     // Save to IndexedDB (encrypted, instant 0ms, offline-ready)
+    const currentNbVal = $("centerNotebook") ? $("centerNotebook").value : (centerNotebookContent || localStorage.getItem(K_NOTEBOOK) || "");
+    localStorage.setItem(K_NOTEBOOK, currentNbVal);
     await Promise.all([
       secureSave(K_STUDENTS, students),
       secureSave(K_ATT_BY_DATE, attByDate),
@@ -1860,7 +1888,8 @@ function showToast(msg, type = "success") {
       secureSave(K_SYLLABUS, syllabusData),
       secureSave(K_EVAL, evalData),
       secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
-      secureSave(K_BOOKLETS, bookletsStock)
+      secureSave(K_BOOKLETS, bookletsStock),
+      secureSave(K_NOTEBOOK, currentNbVal)
     ]);
 
     updateTopStats(); updateFinanceSummary();
@@ -1970,7 +1999,8 @@ function showToast(msg, type = "success") {
         })),
         student_packages: Object.assign({}, existingConfig.student_packages || {}, studentPackagesMap),
         student_ranks: Object.assign({}, existingConfig.student_ranks || {}, studentRanksMap),
-        group_fees: groupFees || {}
+        group_fees: groupFees || {},
+        center_notebook: currentNbVal
       });
 
       // Execute upserts in parallel
@@ -2097,6 +2127,17 @@ async function loadAll() {
     evalData = await secureLoad(K_EVAL, {});
     sessionStudentsByDate = await secureLoad(K_SESSION_STUDENTS, {});
     bookletsStock = await secureLoad(K_BOOKLETS, {});
+    centerNotebookContent = await secureLoad(K_NOTEBOOK, localStorage.getItem(K_NOTEBOOK) || "");
+
+    // Normalize any legacy 'عام' / 'General' in local students
+    Object.values(students || {}).forEach(s => {
+      if (s) {
+        if (s.className === 'عام' || s.className === 'General' || s.className === 'بدون باقة' || s.className === 'No Package') s.className = '';
+        if (Array.isArray(s.packages)) {
+          s.packages = s.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package');
+        }
+      }
+    });
     console.log("[loadAll] Local data loaded from IndexedDB");
 
     // Step 2: Try to fetch from Supabase and merge
@@ -2130,7 +2171,14 @@ async function loadAll() {
             const isCloudEmpty = (!row.name || row.name.trim() === '') && (!row.phone || row.phone.trim() === '');
             if (isCloudEmpty) return;
 
-            const restoredPackages = (studentPackagesMap && studentPackagesMap[row.id]) || row.packages || [];
+            let cName = row.class_name || row.className || '';
+            if (cName === 'عام' || cName === 'General' || cName === 'بدون باقة' || cName === 'No Package') cName = '';
+
+            let restoredPackages = (studentPackagesMap && studentPackagesMap[row.id]) || row.packages || [];
+            if (typeof restoredPackages === 'string') restoredPackages = [restoredPackages];
+            if (!Array.isArray(restoredPackages)) restoredPackages = [];
+            restoredPackages = restoredPackages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package');
+
             const restoredRank = (studentRanksMap && studentRanksMap[row.id]) || row.rank || 'normal';
 
             const stObj = {
@@ -2138,7 +2186,7 @@ async function loadAll() {
               name: row.name || '',
               phone: row.phone || '',
               parentPhone: row.parent_phone || row.parentPhone || '',
-              className: row.class_name || row.className || '',
+              className: cName,
               paymentPlan: row.payment_plan || 'cash',
               paid: Number(row.paid) || 0,
               discount: Number(row.discount) || 0,
@@ -2304,6 +2352,14 @@ async function loadAll() {
             }
           }
 
+          // Merge Smart Center Notebook from cloud
+          const nbSrc = cd.center_notebook !== undefined ? cd.center_notebook : cfg.center_notebook;
+          if (nbSrc !== undefined && nbSrc !== null) {
+            centerNotebookContent = String(nbSrc);
+            localStorage.setItem(K_NOTEBOOK, centerNotebookContent);
+            await secureSave(K_NOTEBOOK, centerNotebookContent);
+          }
+
           // Evaluate shift lock state immediately on load
           const today = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
           const approvalMap = cfg.daily_approval_map || {};
@@ -2371,7 +2427,10 @@ async function loadAll() {
  applyTheme(localStorage.getItem(K_THEME) || "dark");
  
 
- if($("centerNotebook")) $("centerNotebook").value = localStorage.getItem(K_NOTEBOOK) || "";
+ if($("centerNotebook")) {
+   $("centerNotebook").value = centerNotebookContent || localStorage.getItem(K_NOTEBOOK) || "";
+   if (typeof window.updateNotebookCounters === 'function') window.updateNotebookCounters();
+ }
  
  updateTopStats(); updateFinanceSummary(); renderCharts(); if (typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState();
  } catch(e) { console.error("Data Load Error", e); }
@@ -2536,8 +2595,15 @@ function applyPermissionsToAssistantUI() {
     }
   });
   
-  // 2. Hide extreme dangerous actions always
-  if (document.getElementById('deleteStudentBtn')) document.getElementById('deleteStudentBtn').classList.add('hidden');
+  // 2. Student deletion permission
+  const delBtn = document.getElementById('deleteStudentBtn');
+  if (delBtn) {
+    if (p.can_delete_student === true) {
+      delBtn.classList.remove('hidden', 'locked-feature');
+    } else {
+      delBtn.classList.add('hidden');
+    }
+  }
 
   // 3. Unlock logic based on permissions
   
@@ -6061,105 +6127,112 @@ on("importExcelInput", "change", async function(e) {
  });
 
  // ==========================================
- // 17. PREMIUM HOLD-TO-DELETE LOGIC (الضغط المطول)
  // ==========================================
- let deleteTimer;
- const delBtn = $("deleteStudentBtn");
- 
- if(delBtn) delBtn.innerHTML = `<span> حذف</span>`; 
+  // 17. PERMANENT HOLD-TO-DELETE FROM SUPABASE & LOCAL
+  // ==========================================
+  let deleteTimer = null;
+  const delBtn = $("deleteStudentBtn");
 
- function startDeleteHold(e) {
- if(!currentId) return;
- delBtn.classList.add("holding");
- 
- deleteTimer = setTimeout(() => {
- delBtn.classList.remove("holding");
- 
- const targetId = currentId; const st = students[targetId]; const backup = JSON.parse(JSON.stringify(st));
- 
- const doDelete = (deducted) => {
- const today = nowDateStr();
- revenueByDate[today] = (revenueByDate[today] || 0) - deducted;
- deletedStudents[targetId] = backup; 
- students[targetId] = makeEmptyStudent(targetId);
- 
- if(targetId > BASE_MAX_ID) { 
- delete students[targetId]; 
- let newExtra = [];
- for(let i=0; i<extraIds.length; i++) { if (extraIds[i] !== targetId) newExtra.push(extraIds[i]); }
- extraIds = newExtra;
- }
- saveAll(); updateStudentUI(null); window.switchTab('Home');
- 
- showUndoToast(t("msg_deleted"), function() {
- students[targetId] = backup; delete deletedStudents[targetId];
- revenueByDate[nowDateStr()] = (revenueByDate[nowDateStr()] || 0) + deducted;
- saveAll(); window.extOpen(targetId); renderReport(nowDateStr()); renderCharts(); showToast(t("msg_undo"));
- });
- };
+  function startDeleteHold(e) {
+    if (!currentId) return;
+    const targetId = currentId;
+    const st = students[targetId];
+    if (!st || (!st.name && !st.phone)) {
+      showToast(currentLang === 'ar' ? "هذا الحقل فارغ بالفعل" : "This student slot is already empty", "warning");
+      return;
+    }
 
- if(st.paid > 0) {
- Swal.fire({
- title: 'تأكيد الخصم',
- text: currentLang==='ar' ? 'خصم مدفوعاته من إيراد اليوم؟' : 'Deduct from revenue?',
- icon: 'question',
- showCancelButton: true,
- confirmButtonText: currentLang==='ar' ? 'نعم، اخصم' : 'Yes, deduct',
- cancelButtonText: currentLang==='ar' ? 'لا تخصم' : 'No'
- }).then((res) => {
- doDelete(res.isConfirmed ? st.paid : 0);
- });
- } else {
- doDelete(0);
- }
- }, 1000); // ثانيتين ضغط متواصل
- }
+    if (delBtn) delBtn.classList.add("holding");
 
- function cancelDeleteHold() {
- clearTimeout(deleteTimer);
- if(delBtn) delBtn.classList.remove("holding");
- }
+    deleteTimer = setTimeout(() => {
+      if (delBtn) delBtn.classList.remove("holding");
 
- if(delBtn) {
- delBtn.addEventListener("mousedown", startDeleteHold);
- delBtn.addEventListener("mouseup", cancelDeleteHold);
- delBtn.addEventListener("mouseleave", cancelDeleteHold);
- delBtn.addEventListener("touchstart", startDeleteHold, {passive: true});
- delBtn.addEventListener("touchend", cancelDeleteHold);
- delBtn.addEventListener("touchcancel", cancelDeleteHold);
- }
+      const isAr = (currentLang === 'ar');
+      const studentName = st.name || ("#" + targetId);
 
- // Modals & Bins
- on("openBinBtn", "click", function() { renderBinList(); if ($("recycleBinModal")) $("recycleBinModal").classList.remove("hidden"); });
- on("closeBinBtn", "click", function() { if ($("recycleBinModal")) $("recycleBinModal").classList.add("hidden"); });
- on("emptyBinBtn", "click", function() { 
-   let confMsg = currentLang === 'ar' ? "هل تريد إفراغ سلة المهملات وحذف الطلاب نهائياً؟" : "Empty recycle bin completely?";
-   if (typeof Swal !== 'undefined') {
-     Swal.fire({
-       title: confMsg,
-       text: currentLang === 'ar' ? "لن يمكنك التراجع عن هذه الخطوة نهائياً" : "This action cannot be undone",
-       icon: "warning",
-       showCancelButton: true,
-       confirmButtonColor: "#ef4444",
-       cancelButtonColor: "#64748b",
-       confirmButtonText: currentLang === 'ar' ? "نعم، تفريغ السلة" : "Yes, empty bin",
-       cancelButtonText: currentLang === 'ar' ? "إلغاء" : "Cancel"
-     }).then(res => {
-       if (res.isConfirmed) {
-         deletedStudents = {};
-         saveAll();
-         renderBinList();
-         showToast(currentLang === 'ar' ? "تم تفريغ السلة بنجاح" : "Recycle bin emptied", "success");
-       }
-     });
-   } else {
-     deletedStudents = {};
-     saveAll();
-     renderBinList();
-   }
- });
+      Swal.fire({
+        title: isAr ? ("حذف الطالب نهائياً (" + studentName + ")") : ("Delete Student (" + studentName + ")"),
+        html: `
+          <div style="text-align: ${isAr ? 'right' : 'left'}; font-size: 0.95em; line-height: 1.6;">
+            <p style="color: #ef4444; font-weight: 700; margin-bottom: 8px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              ${isAr ? "تحذير أمني: هذا إجراء نهائي لا يمكن التراجع عنه!" : "Security Warning: This action is permanent and cannot be undone!"}
+            </p>
+            <p style="color: var(--text-secondary); margin-bottom: 12px;">
+              ${isAr ? "سيتم مسح كافة بيانات الطالب، سجلات الحضور، المدفوعات والاشتراكات نهائياً من قاعدة البيانات السحابية (Supabase) والجهاز المحلي." : "All student data, attendance logs, payments, and subscriptions will be permanently erased from Supabase and local device."}
+            </p>
+            ${st.paid > 0 ? `
+              <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px; border-radius: 8px; margin-top: 10px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; color: #f59e0b;">
+                  <input type="checkbox" id="swalDeductTodayRevenue" checked style="width: 18px; height: 18px; accent-color: #f59e0b;">
+                  <span>${isAr ? ("خصم المدفوعات المسجلة (" + st.paid + " ج) من إيراد اليوم؟") : ("Deduct registered payments (" + st.paid + " EGP) from today's revenue?")}</span>
+                </label>
+              </div>
+            ` : ''}
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: isAr ? 'نعم، حذف نهائي من السحابة' : 'Yes, Delete Permanently',
+        cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const deductEl = document.getElementById('swalDeductTodayRevenue');
+          const shouldDeduct = deductEl ? deductEl.checked : false;
 
- on("openAllStudentsBtn", "click", function() { renderSimpleTable(); if ($("allStudentsModal")) $("allStudentsModal").classList.remove("hidden"); });
+          showToast(isAr ? "جاري حذف الطالب من السحابة..." : "Deleting student from cloud...", "info");
+
+          // 1. Delete from Supabase cloud table
+          if (window.supabaseClient) {
+            try {
+              await window.supabaseClient.from('students').delete().eq('id', String(targetId));
+            } catch (err) {
+              console.warn("[deleteStudent] Supabase delete warning:", err);
+            }
+          }
+
+          // 2. Adjust today's revenue if requested
+          if (shouldDeduct && st.paid > 0) {
+            const today = nowDateStr();
+            revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - Number(st.paid));
+          }
+
+          // 3. Clear from local state
+          delete deletedStudents[targetId];
+          if (targetId > BASE_MAX_ID) {
+            delete students[targetId];
+            extraIds = extraIds.filter(id => id !== targetId);
+          } else {
+            students[targetId] = makeEmptyStudent(targetId);
+          }
+
+          // 4. Save and sync
+          await saveAll();
+          updateStudentUI(null);
+          window.switchTab('Home');
+          showToast(isAr ? "تم حذف الطالب وسجلاته بالكامل من السحابة بنجاح" : "Student permanently deleted from cloud successfully", "success");
+        }
+      });
+    }, 1200);
+  }
+
+  function cancelDeleteHold() {
+    if (deleteTimer) clearTimeout(deleteTimer);
+    if (delBtn) delBtn.classList.remove("holding");
+  }
+
+  if (delBtn) {
+    delBtn.addEventListener("mousedown", startDeleteHold);
+    delBtn.addEventListener("mouseup", cancelDeleteHold);
+    delBtn.addEventListener("mouseleave", cancelDeleteHold);
+    delBtn.addEventListener("touchstart", startDeleteHold, { passive: true });
+    delBtn.addEventListener("touchend", cancelDeleteHold);
+    delBtn.addEventListener("touchcancel", cancelDeleteHold);
+  }
+
+  on("openAllStudentsBtn", "click", function() { renderSimpleTable(); if ($("allStudentsModal")) $("allStudentsModal").classList.remove("hidden"); });
  on("closeModalBtn", "click", function() { if ($("allStudentsModal")) $("allStudentsModal").classList.add("hidden"); });
  on("simplePrevPageBtn", "click", function() { if(simpleCurrentPage > 1) { simpleCurrentPage--; renderSimpleTable(); } });
  on("simpleNextPageBtn", "click", function() { simpleCurrentPage++; renderSimpleTable(); });
@@ -8375,158 +8448,466 @@ document.addEventListener("DOMContentLoaded", () => {
  };
 
  // ==========================================
- // === MARKETING CAMPAIGNS MANAGEMENT ===
- // ==========================================
- window.populateMarketingGroups = function() {
- const sel = $("marketingTargetGroupSelect"); if(!sel) return;
- let html = `<option value="">-- اختر الباقة / المجموعة --</option>`;
- let keys = Object.keys(groupFees);
- for(let i=0; i<keys.length; i++) {
- html += `<option value="${keys[i]}">${keys[i]} (${groupFees[keys[i]]} ج)</option>`;
- }
- sel.innerHTML = html;
- };
+  // === SMART CENTER NOTEBOOK CONTROLLER ===
+  // ==========================================
+  let _notebookSaveDebounce = null;
 
- on("marketingTargetFilter", "change", function() {
- let val = this.value;
- let gContainer = $("marketingGroupSelectContainer");
- if(gContainer) {
- gContainer.style.display = (val === "groups") ? "block" : "none";
- }
- let msgInp = $("marketingMsgBody");
- if (val === "debtors" && msgInp) {
- if (!msgInp.value || msgInp.value.trim() === "") {
- msgInp.value = "مساء الخير أ/ [اسم_الطالب]،\r\nنتمنى أن تكون بكل خير.\r\nحابة أفكّرك بأن الرصيد المتبقي من رسوم الكورس هو [المبلغ] ج، ونستأذنك في استكماله خلال حضورك في أقرب محاضرة لضمان استمرار الخدمة بسلاسة.\r\nشكراً جداً لتعاونك معنا ";
- }
- }
- });
+  window.updateNotebookCounters = function() {
+    const nb = $("centerNotebook");
+    const counterEl = $("notebookWordCharCount");
+    if (!nb || !counterEl) return;
+    const text = nb.value || "";
+    const chars = text.length;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const isAr = (currentLang === "ar");
+    counterEl.textContent = isAr ? (`${words} كلمة | ${chars} حرف`) : (`${words} words | ${chars} chars`);
+  };
 
- let currentCampaignList = [];
+  window.setNotebookSyncStatus = function(state, text) {
+    const badge = $("notebookSyncBadge");
+    if (!badge) return;
+    if (state === 'saving') {
+      badge.className = 'badge notebook-sync-badge sync-saving';
+      badge.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin"></i> <span>' + (text || (currentLang === 'ar' ? 'جاري الحفظ...' : 'Saving...')) + '</span>';
+    } else if (state === 'synced') {
+      badge.className = 'badge notebook-sync-badge sync-online';
+      badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>' + (text || (currentLang === 'ar' ? 'محفوظ بالسحابة' : 'Saved to Cloud')) + '</span>';
+    } else {
+      badge.className = 'badge notebook-sync-badge';
+      badge.innerHTML = '<i class="fa-regular fa-clock"></i> <span>' + (text || (currentLang === 'ar' ? 'جاهز' : 'Ready')) + '</span>';
+    }
+  };
 
- window.filterCampaignTarget = function() {
- let filter = $("marketingTargetFilter") ? $("marketingTargetFilter").value : "all";
- let grp = $("marketingTargetGroupSelect") ? $("marketingTargetGroupSelect").value : "";
- 
- let list = [];
- let sKeys = Object.keys(students);
- 
- if (filter === "session") {
- // تجميع أرقام طلاب الحصة الفورية لليوم أو لكل الأيام
- let sDates = Object.keys(sessionStudentsByDate);
- let seenPhones = {};
- for(let d=0; d<sDates.length; d++) {
- let arr = sessionStudentsByDate[sDates[d]] || [];
- for(let k=0; k<arr.length; k++) {
- let sess = arr[k];
- if (sess.phone && sess.phone.trim() !== "" && !seenPhones[sess.phone]) {
- seenPhones[sess.phone] = true;
- list.push({ name: sess.name || "طالب حصة", phone: sess.phone, desc: `طالب حصة (${sDates[d]})`, remain: 0 });
- }
- }
- }
- } else {
- for(let i=0; i<sKeys.length; i++) {
- let st = students[sKeys[i]];
- if (!st || !st.name) continue;
- if (!st.phone || st.phone.trim() === "") continue;
- 
- let p = st.phone.trim();
- let stClassName = st.className ? st.className.trim() : "";
- 
-    let req = 0;
-    if (stClassName && groupFees[stClassName] !== undefined) {
-       const pkg = groupFees[stClassName];
-       if (st.paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
-       }
+  window.saveNotebookContent = async function(content, showNotification = false) {
+    try {
+      window.setNotebookSyncStatus('saving');
+      centerNotebookContent = content;
+      localStorage.setItem(K_NOTEBOOK, content);
+      await secureSave(K_NOTEBOOK, content);
+
+      if (window.supabaseClient && navigator.onLine) {
+        let existingConfig = {};
+        try {
+          const { data: cur } = await window.supabaseClient.from('settings').select('config').eq('id', 1).maybeSingle();
+          if (cur && cur.config) existingConfig = cur.config;
+        } catch (e) {
+          console.warn('[saveNotebookContent] fetch config warning:', e);
+        }
+        existingConfig.center_notebook = content;
+        await window.supabaseClient.from('settings').update({
+          config: existingConfig,
+          updated_at: new Date().toISOString()
+        }).eq('id', 1);
+      }
+
+      window.setNotebookSyncStatus('synced');
+      if (showNotification) {
+        showToast(currentLang === 'ar' ? "تم حفظ المفكرة بالسحابة بنجاح" : "Notebook saved to cloud successfully", "success");
+      }
+    } catch (err) {
+      console.error("[saveNotebookContent] Error:", err);
+      window.setNotebookSyncStatus('idle', currentLang === 'ar' ? "محفوظ محلياً" : "Saved locally");
+      if (showNotification) {
+        showToast(currentLang === 'ar' ? "تم الحفظ محلياً (غير متصل بالسحابة)" : "Saved locally (offline)", "warning");
+      }
+    }
+  };
+
+  window.initCenterNotebook = function() {
+    const nb = $("centerNotebook");
+    if (!nb) return;
+
+    nb.value = centerNotebookContent || localStorage.getItem(K_NOTEBOOK) || "";
+    window.updateNotebookCounters();
+    window.setNotebookSyncStatus('synced');
+
+    nb.addEventListener("input", function() {
+      window.updateNotebookCounters();
+      window.setNotebookSyncStatus('saving');
+      clearTimeout(_notebookSaveDebounce);
+      _notebookSaveDebounce = setTimeout(() => {
+        window.saveNotebookContent(nb.value, false);
+      }, 800);
+    });
+
+    nb.addEventListener("keydown", function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        clearTimeout(_notebookSaveDebounce);
+        window.saveNotebookContent(nb.value, true);
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+        this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
+        this.selectionStart = this.selectionEnd = start + 2;
+        window.updateNotebookCounters();
+      }
+    });
+  };
+
+  window.insertNotebookTimestamp = function() {
+    const nb = $("centerNotebook");
+    if (!nb) return;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().slice(0, 5);
+    const stamp = "\n[" + dateStr + " " + timeStr + "] ";
+    insertTextAtCursor(nb, stamp);
+    window.updateNotebookCounters();
+    window.saveNotebookContent(nb.value, false);
+  };
+
+  window.insertNotebookPrefix = function(prefix) {
+    const nb = $("centerNotebook");
+    if (!nb) return;
+    insertTextAtCursor(nb, prefix);
+    window.updateNotebookCounters();
+    window.saveNotebookContent(nb.value, false);
+  };
+
+  function insertTextAtCursor(el, text) {
+    const start = el.selectionStart || 0;
+    const end = el.selectionEnd || 0;
+    const val = el.value;
+    el.value = val.substring(0, start) + text + val.substring(end);
+    el.selectionStart = el.selectionEnd = start + text.length;
+    el.focus();
+  }
+
+  window.copyNotebookContent = function() {
+    const nb = $("centerNotebook");
+    if (!nb || !nb.value.trim()) {
+      showToast(currentLang === 'ar' ? "المفكرة فارغة" : "Notebook is empty", "warning");
+      return;
+    }
+    navigator.clipboard.writeText(nb.value).then(() => {
+      showToast(currentLang === 'ar' ? "تم نسخ محتوى المفكرة إلى الحافظة" : "Notebook copied to clipboard", "success");
+      playSound("beep");
+    }).catch(() => {
+      showToast(currentLang === 'ar' ? "تعذر النسخ، يرجى المحاولة يدوياً" : "Copy failed", "err");
+    });
+  };
+
+  window.clearNotebookContent = function() {
+    const nb = $("centerNotebook");
+    if (!nb || !nb.value.trim()) return;
+    const isAr = (currentLang === 'ar');
+    Swal.fire({
+      title: isAr ? "مسح محتوى المفكرة؟" : "Clear Notebook?",
+      text: isAr ? "هل أنت متأكد من مسح جميع الملاحظات المدونة بالمفكرة؟" : "Are you sure you want to erase all notes in the notebook?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: isAr ? "نعم، امسح الكل" : "Yes, clear all",
+      cancelButtonText: isAr ? "إلغاء" : "Cancel"
+    }).then((res) => {
+      if (res.isConfirmed) {
+        nb.value = "";
+        window.updateNotebookCounters();
+        window.saveNotebookContent("", true);
+      }
+    });
+  };
+
+  window.saveNotebookManual = function() {
+    const nb = $("centerNotebook");
+    const val = nb ? nb.value : "";
+    window.saveNotebookContent(val, true);
+  };
+
+  // ==========================================
+  // === MARKETING CAMPAIGNS MANAGEMENT ===
+  // ==========================================
+  window.populateMarketingGroups = function() {
+    const sel = $("marketingTargetGroupSelect"); if(!sel) return;
+    const isAr = (currentLang === "ar");
+    let html = '<option value="">' + (isAr ? "-- اختر الباقة / المجموعة --" : "-- Select Package --") + '</option>';
+    let keys = Object.keys(groupFees || {});
+    for(let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const feeObj = groupFees[key];
+      const price = typeof feeObj === 'object' && feeObj !== null ? (Number(feeObj.price) || 0) : (Number(feeObj) || 0);
+      html += '<option value="' + key + '">' + key + ' (' + price + ' ' + (isAr ? "ج" : "EGP") + ')</option>';
+    }
+    sel.innerHTML = html;
+  };
+
+  on("marketingTargetFilter", "change", function() {
+    let val = this.value;
+    let gContainer = $("marketingGroupSelectContainer");
+    if(gContainer) {
+      gContainer.style.display = (val === "groups") ? "block" : "none";
+    }
+    let msgInp = $("marketingMsgBody");
+    if (val === "debtors" && msgInp) {
+      if (!msgInp.value || msgInp.value.trim() === "") {
+        msgInp.value = currentLang === 'ar' 
+          ? "مساء الخير أ/ [اسم_الطالب]،\r\nنتمنى أن تكون بكل خير.\r\nحابة أفكّرك بأن الرصيد المتبقي من رسوم الكورس هو [المبلغ] ج، ونستأذنك في استكماله خلال حضورك في أقرب محاضرة لضمان استمرار الخدمة بسلاسة.\r\nشكراً جداً لتعاونك معنا 🌸"
+          : "Good afternoon [اسم_الطالب],\r\nWe hope you are well.\r\nThis is a friendly reminder that your outstanding course balance is [المبلغ] EGP. Please settle this amount during your next lecture.\r\nThank you! 🌸";
+      }
+    }
+    filterCampaignTarget();
+  });
+
+  on("marketingTargetGroupSelect", "change", function() {
+    filterCampaignTarget();
+  });
+
+  on("marketingMsgBody", "input", debounce(function() {
+    if (typeof window.renderCampaignPage === 'function') {
+      window.renderCampaignPage();
+    }
+  }, 250));
+
+  let currentCampaignList = [];
+  let campaignCurrentPage = 1;
+  const CAMPAIGN_PAGE_SIZE = 10;
+
+  window.changeCampaignPage = function(delta) {
+    const totalPages = Math.ceil(currentCampaignList.length / CAMPAIGN_PAGE_SIZE) || 1;
+    const newPage = campaignCurrentPage + delta;
+    if (newPage >= 1 && newPage <= totalPages) {
+      campaignCurrentPage = newPage;
+      renderCampaignPage();
+    }
+  };
+
+  window.filterCampaignTarget = function() {
+    let filter = $("marketingTargetFilter") ? $("marketingTargetFilter").value : "all";
+    let grp = $("marketingTargetGroupSelect") ? $("marketingTargetGroupSelect").value : "";
+    const isAr = (currentLang === "ar");
+    const today = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+    const todayAttIds = new Set(attByDate[today] || []);
+    
+    let list = [];
+    let sKeys = Object.keys(students || {});
+    
+    if (filter === "session") {
+      let sDates = Object.keys(sessionStudentsByDate || {});
+      let seenPhones = {};
+      for(let d=0; d<sDates.length; d++) {
+        let arr = sessionStudentsByDate[sDates[d]] || [];
+        for(let k=0; k<arr.length; k++) {
+          let sess = arr[k];
+          if (sess.phone && sess.phone.trim() !== "" && !seenPhones[sess.phone.trim()]) {
+            seenPhones[sess.phone.trim()] = true;
+            list.push({ 
+              id: sess.id || ('s_' + k),
+              name: sess.name || (isAr ? "طالب حصة" : "Session Student"), 
+              phone: sess.phone.trim(), 
+              desc: isAr ? ("طالب حصة (" + sDates[d] + ")") : ("Session Student (" + sDates[d] + ")"),
+              badgeClass: "badge-session",
+              remain: 0 
+            });
+          }
+        }
+      }
+    } else {
+      for(let i=0; i<sKeys.length; i++) {
+        let st = students[sKeys[i]];
+        if (!st || !st.name) continue;
+        if (!st.phone || st.phone.trim() === "") continue;
+        
+        let p = st.phone.trim();
+        let stClassName = st.className ? st.className.trim() : "";
+        let hasAttendedToday = todayAttIds.has(String(st.id));
+        
+        let req = 0;
+        if (stClassName && groupFees[stClassName] !== undefined) {
+          const pkg = groupFees[stClassName];
+          if (st.paymentPlan === "installments" && pkg.hasInstallments) {
+            req = toInt(pkg.installmentPrice) || 0;
+          } else {
+            req = toInt(pkg.price || pkg) || 0;
+          }
+        } else if (Array.isArray(st.packages) && st.packages.length > 0) {
+          st.packages.forEach(pName => {
+            if (groupFees[pName]) {
+              const pkg = groupFees[pName];
+              req += toInt(pkg.price || pkg) || 0;
+            }
+          });
+        }
+
+        let paid = toInt(st.paid) || 0;
+        let discount = toInt(st.discount) || 0;
+        let remain = Math.max(0, req - paid - discount);
+        let descText = stClassName ? (isAr ? ("باقة: " + stClassName) : ("Pkg: " + stClassName)) : (isAr ? "بدون باقة" : "No Package");
+        let bClass = "badge-normal";
+
+        if (st.rank === "vip") {
+          descText = isAr ? ("⭐ VIP (" + (stClassName || "بدون باقة") + ")") : ("⭐ VIP (" + (stClassName || "No Package") + ")");
+          bClass = "badge-vip";
+        } else if (st.rank === "warning") {
+          descText = isAr ? ("⚠️ إنذار (" + (stClassName || "بدون باقة") + ")") : ("⚠️ Warned (" + (stClassName || "No Package") + ")");
+          bClass = "badge-warning";
+        }
+
+        let matches = false;
+        if (filter === "all") {
+          matches = true;
+        } else if (filter === "groups") {
+          if (grp && (stClassName === grp || (Array.isArray(st.packages) && st.packages.includes(grp)))) {
+            matches = true;
+            descText = isAr ? ("باقة: " + grp) : ("Pkg: " + grp);
+          }
+        } else if (filter === "vip") {
+          if (st.rank === "vip") matches = true;
+        } else if (filter === "warned") {
+          if (st.rank === "warning") matches = true;
+        } else if (filter === "debtors") {
+          if (req > 0 && remain > 0) {
+            matches = true;
+            descText = isAr ? ("متبقي: " + remain + " ج") : ("Due: " + remain + " EGP");
+            bClass = "badge-debt";
+          }
+        } else if (filter === "paid_full") {
+          if (req > 0 && remain === 0) {
+            matches = true;
+            descText = isAr ? ("سدد بالكامل (" + paid + " ج)") : ("Paid in Full (" + paid + " EGP)");
+            bClass = "badge-paid";
+          }
+        } else if (filter === "present_today") {
+          if (hasAttendedToday) {
+            matches = true;
+            descText = isAr ? ("حضر اليوم (" + (stClassName || "بدون باقة") + ")") : ("Attended Today (" + (stClassName || "No Package") + ")");
+            bClass = "badge-present";
+          }
+        } else if (filter === "absent_today") {
+          if (!hasAttendedToday) {
+            matches = true;
+            descText = isAr ? ("غائب اليوم (" + (stClassName || "بدون باقة") + ")") : ("Absent Today (" + (stClassName || "No Package") + ")");
+            bClass = "badge-absent";
+          }
+        }
+
+        if (matches) {
+          list.push({ 
+            id: st.id, 
+            name: st.name, 
+            phone: p, 
+            desc: descText, 
+            badgeClass: bClass, 
+            remain: remain 
+          });
+        }
+      }
+    }
+    
+    currentCampaignList = list;
+    campaignCurrentPage = 1;
+    renderCampaignPage();
+  };
+
+  window.renderCampaignPage = function() {
+    const clist = $("campaignNumbersList"); if(!clist) return;
+    const isAr = (currentLang === "ar");
+    const totalCount = currentCampaignList.length;
+    if ($("campaignTargetCount")) $("campaignTargetCount").textContent = totalCount;
+
+    if (totalCount === 0) {
+      clist.innerHTML = '<div class="mkt-empty-state"><i class="fa-solid fa-filter-circle-xmark"></i><p>' + (isAr ? "لا توجد أرقام هواتف مسجلة تطابق الشريحة المحددة" : "No phone numbers match the selected criteria") + '</p></div>';
+      return;
     }
 
- let paid = st.paid || 0;
- let remain = req - paid;
- 
- if (filter === "all") {
- list.push({ name: st.name, phone: p, desc: `باقة: ${st.className || "عام"}`, remain: remain > 0 ? remain : 0 });
- } else if (filter === "groups") {
- if (grp && stClassName === grp) {
- list.push({ name: st.name, phone: p, desc: `باقة: ${grp}`, remain: remain > 0 ? remain : 0 });
- }
- } else if (filter === "vip") {
- if (st.rank === "vip") {
- list.push({ name: st.name, phone: p, desc: ` VIP`, remain: remain > 0 ? remain : 0 });
- }
- } else if (filter === "debtors") {
- if (req > 0 && remain > 0) {
- list.push({ name: st.name, phone: p, desc: `متبقي عليه: ${remain} ج`, remain: remain });
- }
- }
- }
- }
- 
- currentCampaignList = list;
- 
- const clist = $("campaignNumbersList"); if(!clist) return;
- if($("campaignTargetCount")) $("campaignTargetCount").textContent = list.length;
- 
- let msgBody = $("marketingMsgBody") ? $("marketingMsgBody").value.trim() : "";
- 
- let h = "";
- for(let i=0; i<list.length; i++) {
- let item = list[i];
- let cleanPhone = item.phone.startsWith("0") ? "+2" + item.phone : "+20" + item.phone;
- 
- let customMsg = msgBody;
- if (customMsg) {
- customMsg = customMsg.replace(/\[اسم_الطالب\]/g, item.name);
- customMsg = customMsg.replace(/\[المبلغ\]/g, item.remain || 0);
- } else {
- customMsg = `مرحباً بك أ/ ${item.name}،\r\nيرجى التواصل مع إدارة السنتر.`;
- }
- 
- let waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(customMsg)}`;
- 
- h += `
- <div class="card item-card flexBetween wrap" style="background: var(--bg-inset); border: 1px solid var(--border); padding: 15px; border-radius: 10px; margin-bottom: 10px; gap: 15px;">
- <div>
- <h4 style="margin:0; color:var(--text); font-size:1.1em;"> ${item.name}</h4>
- <div style="font-size:0.9em; color:var(--text-secondary); margin-top:5px;">
- <span> ${item.phone}</span> | <span style="color:var(--primary);">${item.desc}</span>
- </div>
- </div>
- <a href="${waUrl}" target="_blank" class="btn success" style="padding:8px 18px; text-decoration:none; font-weight:bold; display:flex; align-items:center; gap:5px;">
- مراسلة واتساب
- </a>
- </div>`;
- }
- 
- if (list.length === 0) {
- h = `<div class="mutedCenter" style="padding:30px;">لا يوجد أرقام هواتف مسجلة تطابق الشريحة المحددة </div>`;
- }
- clist.innerHTML = h;
- };
+    const totalPages = Math.ceil(totalCount / CAMPAIGN_PAGE_SIZE) || 1;
+    if (campaignCurrentPage > totalPages) campaignCurrentPage = totalPages;
+    if (campaignCurrentPage < 1) campaignCurrentPage = 1;
 
- on("btnFilterCampaign", "click", function() {
- filterCampaignTarget();
- showToast("تم تصفية الأرقام المستهدفة بنجاح ");
- });
+    const startIndex = (campaignCurrentPage - 1) * CAMPAIGN_PAGE_SIZE;
+    const endIndex = Math.min(startIndex + CAMPAIGN_PAGE_SIZE, totalCount);
+    const pageSlice = currentCampaignList.slice(startIndex, endIndex);
 
- on("btnCopyCampaignNumbers", "click", function() {
- if (currentCampaignList.length === 0) {
- showToast("قائمة الأرقام فارغة، قم بتصفية داتا الطلاب أولاً.", "err");
- return;
- }
- let arr = currentCampaignList.map(item => item.phone);
- let textToCopy = arr.join("\r\n");
- navigator.clipboard.writeText(textToCopy).then(() => {
- showToast(`تم نسخ ${arr.length} رقم موبايل بنجاح (جاهز للصق في برامج الإرسال)`, "success");
- playSound("beep");
- }).catch(() => {
- showToast("فشل النسخ المباشر، يرجى تكرار المحاولة", "err");
- });
- });
+    let msgBody = $("marketingMsgBody") ? $("marketingMsgBody").value.trim() : "";
 
- // ==========================================
+    let cardsHtml = '<div class="mkt-cards-grid">';
+    for(let i = 0; i < pageSlice.length; i++) {
+      const item = pageSlice[i];
+      let cleanPhone = item.phone.startsWith("0") ? "+2" + item.phone : (item.phone.startsWith("+") ? item.phone : "+20" + item.phone);
+      
+      let customMsg = msgBody;
+      if (customMsg) {
+        customMsg = customMsg.replace(/\[اسم_الطالب\]/g, item.name);
+        customMsg = customMsg.replace(/\[المبلغ\]/g, item.remain || 0);
+      } else {
+        customMsg = isAr ? ("مرحباً بك أ/ " + item.name + "،\r\nيرجى التواصل مع إدارة السنتر.") : ("Hello " + item.name + ",\r\nPlease contact the center administration.");
+      }
+
+      let waUrl = "https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(customMsg);
+
+      cardsHtml += `
+        <div class="mkt-student-card">
+          <div class="mkt-card-main">
+            <div class="mkt-student-avatar">
+              <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div class="mkt-student-details">
+              <div class="mkt-student-name">
+                <span>${item.name}</span>
+                <span class="mkt-student-id">#${item.id}</span>
+              </div>
+              <div class="mkt-student-meta">
+                <span class="mkt-meta-phone" onclick="navigator.clipboard.writeText('${item.phone}'); showToast('${isAr ? "تم نسخ الرقم" : "Phone copied"}');" title="${isAr ? "اضغط لنسخ الرقم" : "Click to copy"}">
+                  <i class="fa-solid fa-phone"></i> ${item.phone}
+                  <i class="fa-regular fa-copy mkt-copy-icon"></i>
+                </span>
+                <span class="mkt-meta-badge ${item.badgeClass}">${item.desc}</span>
+              </div>
+            </div>
+          </div>
+          <div class="mkt-card-actions">
+            <a href="${waUrl}" target="_blank" class="mkt-wa-btn">
+              <i class="fa-brands fa-whatsapp"></i>
+              <span>${isAr ? "مراسلة واتساب" : "WhatsApp"}</span>
+            </a>
+          </div>
+        </div>
+      `;
+    }
+    cardsHtml += '</div>';
+
+    // Pagination bar
+    const paginationHtml = `
+      <div class="mkt-pagination-bar">
+        <button type="button" class="mkt-page-btn" onclick="window.changeCampaignPage(-1)" ${campaignCurrentPage <= 1 ? 'disabled' : ''}>
+          <i class="fa-solid fa-chevron-${isAr ? 'right' : 'left'}"></i> <span>${isAr ? "السابق" : "Previous"}</span>
+        </button>
+        <div class="mkt-page-info">
+          <span>${isAr ? "صفحة" : "Page"} <b>${campaignCurrentPage}</b> ${isAr ? "من" : "of"} <b>${totalPages}</b></span>
+          <span class="mkt-page-range">(${startIndex + 1} - ${endIndex} ${isAr ? "من إجمالي" : "of"} ${totalCount})</span>
+        </div>
+        <button type="button" class="mkt-page-btn" onclick="window.changeCampaignPage(1)" ${campaignCurrentPage >= totalPages ? 'disabled' : ''}>
+          <span>${isAr ? "التالي" : "Next"}</span> <i class="fa-solid fa-chevron-${isAr ? 'left' : 'right'}"></i>
+        </button>
+      </div>
+    `;
+
+    clist.innerHTML = cardsHtml + paginationHtml;
+  };
+
+  on("btnFilterCampaign", "click", function() {
+    filterCampaignTarget();
+    showToast(currentLang === 'ar' ? "تم تحديث تصفية الأرقام بنجاح" : "Filter refreshed successfully");
+  });
+
+  on("btnCopyCampaignNumbers", "click", function() {
+    if (currentCampaignList.length === 0) {
+      showToast(currentLang === 'ar' ? "قائمة الأرقام فارغة، قم بتصفية داتا الطلاب أولاً." : "Target list is empty", "err");
+      return;
+    }
+    let arr = currentCampaignList.map(item => item.phone);
+    let textToCopy = arr.join("\r\n");
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      showToast(currentLang === 'ar' ? ("تم نسخ " + arr.length + " رقم موبايل بنجاح") : ("Copied " + arr.length + " phone numbers"), "success");
+      playSound("beep");
+    }).catch(() => {
+      showToast(currentLang === 'ar' ? "فشل النسخ المباشر، يرجى تكرار المحاولة" : "Copy failed", "err");
+    });
+  });
+
+  // ==========================================
  // 17.9. SMART ANTI-BAN AUTO BROADCASTER
  // ==========================================
  let broadcastTimer = null;
@@ -9949,6 +10330,15 @@ window.CLOUD_MONITOR_SECTIONS = [
     label: "بيانات تقييم الطلاب",
     localCount: () => (evalData && Object.keys(evalData).length > 0 ? 1 : 0),
     cloudTable: "settings (config.eval_data)"
+  },
+  {
+    id: "center_notebook",
+    label: "مفكرة السنتر الذكية",
+    localCount: () => {
+      const val = ($("centerNotebook") ? $("centerNotebook").value : (localStorage.getItem(K_NOTEBOOK) || "")).trim();
+      return val ? 1 : 0;
+    },
+    cloudTable: "settings (config.center_notebook)"
   }
 ];
 
@@ -10052,11 +10442,15 @@ function renderNotifications() {
   notificationsList.forEach(n => {
     const item = document.createElement('div');
     const d = new Date(n.created_at);
-    const dateStr = d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+    const isArNotif = (currentLang === "ar");
+    const dateStr = isArNotif
+      ? (d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}))
+      : (d.toLocaleDateString('en-US') + ' ' + d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}));
     const formattedMsg = formatNotificationMessage(n.message);
+    const displayMsg = isArNotif ? formattedMsg : translateNotification(formattedMsg);
     
-    const isDeactivation = formattedMsg.includes('تعطيل') || formattedMsg.includes('إغلاق') || formattedMsg.includes('رفض');
-    const isActivation = formattedMsg.includes('تفعيل') || formattedMsg.includes('قبول') || formattedMsg.includes('بنجاح');
+    const isDeactivation = formattedMsg.includes('تعطيل') || formattedMsg.includes('إغلاق') || formattedMsg.includes('رفض') || displayMsg.toLowerCase().includes('disabled');
+    const isActivation = formattedMsg.includes('تفعيل') || formattedMsg.includes('قبول') || formattedMsg.includes('بنجاح') || displayMsg.toLowerCase().includes('enabled') || displayMsg.toLowerCase().includes('success');
 
     item.className = 'notification-item' 
       + (n.is_read ? ' is-read' : ' is-unread') 
@@ -10074,16 +10468,16 @@ function renderNotifications() {
         <div style="display: flex; align-items: flex-start; gap: 8px; flex: 1;">
           ${iconWrap}
           <div class="notif-text">
-            ${formattedMsg}
+            ${displayMsg}
           </div>
         </div>
-        <button class="btn-delete-single-notif" data-id="${n.id}" title="حذف هذا الإشعار" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 2px 4px; font-size: 0.85em; opacity: 0.5; transition: opacity 0.2s, color 0.2s;" onmouseenter="this.style.opacity='1'; this.style.color='#ef4444';" onmouseleave="this.style.opacity='0.5'; this.style.color='var(--text-secondary)';">
+        <button class="btn-delete-single-notif" data-id="${n.id}" title="${isArNotif ? 'حذف هذا الإشعار' : 'Delete this notification'}" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 2px 4px; font-size: 0.85em; opacity: 0.5; transition: opacity 0.2s, color 0.2s;" onmouseenter="this.style.opacity='1'; this.style.color='#ef4444';" onmouseleave="this.style.opacity='0.5'; this.style.color='var(--text-secondary)';">
           <i class="fa-regular fa-trash-can"></i>
         </button>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.73em; color: var(--text-secondary); padding-inline-start: 36px;">
         <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
-        ${!n.is_read ? '<span class="notif-badge-new">• جديد</span>' : ''}
+        ${!n.is_read ? `<span class="notif-badge-new">• ${isArNotif ? 'جديد' : 'New'}</span>` : ''}
       </div>
     `;
     

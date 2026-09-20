@@ -1124,8 +1124,27 @@ const DYNAMIC_NOTIF_RULES = [
     replace: (m, p1) => `Are you sure you want to delete booklet (${p1}) from inventory?`
   },
   {
-    pattern: /^تم (تفعيل|تعطيل|تحديث) صلاحية «(.*?)» للمساعد (.*?) بنجاح/i,
-    replace: (m, p1, p2, p3) => `Successfully ${p1 === 'تفعيل' ? 'enabled' : (p1 === 'تعطيل' ? 'disabled' : 'updated')} permission "${p2}" for assistant ${p3}`
+    pattern: /^تم (تفعيل|تعطيل|تحديث) صلاحية «(.*?)» للمساعد ([^\s.]+)(\.)?( بنجاح)?/i,
+    replace: (m, p1, p2, p3) => {
+      const act = p1 === 'تفعيل' ? 'enabled' : (p1 === 'تعطيل' ? 'disabled' : 'updated');
+      const permMap = {
+        'إظهار الإيراد اليومي': 'Show Daily Revenue',
+        'عرض الإيرادات والخزينة': 'Show Revenue & Treasury',
+        'الاعتماد اليومي للإيرادات': 'Daily Approval of Revenue',
+        'إضافة وتعديل بيانات الطلاب': 'Add & Edit Student Data',
+        'طلب خصم أو إعفاء': 'Request Discount or Exemption',
+        'إدارة الباقات والاشتراكات': 'Manage Packages & Subscriptions',
+        'إعدادات النظام والنسخ الاحتياطي': 'System Settings & Backup',
+        'خريطة المنهج الدراسي': 'Syllabus Map',
+        'التقارير والحسابات المالية': 'Financial Reports & Accounts',
+        'حملات التسويق بالواتساب': 'WhatsApp Marketing Campaigns',
+        'طلاب الحصة والغياب السريع': 'Session Students & Quick Attendance',
+        'إدارة ومبيعات المذكرات': 'Booklets Inventory & Sales',
+        'حذف الطلاب': 'Delete Students'
+      };
+      const pName = permMap[p2] || p2;
+      return `Successfully ${act} permission "${pName}" for assistant ${p3}`;
+    }
   },
   {
     pattern: /^حدث خطأ أثناء تطبيق القرار:(.*)/i,
@@ -1469,16 +1488,19 @@ async function loadAllAdminData() {
     if (stRes.data) {
       students = {};
       stRes.data.forEach(s => {
+        let cName = s.class_name || s.className || '';
+        if (cName === 'عام' || cName === 'General' || cName === 'بدون باقة' || cName === 'No Package') cName = '';
         let pList = (Array.isArray(s.packages) && s.packages.length > 0) 
-          ? s.packages 
-          : (stPkgsMap[s.id] || (s.class_name ? [s.class_name] : []));
+          ? s.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package') 
+          : (stPkgsMap[s.id] || (cName ? [cName] : []));
         if (typeof pList === 'string') pList = [pList];
         if (!Array.isArray(pList)) pList = [];
+        pList = pList.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package');
 
         students[String(s.id)] = {
           id: s.id,
           name: s.name || '',
-          className: s.class_name || s.className || '',
+          className: cName,
           phone: s.phone || '',
           parentPhone: s.parent_phone || s.parentPhone || '',
           paid: Number(s.paid) || 0,
@@ -1931,7 +1953,7 @@ window.loadDailyReport = function(dateStr) {
       let groups = {};
       ids.forEach(id => {
         const st = students[id];
-        const cls = (st && st.className) ? st.className.trim() : (isAr ? "عام" : "General");
+        const cls = (st && st.className && st.className !== 'عام' && st.className !== 'General') ? st.className.trim() : (isAr ? "بدون باقة" : "No Package");
         if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
         groups[cls].count++;
         if (st && st.paid !== undefined) {
@@ -2077,7 +2099,7 @@ window.renderTermTable = function() {
   // Populate classes
   if (clsSel) {
     const existing = [...clsSel.options].map(o => o.value);
-    const classes = [...new Set(Object.values(students).map(s => s.className || (isAr ? "عام" : "General")))];
+    const classes = [...new Set(Object.values(students).map(s => (s.className && s.className !== 'عام' && s.className !== 'General') ? s.className : (isAr ? "بدون باقة" : "No Package")))];
     classes.forEach(c => {
       if (!existing.includes(c)) {
         const opt = document.createElement("option");
@@ -2115,7 +2137,7 @@ window.renderTermTable = function() {
     }
 
     if (search && !st.name.toLowerCase().includes(search) && !String(st.id).includes(search)) return;
-    const cls = (st.className || (isAr ? "عام" : "General")).trim();
+    const cls = (st.className && st.className !== 'عام' && st.className !== 'General') ? st.className.trim() : (isAr ? "بدون باقة" : "No Package");
     if (clsFilter && cls !== clsFilter) return;
 
     matchCount++;
@@ -2140,7 +2162,9 @@ window.renderTermTable = function() {
       return 0;
     };
 
-    const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : (cls && cls !== 'عام' && cls !== 'General' ? [cls] : []);
+    const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) 
+      ? st.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package') 
+      : (cls && cls !== 'عام' && cls !== 'General' && cls !== 'بدون باقة' && cls !== 'No Package' ? [cls] : []);
     const checked = new Set();
     stPkgs.forEach(pName => {
       const clean = normName(pName);
@@ -2148,12 +2172,6 @@ window.renderTermTable = function() {
       checked.add(clean);
       req += getPriceForPkg(pName);
     });
-
-    // Fallback: If student has 0 required and the center has exactly 1 package configured, assign that single package
-    if (req === 0 && pkgKeys.length === 1) {
-      const singlePkg = packages[pkgKeys[0]];
-      req = Number(singlePkg?.price) || 0;
-    }
     
     const paid = Number(st.paid) || 0;
     const discount = Number(st.discount) || 0;
@@ -3178,8 +3196,6 @@ window.renderAdminPackages = function() {
       }
       // 2. Check student className
       if (st.className && normName(st.className) === cleanK) return true;
-      // 3. Fallback: If center has only 1 package configured, count all students in it
-      if (keys.length === 1) return true;
       return false;
     });
     const count = enrolledStudents.length;
