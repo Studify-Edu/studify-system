@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V89">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V90">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -728,7 +728,7 @@
  <button id="saveStudentBtn" class="btn primary" data-i18n="btn_save_st">حفظ البيانات </button>
  <button id="markTodayBtn" class="btn success" data-i18n="btn_mark_present"> حضور</button>
  <button id="unmarkTodayBtn" class="btn warning" data-i18n="btn_mark_absent"> غياب</button>
- <button id="deleteStudentBtn" class="btn danger adminOnly" style="margin-inline-start:auto;" data-i18n="btn_delete"><i class="fa-solid fa-trash-can" style="margin-inline-end: 6px;"></i> حذف</button>
+ 
  </div>
 
  <!-- إيصال الدفع النهائي (مغلق بقفل في حال عدم سداد الباقة بالكامل) -->
@@ -745,6 +745,18 @@
  <i class="fa-solid fa-file-contract"></i> <span data-i18n="contract_print_btn">طباعة إقرار وتعهد تسجيل الطالب</span>
  </button>
  </div>
+  <!-- زر الحذف النهائي من السحابة -->
+  <div class="student-danger-zone" style="margin-top:16px; padding-top:14px; border-top:1px dashed rgba(239, 68, 68, 0.35);">
+    <button id="deleteStudentBtn" class="btn danger hold-delete-btn" type="button" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; font-weight:bold; font-size:0.95em; border-radius:10px; background:linear-gradient(135deg, #dc2626, #991b1b); color:#fff; border:none; box-shadow:0 4px 14px rgba(220, 38, 38, 0.25); cursor:pointer; position:relative; overflow:hidden; transition:all 0.3s ease;">
+      <i class="fa-solid fa-trash-can"></i>
+      <span class="btn-text" data-i18n="btn_delete_student">حذف الطالب وسجلاته نهائياً (اضغط مطولاً)</span>
+      <span class="hold-progress-fill"></span>
+    </button>
+    <div style="font-size:0.8em; color:var(--text-secondary); text-align:center; margin-top:6px; display:flex; align-items:center; justify-content:center; gap:5px;" data-i18n="txt_delete_warning">
+      <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i>
+      <span>سيتم مسح بيانات الطالب وسجلاته من السحابة تماماً ولا يمكن التراجع.</span>
+    </div>
+  </div>
  
  <h3 style="margin-top: 20px; font-size: 0.95em; color: var(--text-primary); display:flex; align-items:center; gap:8px;" data-i18n="lbl_history">
   <i class="fa-solid fa-calendar-check" style="color:var(--success);"></i> <span data-i18n="st_att_history_title">سجل حضور الطالب (التواريخ السابقة):</span>
@@ -1250,76 +1262,141 @@
  </div>
  </section>
 
- <!-- ====== ADMIN ====== -->
- <section id="secAdmin" class="tab-section hidden adminOnly">
- <div class="admin-dashboard">
- <h2 style="margin-bottom: 10px; display:flex; align-items:center; gap:10px;" data-i18n="settings_title"> إعدادات النظام</h2>
- 
- <div class="card" style="margin-bottom:20px;">
- <h3 data-i18n="note_title"> مفكرة السنتر السريعة</h3>
- <textarea id="centerNotebook" class="inp" style="width:100%; height:120px; resize:none;" placeholder="اكتب ملاحظاتك.." data-i18n-placeholder="note_plc_main"></textarea>
- </div>
-
- <div class="settings-grid">
- <div class="settings-card success-card">
- <h3 data-i18n="set_data_title">البيانات والنسخ الاحتياطي</h3>
- <div style="display:flex; flex-direction:column; gap:10px;">
- <button class="btn success w100" id="exportExcelBtn" style="padding:12px; font-weight:bold;" data-i18n="btn_export_ex">تصدير البيانات (Excel)</button>
- <button class="btn w100" id="importExcelBtnFake" style="padding:12px;" data-i18n="btn_import_ex">استيراد بيانات (Excel)</button>
- <input type="file" id="importExcelInput" accept=".xlsx, .xls" hidden>
- 
- <hr style="border: 1px dashed var(--border); margin: 5px 0;">
-
- <div style="display:flex; justify-content:space-between; align-items:center; padding: 0 5px;">
- <span id="driveStatusText" style="font-size: 13px; font-weight: bold; color: var(--text-secondary);" data-i18n="drive_offline">غير متصل</span>
- <span id="lastSyncText" style="font-size: 11px; color: var(--text-secondary);"></span>
- </div>
-
- <button class="btn primary w100" id="driveLoginBtn" style="padding:12px; font-weight:bold;" data-i18n="btn_drive_login">ربط بجوجل درايف</button>
- <div class="row" style="gap:5px;">
- <button class="btn warning w100" id="restoreDriveBtn" style="padding:12px; font-weight:bold;" data-i18n="btn_drive_restore">استرجاع من السحاب</button>
- <button class="btn success hidden" id="syncNowBtn" style="padding:12px; flex:0.3;" title="Manual Sync"><i class="fa-solid fa-rotate"></i></button>
- </div>
-
- <hr style="border: 1px dashed var(--border); margin: 5px 0;">
-
- <button class="btn danger w100" id="openBinBtn" style="padding:12px;" data-i18n="btn_recycle"><i class="fa-solid fa-trash-can" style="margin-inline-end: 8px;"></i> سلة المحذوفات</button>
- </div>
- </div>
-
-
-
- <div class="settings-card">
- <h3 data-i18n="set_ui_title">المظهر والتخصيص</h3>
- <div style="display:flex; flex-direction:column; gap:15px;">
- <div>
- <label data-i18n="lbl_theme">ثيم البرنامج:</label>
- <select id="themeSelector" class="inp" style="width:100%; margin-top:5px;">
- <option value="light" data-i18n="theme_light">الوضع النهاري (Light Mode)</option>
- <option value="dark" data-i18n="theme_dark">الوضع الليلي (Dark Mode)</option>
- </select>
- </div>
-
- <div class="luxury-lang-switcher-card">
-    <div class="lang-switch-info">
-      <div class="lang-switch-icon-wrap">
-        <i class="fa-solid fa-globe"></i>
-      </div>
-      <div class="lang-switch-text-group">
-        <div class="lang-current-title" id="asstLangCurrentLabel">اللغة الحالية: العربية</div>
-        <div class="lang-switch-subtitle" id="asstLangSubLabel">انقر للتحويل إلى English بالكامل</div>
+ <!-- ====== ADMIN & SETTINGS ====== -->
+  <section id="secAdmin" class="tab-section hidden adminOnly">
+  <div class="admin-dashboard">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+      <h2 style="margin:0; display:flex; align-items:center; gap:10px;" data-i18n="settings_title">
+        <i class="fa-solid fa-sliders" style="color:var(--primary);"></i>
+        <span>إعدادات النظام</span>
+      </h2>
+      <div id="settingsSaveIndicator" style="display:inline-flex; align-items:center; gap:6px; font-size:0.85em; padding:5px 12px; border-radius:20px; background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.25);">
+        <i class="fa-solid fa-circle-check"></i> <span>النظام متزامن ومحمي</span>
       </div>
     </div>
-    <button type="button" class="btn luxury-lang-btn" id="changeLangBtn">
-      <span class="lang-btn-text" id="asstLangBtnText">English</span>
-      <i class="fa-solid fa-arrow-right-arrow-left"></i>
-    </button>
+
+    <!-- 1. مفكرة السنتر السريعة والذكية (Smart Center Notebook) -->
+    <div class="card smart-notebook-card" id="smartNotebookCard" style="margin-bottom:24px; border:1px solid var(--border); border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,0.06); padding:20px;">
+      
+      <!-- Notebook Header -->
+      <div class="smart-notebook-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="smart-notebook-icon-wrap" style="width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg, rgba(37,99,235,0.15), rgba(6,182,212,0.15)); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:1.2em;">
+            <i class="fa-solid fa-book-bookmark"></i>
+          </div>
+          <div>
+            <h3 style="margin:0; font-size:1.15em; color:var(--text-primary); display:flex; align-items:center; gap:8px;" data-i18n="note_title">
+              مفكرة السنتر السريعة والذكية
+            </h3>
+            <span style="font-size:0.8em; color:var(--text-secondary);" data-i18n="note_subtitle">ملاحظات ومهام إدارة السنتر المشتركة ومزامنة فورية مع السحابة</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span id="notebookSyncBadge" class="notebook-sync-badge sync-online" style="display:inline-flex; align-items:center; gap:6px; font-size:0.8em; padding:4px 10px; border-radius:20px; font-weight:700; transition:all 0.3s ease;">
+            <i class="fa-solid fa-cloud-check"></i> <span id="notebookSyncStatusText">متزامن سحابياً</span>
+          </span>
+          <span id="notebookWordCountBadge" class="notebook-count-badge" style="font-size:0.8em; padding:4px 10px; border-radius:20px; background:var(--bg-inset); color:var(--text-secondary); border:1px solid var(--border);">
+            0 كلمات | 0 أحرف
+          </span>
+        </div>
+      </div>
+
+      <!-- Formatting & Productivity Quick Tools Bar -->
+      <div class="smart-notebook-toolbar" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:8px 10px; background:var(--bg-inset); border:1px solid var(--border); border-radius:10px; margin-bottom:10px;">
+        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookTimestamp()" title="إدراج الوقت والتاريخ">
+          <i class="fa-regular fa-clock"></i> <span>تاريخ ووقت</span>
+        </button>
+        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('• ')" title="قائمة نقطية">
+          <i class="fa-solid fa-list-ul"></i> <span>نقطة</span>
+        </button>
+        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('1. ')" title="ترقيم تلقائي">
+          <i class="fa-solid fa-list-ol"></i> <span>ترقيم</span>
+        </button>
+        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('[ ] ')" title="مهمة جديدة">
+          <i class="fa-regular fa-square-check"></i> <span>مهمة</span>
+        </button>
+        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('⭐ هام: ')" title="ملحوظة هامة">
+          <i class="fa-solid fa-star" style="color:#f59e0b;"></i> <span>هام</span>
+        </button>
+        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('📌 تثبيت: ')" title="تثبيت ملاحظة">
+          <i class="fa-solid fa-thumbtack" style="color:#3b82f6;"></i> <span>تثبيت</span>
+        </button>
+        <div style="flex:1;"></div>
+        <button type="button" class="nb-tool-btn" onclick="window.copyNotebookContent()" title="نسخ الملاحظات">
+          <i class="fa-regular fa-copy"></i> <span>نسخ</span>
+        </button>
+        <button type="button" class="nb-tool-btn nb-tool-danger" onclick="window.clearNotebookContent()" title="مسح المفكرة">
+          <i class="fa-regular fa-trash-can"></i> <span>مسح</span>
+        </button>
+        <button type="button" class="btn success smallBtn nb-save-btn" id="saveNotebookBtn" onclick="window.saveNotebookManual()" style="padding:6px 14px; font-weight:bold; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
+          <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="btn_save_notebook">حفظ فوري</span>
+        </button>
+      </div>
+
+      <!-- Rich Text Area -->
+      <div style="position:relative;">
+        <textarea id="centerNotebook" class="inp smart-notebook-textarea" style="width:100%; min-height:220px; line-height:1.7; font-size:0.95em; padding:14px; resize:vertical; font-family:'Cairo', sans-serif;" placeholder="اكتب ملاحظات السنتر، التنبيهات الإدارية، والمهام اليومية هنا... سيتم الحفظ التلقائي ومزامنتها فورياً مع السحابة." data-i18n-placeholder="note_plc_main"></textarea>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:0.78em; color:var(--text-secondary);">
+        <span><i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> يتم الحفظ تلقائياً في السحابة مع إمكانية استخدام اختصار <kbd style="background:var(--bg-inset); padding:2px 6px; border-radius:4px; border:1px solid var(--border);">Ctrl+S</kbd> للحفظ الفوري.</span>
+        <span id="notebookLastSavedTime">آخر حفظ: —</span>
+      </div>
+    </div>
+
+    <!-- 2. المظهر والتخصيص (Appearance & Customization) -->
+    <div class="card" style="border:1px solid var(--border); border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,0.06); padding:20px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+        <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, rgba(139,92,246,0.15), rgba(236,72,153,0.15)); display:flex; align-items:center; justify-content:center; color:#8b5cf6; font-size:1.15em;">
+          <i class="fa-solid fa-palette"></i>
+        </div>
+        <div>
+          <h3 style="margin:0; font-size:1.15em; color:var(--text-primary);" data-i18n="set_ui_title">المظهر وتخصيص النظام</h3>
+          <span style="font-size:0.8em; color:var(--text-secondary);">تغيير ألوان الثيم ولغة الواجهة لراحة عين المستخدم</span>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; align-items:start;">
+        <!-- Theme selection -->
+        <div style="background:var(--bg-inset); padding:16px; border-radius:12px; border:1px solid var(--border);">
+          <label style="font-weight:bold; display:flex; align-items:center; gap:6px; margin-bottom:10px; color:var(--text-primary);" data-i18n="lbl_theme">
+            <i class="fa-solid fa-circle-half-stroke" style="color:var(--primary);"></i> ثيم البرنامج:
+          </label>
+          <select id="themeSelector" class="inp" style="width:100%; font-weight:600; padding:10px 12px; font-size:0.95em;">
+            <option value="light" data-i18n="theme_light">☀️ الوضع النهاري (Light Mode)</option>
+            <option value="dark" data-i18n="theme_dark">🌙 الوضع الليلي (Dark Mode)</option>
+          </select>
+          <div style="font-size:0.78em; color:var(--text-secondary); margin-top:8px;">
+            يتكيف النظام تلقائياً مع ألوان الأجهزة وشاشات الهواتف والكمبيوتر.
+          </div>
+        </div>
+
+        <!-- Language Switcher -->
+        <div style="background:var(--bg-inset); padding:16px; border-radius:12px; border:1px solid var(--border);">
+          <label style="font-weight:bold; display:flex; align-items:center; gap:6px; margin-bottom:10px; color:var(--text-primary);">
+            <i class="fa-solid fa-language" style="color:var(--primary);"></i> لغة النظام:
+          </label>
+          <div class="luxury-lang-switcher-card" style="margin:0;">
+            <div class="lang-switch-info">
+              <div class="lang-switch-icon-wrap">
+                <i class="fa-solid fa-globe"></i>
+              </div>
+              <div class="lang-switch-text-group">
+                <div class="lang-current-title" id="asstLangCurrentLabel">اللغة الحالية: العربية</div>
+                <div class="lang-switch-subtitle" id="asstLangSubLabel">انقر للتحويل إلى English بالكامل</div>
+              </div>
+            </div>
+            <button type="button" class="btn luxury-lang-btn" id="changeLangBtn">
+              <span class="lang-btn-text" id="asstLangBtnText">English</span>
+              <i class="fa-solid fa-arrow-right-arrow-left"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
- </div>
- </div>
-</div>
- </div>
- </section>
+  </section>
 
  
   <!-- ====== PACKAGES ====== -->
@@ -1533,16 +1610,7 @@
  </div>
  </div>
 
- <div id="recycleBinModal" class="modal hidden">
- <div class="modalContent">
- <div class="flexBetween">
- <h2 style="color:var(--danger);" data-i18n="btn_recycle"> سلة المحذوفات</h2>
- <button id="closeBinBtn" class="btn smallBtn">X</button>
- </div>
- <div id="binList" class="list"></div>
- <button id="emptyBinBtn" class="btn danger" style="width:100%; margin-top:15px;" data-i18n="btn_empty_bin"><i class="fa-solid fa-trash-can-arrow-up" style="margin-inline-end: 6px;"></i> إفراغ السلة نهائياً</button>
- </div>
- </div>
+ 
 
  <div id="todayModal" class="modal hidden">
  <div class="modalContent" style="max-width: 600px;">
@@ -1909,7 +1977,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V145"></script>
+  <script type="module" src="app.js?v=STUDIFY_V146"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
