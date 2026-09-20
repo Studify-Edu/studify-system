@@ -911,14 +911,28 @@
  <label class="lbl" data-i18n="sess_amount_lbl">مبلغ الحصة *</label>
  <input id="sessStAmount" type="number" class="inp" placeholder="المبلغ (ج)" data-i18n-placeholder="sess_amount_plc">
  </div>
- <div>
- <label class="lbl" data-i18n="sess_method_lbl">طريقة الدفع *</label>
- <select id="sessStMethod" class="inp">
- <option value="cash" data-i18n="opt_cash"> كاش</option>
- <option value="instapay" data-i18n="opt_instapay"> إنستاباي</option>
- <option value="wallet" data-i18n="opt_wallet"> فودافون كاش</option>
- </select>
- </div>
+                <div>
+                  <label class="lbl" data-i18n="sess_method_lbl">طريقة الدفع *</label>
+                  <select id="sessStMethod" class="inp" style="display:none;">
+                    <option value="cash" data-i18n="opt_cash">كاش</option>
+                    <option value="instapay" data-i18n="opt_instapay">إنستاباي</option>
+                    <option value="wallet" data-i18n="opt_wallet">فودافون كاش</option>
+                  </select>
+                  <div class="sess-payment-pills" id="sessPaymentPills" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:4px;">
+                    <button type="button" class="sess-pay-pill active" data-method="cash" id="sessPayBtnCash" style="padding:9px 4px; border-radius:10px; border:2px solid #10b981; background:rgba(16,185,129,0.14); color:#10b981; font-weight:800; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 2px 8px rgba(16,185,129,0.2);">
+                      <i class="fa-solid fa-money-bill-wave"></i>
+                      <span data-i18n="opt_cash">كاش</span>
+                    </button>
+                    <button type="button" class="sess-pay-pill" data-method="instapay" id="sessPayBtnInstapay" style="padding:9px 4px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg-surface); color:var(--text-secondary); font-weight:700; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);">
+                      <i class="fa-solid fa-bolt-lightning"></i>
+                      <span data-i18n="opt_instapay">إنستاباي</span>
+                    </button>
+                    <button type="button" class="sess-pay-pill" data-method="wallet" id="sessPayBtnWallet" style="padding:9px 4px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg-surface); color:var(--text-secondary); font-weight:700; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);">
+                      <i class="fa-solid fa-wallet"></i>
+                      <span data-i18n="opt_wallet">فودافون</span>
+                    </button>
+                  </div>
+                </div>
  </div>
 
  <button id="saveSessionStudentBtn" class="btn success w100" style="margin-top: 20px; padding: 12px; font-weight: bold; font-size: 1.05em;" data-i18n="sess_save_btn">
@@ -1972,7 +1986,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V150"></script>
+  <script type="module" src="app.js?v=STUDIFY_V151"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
@@ -2100,6 +2114,72 @@
        
      </div>
     </div>
+
+  <!-- SESSION STUDENT DETAILS MODAL -->
+  <div id="sessionStudentDetailsModal" class="modal hidden" style="z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.65);">
+    <div class="modalContent" style="max-width: 480px; width: 92%; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 20px 45px rgba(0,0,0,0.3); padding: 24px; color: var(--text-primary); font-family: 'Cairo', sans-serif;">
+      <div class="flexBetween" style="border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(59,130,246,0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.2em;">
+            <i class="fa-solid fa-user-clock"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15em;" data-i18n="sess_modal_title">بيانات طالب الحصة الفورية</h3>
+            <span class="badge" style="background: rgba(59,130,246,0.12); color: #2563eb; border: 1px solid rgba(59,130,246,0.3); font-size: 0.75em; margin-top: 3px;" data-i18n="sess_modal_badge">مسجل بالحصة (بدون كود كارت)</span>
+          </div>
+        </div>
+        <button type="button" class="btn smallBtn" onclick="document.getElementById('sessionStudentDetailsModal').classList.add('hidden')" style="background: transparent; border: none; font-size: 1.2em; color: var(--text-secondary); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-inset); border-radius: 10px;">
+          <span style="color: var(--text-secondary); font-size: 0.9em;" data-i18n="lbl_name">اسم الطالب:</span>
+          <b id="modalSessStName" style="font-size: 1em; color: var(--text-primary);">—</b>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-inset); border-radius: 10px;">
+          <span style="color: var(--text-secondary); font-size: 0.9em;" data-i18n="lbl_phone">رقم الموبايل:</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <b id="modalSessStPhone" style="font-size: 0.95em;">—</b>
+            <button id="modalSessStWaBtn" type="button" class="btn success smallBtn iconOnly" title="مراسلة واتساب" style="width: 28px; height: 28px; border-radius: 6px;"><i class="fa-brands fa-whatsapp"></i></button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-inset); border-radius: 10px;">
+          <span style="color: var(--text-secondary); font-size: 0.9em;" data-i18n="sess_class_lbl">المادة / الباقة:</span>
+          <b id="modalSessStClass" style="font-size: 0.95em; color: var(--primary);">—</b>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-inset); border-radius: 10px;">
+          <span style="color: var(--text-secondary); font-size: 0.9em;" data-i18n="sess_amount_lbl">المبلغ المحصل:</span>
+          <b id="modalSessStAmount" style="color: var(--success); font-size: 1.1em;">—</b>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-inset); border-radius: 10px;">
+          <span style="color: var(--text-secondary); font-size: 0.9em;" data-i18n="sess_method_lbl">طريقة الدفع:</span>
+          <span id="modalSessStMethodBadge" class="badge">—</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-inset); border-radius: 10px;">
+          <span style="color: var(--text-secondary); font-size: 0.9em;" data-i18n="sess_date_lbl">تاريخ ووقت الحضور:</span>
+          <span id="modalSessStTime" style="font-size: 0.85em; color: var(--text-secondary);">—</span>
+        </div>
+
+        <div style="padding: 10px 14px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 10px; font-size: 0.85em; color: var(--success); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-circle-check"></i>
+          <span data-i18n="sess_paid_in_full">خالص بالكامل ومسجل بالحضور الفوري (لا توجد عليه أي مديونيات).</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="modalSessUpgradeBtn" type="button" class="btn primary smallBtn" style="flex: 1; padding: 10px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-id-card"></i>
+          <span data-i18n="sess_btn_upgrade">ترقية لطالب منتظم وحجز ID</span>
+        </button>
+        <button type="button" class="btn secondary smallBtn" onclick="document.getElementById('sessionStudentDetailsModal').classList.add('hidden')" style="padding: 10px 18px; border-radius: 10px;" data-i18n="btn_close">إغلاق</button>
+      </div>
+    </div>
+  </div>
 
   <!-- SUBSCRIPTION LOCK SCREEN (Overlay when expired) -->
   <div id="assistantSubscriptionLockScreen" class="subscription-lock-screen hidden">

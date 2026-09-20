@@ -2850,7 +2850,8 @@ function applyPermissions() {
  
  if($("totalStudentsCount")) {
    const maxSt = window.SUBSCRIPTION?.maxStudents;
-   $("totalStudentsCount").textContent = maxSt ? `${filledCount} / ${maxSt}` : filledCount;
+   const combinedCount = (typeof window.getTotalStudentsCombinedCount === "function") ? window.getTotalStudentsCombinedCount() : filledCount;
+   $("totalStudentsCount").textContent = maxSt ? `${combinedCount} / ${maxSt}` : combinedCount;
  }
  if($("todayCountTop")) $("todayCountTop").textContent = todayCount;
  
@@ -3728,6 +3729,30 @@ const st = students[id];
  for (let i = 0; i < allStudents.length; i++) {
  if (allStudents[i] && (allStudents[i].name || allStudents[i].paid > 0)) filled.push(allStudents[i]);
  }
+
+ // Include Session Students in the main list
+ if (typeof window.getAllSessionStudents === 'function') {
+   const sessList = window.getAllSessionStudents();
+   sessList.forEach(item => {
+     filled.push({
+       id: 'حصة',
+       realId: 'sess_' + item.id,
+       isSessionStudent: true,
+       name: item.name,
+       phone: item.phone || '',
+       parentPhone: '',
+       className: item.className || (currentLang === 'ar' ? 'حصة فردية' : 'Single Session'),
+       packages: ['حصة'],
+       paid: Number(item.amount) || 0,
+       discount: 0,
+       debt: 0,
+       status: 'active',
+       attendanceDates: [item.date || nowDateStr()],
+       method: item.method,
+       sessionRecord: item
+     });
+   });
+ }
  
  const today = nowDateStr(); 
  currentFilteredList = [];
@@ -3923,7 +3948,7 @@ const st = students[id];
 
      tr.innerHTML = `
      <td><input type="checkbox" class="stCheckbox" data-id="${s.id}"></td>
-     <td style="font-weight:bold; color:var(--text-secondary); font-size:0.9em;">${s.id}</td>
+     <td style="font-weight:bold; color:var(--text-secondary); font-size:0.9em;">${s.isSessionStudent ? `<span class="badge" style="background:rgba(59,130,246,0.12); color:#2563eb; border:1px solid rgba(59,130,246,0.3); font-weight:700; font-size:0.8em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-user-clock"></i> ${isAr ? "طالب حصة" : "Session"}</span>` : s.id}</td>
      <td><b>${s.name}</b>${rankIcon}</td>
      <td>${classBadge}</td>
      <td>${pkgsBadgeHtml}</td>
@@ -3931,7 +3956,13 @@ const st = students[id];
      <td>${remainDisplay}</td>
      <td>${attendTxt}</td>`;
  tr.onclick = function(e) { 
- if(e.target.type !== "checkbox") window.extOpen(s.id); 
+ if(e.target.type !== "checkbox") {
+   if (s.isSessionStudent) {
+     window.openSessionStudentModal(s.sessionRecord);
+   } else {
+     window.extOpen(s.id);
+   }
+ }
  };
  tbody.appendChild(tr);
  }
@@ -8100,7 +8131,7 @@ document.addEventListener("DOMContentLoaded", () => {
  // Tabs Listeners
  on("btnTabHome", "click", function() { window.switchTab('Home'); });
  on("btnTabStudents", "click", function() { window.switchTab('Students'); renderList(true); });
- on("btnTabSessionStudents", "click", function() { window.switchTab('SessionStudents'); renderSessionStudentsList(nowDateStr()); if($("sessFilterDate")) $("sessFilterDate").value = nowDateStr(); });
+ on("btnTabSessionStudents", "click", function() { window.switchTab('SessionStudents'); if (typeof setupSessionPaymentPills === "function") setupSessionPaymentPills(); renderSessionStudentsList(nowDateStr()); if($("sessFilterDate")) $("sessFilterDate").value = nowDateStr(); });
  on("btnTabRevenue", "click", function() { window.switchTab('Revenue'); renderCharts(); updateFinanceSummary(); });
  on("btnTabReports", "click", function() { window.switchTab('Reports'); renderReportsPage(); });
  on("btnTabPackages", "click", function() {
@@ -8116,7 +8147,159 @@ document.addEventListener("DOMContentLoaded", () => {
  on("btnTabBooklets", "click", function() { window.switchTab('Booklets'); renderBookletsStock(); });
  on("btnTabMarketing", "click", function() { window.switchTab('Marketing'); populateMarketingGroups(); filterCampaignTarget(); });
 
- // === SESSION STUDENTS FUNCTIONS ===
+ 
+// ========================================================
+// SESSION STUDENTS (طلاب الحصة) ADVANCED ENGINE
+// ========================================================
+window.getAllSessionStudents = function() {
+  const list = [];
+  const seen = new Set();
+  const dates = Object.keys(sessionStudentsByDate || {}).sort().reverse();
+  dates.forEach(d => {
+    const arr = sessionStudentsByDate[d] || [];
+    arr.forEach((it, idx) => {
+      const key = (it.name || '').trim().toLowerCase() + '___' + (it.phone || '').trim();
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push({
+          ...it,
+          date: d,
+          originalIndex: idx
+        });
+      }
+    });
+  });
+  return list;
+};
+
+window.getUniqueSessionStudentsCount = function() {
+  return window.getAllSessionStudents().length;
+};
+
+window.getTotalStudentsCombinedCount = function() {
+  const regularCount = Object.values(students || {}).filter(s => (s && s.id && (s.name || (Number(s.paid) || 0) > 0))).length;
+  const sessionCount = window.getUniqueSessionStudentsCount();
+  return regularCount + sessionCount;
+};
+
+function setupSessionPaymentPills() {
+  const pills = document.querySelectorAll('.sess-pay-pill');
+  const hiddenSelect = document.getElementById('sessStMethod');
+  if (!pills.length) return;
+
+  pills.forEach(pill => {
+    pill.onclick = function(e) {
+      e.preventDefault();
+      const m = this.getAttribute('data-method');
+      if (hiddenSelect) hiddenSelect.value = m;
+
+      pills.forEach(p => {
+        p.classList.remove('active');
+        p.style.border = '1.5px solid var(--border)';
+        p.style.background = 'var(--bg-surface)';
+        p.style.color = 'var(--text-secondary)';
+        p.style.boxShadow = 'none';
+      });
+
+      this.classList.add('active');
+      if (m === 'cash') {
+        this.style.border = '2px solid #10b981';
+        this.style.background = 'rgba(16,185,129,0.14)';
+        this.style.color = '#10b981';
+        this.style.boxShadow = '0 2px 8px rgba(16,185,129,0.2)';
+      } else if (m === 'instapay') {
+        this.style.border = '2px solid #0284c7';
+        this.style.background = 'rgba(14,165,233,0.14)';
+        this.style.color = '#0284c7';
+        this.style.boxShadow = '0 2px 8px rgba(2,132,199,0.2)';
+      } else if (m === 'wallet') {
+        this.style.border = '2px solid #ef4444';
+        this.style.background = 'rgba(239,68,68,0.14)';
+        this.style.color = '#ef4444';
+        this.style.boxShadow = '0 2px 8px rgba(239,68,68,0.2)';
+      }
+    };
+  });
+}
+
+// Modal for viewing session student details
+window.openSessionStudentModal = function(item) {
+  if (!item) return;
+  const modal = document.getElementById('sessionStudentDetailsModal');
+  if (!modal) return;
+
+  const isAr = (currentLang === 'ar');
+  const currSuffix = isAr ? ' ج' : ' EGP';
+
+  if (document.getElementById('modalSessStName')) document.getElementById('modalSessStName').textContent = item.name || '—';
+  if (document.getElementById('modalSessStPhone')) document.getElementById('modalSessStPhone').textContent = item.phone || (isAr ? 'غير مسجل' : 'Not registered');
+  if (document.getElementById('modalSessStClass')) document.getElementById('modalSessStClass').textContent = item.className || (isAr ? 'حصة فردية' : 'Single Session');
+  if (document.getElementById('modalSessStAmount')) document.getElementById('modalSessStAmount').textContent = (item.amount || 0) + currSuffix;
+
+  // Method Badge
+  const methodBadge = document.getElementById('modalSessStMethodBadge');
+  if (methodBadge) {
+    const m = item.method || 'cash';
+    if (m === 'instapay') {
+      methodBadge.textContent = isAr ? 'إنستاباي' : 'InstaPay';
+      methodBadge.style.background = 'rgba(14,165,233,0.15)';
+      methodBadge.style.color = '#0284c7';
+      methodBadge.style.borderColor = 'rgba(14,165,233,0.3)';
+    } else if (m === 'wallet') {
+      methodBadge.textContent = isAr ? 'فودافون كاش' : 'Vodafone Cash';
+      methodBadge.style.background = 'rgba(239,68,68,0.15)';
+      methodBadge.style.color = '#ef4444';
+      methodBadge.style.borderColor = 'rgba(239,68,68,0.3)';
+    } else {
+      methodBadge.textContent = isAr ? 'كاش (نقدي)' : 'Cash';
+      methodBadge.style.background = 'rgba(16,185,129,0.15)';
+      methodBadge.style.color = '#10b981';
+      methodBadge.style.borderColor = 'rgba(16,185,129,0.3)';
+    }
+  }
+
+  if (document.getElementById('modalSessStTime')) {
+    document.getElementById('modalSessStTime').textContent = (item.date || '') + ' ' + (item.timestamp || '');
+  }
+
+  // WhatsApp Button
+  const waBtn = document.getElementById('modalSessStWaBtn');
+  if (waBtn) {
+    if (item.phone) {
+      waBtn.style.display = 'inline-flex';
+      waBtn.onclick = () => window.open(`https://wa.me/20${item.phone}`, '_blank');
+    } else {
+      waBtn.style.display = 'none';
+    }
+  }
+
+  // Upgrade Button: Pre-fill into new student form
+  const upgradeBtn = document.getElementById('modalSessUpgradeBtn');
+  if (upgradeBtn) {
+    upgradeBtn.onclick = function() {
+      modal.classList.add('hidden');
+      if (typeof window.switchTab === 'function') window.switchTab('Students');
+      setTimeout(() => {
+        const addNewBtn = document.getElementById('addNewBtn');
+        if (addNewBtn) addNewBtn.click();
+        setTimeout(() => {
+          if (document.getElementById('stName')) document.getElementById('stName').value = item.name || '';
+          if (document.getElementById('stPhone')) document.getElementById('stPhone').value = item.phone || '';
+          if (document.getElementById('stClass') && item.className && item.className !== 'حصة فردية') {
+            document.getElementById('stClass').value = item.className;
+          }
+          if (typeof showToast === 'function') {
+            showToast(isAr ? 'تم تجهيز استمارة تسجيل الطالب، يرجى إسناد كود الكارت ID وحفظ البيانات' : 'Student form ready. Please assign card ID and save.', 'info');
+          }
+        }, 150);
+      }, 100);
+    };
+  }
+
+  modal.classList.remove('hidden');
+};
+
+// === SESSION STUDENTS FUNCTIONS ===
  window.renderSessionStudentsList = function(d) {
  const slist = $("sessStudentsList"); if(!slist) return;
  let arr = sessionStudentsByDate[d] || [];
@@ -8191,7 +8374,7 @@ document.addEventListener("DOMContentLoaded", () => {
  });
  };
 
- on("saveSessionStudentBtn", "click", function() {
+ on("saveSessionStudentBtn", "click", async function() {
  let name = $("sessStName") ? $("sessStName").value.trim() : "";
  let phone = $("sessStPhone") ? $("sessStPhone").value.trim() : "";
  let className = $("sessStClass") ? $("sessStClass").value : "حصة فردية";
@@ -8199,29 +8382,68 @@ document.addEventListener("DOMContentLoaded", () => {
  let method = $("sessStMethod") ? $("sessStMethod").value : "cash";
 
  if(!name || amount <= 0) {
- showToast(" يرجى إدخال اسم الطالب والمبلغ بشكل صحيح", "warning");
- return;
+   showToast("يرجى إدخال اسم الطالب والمبلغ بشكل صحيح", "warning");
+   return;
+ }
+
+ // Check subscription limit: session students count towards max_students
+ const maxSt = window.SUBSCRIPTION?.maxStudents;
+ if (maxSt) {
+   const curCombined = (typeof window.getTotalStudentsCombinedCount === "function") ? window.getTotalStudentsCombinedCount() : 0;
+   if (curCombined >= maxSt) {
+     if (typeof Swal !== "undefined") {
+       Swal.fire({
+         icon: "warning",
+         title: "تم الوصول للحد الأقصى للطلاب",
+         text: `باقتكم الحالية تسمح بحد أقصى ${maxSt} طالب (بما فيهم طلاب الحصة). يرجى ترقية الاشتراك من لوحة الإدارة.`,
+         confirmButtonText: "حسناً",
+         confirmButtonColor: "#2563eb"
+       });
+     } else {
+       showToast(`تم الوصول للحد الأقصى للطلاب (${maxSt})`, "err");
+     }
+     return;
+   }
  }
 
  const today = nowDateStr();
  if(!sessionStudentsByDate[today]) sessionStudentsByDate[today] = [];
 
  let record = {
- id: Date.now(),
- name: name,
- phone: phone,
- className: className,
- amount: amount,
- method: method,
- timestamp: new Date().toLocaleTimeString()
+   id: Date.now(),
+   name: name,
+   phone: phone,
+   className: className,
+   amount: amount,
+   method: method,
+   timestamp: new Date().toLocaleTimeString()
  };
 
  sessionStudentsByDate[today].push(record);
  revenueByDate[today] = (revenueByDate[today] || 0) + amount;
 
- saveAll();
+ // Insert into Supabase session_students table
+ if (window.supabaseClient) {
+   try {
+     window.supabaseClient.from('session_students').insert([{
+       date: today,
+       student_name: name,
+       phone: phone,
+       class_name: className,
+       paid: amount
+     }]).then(({ error }) => {
+       if (error) console.warn('[Supabase session_students insert error]:', error);
+     });
+   } catch(e) {
+     console.warn('[session_students cloud insert]:', e);
+   }
+ }
+
+ await saveAll();
  renderSessionStudentsList(today);
- showToast("تم تسجيل حضور الحصة وتحصيل المبلغ بنجاح ", "success");
+ if (typeof updateTopStats === "function") updateTopStats();
+ if (typeof renderList === "function") renderList(false);
+ showToast("تم تسجيل حضور الحصة وتحصيل المبلغ بنجاح", "success");
  playSound("success");
 
  if($("sessStName")) $("sessStName").value = "";
@@ -8229,10 +8451,10 @@ document.addEventListener("DOMContentLoaded", () => {
  if($("sessStAmount")) $("sessStAmount").value = "";
 
  if(phone) {
- let centerMgr = evalData.manager || "إدارة السنتر";
- let mName = method === "instapay" ? "إنستاباي " : (method === "wallet" ? "فودافون كاش " : "كاش ");
- let msg = `مرحباً ${name}،\r\nتم تسجيل حضورك بنجاح لحصة اليوم (${className}) \r\nالمبلغ المدفوع: ${amount} ج (${mName}).\r\n\r\nمع تحيات: أ/ ${centerMgr}`;
- window.open(`https://wa.me/20${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+   let centerMgr = evalData.manager || "إدارة السنتر";
+   let mName = method === "instapay" ? "إنستاباي" : (method === "wallet" ? "فودافون كاش" : "كاش");
+   let msg = `مرحباً ${name}،\r\nتم تسجيل حضورك بنجاح لحصة اليوم (${className})\r\nالمبلغ المدفوع: ${amount} ج (${mName}).\r\n\r\nمع تحيات: أ/ ${centerMgr}`;
+   window.open(`https://wa.me/20${phone}?text=${encodeURIComponent(msg)}`, '_blank');
  }
  });
 
@@ -9491,6 +9713,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   initDailyApprovalSystem();
   initNoticeBoardSystem();
+  setupSessionPaymentPills();
 
   await loadPermissions();
   
@@ -10791,8 +11014,8 @@ window.applyAssistantSubscription = function(subData) {
   // 1. Update Student Count in Topbar Pill
   const countEl = document.getElementById("totalStudentsCount");
   if (countEl && typeof students !== 'undefined') {
-    const filledCount = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.className)).length;
-    countEl.textContent = `${filledCount} / ${window.SUBSCRIPTION.maxStudents}`;
+    const combinedCount = (typeof window.getTotalStudentsCombinedCount === "function") ? window.getTotalStudentsCombinedCount() : Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.className)).length;
+    countEl.textContent = `${combinedCount} / ${window.SUBSCRIPTION.maxStudents}`;
   }
 
   // 2. Enforce Marketing Restriction for Assistant

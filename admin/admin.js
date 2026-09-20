@@ -229,6 +229,20 @@ const ADMIN_DICT = {
   // Term Financial Report
   "stat_term_total_students": { ar: "إجمالي الطلاب المسجلين", en: "Total Registered Students" },
   "stat_term_total_rev": { ar: "إجمالي الإيرادات المحصلة (ج)", en: "Total Collected Revenue (EGP)" },
+  "lbl_breakdown_btn": { ar: "عرض التفاصيل", en: "View Details" },
+  "rev_modal_title": { ar: "تفاصيل وتوزيع الإيرادات المحصلة", en: "Collected Revenue Breakdown" },
+  "rev_modal_subtitle": { ar: "تحليل مالي تفصيلي لمصادر الدخل وتوزيع التدفقات النقدية والبنكية", en: "Detailed financial analysis of income sources and cash flow distribution" },
+  "rev_grand_total_lbl": { ar: "إجمالي الإيرادات الكلية المحصلة", en: "Grand Total Collected Revenue" },
+  "rev_src_regular": { ar: "طلاب منتظمين", en: "Regular Students" },
+  "rev_src_session": { ar: "طلاب حصة", en: "Session Students" },
+  "rev_src_booklets": { ar: "مذكرات ومخزن", en: "Booklets & Supplies" },
+  "rev_card_regular_title": { ar: "اشتراكات الطلاب المنتظمين", en: "Regular Students Subscriptions" },
+  "rev_card_session_title": { ar: "حضور طلاب الحصة الفورية", en: "Immediate Session Attendance" },
+  "rev_card_booklets_title": { ar: "مبيعات المذكرات والمخزن", en: "Booklets & Inventory Sales" },
+  "rev_sec_treasury_title": { ar: "إجمالي المقبوضات حسب وسيلة الدفع (شامل كافة المصادر)", en: "Total Collections by Payment Method (All Sources Combined)" },
+  "treasury_cash_total": { ar: "إجمالي الكاش (الدرج)", en: "Total Cash (Drawer)" },
+  "treasury_instapay_total": { ar: "إجمالي إنستاباي", en: "Total InstaPay" },
+  "treasury_wallet_total": { ar: "إجمالي فودافون كاش", en: "Total Vodafone Cash" },
   "stat_term_total_exp": { ar: "إجمالي المصروفات التشغيلية (ج)", en: "Total Operating Expenses (EGP)" },
   "stat_term_total_withdrawals": { ar: "مسحوبات المستر / الشخصية (ج)", en: "Teacher / Owner Withdrawals (EGP)" },
   "stat_term_net_vault": { ar: "صافي رصيد الخزائن المتاح (ج)", en: "Net Available Vaults Balance (EGP)" },
@@ -2171,6 +2185,9 @@ window.renderTermTable = function() {
   // 1. Calculate Student Revenue, Debts & Treasuries Inflow
   let totalRev = 0, totalDebt = 0, totalDiscounts = 0, matchCount = 0;
   let cashIn = 0, walletIn = 0, instapayIn = 0;
+  let regCash = 0, regWallet = 0, regInstapay = 0;
+  let sessCash = 0, sessWallet = 0, sessInstapay = 0;
+  let bklCash = 0, bklWallet = 0, bklInstapay = 0;
   let rowsHtml = "";
 
   Object.values(students).forEach(st => {
@@ -2181,18 +2198,18 @@ window.renderTermTable = function() {
       st.payments.forEach(p => {
         const pAmt = Number(p.amount) || 0;
         const pMethod = p.method || 'cash';
-        if (pMethod === 'cash') cashIn += pAmt;
-        else if (pMethod === 'wallet') walletIn += pAmt;
-        else if (pMethod === 'instapay') instapayIn += pAmt;
-        else cashIn += pAmt;
+        if (pMethod === 'cash') { cashIn += pAmt; regCash += pAmt; }
+        else if (pMethod === 'wallet') { walletIn += pAmt; regWallet += pAmt; }
+        else if (pMethod === 'instapay') { instapayIn += pAmt; regInstapay += pAmt; }
+        else { cashIn += pAmt; regCash += pAmt; }
       });
     } else if (Number(st.paid) > 0) {
       const pAmt = Number(st.paid) || 0;
       const pMethod = st.paymentPlan || 'cash';
-      if (pMethod === 'cash') cashIn += pAmt;
-      else if (pMethod === 'wallet') walletIn += pAmt;
-      else if (pMethod === 'instapay') instapayIn += pAmt;
-      else cashIn += pAmt;
+      if (pMethod === 'cash') { cashIn += pAmt; regCash += pAmt; }
+      else if (pMethod === 'wallet') { walletIn += pAmt; regWallet += pAmt; }
+      else if (pMethod === 'instapay') { instapayIn += pAmt; regInstapay += pAmt; }
+      else { cashIn += pAmt; regCash += pAmt; }
     }
 
     if (search && !st.name.toLowerCase().includes(search) && !String(st.id).includes(search)) return;
@@ -2279,13 +2296,42 @@ window.renderTermTable = function() {
     sList.forEach(it => {
       const amt = Number(it.amount) || 0;
       const m = it.method || 'cash';
-      if (m === 'cash') cashIn += amt;
-      else if (m === 'wallet') walletIn += amt;
-      else if (m === 'instapay') instapayIn += amt;
-      else cashIn += amt;
+      if (m === 'cash') { cashIn += amt; sessCash += amt; }
+      else if (m === 'wallet') { walletIn += amt; sessWallet += amt; }
+      else if (m === 'instapay') { instapayIn += amt; sessInstapay += amt; }
+      else { cashIn += amt; sessCash += amt; }
       totalRev += amt;
     });
   }
+
+  // 2b. Add Booklet Inventory Sales Inflow
+  let totalBookletSales = 0;
+  Object.values(booklets || {}).forEach(b => {
+    const soldQty = Number(b.sold) || 0;
+    const price = Number(b.price) || 0;
+    const bRev = soldQty * price;
+    if (bRev > 0) {
+      totalBookletSales += bRev;
+      bklCash += bRev;
+      cashIn += bRev;
+      totalRev += bRev;
+    }
+  });
+
+  // Store global financial breakdown for the detailed modal
+  window.financialBreakdownData = {
+    regCash, regInstapay, regWallet,
+    regTotal: regCash + regInstapay + regWallet,
+    sessCash, sessInstapay, sessWallet,
+    sessTotal: sessCash + sessInstapay + sessWallet,
+    bklCash, bklInstapay, bklWallet,
+    bklTotal: totalBookletSales,
+    grandTotal: totalRev,
+    totalCash: cashIn,
+    totalInstapay: instapayIn,
+    totalWallet: walletIn,
+    currencySuffix: currencySuffix
+  };
 
   // 3. Process Expenses & Withdrawals
   let totalExpenses = 0;
@@ -4990,4 +5036,72 @@ window.contactForRenewal = function(planKey) {
     confirmButtonText: okText,
     confirmButtonColor: '#2563EB'
   });
+};
+
+
+// ========================================================
+// REVENUE BREAKDOWN MODAL LOGIC
+// ========================================================
+window.openRevenueBreakdownModal = function() {
+  const modal = document.getElementById("revenueBreakdownModal");
+  if (!modal) return;
+
+  const data = window.financialBreakdownData || {
+    regTotal: 0, regCash: 0, regInstapay: 0, regWallet: 0,
+    sessTotal: 0, sessCash: 0, sessInstapay: 0, sessWallet: 0,
+    bklTotal: 0, bklCash: 0, bklInstapay: 0, bklWallet: 0,
+    grandTotal: 0, totalCash: 0, totalInstapay: 0, totalWallet: 0,
+    currencySuffix: (currentLang === "ar" ? " ج" : " EGP")
+  };
+
+  const curr = data.currencySuffix || (currentLang === "ar" ? " ج" : " EGP");
+
+  // Big Totals
+  const gTotal = data.grandTotal || 0;
+  if (document.getElementById("revModalGrandTotal")) {
+    document.getElementById("revModalGrandTotal").textContent = gTotal.toLocaleString() + curr;
+  }
+
+  // Distribution Percentages
+  const regPct = gTotal > 0 ? Math.round((data.regTotal / gTotal) * 100) : 0;
+  const sessPct = gTotal > 0 ? Math.round((data.sessTotal / gTotal) * 100) : 0;
+  const bklPct = gTotal > 0 ? Math.max(0, 100 - regPct - sessPct) : 0;
+
+  if (document.getElementById("revBarRegPct")) document.getElementById("revBarRegPct").textContent = regPct + "%";
+  if (document.getElementById("revBarSessPct")) document.getElementById("revBarSessPct").textContent = sessPct + "%";
+  if (document.getElementById("revBarBklPct")) document.getElementById("revBarBklPct").textContent = bklPct + "%";
+
+  if (document.getElementById("revBarReg")) document.getElementById("revBarReg").style.width = regPct + "%";
+  if (document.getElementById("revBarSess")) document.getElementById("revBarSess").style.width = sessPct + "%";
+  if (document.getElementById("revBarBkl")) document.getElementById("revBarBkl").style.width = bklPct + "%";
+
+  // 1. Regular Students Card
+  if (document.getElementById("revCardRegTotal")) document.getElementById("revCardRegTotal").textContent = data.regTotal.toLocaleString() + curr;
+  if (document.getElementById("revCardRegCash")) document.getElementById("revCardRegCash").textContent = data.regCash.toLocaleString() + curr;
+  if (document.getElementById("revCardRegInstapay")) document.getElementById("revCardRegInstapay").textContent = data.regInstapay.toLocaleString() + curr;
+  if (document.getElementById("revCardRegWallet")) document.getElementById("revCardRegWallet").textContent = data.regWallet.toLocaleString() + curr;
+
+  // 2. Session Students Card
+  if (document.getElementById("revCardSessTotal")) document.getElementById("revCardSessTotal").textContent = data.sessTotal.toLocaleString() + curr;
+  if (document.getElementById("revCardSessCash")) document.getElementById("revCardSessCash").textContent = data.sessCash.toLocaleString() + curr;
+  if (document.getElementById("revCardSessInstapay")) document.getElementById("revCardSessInstapay").textContent = data.sessInstapay.toLocaleString() + curr;
+  if (document.getElementById("revCardSessWallet")) document.getElementById("revCardSessWallet").textContent = data.sessWallet.toLocaleString() + curr;
+
+  // 3. Booklets Card
+  if (document.getElementById("revCardBklTotal")) document.getElementById("revCardBklTotal").textContent = data.bklTotal.toLocaleString() + curr;
+  if (document.getElementById("revCardBklCash")) document.getElementById("revCardBklCash").textContent = data.bklCash.toLocaleString() + curr;
+  if (document.getElementById("revCardBklInstapay")) document.getElementById("revCardBklInstapay").textContent = data.bklInstapay.toLocaleString() + curr;
+  if (document.getElementById("revCardBklWallet")) document.getElementById("revCardBklWallet").textContent = data.bklWallet.toLocaleString() + curr;
+
+  // Horizontal Dashboard Totals
+  if (document.getElementById("revTotalMethodCash")) document.getElementById("revTotalMethodCash").textContent = data.totalCash.toLocaleString() + curr;
+  if (document.getElementById("revTotalMethodInstapay")) document.getElementById("revTotalMethodInstapay").textContent = data.totalInstapay.toLocaleString() + curr;
+  if (document.getElementById("revTotalMethodWallet")) document.getElementById("revTotalMethodWallet").textContent = data.totalWallet.toLocaleString() + curr;
+
+  modal.classList.remove("hidden");
+};
+
+window.closeRevenueBreakdownModal = function() {
+  const modal = document.getElementById("revenueBreakdownModal");
+  if (modal) modal.classList.add("hidden");
 };

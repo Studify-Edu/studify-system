@@ -377,7 +377,11 @@
               <div class="stat-card-lbl" data-i18n="stat_term_total_students">إجمالي الطلاب المسجلين</div>
             </div>
 
-            <div class="stat-card" style="--stat-color: #10b981; --stat-bg: rgba(16, 185, 129, 0.12);">
+            <div class="stat-card stat-card-interactive" id="statTermRevenueCard" onclick="window.openRevenueBreakdownModal()" style="--stat-color: #10b981; --stat-bg: rgba(16, 185, 129, 0.12);" title="اضغط لعرض تفاصيل وتوزيع الإيرادات المحصلة">
+              <div class="stat-card-action-badge">
+                <span data-i18n="lbl_breakdown_btn">عرض التفاصيل</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </div>
               <div class="stat-card-icon"><i class="fa-solid fa-wallet"></i></div>
               <div class="stat-card-val" id="statTermRevenue">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_rev">إجمالي الإيرادات المحصلة (ج)</div>
@@ -1212,8 +1216,176 @@
     </div>
   </div>
 
+  <!-- ======================================================== -->
+  <!-- REVENUE DETAILED BREAKDOWN MODAL -->
+  <!-- ======================================================== -->
+  <div id="revenueBreakdownModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 860px; width: 95%;">
+      <!-- Close button -->
+      <button type="button" class="modal-close-btn" onclick="window.closeRevenueBreakdownModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2)); color: #10b981;">
+          <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="rev_modal_title">تفاصيل وتوزيع الإيرادات المحصلة</h3>
+          <p class="modal-subtitle-premium" data-i18n="rev_modal_subtitle">تحليل مالي تفصيلي لمصادر الدخل وتوزيع التدفقات النقدية والبنكية</p>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 20px;">
+        
+        <!-- Big Total Header Card -->
+        <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;">
+          <div>
+            <span style="font-size: 0.85em; color: var(--text-secondary); font-weight: 600;" data-i18n="rev_grand_total_lbl">إجمالي الإيرادات الكلية المحصلة</span>
+            <div id="revModalGrandTotal" style="font-size: 2.2em; font-weight: 800; color: #10b981; line-height: 1.2;">0 ج</div>
+          </div>
+          <!-- Visual Distribution Bar -->
+          <div style="flex: 1; min-width: 250px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78em; color: var(--text-secondary); margin-bottom: 6px;">
+              <span><i class="fa-solid fa-square" style="color: #10b981;"></i> <span data-i18n="rev_src_regular">طلاب منتظمين</span>: <b id="revBarRegPct">0%</b></span>
+              <span><i class="fa-solid fa-square" style="color: #0284c7;"></i> <span data-i18n="rev_src_session">طلاب حصة</span>: <b id="revBarSessPct">0%</b></span>
+              <span><i class="fa-solid fa-square" style="color: #8b5cf6;"></i> <span data-i18n="rev_src_booklets">مذكرات ومخزن</span>: <b id="revBarBklPct">0%</b></span>
+            </div>
+            <div style="height: 10px; border-radius: 6px; background: var(--bg-surface); overflow: hidden; display: flex; border: 1px solid var(--border);">
+              <div id="revBarReg" style="width: 0%; background: #10b981; transition: width 0.4s ease;"></div>
+              <div id="revBarSess" style="width: 0%; background: #0284c7; transition: width 0.4s ease;"></div>
+              <div id="revBarBkl" style="width: 0%; background: #8b5cf6; transition: width 0.4s ease;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Source Channels Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+          
+          <!-- 1. Regular Students -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 4px solid #10b981; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-users" style="color: #10b981;"></i>
+                <span data-i18n="rev_card_regular_title">اشتراكات الطلاب المنتظمين</span>
+              </div>
+            </div>
+            <div id="revCardRegTotal" style="font-size: 1.6em; font-weight: 800; color: var(--text-primary);">0 ج</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i> <span data-i18n="opt_cash">كاش:</span></span>
+                <b id="revCardRegCash" style="color:var(--text-primary);">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-bolt-lightning" style="color:#0284c7;"></i> <span data-i18n="opt_instapay">إنستاباي:</span></span>
+                <b id="revCardRegInstapay" style="color:var(--text-primary);">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-wallet" style="color:#ef4444;"></i> <span data-i18n="opt_wallet">فودافون:</span></span>
+                <b id="revCardRegWallet" style="color:var(--text-primary);">0 ج</b>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Session Students -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 4px solid #0284c7; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-user-clock" style="color: #0284c7;"></i>
+                <span data-i18n="rev_card_session_title">حضور طلاب الحصة الفورية</span>
+              </div>
+            </div>
+            <div id="revCardSessTotal" style="font-size: 1.6em; font-weight: 800; color: var(--text-primary);">0 ج</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i> <span data-i18n="opt_cash">كاش:</span></span>
+                <b id="revCardSessCash" style="color:var(--text-primary);">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-bolt-lightning" style="color:#0284c7;"></i> <span data-i18n="opt_instapay">إنستاباي:</span></span>
+                <b id="revCardSessInstapay" style="color:var(--text-primary);">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-wallet" style="color:#ef4444;"></i> <span data-i18n="opt_wallet">فودافون:</span></span>
+                <b id="revCardSessWallet" style="color:var(--text-primary);">0 ج</b>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Booklets & Inventory -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 4px solid #8b5cf6; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-book-bookmark" style="color: #8b5cf6;"></i>
+                <span data-i18n="rev_card_booklets_title">مبيعات المذكرات والمخزن</span>
+              </div>
+            </div>
+            <div id="revCardBklTotal" style="font-size: 1.6em; font-weight: 800; color: var(--text-primary);">0 ج</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i> <span data-i18n="opt_cash">كاش:</span></span>
+                <b id="revCardBklCash" style="color:var(--text-primary);">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-bolt-lightning" style="color:#0284c7;"></i> <span data-i18n="opt_instapay">إنستاباي:</span></span>
+                <b id="revCardBklInstapay" style="color:var(--text-primary);">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span><i class="fa-solid fa-wallet" style="color:#ef4444;"></i> <span data-i18n="opt_wallet">فودافون:</span></span>
+                <b id="revCardBklWallet" style="color:var(--text-primary);">0 ج</b>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Horizontal Dashboard by Payment Method -->
+        <div>
+          <div style="font-size: 0.9em; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-vault"></i>
+            <span data-i18n="rev_sec_treasury_title">إجمالي المقبوضات حسب وسيلة الدفع (شامل كافة المصادر)</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+            
+            <div style="background: rgba(16,185,129,0.06); border: 1.5px solid rgba(16,185,129,0.25); border-radius: 12px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; color: #10b981; font-size: 0.85em; font-weight: 700; margin-bottom: 6px;">
+                <span><i class="fa-solid fa-money-bill-wave"></i> <span data-i18n="treasury_cash_total">إجمالي الكاش (الدرج)</span></span>
+              </div>
+              <div id="revTotalMethodCash" style="font-size: 1.45em; font-weight: 800; color: #10b981;">0 ج</div>
+            </div>
+
+            <div style="background: rgba(2,132,199,0.06); border: 1.5px solid rgba(2,132,199,0.25); border-radius: 12px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; color: #0284c7; font-size: 0.85em; font-weight: 700; margin-bottom: 6px;">
+                <span><i class="fa-solid fa-bolt-lightning"></i> <span data-i18n="treasury_instapay_total">إجمالي إنستاباي</span></span>
+              </div>
+              <div id="revTotalMethodInstapay" style="font-size: 1.45em; font-weight: 800; color: #0284c7;">0 ج</div>
+            </div>
+
+            <div style="background: rgba(239,68,68,0.06); border: 1.5px solid rgba(239,68,68,0.25); border-radius: 12px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; color: #ef4444; font-size: 0.85em; font-weight: 700; margin-bottom: 6px;">
+                <span><i class="fa-solid fa-wallet"></i> <span data-i18n="treasury_wallet_total">إجمالي فودافون كاش</span></span>
+              </div>
+              <div id="revTotalMethodWallet" style="font-size: 1.45em; font-weight: 800; color: #ef4444;">0 ج</div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Actions -->
+      <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn secondary" onclick="window.closeRevenueBreakdownModal()" style="padding: 9px 24px; border-radius: 10px;" data-i18n="btn_close">
+          إغلاق النافذة
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V26"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V27"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->
