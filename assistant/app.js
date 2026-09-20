@@ -985,7 +985,7 @@ document.addEventListener('DOMContentLoaded', function() {
   "filter_all_pay": { ar: "كل الدفعات", en: "All Payments" },
   "st_notes_title": { ar: "ملاحظات الطالب (منفصلة وقابلة للتعديل)", en: "Student Notes (Separated & Editable)" },
   "st_att_history_title": { ar: "سجل حضور الطالب (التواريخ السابقة):", en: "Student Attendance History:" },
-  "sess_class_opt": { ar: "حصة فردية (عام)", en: "Single Session (General)" },
+  "sess_class_opt": { ar: "حصة فردية (بدون باقة)", en: "Single Session (No Package)" },
   "booklets_main_title": { ar: "إدارة مخزون المذكرات والورق", en: "Booklets & Paper Inventory" },
   "booklets_main_desc": { ar: "متابعة حركة طباعة واستلام المذكرات، المباع منها، المخزون المتبقي، وإجمالي العائد المالي بدقة تامة دون هدر.", en: "Track printing, booklet receipts, sales, stock, and total revenue with zero waste." },
 
@@ -1221,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', function() {
  "sess_phone_lbl": { ar: "رقم الموبايل (اختياري)", en: "Mobile Number (Optional)" },
  "sess_phone_plc": { ar: "مثال: 01012345678", en: "Ex: 01012345678" },
  "sess_class_lbl": { ar: "المادة / الصف / الباقة", en: "Subject / Class / Package" },
- "sess_class_opt": { ar: "حصة فردية (عام)", en: "Individual Session (General)" },
+ "sess_class_opt": { ar: "حصة فردية (بدون باقة)", en: "Single Session (No Package)" },
  "sess_amount_lbl": { ar: "مبلغ الحصة *", en: "Session Amount *" },
  "sess_amount_plc": { ar: "المبلغ (ج)", en: "Amount (EGP)" },
  "sess_method_lbl": { ar: "طريقة الدفع *", en: "Payment Method *" },
@@ -1312,7 +1312,7 @@ document.addEventListener('DOMContentLoaded', function() {
   "trans_switching_theme": { ar: "جاري تبديل المظهر..", en: "Switching Theme..." },
   "trans_switching_lang": { ar: "جاري تغيير اللغة..", en: "Switching Language..." },
   "sess_no_students": { ar: "لا يوجد طلاب مسجلين بالحصة لهذا اليوم", en: "No students registered for this session today" },
-  "sess_class_opt": { ar: "حصة فردية (عام)", en: "Single Session (General)" },
+  "sess_class_opt": { ar: "حصة فردية (بدون باقة)", en: "Single Session (No Package)" },
   "login_title_assistant": { ar: "بوابة العمليات والمساعدين", en: "Operations & Assistant Portal" },
   "login_desc_assistant": { ar: "تسجيل الحضور اليومي والمهام الميدانية", en: "Daily attendance & operational management" },
   "top_subject_lbl": { ar: "المادة:", en: "Subject:" },
@@ -1445,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
  window.getPkgDetails = function(pkgName) {
     if (!pkgName || !groupFees || !groupFees[pkgName]) {
-      return { name: pkgName || "عام", price: 0, expiryType: "time", durationDays: 0, sessionLimit: 0, startDate: "", endDate: "", subject: "" };
+      return { name: pkgName || (currentLang === "ar" ? "بدون باقة" : "No Package"), price: 0, expiryType: "time", durationDays: 0, sessionLimit: 0, startDate: "", endDate: "", subject: "" };
     }
     const val = groupFees[pkgName];
     if (typeof val === "object" && val !== null) {
@@ -2886,7 +2886,7 @@ function applyPermissions() {
 
  function updateLiveFeed(st) {
  let sName = st.name || "بدون اسم";
- let sClass = st.className || "عام";
+ let sClass = (st.className && st.className !== "عام" && st.className !== "General") ? st.className : (currentLang === "ar" ? "بدون باقة" : "No Package");
  const timeStr = new Date().toLocaleTimeString(currentLang==='ar'?'ar-EG':'en-US', {hour:'2-digit', minute:'2-digit'});
  
  recentScans.unshift({ name: sName, id: st.id, cls: sClass, time: timeStr });
@@ -2915,7 +2915,7 @@ function applyPermissions() {
  // ==========================================
  function calculateSmartStreak(st) {
  if(!st.attendanceDates || st.attendanceDates.length === 0) return 0;
- let c = st.className ? st.className.trim() : "عام";
+ let c = (st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : "";
  
  let classDates = new Set();
  for(let dateKey in attByDate) {
@@ -2945,7 +2945,7 @@ function applyPermissions() {
  let currentVal = select.value; 
  const isAr = (currentLang === "ar");
  let html = `<option value="">${isAr ? "-- اختر الباقة / المجموعة --" : "-- Select Package / Group --"}</option>`;
- let sHtml = `<option value="حصة فردية">${isAr ? "حصة فردية (عام)" : "Single Session (General)"}</option>`;
+ let sHtml = `<option value="حصة فردية">${isAr ? "حصة فردية (بدون باقة)" : "Single Session (No Package)"}</option>`;
  
  let hasGroups = false;
  for (let g in groupFees) {
@@ -2953,7 +2953,7 @@ function applyPermissions() {
  sHtml += `<option value="${g}">${g}</option>`;
  hasGroups = true;
  }
- if(!hasGroups) html += `<option value="عام">عام</option>`;
+ if(!hasGroups) html += `<option value="">${isAr ? "بدون باقة" : "No Package"}</option>`;
  select.innerHTML = html;
  
  if(currentVal && groupFees[currentVal] !== undefined) {
@@ -3923,7 +3923,7 @@ const st = students[id];
         ? `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check"></i> ${isAr ? "حاضر" : "Present"}</span>` 
         : `<span style="color:var(--text-secondary); font-size:0.85em;">—</span>`;
      let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
-     let gColor = getTagColor(sClass || (isAr ? 'عام' : 'General'));
+     let gColor = getTagColor(sClass || (isAr ? "بدون باقة" : "No Package"));
      let classBadge = sClass 
         ? `<span class="badge" style="background:${gColor}; border-color:${gColor}; color:#fff; font-weight:600; font-size:0.82em;">${sClass}</span>` 
         : `<span style="color:var(--text-secondary); font-size:0.82em;">—</span>`;
@@ -4005,7 +4005,18 @@ const st = students[id];
  const tr = document.createElement("tr");
  let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
  
- tr.innerHTML = `<td>${s.id}</td><td><b>${s.name}</b>${rankIcon}</td><td><span class="badge" style="background:#eef2f5; color:#333; font-weight:bold;">${s.className || 'عام'}</span></td>`;
+ const isAr = (currentLang === 'ar');
+    let pkgDisplay = isAr ? 'بدون باقة' : 'No Package';
+    if (s.packages && Array.isArray(s.packages) && s.packages.length > 0) {
+      const validPkgs = s.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package');
+      if (validPkgs.length > 0) pkgDisplay = validPkgs.join(' + ');
+    } else if (s.className && s.className !== 'عام' && s.className !== 'General' && s.className !== 'بدون باقة' && s.className !== 'No Package') {
+      pkgDisplay = s.className;
+    }
+    const badgeStyle = (pkgDisplay === 'بدون باقة' || pkgDisplay === 'No Package') 
+      ? 'background:rgba(100,116,139,0.1); color:#64748b; font-weight:600; border:1px solid rgba(100,116,139,0.2);' 
+      : 'background:#e0f2fe; color:#0369a1; font-weight:bold; border:1px solid #bae6fd;';
+    tr.innerHTML = `<td>${s.id}</td><td><b>${s.name}</b>${rankIcon}</td><td><span class="badge" style="${badgeStyle}">${pkgDisplay}</span></td>`;
  tr.style.cursor = "pointer";
  
  tr.onclick = function() { 
@@ -4056,7 +4067,7 @@ const st = students[id];
  for (let i = 0; i < ids.length; i++) {
  let id = ids[i];
  const st = students[id]; 
- let c = (st && st.className) ? st.className.trim() : "عام";
+ let c = (st && st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "No Package");
  if(!groups[c]) groups[c] = { count: 0 }; 
  groups[c].count++;
  }
@@ -4095,7 +4106,7 @@ const st = students[id];
  let mBadge = item.method === "instapay" ? " إنستاباي" : (item.method === "wallet" ? " فودافون كاش" : " كاش");
  html += `
  <div class="item flexBetween" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--border);">
- <div><b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${item.className || "عام"}</span> <span class="badge" style="background:#e3f2fd; color:#0288d1;">${mBadge}</span></div>
+ <div><b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "عام" && item.className !== "General") ? item.className : (currentLang === "ar" ? "بدون باقة" : "No Package")}</span> <span class="badge" style="background:#e3f2fd; color:#0288d1;">${mBadge}</span></div>
  <div style="color:var(--success); font-weight:bold;">+ ${item.amount} ج</div>
  </div>`;
  }
@@ -4840,7 +4851,7 @@ on("quickAttendBtn", "click", function() {
  if ($("receiptStudentName")) $("receiptStudentName").textContent = st.name || "طالب بدون اسم";
  if ($("receiptStudentID")) $("receiptStudentID").textContent = `#${st.id}`;
  if ($("receiptStudentClass")) {
-   const pkgsStr = (st.packages && st.packages.length > 0) ? st.packages.join(" + ") : (st.className || "عام");
+   const pkgsStr = (st.packages && st.packages.length > 0) ? st.packages.filter(p => p && p !== "عام" && p !== "General").join(" + ") : ((st.className && st.className !== "عام" && st.className !== "General") ? st.className : (currentLang === "ar" ? "بدون باقة" : "No Package"));
    $("receiptStudentClass").textContent = pkgsStr;
  }
  
@@ -4855,7 +4866,7 @@ on("quickAttendBtn", "click", function() {
  const recTbody = $("receiptPackagesTbody");
  if (recTbody) {
    let rRows = "";
-   const enrolledPkgs = (st.packages && st.packages.length > 0) ? st.packages : [st.className || "عام"];
+   const enrolledPkgs = (st.packages && st.packages.length > 0) ? st.packages.filter(p => p && p !== "عام" && p !== "General") : [(st.className && st.className !== "عام" && st.className !== "General" ? st.className : (currentLang === "ar" ? "بدون باقة" : "No Package"))];
    enrolledPkgs.forEach(pName => {
      const pDet = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pName) : null;
      const reqPrice = pDet && pDet.price ? toInt(pDet.price) : 0;
@@ -5529,7 +5540,7 @@ on("quickAttendBtn", "click", function() {
     const counts = {};
     Object.values(students || {}).forEach(st => {
       if(!st) return;
-      const pList = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : [st.className || (isAr ? "عام" : "General")];
+      const pList = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages.filter(p => p && p !== "عام" && p !== "General") : (st.className && st.className !== "عام" && st.className !== "General" ? [st.className] : []);
       pList.forEach(pName => {
         counts[pName] = (counts[pName] || 0) + 1;
       });
@@ -6026,7 +6037,7 @@ Deleting it will automatically unlink it from these students. Do you want to pro
  for (let i = 0; i < ids.length; i++) {
  let id = ids[i];
  const st = students[id];
- let c = (st && st.className) ? st.className.trim() : "عام";
+ let c = (st && st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "No Package");
  if(!groups[c]) groups[c] = 0; 
  groups[c]++; 
  }
@@ -6071,7 +6082,7 @@ Deleting it will automatically unlink it from these students. Do you want to pro
  let rankAr = s.rank === 'vip' ? 'VIP ' : (s.rank === 'warn' ? 'إنذار ' : 'عادي ');
  let cleanNotes = s.notes ? s.notes.replace(/\r\n/g, " - ") : ""; 
  
- stData.push([s.id, s.name, s.className || "عام", s.phone, s.paid, rankAr, history, cleanNotes]);
+ const pName = (s.packages && s.packages.length > 0) ? s.packages.filter(p => p && p !== "عام" && p !== "General").join(" + ") : ((s.className && s.className !== "عام" && s.className !== "General") ? s.className : "بدون باقة"); stData.push([s.id, s.name, pName, s.phone, s.paid, rankAr, history, cleanNotes]);
  }
  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(stData), "بيانات الطلاب");
 
@@ -6340,7 +6351,7 @@ on("importExcelInput", "change", async function(e) {
  for (let i = 0; i < ids.length; i++) {
  let id = ids[i]; const st = students[id]; 
  if(st) { 
- let c = st.className ? st.className.trim() : "عام"; 
+ let c = (st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : ""; 
  if(!groups[c]) groups[c] = []; 
  groups[c].push(st); 
  } 
@@ -6974,7 +6985,7 @@ window.deleteAssistant = async function(asstKey) {
  let groups = {};
  ids.forEach(id => {
  const st = students[id];
- const cls = (st && st.className) ? st.className.trim() : "عام";
+ const cls = (st && st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "No Package");
  if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
  groups[cls].count++;
  if (st && st.paid !== undefined) {
@@ -7029,7 +7040,7 @@ window.deleteAssistant = async function(asstKey) {
  // populate class filter
  if (clsSel) {
  const existing = [...clsSel.options].map(o => o.value);
- const classes = [...new Set(Object.values(students).filter(s => s).map(s => s.className || "عام"))];
+ const classes = [...new Set(Object.values(students).filter(s => s && s.className && s.className !== "عام" && s.className !== "General").map(s => s.className))];
  classes.forEach(c => {
  if (!existing.includes(c)) {
  const opt = document.createElement("option");
@@ -7043,7 +7054,7 @@ window.deleteAssistant = async function(asstKey) {
  Object.values(students).forEach(st => {
  if (!st || !st.name) return;
  if (search && !st.name.toLowerCase().includes(search)) return;
- const cls = (st.className || "عام").trim();
+ const cls = ((st.className && st.className !== "عام" && st.className !== "General") ? st.className : (currentLang === "ar" ? "بدون باقة" : "No Package")).trim();
  if (clsFilter && cls !== clsFilter) return;
  
     let req = 0;
@@ -7952,7 +7963,7 @@ document.addEventListener("DOMContentLoaded", () => {
  totalRemaining += remain;
 
  if (remain > 0) {
- debtors.push({ id: s.id, name: s.name || "بدون اسم", className: sClass || "عام", remain: remain });
+ debtors.push({ id: s.id, name: s.name || "بدون اسم", className: (sClass && sClass !== "عام" && sClass !== "General") ? sClass : (currentLang === "ar" ? "بدون باقة" : "No Package"), remain: remain });
  }
  }
  }
@@ -8045,7 +8056,7 @@ document.addEventListener("DOMContentLoaded", () => {
  totalRemaining += remain;
 
  if (remain > 0) {
- debtors.push({ id: s.id, name: s.name || "بدون اسم", className: sClass || "عام", remain: remain });
+ debtors.push({ id: s.id, name: s.name || "بدون اسم", className: (sClass && sClass !== "عام" && sClass !== "General") ? sClass : (currentLang === "ar" ? "بدون باقة" : "No Package"), remain: remain });
  }
  }
  }
@@ -8316,7 +8327,7 @@ window.openSessionStudentModal = function(item) {
  h += `
  <div class="item flexBetween" style="margin-bottom:10px; padding:12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px;">
  <div>
- <b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${item.className || "عام"}</span>
+ <b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "عام" && item.className !== "General") ? item.className : (currentLang === "ar" ? "بدون باقة" : "No Package")}</span>
  <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:5px;">${mBadge}</span>
  <div style="font-size:0.8em; color:var(--text-secondary); margin-top:4px;"> ${item.timestamp || ""} ${item.phone ? `| ${item.phone}` : ""}</div>
  </div>
@@ -8474,7 +8485,7 @@ window.openSessionStudentModal = function(item) {
  if(s.payments && s.payments.length > 0) {
  for(let j=0; j<s.payments.length; j++) {
  if(s.payments[j].date === today) {
- let sClass = s.className ? s.className.trim() : "عام";
+ let sClass = (s.className && s.className !== "عام" && s.className !== "General") ? s.className.trim() : (currentLang === "ar" ? "بدون باقة" : "No Package");
  
     let req = 0;
     if (sClass && groupFees[sClass] !== undefined) {
@@ -8522,7 +8533,7 @@ window.openSessionStudentModal = function(item) {
  html += `
  <div class="item flexBetween" style="margin-bottom:8px; cursor:pointer;" onclick="document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('SessionStudents'); if($('sessFilterDate')) $('sessFilterDate').value='${today}'; renderSessionStudentsList('${today}');">
  <div>
- <b>${item.name}</b> <span class="badge" style="background:#fff3e0; color:#e65100;">طالب حصة </span> <span class="badge" style="background:#eee; color:#333;">${item.className || "عام"}</span>
+ <b>${item.name}</b> <span class="badge" style="background:#fff3e0; color:#e65100;">طالب حصة </span> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "عام" && item.className !== "General") ? item.className : (currentLang === "ar" ? "بدون باقة" : "No Package")}</span>
  <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:5px;">${mBadge}</span>
  </div>
  <div style="text-align:left;">
@@ -10018,7 +10029,7 @@ window.openSubjectSelectionModal = function() {
               <i class="fa-solid fa-circle-check check-icon"></i>
               <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
                   <div class="pkg-card-title">${pkgName}</div>
-                  <div class="pkg-card-subject">${pkgDetails.subject || 'عام'}</div>
+                  <div class="pkg-card-subject">${pkgDetails.subject || ""}</div>
               </div>
               <div class="pkg-card-pricing">
                   <div class="pkg-card-price">${price} <small>جنيهاً</small></div>
@@ -11167,7 +11178,7 @@ window.openStudentContractModal = function() {
             <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; width: 17%; color: #0b192c;">اسم الطالب (المُقرّ):</td>
             <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 900; font-size: 1em; color: #0b192c; width: 33%;">${st.name || "—"}</td>
             <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; width: 18%; color: #0b192c;">المرحلة / الصف الدراسي:</td>
-            <td style="padding: 4px 8px; border: 1px solid #cbd5e1; width: 32%; font-weight: 800;">${st.className || "عام"}</td>
+            <td style="padding: 4px 8px; border: 1px solid #cbd5e1; width: 32%; font-weight: 800;">${(st.className && st.className !== "عام" && st.className !== "General") ? st.className : "بدون باقة"}</td>
           </tr>
           <tr>
             <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; color: #0b192c;">رقم هاتف الطالب:</td>
