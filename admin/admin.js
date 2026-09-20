@@ -602,6 +602,44 @@ let groupFees = {};
 let attByDate = {};
 let revenueByDate = {};
 let sessionStudentsByDate = {};
+
+window.getAdminUniqueSessionStudents = function() {
+  const list = [];
+  const seen = new Set();
+  const dates = Object.keys(sessionStudentsByDate || {}).sort().reverse();
+  dates.forEach(d => {
+    const arr = sessionStudentsByDate[d] || [];
+    arr.forEach((it, idx) => {
+      const key = (it.name || '').trim().toLowerCase() + '___' + (it.phone || '').trim();
+      if (!seen.has(key)) {
+        seen.add(key);
+        let attCount = 0;
+        let totalPaid = 0;
+        dates.forEach(d2 => {
+          (sessionStudentsByDate[d2] || []).forEach(r => {
+            const k2 = (r.name || '').trim().toLowerCase() + '___' + (r.phone || '').trim();
+            if (k2 === key) {
+              attCount++;
+              totalPaid += (Number(r.amount) || 0);
+            }
+          });
+        });
+        list.push({
+          ...it,
+          date: d,
+          originalIndex: idx,
+          attCount: attCount,
+          totalPaid: totalPaid
+        });
+      }
+    });
+  });
+  return list;
+};
+
+window.getAdminUniqueSessionStudentsCount = function() {
+  return window.getAdminUniqueSessionStudents().length;
+};
 let expensesByDate = [];
 let vaultTransfers = [];
 let booklets = {};
@@ -2022,7 +2060,8 @@ window.loadDailyReport = function(dateStr) {
   } else if (expensesByDate && typeof expensesByDate === 'object') {
     expArr = Array.isArray(expensesByDate[d]) ? expensesByDate[d] : [];
   }
-  const totalSt = Object.keys(students).length;
+  const sessCount = (typeof window.getAdminUniqueSessionStudentsCount === 'function') ? window.getAdminUniqueSessionStudentsCount() : 0;
+  const totalSt = Object.keys(students).length + sessCount;
   let totalExp = 0;
   expArr.forEach(e => totalExp += (Number(e && e.amount) || 0));
 
@@ -2038,7 +2077,7 @@ window.loadDailyReport = function(dateStr) {
   const totalAttended = ids.length + sessList.length;
   if (statAttend) statAttend.textContent = totalAttended;
   if (statRev) statRev.textContent = rev.toLocaleString() + currencySuffix;
-  if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - ids.length);
+  if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - totalAttended);
   if (statExp) statExp.textContent = totalExp.toLocaleString() + currencySuffix;
 
   // Render Groups Breakdown
@@ -2196,7 +2235,8 @@ window.renderTermTable = function() {
   // Populate classes
   if (clsSel) {
     const existing = [...clsSel.options].map(o => o.value);
-    const classes = [...new Set(Object.values(students).map(s => (s.className && s.className !== 'عام' && s.className !== 'General') ? s.className : (isAr ? "بدون باقة" : "No Package")))];
+    const sessClasses = (typeof window.getAdminUniqueSessionStudents === 'function') ? window.getAdminUniqueSessionStudents().map(s => s.className || (isAr ? "حصة فردية" : "Single Session")) : [];
+    const classes = [...new Set([...Object.values(students).map(s => (s.className && s.className !== 'عام' && s.className !== 'General') ? s.className : (isAr ? "بدون باقة" : "No Package")), ...sessClasses])];
     classes.forEach(c => {
       if (!existing.includes(c)) {
         const opt = document.createElement("option");
@@ -2313,6 +2353,43 @@ window.renderTermTable = function() {
       </tr>
     `;
   });
+
+  // 1b. Render Session Students in Term Table
+  if (typeof window.getAdminUniqueSessionStudents === 'function') {
+    const sessList = window.getAdminUniqueSessionStudents();
+    sessList.forEach(sSt => {
+      const sCls = sSt.className || (isAr ? "حصة فردية" : "Single Session");
+      if (search && !sSt.name.toLowerCase().includes(search) && !(isAr ? "طالب حصة" : "session").toLowerCase().includes(search)) return;
+      if (clsFilter && sCls !== clsFilter) return;
+
+      matchCount++;
+
+      rowsHtml += `
+        <tr style="background: rgba(59, 130, 246, 0.02);">
+          <td style="font-weight: 700;">
+            ${sSt.name} 
+            <span class="badge" style="background:rgba(59,130,246,0.12); color:#2563eb; border:1px solid rgba(59,130,246,0.3); font-weight:700; font-size:0.75em; padding:2px 6px; border-radius:4px; margin-inline-start:4px; display:inline-flex; align-items:center; gap:3px;">
+              <i class="fa-solid fa-user-clock"></i> ${isAr ? "طالب حصة" : "Session"}
+            </span>
+          </td>
+          <td><span style="background:rgba(59,130,246,0.1); color:#2563eb; font-weight:700; padding:3px 8px; border-radius:6px; font-size:0.85em;">${sCls}</span></td>
+          <td>${sSt.totalPaid > 0 ? (sSt.totalPaid + currencySuffix) : "—"}</td>
+          <td style="color:var(--success); font-weight:700;">
+            ${sSt.totalPaid + currencySuffix}
+          </td>
+          <td style="color:var(--success); font-weight:700;">
+            <span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.85em; padding:3px 8px; border-radius:6px; font-weight:700;"><i class="fa-solid fa-circle-check"></i> ${isAr ? "خالص" : "Paid"}</span>
+          </td>
+          <td style="font-weight:700;">${sSt.attCount}</td>
+          <td>
+            <span class="badge" style="background:var(--bg-inset); color:var(--text-secondary); border:1px solid var(--border); padding:4px 8px; border-radius:6px; font-size:0.82em;">
+              <i class="fa-solid fa-clock-rotate-left"></i> ${sSt.date || "—"}
+            </span>
+          </td>
+        </tr>
+      `;
+    });
+  }
 
   // 2. Add Session Students Inflow to Treasuries
   for (const d in sessionStudentsByDate) {
@@ -5017,12 +5094,13 @@ function updateSubscriptionSidebarPill() {
 
 export function checkStudentLimit() {
   if (!SUBSCRIPTION.loaded) return true;
-  const count = Object.keys(students).length;
+  const sessCount = (typeof window.getAdminUniqueSessionStudentsCount === 'function') ? window.getAdminUniqueSessionStudentsCount() : 0;
+  const count = Object.keys(students).length + sessCount;
   if (count >= SUBSCRIPTION.maxStudents) {
     Swal.fire({
       icon: 'warning',
       title: 'تم الوصول للحد الأقصى للطلاب',
-      html: `<p style="color:var(--text-secondary);margin-bottom:12px">باقتك الحالية تسمح بحد أقصى <b>${SUBSCRIPTION.maxStudents} طالب</b>.<br>لديك حالياً <b>${count} طالب</b> مسجل.</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> يرجى ترقية باقة الاشتراك لإضافة المزيد من الطلاب.</p>`,
+      html: `<p style="color:var(--text-secondary);margin-bottom:12px">باقتك الحالية تسمح بحد أقصى <b>${SUBSCRIPTION.maxStudents} طالب</b>.<br>لديك حالياً <b>${count} طالب</b> مسجل (بما فيهم طلاب الحصة).</p>`<p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> يرجى ترقية باقة الاشتراك لإضافة المزيد من الطلاب.</p>`,
       confirmButtonText: 'عرض خطط الاشتراك',
       confirmButtonColor: '#2563EB',
       showCancelButton: true, cancelButtonText: 'إغلاق'
@@ -5072,7 +5150,8 @@ window.renderSubscriptionView = function() {
   const statusIcon  = isActive ? (daysLeft <= 10 ? 'fa-clock' : 'fa-circle-check') : 'fa-circle-xmark';
   const statusText  = isActive ? (daysLeft <= 10 ? (isAr ? `ينتهي خلال ${daysLeft} يوم` : `Expires in ${daysLeft} Days`) : (isAr ? 'نشط' : 'Active')) : (isAr ? 'منتهي' : 'Expired');
   const progressClass = progress <= 15 ? 'danger' : progress <= 30 ? 'warning' : '';
-  const studentCount  = Object.keys(students).length;
+  const sessCount = (typeof window.getAdminUniqueSessionStudentsCount === 'function') ? window.getAdminUniqueSessionStudentsCount() : 0;
+  const studentCount  = Object.keys(students).length + sessCount;
   const asstCountDisplay = typeof currentAssistants === 'number' ? currentAssistants : 0;
 
   // Localized plan display name

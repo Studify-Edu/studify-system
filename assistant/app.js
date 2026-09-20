@@ -873,12 +873,46 @@ let vaultTransfers = [];
     Object.defineProperty(window, 'evalData', { get: () => evalData, set: (v) => { evalData = v; }, configurable: true });
     Object.defineProperty(window, 'currentId', { get: () => currentId, set: (v) => { currentId = v; }, configurable: true });
     Object.defineProperty(window, 'currentUserRole', { get: () => currentUserRole, set: (v) => { currentUserRole = v; }, configurable: true });
+    Object.defineProperty(window, 'sessionStudentsByDate', { get: () => sessionStudentsByDate, set: (v) => { sessionStudentsByDate = v; }, configurable: true });
   } catch(e) {
     window.students = students;
     window.evalData = evalData;
     window.currentId = currentId;
     window.currentUserRole = currentUserRole;
+    window.sessionStudentsByDate = sessionStudentsByDate;
   }
+
+  // Early definition of session students helpers
+  window.getAllSessionStudents = function() {
+    const list = [];
+    const seen = new Set();
+    const dates = Object.keys(sessionStudentsByDate || {}).sort().reverse();
+    dates.forEach(d => {
+      const arr = sessionStudentsByDate[d] || [];
+      arr.forEach((it, idx) => {
+        const key = (it.name || '').trim().toLowerCase() + '___' + (it.phone || '').trim();
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push({
+            ...it,
+            date: d,
+            originalIndex: idx
+          });
+        }
+      });
+    });
+    return list;
+  };
+
+  window.getUniqueSessionStudentsCount = function() {
+    return window.getAllSessionStudents().length;
+  };
+
+  window.getTotalStudentsCombinedCount = function() {
+    const regularCount = Object.values(students || {}).filter(s => (s && s.id && (s.name || s.phone || s.className || (Number(s.paid) || 0) > 0))).length;
+    const sessionCount = window.getUniqueSessionStudentsCount();
+    return regularCount + sessionCount;
+  };
 
  // Global Enter Key Handler for Inputs
  document.addEventListener('keydown', function(e) {
@@ -2848,17 +2882,19 @@ function applyPermissions() {
  if (studentValues[i].name || studentValues[i].paid > 0) filledCount++;
  }
  
- let todayCount = 0;
- if (attByDate[nowDateStr()]) todayCount = attByDate[nowDateStr()].length;
- 
- const revenue = revenueByDate[nowDateStr()] || 0;
- 
- if($("totalStudentsCount")) {
-   const maxSt = window.SUBSCRIPTION?.maxStudents;
-   const combinedCount = (typeof window.getTotalStudentsCombinedCount === "function") ? window.getTotalStudentsCombinedCount() : filledCount;
-   $("totalStudentsCount").textContent = maxSt ? `${combinedCount} / ${maxSt}` : combinedCount;
- }
- if($("todayCountTop")) $("todayCountTop").textContent = todayCount;
+ const todayStr = nowDateStr();
+  const regularToday = (attByDate[todayStr] && Array.isArray(attByDate[todayStr])) ? attByDate[todayStr].length : 0;
+  const sessionToday = (sessionStudentsByDate[todayStr] && Array.isArray(sessionStudentsByDate[todayStr])) ? sessionStudentsByDate[todayStr].length : 0;
+  const todayCount = regularToday + sessionToday;
+
+  const revenue = revenueByDate[todayStr] || 0;
+
+  if($("totalStudentsCount")) {
+    const maxSt = window.SUBSCRIPTION?.maxStudents;
+    const combinedCount = (typeof window.getTotalStudentsCombinedCount === "function") ? window.getTotalStudentsCombinedCount() : (filledCount + (typeof window.getUniqueSessionStudentsCount === "function" ? window.getUniqueSessionStudentsCount() : 0));
+    $("totalStudentsCount").textContent = maxSt ? `${combinedCount} / ${maxSt}` : combinedCount;
+  }
+  if($("todayCountTop")) $("todayCountTop").textContent = todayCount;
  
  const revPill = $("openRevenueModalBtn");
  const revToggle = $("toggleRevBtn");
@@ -4013,43 +4049,76 @@ const st = students[id];
  tbody.innerHTML = "";
  
  simpleFilteredStuds = [];
- const allStuds = Object.values(students);
- for (let i = 0; i < allStuds.length; i++) {
- let s = allStuds[i];
- if (s.name || s.paid > 0) simpleFilteredStuds.push(s);
- }
+  const allStuds = Object.values(students);
+  for (let i = 0; i < allStuds.length; i++) {
+    let s = allStuds[i];
+    if (s && (s.name || s.phone || s.className || (Number(s.paid) || 0) > 0)) simpleFilteredStuds.push(s);
+  }
 
- let totalPages = Math.ceil(simpleFilteredStuds.length / SIMPLE_ITEMS_PER_PAGE) || 1;
- if (simpleCurrentPage > totalPages) simpleCurrentPage = totalPages;
+  // Include all unique session students in Registered Students modal
+  if (typeof window.getAllSessionStudents === 'function') {
+    const sessList = window.getAllSessionStudents();
+    sessList.forEach(item => {
+      simpleFilteredStuds.push({
+        id: 'حصة',
+        isSessionStudent: true,
+        name: item.name,
+        phone: item.phone || '',
+        className: item.className || (currentLang === 'ar' ? 'حصة فردية' : 'Single Session'),
+        packages: ['حصة'],
+        paid: Number(item.amount) || 0,
+        sessionRecord: item
+      });
+    });
+  }
 
- const start = (simpleCurrentPage - 1) * SIMPLE_ITEMS_PER_PAGE;
- const end = start + SIMPLE_ITEMS_PER_PAGE;
+  let totalPages = Math.ceil(simpleFilteredStuds.length / SIMPLE_ITEMS_PER_PAGE) || 1;
+  if (simpleCurrentPage > totalPages) simpleCurrentPage = totalPages;
 
- for (let i = start; i < end && i < simpleFilteredStuds.length; i++) {
- let s = simpleFilteredStuds[i];
- const tr = document.createElement("tr");
- let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
- 
- const isAr = (currentLang === 'ar');
+  const start = (simpleCurrentPage - 1) * SIMPLE_ITEMS_PER_PAGE;
+  const end = start + SIMPLE_ITEMS_PER_PAGE;
+
+  for (let i = start; i < end && i < simpleFilteredStuds.length; i++) {
+    let s = simpleFilteredStuds[i];
+    const tr = document.createElement("tr");
+    let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
+    
+    const isAr = (currentLang === 'ar');
     let pkgDisplay = isAr ? 'بدون باقة' : 'No Package';
-    if (s.packages && Array.isArray(s.packages) && s.packages.length > 0) {
+    if (s.isSessionStudent) {
+      pkgDisplay = s.className || (isAr ? 'حصة فردية' : 'Single Session');
+    } else if (s.packages && Array.isArray(s.packages) && s.packages.length > 0) {
       const validPkgs = s.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package');
       if (validPkgs.length > 0) pkgDisplay = validPkgs.join(' + ');
     } else if (s.className && s.className !== 'عام' && s.className !== 'General' && s.className !== 'بدون باقة' && s.className !== 'No Package') {
       pkgDisplay = s.className;
     }
-    const badgeStyle = (pkgDisplay === 'بدون باقة' || pkgDisplay === 'No Package') 
-      ? 'background:rgba(100,116,139,0.1); color:#64748b; font-weight:600; border:1px solid rgba(100,116,139,0.2);' 
-      : 'background:#e0f2fe; color:#0369a1; font-weight:bold; border:1px solid #bae6fd;';
-    tr.innerHTML = `<td>${s.id}</td><td><b>${s.name}</b>${rankIcon}</td><td><span class="badge" style="${badgeStyle}">${pkgDisplay}</span></td>`;
- tr.style.cursor = "pointer";
- 
- tr.onclick = function() { 
- if($("allStudentsModal")) $("allStudentsModal").classList.add("hidden"); 
- window.extOpen(s.id); 
- };
- tbody.appendChild(tr);
- }
+
+    const badgeStyle = s.isSessionStudent
+      ? 'background:rgba(59,130,246,0.12); color:#2563eb; font-weight:700; border:1px solid rgba(59,130,246,0.3);'
+      : ((pkgDisplay === 'بدون باقة' || pkgDisplay === 'No Package') 
+        ? 'background:rgba(100,116,139,0.1); color:#64748b; font-weight:600; border:1px solid rgba(100,116,139,0.2);' 
+        : 'background:#e0f2fe; color:#0369a1; font-weight:bold; border:1px solid #bae6fd;');
+
+    const idCell = s.isSessionStudent 
+      ? `<span class="badge" style="background:rgba(59,130,246,0.12); color:#2563eb; border:1px solid rgba(59,130,246,0.3); font-weight:700; font-size:0.8em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-user-clock"></i> ${isAr ? "طالب حصة" : "Session"}</span>` 
+      : s.id;
+
+    tr.innerHTML = `<td>${idCell}</td><td><b>${s.name}</b>${rankIcon}</td><td><span class="badge" style="${badgeStyle}">${pkgDisplay}</span></td>`;
+    tr.style.cursor = "pointer";
+    
+    tr.onclick = function() { 
+      if($("allStudentsModal")) $("allStudentsModal").classList.add("hidden"); 
+      if (s.isSessionStudent) {
+        if (typeof window.openSessionStudentModal === 'function') {
+          window.openSessionStudentModal(s.sessionRecord);
+        }
+      } else {
+        window.extOpen(s.id); 
+      }
+    };
+    tbody.appendChild(tr);
+  }
 
  if ($("simplePageIndicator")) {
  $("simplePageIndicator").textContent = `${simpleCurrentPage} / ${totalPages}`;
@@ -4084,7 +4153,8 @@ const st = students[id];
  for (let i = 0; i < expArr.length; i++) totalExp += expArr[i].amount;
  
  if($("reportDateLabel")) $("reportDateLabel").textContent = prettyDate(d);
- if($("reportCount")) $("reportCount").textContent = ids.length;
+  const repSessCount = (sessionStudentsByDate[d] && Array.isArray(sessionStudentsByDate[d])) ? sessionStudentsByDate[d].length : 0;
+  if($("reportCount")) $("reportCount").textContent = ids.length + repSessCount;
  if($("reportMoney")) $("reportMoney").textContent = rev;
  if($("reportExpense")) $("reportExpense").textContent = totalExp;
  
@@ -4713,9 +4783,9 @@ on("quickAttendBtn", "click", function() {
    } else {
      // الطالب غير مسجل ولا توجد له بيانات - نفتح استمارة تسجيل جديدة بهذا الرقم مباشرة دون حفظ فارغ
      const maxSt = window.SUBSCRIPTION?.maxStudents;
-     if (maxSt) {
-       const curCount = Object.values(students || {}).filter(s => window.isStudentRegistered(s)).length;
-       if (curCount >= maxSt) {
+      if (maxSt) {
+        const curCount = (typeof window.getTotalStudentsCombinedCount === "function") ? window.getTotalStudentsCombinedCount() : (Object.values(students || {}).filter(s => window.isStudentRegistered(s)).length + (typeof window.getUniqueSessionStudentsCount === "function" ? window.getUniqueSessionStudentsCount() : 0));
+        if (curCount >= maxSt) {
          showToast(`تم الوصول للحد الأقصى للطلاب (${maxSt})`, "err");
          return;
        }
@@ -4771,9 +4841,9 @@ on("quickAttendBtn", "click", function() {
      return;
    }
    const maxSt = window.SUBSCRIPTION?.maxStudents;
-   if (maxSt) {
-     const curCount = Object.values(students || {}).filter(s => window.isStudentRegistered(s)).length;
-     if (curCount >= maxSt) {
+    if (maxSt) {
+      const curCount = (typeof window.getTotalStudentsCombinedCount === "function") ? window.getTotalStudentsCombinedCount() : (Object.values(students || {}).filter(s => window.isStudentRegistered(s)).length + (typeof window.getUniqueSessionStudentsCount === "function" ? window.getUniqueSessionStudentsCount() : 0));
+      if (curCount >= maxSt) {
        if (typeof Swal !== "undefined") {
          Swal.fire({
            icon: "warning",
@@ -6366,36 +6436,58 @@ on("importExcelInput", "change", async function(e) {
  on("simpleNextPageBtn", "click", function() { simpleCurrentPage++; renderSimpleTable(); });
 
  on("todayCountTopCard", "click", function() {
- const today = nowDateStr(); let ids = attByDate[today] || [];
- if(ids.length === 0) { 
- let warnMsg = currentLang==='ar' ? "لا يوجد حضور" : "No attendance";
- showToast(warnMsg, "warning"); return; 
+ const today = nowDateStr(); 
+ const ids = attByDate[today] || [];
+ const sessList = sessionStudentsByDate[today] || [];
+ if(ids.length === 0 && sessList.length === 0) { 
+   let warnMsg = currentLang==='ar' ? "لا يوجد حضور اليوم" : "No attendance today";
+   showToast(warnMsg, "warning"); return; 
  }
  
  let groups = {};
  for (let i = 0; i < ids.length; i++) {
- let id = ids[i]; const st = students[id]; 
- if(st) { 
- let c = (st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : ""; 
- if(!groups[c]) groups[c] = []; 
- groups[c].push(st); 
- } 
+   let id = ids[i]; const st = students[id]; 
+   if(st) { 
+     let c = (st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : ""; 
+     if(!groups[c]) groups[c] = []; 
+     groups[c].push(st); 
+   } 
  }
  
  let html = "";
  for(let g in groups) { 
- let gColor = getTagColor(g);
- let groupHtml = `<div style="background:#f8f9fa; border-radius:10px; padding:15px; margin-bottom:15px; border-right: 5px solid ${gColor};">`;
- groupHtml += `<h4 style="color:${gColor}; margin-top:0; margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:5px;"> ${g} (${groups[g].length})</h4>`;
- groupHtml += `<div style="display:flex; flex-wrap:wrap; gap:8px;">`;
- 
- for (let j = 0; j < groups[g].length; j++) {
- let s = groups[g][j];
- let sName = s.name || 'بدون اسم';
- groupHtml += `<div class="badge" style="background:#fff; color:#333; border:1px solid ${gColor}; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px;" onclick="document.getElementById('todayModal').classList.add('hidden'); window.extOpen('${s.id}')">#${s.id} - ${sName}</div>`;
+   let gColor = getTagColor(g);
+   let gTitle = g || (currentLang === 'ar' ? 'بدون مجموعة' : 'No Group');
+   let groupHtml = `<div style="background:var(--bg-surface, #f8f9fa); border:1px solid var(--border); border-radius:10px; padding:15px; margin-bottom:15px; border-right: 5px solid ${gColor};">`;
+   groupHtml += `<h4 style="color:${gColor}; margin-top:0; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:5px;"> ${gTitle} (${groups[g].length})</h4>`;
+   groupHtml += `<div style="display:flex; flex-wrap:wrap; gap:8px;">`;
+   
+   for (let j = 0; j < groups[g].length; j++) {
+     let s = groups[g][j];
+     let sName = s.name || 'بدون اسم';
+     groupHtml += `<div class="badge" style="background:var(--bg-surface); color:var(--text-primary); border:1px solid ${gColor}; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px;" onclick="document.getElementById('todayModal').classList.add('hidden'); window.extOpen('${s.id}')">#${s.id} - ${sName}</div>`;
+   }
+   groupHtml += `</div></div>`;
+   html += groupHtml;
  }
- groupHtml += `</div></div>`;
- html += groupHtml;
+
+ // Include Session Students who attended today
+ if (sessList.length > 0) {
+   let sessColor = "#2563eb";
+   let sessTitle = currentLang === 'ar' ? `طلاب الحصة (${sessList.length})` : `Session Students (${sessList.length})`;
+   let sessHtml = `<div style="background:var(--bg-surface, #f8f9fa); border:1px solid var(--border); border-radius:10px; padding:15px; margin-bottom:15px; border-right: 5px solid ${sessColor};">`;
+   sessHtml += `<h4 style="color:${sessColor}; margin-top:0; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:5px; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-user-clock"></i> ${sessTitle}</h4>`;
+   sessHtml += `<div style="display:flex; flex-wrap:wrap; gap:8px;">`;
+   
+   for (let k = 0; k < sessList.length; k++) {
+     let sRec = sessList[k];
+     let sName = sRec.name || (currentLang === 'ar' ? 'طالب حصة' : 'Session Student');
+     let clsInfo = sRec.className ? ` (${sRec.className})` : '';
+     let sJson = JSON.stringify(sRec).replace(/"/g, '&quot;');
+     sessHtml += `<div class="badge" style="background:rgba(59,130,246,0.08); color:#2563eb; border:1px solid rgba(59,130,246,0.3); padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:6px;" onclick="document.getElementById('todayModal').classList.add('hidden'); if(typeof window.openSessionStudentModal==='function') window.openSessionStudentModal(${sJson});"><i class="fa-solid fa-user-clock"></i> ${sName}${clsInfo} - ${sRec.amount || 0} ج</div>`;
+   }
+   sessHtml += `</div></div>`;
+   html += sessHtml;
  }
  
  if ($("todayModalBody")) $("todayModalBody").innerHTML = html; 
@@ -8268,10 +8360,10 @@ function setupSessionPaymentPills() {
         this.style.color = '#10b981';
         this.style.boxShadow = '0 2px 8px rgba(16,185,129,0.2)';
       } else if (m === 'instapay') {
-        this.style.border = '2px solid #0284c7';
-        this.style.background = 'rgba(14,165,233,0.14)';
-        this.style.color = '#0284c7';
-        this.style.boxShadow = '0 2px 8px rgba(2,132,199,0.2)';
+        this.style.border = '2px solid #7c3aed';
+        this.style.background = 'rgba(124, 58, 237, 0.14)';
+        this.style.color = '#7c3aed';
+        this.style.boxShadow = '0 2px 8px rgba(124, 58, 237, 0.2)';
       } else if (m === 'wallet') {
         this.style.border = '2px solid #ef4444';
         this.style.background = 'rgba(239,68,68,0.14)';
@@ -8302,9 +8394,9 @@ window.openSessionStudentModal = function(item) {
     const m = item.method || 'cash';
     if (m === 'instapay') {
       methodBadge.textContent = isAr ? 'إنستاباي' : 'InstaPay';
-      methodBadge.style.background = 'rgba(14,165,233,0.15)';
-      methodBadge.style.color = '#0284c7';
-      methodBadge.style.borderColor = 'rgba(14,165,233,0.3)';
+      methodBadge.style.background = 'rgba(124,58,237,0.15)';
+      methodBadge.style.color = '#7c3aed';
+      methodBadge.style.borderColor = 'rgba(124,58,237,0.3)';
     } else if (m === 'wallet') {
       methodBadge.textContent = isAr ? 'فودافون كاش' : 'Vodafone Cash';
       methodBadge.style.background = 'rgba(239,68,68,0.15)';
