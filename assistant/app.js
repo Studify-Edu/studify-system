@@ -695,6 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
  const K_SYLLABUS = "ca_syllabus_v1"; 
  const K_EVAL = "ca_eval_form_v1";
  const K_SESSION_STUDENTS = "ca_session_students_v1";
+const K_VAULT_TRANSFERS = "ca_vault_transfers_v1";
  const K_BOOKLETS = "ca_booklets_v1";
 
  // ==========================================
@@ -854,6 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
  let syllabusData = []; 
  let evalData = {};
  let sessionStudentsByDate = {};
+let vaultTransfers = [];
  let bookletsStock = {};
  
  let currentId = null;
@@ -1911,6 +1913,7 @@ function showToast(msg, type = "success") {
       secureSave(K_SYLLABUS, syllabusData),
       secureSave(K_EVAL, evalData),
       secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
+      secureSave(K_VAULT_TRANSFERS, vaultTransfers),
       secureSave(K_BOOKLETS, bookletsStock),
       secureSave(K_NOTEBOOK, currentNbVal)
     ]);
@@ -2011,6 +2014,7 @@ function showToast(msg, type = "success") {
         revenue_by_date: revenueByDate || {},
         expenses_by_date: expensesByDate || {},
         session_students_by_date: sessionStudentsByDate || {},
+        vault_transfers: vaultTransfers || [],
         att_by_date: attByDate || {},
         syllabus: (syllabusData || []).map(s => ({
           title: s.title || s.name || '',
@@ -2158,6 +2162,7 @@ async function loadAll() {
     syllabusData = await secureLoad(K_SYLLABUS, []);
     evalData = await secureLoad(K_EVAL, {});
     sessionStudentsByDate = await secureLoad(K_SESSION_STUDENTS, {});
+    vaultTransfers = await secureLoad(K_VAULT_TRANSFERS, []);
     bookletsStock = await secureLoad(K_BOOKLETS, {});
     centerNotebookContent = await secureLoad(K_NOTEBOOK, localStorage.getItem(K_NOTEBOOK) || "");
 
@@ -10693,6 +10698,12 @@ window.CLOUD_MONITOR_SECTIONS = [
     label: "طلاب الحصص",
     localCount: () => Object.values(sessionStudentsByDate || {}).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0),
     cloudTable: "settings (config.session_students_by_date)"
+  },
+  {
+    id: "vault_transfers",
+    label: "التحويلات بين الخزائن",
+    localCount: () => (Array.isArray(vaultTransfers) ? vaultTransfers.length : 0),
+    cloudTable: "settings (config.vault_transfers)"
   },
   {
     id: "expenses",

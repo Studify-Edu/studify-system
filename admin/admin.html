@@ -387,13 +387,21 @@
               <div class="stat-card-lbl" data-i18n="stat_term_total_rev">إجمالي الإيرادات المحصلة (ج)</div>
             </div>
 
-            <div class="stat-card" style="--stat-color: #ef4444; --stat-bg: rgba(239, 68, 68, 0.12);">
+            <div class="stat-card stat-card-interactive" id="statTermExpensesCard" onclick="window.openExpensesDetailsModal()" style="--stat-color: #ef4444; --stat-bg: rgba(239, 68, 68, 0.12);" title="اضغط لعرض تفاصيل المصروفات التشغيلية">
+              <div class="stat-card-action-badge" style="color: #ef4444; background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3);">
+                <span data-i18n="lbl_breakdown_btn">عرض التفاصيل</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </div>
               <div class="stat-card-icon"><i class="fa-solid fa-receipt"></i></div>
               <div class="stat-card-val" id="statTermExpenses">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_exp">إجمالي المصروفات التشغيلية (ج)</div>
             </div>
 
-            <div class="stat-card" style="--stat-color: #f59e0b; --stat-bg: rgba(245, 158, 11, 0.12);">
+            <div class="stat-card stat-card-interactive" id="statTermWithdrawalsCard" onclick="window.openWithdrawalsDetailsModal()" style="--stat-color: #f59e0b; --stat-bg: rgba(245, 158, 11, 0.12);" title="اضغط لعرض تفاصيل مسحوبات المستر">
+              <div class="stat-card-action-badge" style="color: #f59e0b; background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3);">
+                <span data-i18n="lbl_breakdown_btn">عرض التفاصيل</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </div>
               <div class="stat-card-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
               <div class="stat-card-val" id="statTermWithdrawals">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_withdrawals">مسحوبات المستر / الشخصية (ج)</div>
@@ -411,7 +419,11 @@
               <div class="stat-card-lbl" data-i18n="stat_term_total_debt">إجمالي المتبقي والديون (ج)</div>
             </div>
 
-            <div class="stat-card" style="--stat-color: #06b6d4; --stat-bg: rgba(6, 182, 212, 0.12);">
+            <div class="stat-card stat-card-interactive" id="statTermTotalDiscountsCard" onclick="window.openDiscountsDetailsModal()" style="--stat-color: #06b6d4; --stat-bg: rgba(6, 182, 212, 0.12);" title="اضغط لعرض تفاصيل الخصومات والإعفاءات">
+              <div class="stat-card-action-badge" style="color: #06b6d4; background: rgba(6,182,212,0.12); border-color: rgba(6,182,212,0.3);">
+                <span data-i18n="lbl_breakdown_btn">عرض التفاصيل</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </div>
               <div class="stat-card-icon"><i class="fa-solid fa-tags"></i></div>
               <div class="stat-card-val" id="statTermTotalDiscounts">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_discounts">إجمالي الخصومات والإعفاءات (ج)</div>
@@ -420,13 +432,25 @@
 
           <!-- 2. Live Treasuries Breakdown (الخزائن الحقيقية وتقفيل الأرصدة) -->
           <div class="card" style="margin-bottom: 24px;">
-            <div class="card-header">
-              <div class="card-title">
-                <i class="fa-solid fa-vault" style="color: var(--primary);"></i>
-                <span data-i18n="term_vaults_title">أرصدة الخزائن الحية وحركة التدفق المالي</span>
+            <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+              <div>
+                <div class="card-title">
+                  <i class="fa-solid fa-vault" style="color: var(--primary);"></i>
+                  <span data-i18n="term_vaults_title">أرصدة الخزائن الحية وحركة التدفق المالي</span>
+                </div>
+                <div class="text-secondary" style="font-size: 0.85em; font-weight: 600;">
+                  <i class="fa-solid fa-rotate"></i> <span data-i18n="term_vaults_sync_subtitle">تحديث فوري وتزامني لكافة وسائل الدفع</span>
+                </div>
               </div>
-              <div class="text-secondary" style="font-size: 0.85em; font-weight: 600;">
-                <i class="fa-solid fa-rotate"></i> <span data-i18n="term_vaults_sync_subtitle">تحديث فوري وتزامني لكافة وسائل الدفع</span>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn primary smallBtn" onclick="window.openVaultTransferModal()" style="border-radius: 8px; font-weight: 700; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.25);">
+                  <i class="fa-solid fa-money-bill-transfer"></i>
+                  <span data-i18n="btn_vault_transfer">تحويل بين الخزائن</span>
+                </button>
+                <button type="button" class="btn secondary smallBtn" onclick="window.openVaultTransfersHistoryModal()" style="border-radius: 8px; font-weight: 700; padding: 7px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                  <span data-i18n="btn_vault_transfers_history">سجل التحويلات</span>
+                </button>
               </div>
             </div>
 
@@ -1240,6 +1264,23 @@
       <!-- Modal Body -->
       <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 20px;">
         
+        <!-- Date Range Filter Bar for Revenue -->
+        <div class="fin-date-filter-bar">
+          <div class="fin-date-group">
+            <span class="fin-date-lbl" data-i18n="lbl_from_date">من تاريخ:</span>
+            <input type="date" id="revFilterStartDate" class="fin-date-inp">
+          </div>
+          <div class="fin-date-group">
+            <span class="fin-date-lbl" data-i18n="lbl_to_date">إلى تاريخ:</span>
+            <input type="date" id="revFilterEndDate" class="fin-date-inp">
+          </div>
+          <button type="button" class="btn primary smallBtn" onclick="window.filterRevenueModal()" data-i18n="btn_apply_filter">تطبيق</button>
+          <div class="fin-quick-dates">
+            <button type="button" class="fin-quick-btn active" id="revQuickAll" onclick="window.setRevQuickDate('all')" data-i18n="btn_all_term">كل الترم</button>
+            <button type="button" class="fin-quick-btn" id="revQuickToday" onclick="window.setRevQuickDate('today')" data-i18n="btn_today">اليوم</button>
+          </div>
+        </div>
+
         <!-- Big Total Header Card -->
         <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;">
           <div>
@@ -1375,6 +1416,35 @@
 
       </div>
 
+        <!-- Detailed Inflow Log Table for the Period -->
+        <div>
+          <div style="font-size: 0.9em; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-list-check"></i>
+              <span data-i18n="rev_tbl_title">سجل حركات التحصيل والتوريد في الفترة المحددة</span>
+            </div>
+            <span id="revFilterCountBadge" class="badge" style="background: var(--bg-inset); color: var(--text-secondary);">0 حركة</span>
+          </div>
+          <div class="fin-modal-table-wrap">
+            <table class="fin-modal-table">
+              <thead>
+                <tr>
+                  <th data-i18n="tbl_th_date">التاريخ</th>
+                  <th data-i18n="tbl_th_source">البيان / المصدر</th>
+                  <th data-i18n="tbl_th_channel">نوع الإيراد</th>
+                  <th data-i18n="tbl_th_amount">المبلغ</th>
+                  <th data-i18n="tbl_th_method">طريقة الدفع</th>
+                </tr>
+              </thead>
+              <tbody id="revenueFilteredTbody">
+                <!-- populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
       <!-- Actions -->
       <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: flex-end;">
         <button type="button" class="btn secondary" onclick="window.closeRevenueBreakdownModal()" style="padding: 9px 24px; border-radius: 10px;" data-i18n="btn_close">
@@ -1384,8 +1454,383 @@
     </div>
   </div>
 
+
+  <!-- ======================================================== -->
+  <!-- 1. VAULT TRANSFER MODAL (تحويل بين الخزائن) -->
+  <!-- ======================================================== -->
+  <div id="vaultTransferModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 520px; width: 95%;">
+      <button type="button" class="modal-close-btn" onclick="window.closeVaultTransferModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: linear-gradient(135deg, rgba(37,99,235,0.2), rgba(124,58,237,0.2)); color: var(--primary);">
+          <i class="fa-solid fa-money-bill-transfer"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="vault_trans_modal_title">تحويل أموال بين الخزائن الحية</h3>
+          <p class="modal-subtitle-premium" data-i18n="vault_trans_modal_subtitle">مناقلة نقدية وبنكية لضبط السيولة الفعلية دون المساس بإجمالي المقبوضات</p>
+        </div>
+      </div>
+
+      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- Source & Destination Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_from_vault">من خزينة (المصدر) *</label>
+            <select id="transFromVault" class="inp" onchange="window.updateTransferPreview()" style="font-weight: 700;">
+              <option value="cash" selected>درج الكاش (الخزينة النقدية)</option>
+              <option value="instapay">حساب إنستاباي (InstaPay)</option>
+              <option value="wallet">محفظة فودافون كاش</option>
+            </select>
+            <div style="font-size: 0.78em; color: var(--text-secondary); margin-top: 4px;">
+              <span data-i18n="lbl_avail_bal">الرصيد المتاح:</span> <b id="transFromAvailBal" class="text-success">0 ج</b>
+            </div>
+          </div>
+
+          <div>
+            <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_to_vault">إلى خزينة (الهدف) *</label>
+            <select id="transToVault" class="inp" onchange="window.updateTransferPreview()" style="font-weight: 700;">
+              <option value="instapay" selected>حساب إنستاباي (InstaPay)</option>
+              <option value="cash">درج الكاش (الخزينة النقدية)</option>
+              <option value="wallet">محفظة فودافون كاش</option>
+            </select>
+            <div style="font-size: 0.78em; color: var(--text-secondary); margin-top: 4px;">
+              <span data-i18n="lbl_curr_bal">الرصيد الحالي:</span> <b id="transToCurrBal">0 ج</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- Amount -->
+        <div>
+          <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_trans_amount">المبلغ المراد تحويله (جنيه) *</label>
+          <input type="number" id="transAmount" class="inp" placeholder="0" min="1" oninput="window.updateTransferPreview()" style="font-size: 1.15em; font-weight: 800;">
+          <!-- Quick Amount Chips -->
+          <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(50)">+50 ج</button>
+            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(100)">+100 ج</button>
+            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(200)">+200 ج</button>
+            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(500)">+500 ج</button>
+            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount('all')">كامل المتاح</button>
+          </div>
+        </div>
+
+        <!-- Note / Statement -->
+        <div>
+          <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_trans_note">البيان / سبب التحويل (اختياري)</label>
+          <input type="text" id="transNote" class="inp" placeholder="مثال: تغذية حساب إنستاباي من درج الكاش لتغطية سحب" data-i18n-placeholder="trans_note_ph">
+        </div>
+
+        <!-- Live Preview Impact Box -->
+        <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 0.85em; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-secondary);" data-i18n="lbl_from_after">رصيد المصدر المتوقع بعد التحويل:</span>
+            <b id="transFromAfterBal">0 ج</b>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-secondary);" data-i18n="lbl_to_after">رصيد الهدف المتوقع بعد التحويل:</span>
+            <b id="transToAfterBal">0 ج</b>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn secondary" onclick="window.closeVaultTransferModal()" data-i18n="modal_btn_cancel">إلغاء</button>
+        <button type="button" class="btn primary" onclick="window.submitVaultTransfer()" style="padding: 10px 22px; font-weight: 800; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-check"></i> <span data-i18n="btn_confirm_trans">تأكيد وتنفيذ التحويل</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 2. VAULT TRANSFERS HISTORY MODAL (سجل التحويلات) -->
+  <!-- ======================================================== -->
+  <div id="vaultTransfersHistoryModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 780px; width: 95%;">
+      <button type="button" class="modal-close-btn" onclick="window.closeVaultTransfersHistoryModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(37,99,235,0.2)); color: #7c3aed;">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="vault_hist_modal_title">سجل حركات التحويل بين الخزائن</h3>
+          <p class="modal-subtitle-premium" data-i18n="vault_hist_modal_subtitle">توثيق كامل لكافة المناقلات المالية المنفذة بين الكاش وإنستاباي والمحافظ</p>
+        </div>
+      </div>
+
+      <div class="modal-body-premium" style="padding: 20px 0;">
+        <div class="fin-modal-table-wrap">
+          <table class="fin-modal-table">
+            <thead>
+              <tr>
+                <th data-i18n="tbl_th_datetime">التاريخ والوقت</th>
+                <th data-i18n="tbl_th_from">من خزينة</th>
+                <th data-i18n="tbl_th_to">إلى خزينة</th>
+                <th data-i18n="tbl_th_amount">المبلغ</th>
+                <th data-i18n="tbl_th_note">البيان</th>
+                <th data-i18n="tbl_th_action">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="vaultTransfersHistoryTbody">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn secondary" onclick="window.closeVaultTransfersHistoryModal()" data-i18n="btn_close">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 3. EXPENSES DETAILS MODAL (تفاصيل المصروفات التشغيلية) -->
+  <!-- ======================================================== -->
+  <div id="expensesDetailsModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 820px; width: 95%;">
+      <button type="button" class="modal-close-btn" onclick="window.closeExpensesDetailsModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="exp_modal_title">تفاصيل المصروفات التشغيلية</h3>
+          <p class="modal-subtitle-premium" data-i18n="exp_modal_subtitle">مراجعة كاملة للمصروفات مع فلترة مخصصة بالتاريخ والفترة</p>
+        </div>
+      </div>
+
+      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 16px;">
+        <!-- Date Range Filter Bar -->
+        <div class="fin-date-filter-bar">
+          <div class="fin-date-group">
+            <span class="fin-date-lbl" data-i18n="lbl_from_date">من تاريخ:</span>
+            <input type="date" id="expFilterStartDate" class="fin-date-inp">
+          </div>
+          <div class="fin-date-group">
+            <span class="fin-date-lbl" data-i18n="lbl_to_date">إلى تاريخ:</span>
+            <input type="date" id="expFilterEndDate" class="fin-date-inp">
+          </div>
+          <button type="button" class="btn primary smallBtn" onclick="window.filterExpensesModal()" data-i18n="btn_apply_filter">تطبيق</button>
+          <div class="fin-quick-dates">
+            <button type="button" class="fin-quick-btn active" id="expQuickAll" onclick="window.setExpQuickDate('all')" data-i18n="btn_all_term">كل الترم</button>
+            <button type="button" class="fin-quick-btn" id="expQuickToday" onclick="window.setExpQuickDate('today')" data-i18n="btn_today">اليوم</button>
+          </div>
+        </div>
+
+        <!-- Summary KPIs -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: #ef4444; font-weight: 700;" data-i18n="exp_period_total">إجمالي مصروفات الفترة</div>
+            <div id="expModalTotal" style="font-size: 1.6em; font-weight: 800; color: #ef4444;">0 ج</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_cash">المنصرف كاش:</div>
+            <div id="expModalCash" style="font-size: 1.3em; font-weight: 800; color: #10b981;">0 ج</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_instapay">المنصرف إنستاباي:</div>
+            <div id="expModalInstapay" style="font-size: 1.3em; font-weight: 800; color: #7c3aed;">0 ج</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_wallet">المنصرف فودافون:</div>
+            <div id="expModalWallet" style="font-size: 1.3em; font-weight: 800; color: #ef4444;">0 ج</div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="fin-modal-table-wrap">
+          <table class="fin-modal-table">
+            <thead>
+              <tr>
+                <th data-i18n="tbl_th_date">التاريخ</th>
+                <th data-i18n="tbl_th_amount">المبلغ</th>
+                <th data-i18n="tbl_th_reason">بند المصروف</th>
+                <th data-i18n="tbl_th_method">طريقة الدفع</th>
+                <th data-i18n="tbl_th_action">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="expensesDetailsTbody">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" class="btn danger smallBtn" onclick="window.closeExpensesDetailsModal(); window.openRecordExpenseModal('expense');" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-plus"></i> <span data-i18n="btn_record_center_exp">تسجيل مصروف جديد</span>
+        </button>
+        <button type="button" class="btn secondary" onclick="window.closeExpensesDetailsModal()" data-i18n="btn_close">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 4. WITHDRAWALS DETAILS MODAL (تفاصيل مسحوبات المستر) -->
+  <!-- ======================================================== -->
+  <div id="withdrawalsDetailsModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 820px; width: 95%;">
+      <button type="button" class="modal-close-btn" onclick="window.closeWithdrawalsDetailsModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="wd_modal_title">تفاصيل مسحوبات المستر / الشخصية</h3>
+          <p class="modal-subtitle-premium" data-i18n="wd_modal_subtitle">متابعة دقيقة للأرباح والمسحوبات الخاصة مع فلترة التاريخ لكل فترة</p>
+        </div>
+      </div>
+
+      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 16px;">
+        <!-- Date Range Filter Bar -->
+        <div class="fin-date-filter-bar">
+          <div class="fin-date-group">
+            <span class="fin-date-lbl" data-i18n="lbl_from_date">من تاريخ:</span>
+            <input type="date" id="wdFilterStartDate" class="fin-date-inp">
+          </div>
+          <div class="fin-date-group">
+            <span class="fin-date-lbl" data-i18n="lbl_to_date">إلى تاريخ:</span>
+            <input type="date" id="wdFilterEndDate" class="fin-date-inp">
+          </div>
+          <button type="button" class="btn primary smallBtn" onclick="window.filterWithdrawalsModal()" data-i18n="btn_apply_filter">تطبيق</button>
+          <div class="fin-quick-dates">
+            <button type="button" class="fin-quick-btn active" id="wdQuickAll" onclick="window.setWdQuickDate('all')" data-i18n="btn_all_term">كل الترم</button>
+            <button type="button" class="fin-quick-btn" id="wdQuickToday" onclick="window.setWdQuickDate('today')" data-i18n="btn_today">اليوم</button>
+          </div>
+        </div>
+
+        <!-- Summary KPIs -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1.5px solid rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: #f59e0b; font-weight: 700;" data-i18n="wd_period_total">إجمالي مسحوبات الفترة</div>
+            <div id="wdModalTotal" style="font-size: 1.6em; font-weight: 800; color: #f59e0b;">0 ج</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_cash">المسحوب كاش (درج):</div>
+            <div id="wdModalCash" style="font-size: 1.3em; font-weight: 800; color: #10b981;">0 ج</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_instapay">المسحوب إنستاباي:</div>
+            <div id="wdModalInstapay" style="font-size: 1.3em; font-weight: 800; color: #7c3aed;">0 ج</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_wallet">المسحوب فودافون:</div>
+            <div id="wdModalWallet" style="font-size: 1.3em; font-weight: 800; color: #ef4444;">0 ج</div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="fin-modal-table-wrap">
+          <table class="fin-modal-table">
+            <thead>
+              <tr>
+                <th data-i18n="tbl_th_date">التاريخ</th>
+                <th data-i18n="tbl_th_amount">المبلغ</th>
+                <th data-i18n="tbl_th_vault_source">الخزينة المسحوب منها</th>
+                <th data-i18n="tbl_th_note">البيان / المستلم</th>
+                <th data-i18n="tbl_th_action">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="withdrawalsDetailsTbody">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" class="btn warning smallBtn" onclick="window.closeWithdrawalsDetailsModal(); window.openRecordExpenseModal('withdrawal');" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-plus"></i> <span data-i18n="btn_record_withdrawal">تسجيل سحب جديد</span>
+        </button>
+        <button type="button" class="btn secondary" onclick="window.closeWithdrawalsDetailsModal()" data-i18n="btn_close">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 5. DISCOUNTS & EXEMPTIONS DETAILS MODAL (تفاصيل الخصومات) -->
+  <!-- ======================================================== -->
+  <div id="discountsDetailsModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 820px; width: 95%;">
+      <button type="button" class="modal-close-btn" onclick="window.closeDiscountsDetailsModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
+          <i class="fa-solid fa-tags"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="disc_modal_title">تفاصيل الخصومات والإعفاءات المالية</h3>
+          <p class="modal-subtitle-premium" data-i18n="disc_modal_subtitle">بيان شامل بالطلاب الممنوحين خصومات وإعفاءات مادية مع أرصدتهم الحالية</p>
+        </div>
+      </div>
+
+      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- Summary Cards -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1.5px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 14px;">
+            <div style="font-size: 0.82em; color: #06b6d4; font-weight: 700;" data-i18n="disc_total_amount_lbl">إجمالي مبالغ الخصومات الممنوحة</div>
+            <div id="discModalTotalAmt" style="font-size: 1.8em; font-weight: 800; color: #06b6d4;">0 ج</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 14px;">
+            <div style="font-size: 0.82em; color: var(--text-secondary); font-weight: 700;" data-i18n="disc_students_count_lbl">عدد الطلاب المستفيدين من الخصم</div>
+            <div id="discModalCount" style="font-size: 1.8em; font-weight: 800; color: var(--text-primary);">0 طالب</div>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div>
+          <input type="text" id="discSearchInp" class="inp" placeholder="ابحث باسم الطالب أو كود الـ ID..." oninput="window.renderDiscountsModalTable()" data-i18n-placeholder="search_student_ph">
+        </div>
+
+        <!-- Table -->
+        <div class="fin-modal-table-wrap">
+          <table class="fin-modal-table">
+            <thead>
+              <tr>
+                <th>#ID</th>
+                <th data-i18n="tbl_th_student">اسم الطالب</th>
+                <th data-i18n="tbl_th_class">الباقة / الصف</th>
+                <th data-i18n="tbl_th_disc_amt">قيمة الخصم</th>
+                <th data-i18n="tbl_th_paid">المدفوع</th>
+                <th data-i18n="tbl_th_debt">المتبقي</th>
+                <th data-i18n="tbl_th_action">ملف الطالب</th>
+              </tr>
+            </thead>
+            <tbody id="discountsDetailsTbody">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn secondary" onclick="window.closeDiscountsDetailsModal()" data-i18n="btn_close">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V27"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V28"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

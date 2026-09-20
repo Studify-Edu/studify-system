@@ -230,6 +230,28 @@ const ADMIN_DICT = {
   "stat_term_total_students": { ar: "إجمالي الطلاب المسجلين", en: "Total Registered Students" },
   "stat_term_total_rev": { ar: "إجمالي الإيرادات المحصلة (ج)", en: "Total Collected Revenue (EGP)" },
   "lbl_breakdown_btn": { ar: "عرض التفاصيل", en: "View Details" },
+  "btn_vault_transfer": { ar: "تحويل بين الخزائن", en: "Transfer Between Vaults" },
+  "btn_vault_transfers_history": { ar: "سجل التحويلات", en: "Transfers History" },
+  "vault_trans_modal_title": { ar: "تحويل أموال بين الخزائن الحية", en: "Inter-Vault Fund Transfer" },
+  "vault_trans_modal_subtitle": { ar: "مناقلة نقدية وبنكية لضبط السيولة الفعلية دون المساس بإجمالي المقبوضات", en: "Transfer cash and electronic balances without affecting gross receipts" },
+  "lbl_from_vault": { ar: "من خزينة (المصدر) *", en: "From Vault (Source) *" },
+  "lbl_to_vault": { ar: "إلى خزينة (الهدف) *", en: "To Vault (Destination) *" },
+  "lbl_trans_amount": { ar: "المبلغ المراد تحويله (جنيه) *", en: "Amount to Transfer (EGP) *" },
+  "lbl_trans_note": { ar: "البيان / سبب التحويل (اختياري)", en: "Statement / Transfer Reason (Optional)" },
+  "btn_confirm_trans": { ar: "تأكيد وتنفيذ التحويل", en: "Confirm & Execute Transfer" },
+  "vault_hist_modal_title": { ar: "سجل حركات التحويل بين الخزائن", en: "Inter-Vault Transfers Log" },
+  "vault_hist_modal_subtitle": { ar: "توثيق كامل لكافة المناقلات المالية المنفذة بين الكاش وإنستاباي والمحافظ", en: "Complete log of fund transfers between cash, instapay, and wallets" },
+  "exp_modal_title": { ar: "تفاصيل المصروفات التشغيلية", en: "Operating Expenses Details" },
+  "exp_modal_subtitle": { ar: "مراجعة كاملة للمصروفات مع فلترة مخصصة بالتاريخ والفترة", en: "Review expenses with date range filtering" },
+  "wd_modal_title": { ar: "تفاصيل مسحوبات المستر / الشخصية", en: "Teacher / Personal Withdrawals Details" },
+  "wd_modal_subtitle": { ar: "متابعة دقيقة للأرباح والمسحوبات الخاصة مع فلترة التاريخ لكل فترة", en: "Track owner profits and withdrawals with date range filtering" },
+  "disc_modal_title": { ar: "تفاصيل الخصومات والإعفاءات المالية", en: "Financial Discounts & Exemptions" },
+  "disc_modal_subtitle": { ar: "بيان شامل بالطلاب الممنوحين خصومات وإعفاءات مادية مع أرصدتهم الحالية", en: "Comprehensive list of discounted students and current debt" },
+  "disc_total_amount_lbl": { ar: "إجمالي مبالغ الخصومات الممنوحة", en: "Total Granted Discounts" },
+  "disc_students_count_lbl": { ar: "عدد الطلاب المستفيدين من الخصم", en: "Count of Discounted Students" },
+  "btn_all_term": { ar: "كل الترم", en: "All Term" },
+  "btn_today": { ar: "اليوم", en: "Today" },
+  "btn_apply_filter": { ar: "تطبيق", en: "Apply" },
   "rev_modal_title": { ar: "تفاصيل وتوزيع الإيرادات المحصلة", en: "Collected Revenue Breakdown" },
   "rev_modal_subtitle": { ar: "تحليل مالي تفصيلي لمصادر الدخل وتوزيع التدفقات النقدية والبنكية", en: "Detailed financial analysis of income sources and cash flow distribution" },
   "rev_grand_total_lbl": { ar: "إجمالي الإيرادات الكلية المحصلة", en: "Grand Total Collected Revenue" },
@@ -581,6 +603,7 @@ let attByDate = {};
 let revenueByDate = {};
 let sessionStudentsByDate = {};
 let expensesByDate = [];
+let vaultTransfers = [];
 let booklets = {};
 let syllabusList = [];
 let currentCenterId = localStorage.getItem("ca_manager_id") || "ahmedqutb11232_gmail_com";
@@ -1556,6 +1579,7 @@ async function loadAllAdminData() {
     const stPkgsMap = cfg.student_packages || {};
     const stRanksMap = cfg.student_ranks || {};
     const cfgGroupFees = cfg.group_fees || {};
+    vaultTransfers = Array.isArray(cfg.vault_transfers) ? cfg.vault_transfers : [];
 
     // Students (with packages, payments, attendanceDates)
     if (stRes.data) {
@@ -2357,11 +2381,36 @@ window.renderTermTable = function() {
     else cashOut += amt;
   });
 
-  // 4. Balances Calculations
-  const netVaultBalance = totalRev - (totalExpenses + totalWithdrawals);
-  const cashBalance = cashIn - cashOut;
-  const walletBalance = walletIn - walletOut;
-  const instapayBalance = instapayIn - instapayOut;
+  // 4. Balances Calculations with Inter-Vault Transfers
+  let cashTransfersIn = 0, cashTransfersOut = 0;
+  let walletTransfersIn = 0, walletTransfersOut = 0;
+  let instapayTransfersIn = 0, instapayTransfersOut = 0;
+
+  (vaultTransfers || []).forEach(tr => {
+    if (!tr) return;
+    const amt = Number(tr.amount) || 0;
+    if (tr.from_vault === 'cash') cashTransfersOut += amt;
+    if (tr.to_vault === 'cash') cashTransfersIn += amt;
+
+    if (tr.from_vault === 'wallet') walletTransfersOut += amt;
+    if (tr.to_vault === 'wallet') walletTransfersIn += amt;
+
+    if (tr.from_vault === 'instapay') instapayTransfersOut += amt;
+    if (tr.to_vault === 'instapay') instapayTransfersIn += amt;
+  });
+
+  const cashBalance = cashIn - cashOut + (cashTransfersIn - cashTransfersOut);
+  const walletBalance = walletIn - walletOut + (walletTransfersIn - walletTransfersOut);
+  const instapayBalance = instapayIn - instapayOut + (instapayTransfersIn - instapayTransfersOut);
+  const netVaultBalance = cashBalance + walletBalance + instapayBalance;
+
+  window.vaultLiveBalances = {
+    cash: cashBalance,
+    wallet: walletBalance,
+    instapay: instapayBalance,
+    cashIn, walletIn, instapayIn,
+    cashOut, walletOut, instapayOut
+  };
 
   // 5. Update KPI Cards
   const statTermSt = document.getElementById("statTermStudents");
@@ -5104,4 +5153,635 @@ window.openRevenueBreakdownModal = function() {
 window.closeRevenueBreakdownModal = function() {
   const modal = document.getElementById("revenueBreakdownModal");
   if (modal) modal.classList.add("hidden");
+};
+
+
+// =============================================================================
+// INTER-VAULT TRANSFERS & FINANCIAL MODALS ENGINE
+// =============================================================================
+
+// --- 1. VAULT TRANSFERS (التحويل المالي بين الخزائن) ---
+window.openVaultTransferModal = function() {
+  const modal = document.getElementById("vaultTransferModal");
+  if (!modal) return;
+
+  if (document.getElementById("transAmount")) document.getElementById("transAmount").value = "";
+  if (document.getElementById("transNote")) document.getElementById("transNote").value = "";
+
+  window.updateTransferPreview();
+  modal.classList.remove("hidden");
+};
+
+window.closeVaultTransferModal = function() {
+  const modal = document.getElementById("vaultTransferModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+window.updateTransferPreview = function() {
+  const fromSel = document.getElementById("transFromVault");
+  const toSel = document.getElementById("transToVault");
+  const amtInp = document.getElementById("transAmount");
+
+  if (!fromSel || !toSel) return;
+  const fromV = fromSel.value;
+  const toV = toSel.value;
+  const amt = Number(amtInp ? amtInp.value : 0) || 0;
+
+  const b = window.vaultLiveBalances || { cash: 0, wallet: 0, instapay: 0 };
+  const currFromBal = Number(b[fromV]) || 0;
+  const currToBal = Number(b[toV]) || 0;
+
+  if (document.getElementById("transFromAvailBal")) {
+    document.getElementById("transFromAvailBal").textContent = currFromBal.toLocaleString() + " ج";
+  }
+  if (document.getElementById("transToCurrBal")) {
+    document.getElementById("transToCurrBal").textContent = currToBal.toLocaleString() + " ج";
+  }
+
+  const afterFrom = currFromBal - amt;
+  const afterTo = currToBal + amt;
+
+  const fromAfterEl = document.getElementById("transFromAfterBal");
+  const toAfterEl = document.getElementById("transToAfterBal");
+
+  if (fromAfterEl) {
+    fromAfterEl.textContent = afterFrom.toLocaleString() + " ج";
+    fromAfterEl.style.color = afterFrom < 0 ? "var(--danger)" : "var(--text-primary)";
+  }
+  if (toAfterEl) {
+    toAfterEl.textContent = afterTo.toLocaleString() + " ج";
+    toAfterEl.style.color = afterTo < 0 ? "var(--danger)" : "var(--success)";
+  }
+};
+
+window.setTransferAmount = function(val) {
+  const fromSel = document.getElementById("transFromVault");
+  const amtInp = document.getElementById("transAmount");
+  if (!amtInp) return;
+
+  if (val === 'all') {
+    const fromV = fromSel ? fromSel.value : 'cash';
+    const b = window.vaultLiveBalances || { cash: 0, wallet: 0, instapay: 0 };
+    const avail = Math.max(0, Number(b[fromV]) || 0);
+    amtInp.value = avail;
+  } else {
+    const cur = Number(amtInp.value) || 0;
+    amtInp.value = cur + Number(val);
+  }
+  window.updateTransferPreview();
+};
+
+window.submitVaultTransfer = async function() {
+  const isAr = (currentLang === "ar");
+  const fromSel = document.getElementById("transFromVault");
+  const toSel = document.getElementById("transToVault");
+  const amtInp = document.getElementById("transAmount");
+  const noteInp = document.getElementById("transNote");
+
+  const fromV = fromSel ? fromSel.value : 'cash';
+  const toV = toSel ? toSel.value : 'instapay';
+  const amt = Number(amtInp ? amtInp.value : 0);
+  const note = noteInp ? noteInp.value.trim() : '';
+
+  if (fromV === toV) {
+    showToast(isAr ? "لا يمكن التحويل لنفس الخزينة" : "Cannot transfer to the same vault", "warning");
+    return;
+  }
+
+  if (amt <= 0) {
+    showToast(isAr ? "يرجى إدخال مبلغ تحويل صحيح أكبر من صفر" : "Please enter a valid transfer amount", "warning");
+    return;
+  }
+
+  const vNames = {
+    cash: isAr ? "درج الكاش" : "Cash Drawer",
+    instapay: isAr ? "حساب إنستاباي" : "InstaPay",
+    wallet: isAr ? "محفظة فودافون كاش" : "Vodafone Cash"
+  };
+
+  const newTransfer = {
+    id: 'vt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    date: nowDateStr(),
+    timestamp: new Date().toLocaleTimeString(),
+    from_vault: fromV,
+    to_vault: toV,
+    amount: amt,
+    note: note || (isAr ? `تحويل من ${vNames[fromV]} إلى ${vNames[toV]}` : `Transfer from ${vNames[fromV]} to ${vNames[toV]}`),
+    created_by: isAr ? "الإدارة" : "Admin"
+  };
+
+  if (!Array.isArray(vaultTransfers)) vaultTransfers = [];
+  vaultTransfers.push(newTransfer);
+
+  try {
+    await saveCenterConfig({ vault_transfers: vaultTransfers });
+    showToast(isAr ? `تم تحويل ${amt} ج بنجاح من ${vNames[fromV]} إلى ${vNames[toV]}` : `Transferred ${amt} EGP successfully`, "success");
+    playSound("success");
+    window.closeVaultTransferModal();
+    if (typeof window.renderTermTable === "function") window.renderTermTable();
+  } catch(e) {
+    console.error("submitVaultTransfer error:", e);
+    showToast(isAr ? "حدث خطأ أثناء حفظ التحويل" : "Error saving transfer", "err");
+  }
+};
+
+window.openVaultTransfersHistoryModal = function() {
+  const modal = document.getElementById("vaultTransfersHistoryModal");
+  const tbody = document.getElementById("vaultTransfersHistoryTbody");
+  if (!modal || !tbody) return;
+
+  const isAr = (currentLang === "ar");
+  const vNames = {
+    cash: isAr ? "درج الكاش" : "Cash Drawer",
+    instapay: isAr ? "حساب إنستاباي" : "InstaPay",
+    wallet: isAr ? "محفظة فودافون كاش" : "Vodafone Cash"
+  };
+
+  const list = Array.isArray(vaultTransfers) ? [...vaultTransfers].reverse() : [];
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد حركات تحويل سابقة بين الخزائن" : "No transfer history found"}</td></tr>`;
+  } else {
+    tbody.innerHTML = list.map((t, idx) => {
+      return `
+        <tr>
+          <td style="font-weight:600;">${t.date} <span style="font-size:0.85em; color:var(--text-secondary);">${t.timestamp || ""}</span></td>
+          <td><span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; font-weight:700;">${vNames[t.from_vault] || t.from_vault}</span></td>
+          <td><span class="badge" style="background:rgba(16,185,129,0.1); color:#10b981; font-weight:700;">${vNames[t.to_vault] || t.to_vault}</span></td>
+          <td style="font-weight:800; color:var(--primary); font-size:1.05em;">${t.amount} ج</td>
+          <td style="color:var(--text-secondary);">${t.note || "—"}</td>
+          <td>
+            <button type="button" class="btn danger smallBtn" onclick="window.deleteVaultTransfer('${t.id}')" style="padding:4px 10px; font-size:0.8em;" title="تراجع وحذف التحويل">
+              <i class="fa-solid fa-trash-can"></i> ${isAr ? "حذف" : "Delete"}
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  modal.classList.remove("hidden");
+};
+
+window.closeVaultTransfersHistoryModal = function() {
+  const modal = document.getElementById("vaultTransfersHistoryModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+window.deleteVaultTransfer = async function(id) {
+  const isAr = (currentLang === "ar");
+  const res = await Swal.fire({
+    title: isAr ? "تأكيد إلغاء التحويل" : "Confirm Revert",
+    text: isAr ? "هل أنت متأكد من حذف حركة التحويل واسترجاع الأرصدة إلى وضعها السابق؟" : "Revert this transfer and restore vault balances?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: isAr ? "نعم، إلغاء التحويل" : "Yes, Revert",
+    cancelButtonText: isAr ? "تراجع" : "Cancel",
+    confirmButtonColor: "#ef4444"
+  });
+
+  if (!res.isConfirmed) return;
+
+  const idx = vaultTransfers.findIndex(t => t.id === id);
+  if (idx !== -1) {
+    vaultTransfers.splice(idx, 1);
+    try {
+      await saveCenterConfig({ vault_transfers: vaultTransfers });
+      showToast(isAr ? "تم حذف حركة التحويل واسترجاع الأرصدة بنجاح" : "Transfer reverted", "success");
+      window.openVaultTransfersHistoryModal();
+      if (typeof window.renderTermTable === "function") window.renderTermTable();
+    } catch(e) {
+      console.error("deleteVaultTransfer error:", e);
+      showToast(isAr ? "حدث خطأ أثناء الحذف" : "Error deleting transfer", "err");
+    }
+  }
+};
+
+
+// --- 2. EXPENSES DETAILS MODAL WITH DATE FILTER ---
+window.openExpensesDetailsModal = function() {
+  const modal = document.getElementById("expensesDetailsModal");
+  if (!modal) return;
+  window.setExpQuickDate('all');
+  modal.classList.remove("hidden");
+};
+
+window.closeExpensesDetailsModal = function() {
+  const modal = document.getElementById("expensesDetailsModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+window.setExpQuickDate = function(mode) {
+  const sInp = document.getElementById("expFilterStartDate");
+  const eInp = document.getElementById("expFilterEndDate");
+  const btnAll = document.getElementById("expQuickAll");
+  const btnToday = document.getElementById("expQuickToday");
+
+  if (mode === 'today') {
+    if (sInp) sInp.value = nowDateStr();
+    if (eInp) eInp.value = nowDateStr();
+    if (btnToday) btnToday.classList.add("active");
+    if (btnAll) btnAll.classList.remove("active");
+  } else {
+    if (sInp) sInp.value = "";
+    if (eInp) eInp.value = "";
+    if (btnAll) btnAll.classList.add("active");
+    if (btnToday) btnToday.classList.remove("active");
+  }
+  window.filterExpensesModal();
+};
+
+window.filterExpensesModal = function() {
+  const isAr = (currentLang === "ar");
+  const sDate = document.getElementById("expFilterStartDate")?.value || "";
+  const eDate = document.getElementById("expFilterEndDate")?.value || "";
+  const tbody = document.getElementById("expensesDetailsTbody");
+
+  const list = Array.isArray(expensesByDate) ? expensesByDate : [];
+  const expItems = list.filter(e => {
+    if (!e || e.type === 'withdrawal' || e.isWithdrawal) return false;
+    const d = e.date || "";
+    if (sDate && d < sDate) return false;
+    if (eDate && d > eDate) return false;
+    return true;
+  }).reverse();
+
+  let total = 0, cash = 0, instapay = 0, wallet = 0;
+  expItems.forEach(e => {
+    const a = Number(e.amount) || 0;
+    total += a;
+    const m = e.method || 'cash';
+    if (m === 'cash') cash += a;
+    else if (m === 'instapay') instapay += a;
+    else if (m === 'wallet') wallet += a;
+    else cash += a;
+  });
+
+  if (document.getElementById("expModalTotal")) document.getElementById("expModalTotal").textContent = total.toLocaleString() + " ج";
+  if (document.getElementById("expModalCash")) document.getElementById("expModalCash").textContent = cash.toLocaleString() + " ج";
+  if (document.getElementById("expModalInstapay")) document.getElementById("expModalInstapay").textContent = instapay.toLocaleString() + " ج";
+  if (document.getElementById("expModalWallet")) document.getElementById("expModalWallet").textContent = wallet.toLocaleString() + " ج";
+
+  const mBadges = {
+    cash: { text: isAr ? "كاش (درج)" : "Cash", bg: "rgba(16,185,129,0.12)", color: "#10b981" },
+    instapay: { text: isAr ? "إنستاباي" : "InstaPay", bg: "rgba(124,58,237,0.12)", color: "#7c3aed" },
+    wallet: { text: isAr ? "فودافون كاش" : "Vodafone Cash", bg: "rgba(239,68,68,0.12)", color: "#ef4444" }
+  };
+
+  if (!tbody) return;
+  if (expItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد مصروفات تشغيلية مسجلة في هذه الفترة" : "No expenses found for this period"}</td></tr>`;
+  } else {
+    tbody.innerHTML = expItems.map(e => {
+      const mb = mBadges[e.method] || mBadges.cash;
+      return `
+        <tr>
+          <td style="font-weight:600;">${e.date || "—"}</td>
+          <td style="font-weight:800; color:#ef4444; font-size:1.05em;">${e.amount} ج</td>
+          <td style="font-weight:600;">${e.reason || "مصروف سنتر"}</td>
+          <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
+          <td>
+            <button type="button" class="btn danger smallBtn" onclick="window.deleteTermTransaction('${e.id}')" style="padding:4px 10px; font-size:0.8em;" title="حذف المصروف">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+};
+
+
+// --- 3. WITHDRAWALS DETAILS MODAL WITH DATE FILTER ---
+window.openWithdrawalsDetailsModal = function() {
+  const modal = document.getElementById("withdrawalsDetailsModal");
+  if (!modal) return;
+  window.setWdQuickDate('all');
+  modal.classList.remove("hidden");
+};
+
+window.closeWithdrawalsDetailsModal = function() {
+  const modal = document.getElementById("withdrawalsDetailsModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+window.setWdQuickDate = function(mode) {
+  const sInp = document.getElementById("wdFilterStartDate");
+  const eInp = document.getElementById("wdFilterEndDate");
+  const btnAll = document.getElementById("wdQuickAll");
+  const btnToday = document.getElementById("wdQuickToday");
+
+  if (mode === 'today') {
+    if (sInp) sInp.value = nowDateStr();
+    if (eInp) eInp.value = nowDateStr();
+    if (btnToday) btnToday.classList.add("active");
+    if (btnAll) btnAll.classList.remove("active");
+  } else {
+    if (sInp) sInp.value = "";
+    if (eInp) eInp.value = "";
+    if (btnAll) btnAll.classList.add("active");
+    if (btnToday) btnToday.classList.remove("active");
+  }
+  window.filterWithdrawalsModal();
+};
+
+window.filterWithdrawalsModal = function() {
+  const isAr = (currentLang === "ar");
+  const sDate = document.getElementById("wdFilterStartDate")?.value || "";
+  const eDate = document.getElementById("wdFilterEndDate")?.value || "";
+  const tbody = document.getElementById("withdrawalsDetailsTbody");
+
+  const list = Array.isArray(expensesByDate) ? expensesByDate : [];
+  const wdItems = list.filter(e => {
+    if (!e || (e.type !== 'withdrawal' && !e.isWithdrawal)) return false;
+    const d = e.date || "";
+    if (sDate && d < sDate) return false;
+    if (eDate && d > eDate) return false;
+    return true;
+  }).reverse();
+
+  let total = 0, cash = 0, instapay = 0, wallet = 0;
+  wdItems.forEach(e => {
+    const a = Number(e.amount) || 0;
+    total += a;
+    const m = e.method || 'cash';
+    if (m === 'cash') cash += a;
+    else if (m === 'instapay') instapay += a;
+    else if (m === 'wallet') wallet += a;
+    else cash += a;
+  });
+
+  if (document.getElementById("wdModalTotal")) document.getElementById("wdModalTotal").textContent = total.toLocaleString() + " ج";
+  if (document.getElementById("wdModalCash")) document.getElementById("wdModalCash").textContent = cash.toLocaleString() + " ج";
+  if (document.getElementById("wdModalInstapay")) document.getElementById("wdModalInstapay").textContent = instapay.toLocaleString() + " ج";
+  if (document.getElementById("wdModalWallet")) document.getElementById("wdModalWallet").textContent = wallet.toLocaleString() + " ج";
+
+  const mBadges = {
+    cash: { text: isAr ? "درج الكاش" : "Cash Drawer", bg: "rgba(16,185,129,0.12)", color: "#10b981" },
+    instapay: { text: isAr ? "حساب إنستاباي" : "InstaPay", bg: "rgba(124,58,237,0.12)", color: "#7c3aed" },
+    wallet: { text: isAr ? "محفظة فودافون كاش" : "Vodafone Cash", bg: "rgba(239,68,68,0.12)", color: "#ef4444" }
+  };
+
+  if (!tbody) return;
+  if (wdItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد مسحوبات مسجلة في هذه الفترة" : "No withdrawals found for this period"}</td></tr>`;
+  } else {
+    tbody.innerHTML = wdItems.map(e => {
+      const mb = mBadges[e.method] || mBadges.cash;
+      return `
+        <tr>
+          <td style="font-weight:600;">${e.date || "—"}</td>
+          <td style="font-weight:800; color:#f59e0b; font-size:1.05em;">${e.amount} ج</td>
+          <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
+          <td style="font-weight:600;">${e.reason || (isAr ? "مسحوبات شخصية" : "Withdrawal")} ${e.recipient ? `(${e.recipient})` : ""}</td>
+          <td>
+            <button type="button" class="btn danger smallBtn" onclick="window.deleteTermTransaction('${e.id}')" style="padding:4px 10px; font-size:0.8em;" title="حذف المسحوب">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+};
+
+
+// --- 4. DISCOUNTS & EXEMPTIONS DETAILS MODAL ---
+window.openDiscountsDetailsModal = function() {
+  const modal = document.getElementById("discountsDetailsModal");
+  if (!modal) return;
+  if (document.getElementById("discSearchInp")) document.getElementById("discSearchInp").value = "";
+  window.renderDiscountsModalTable();
+  modal.classList.remove("hidden");
+};
+
+window.closeDiscountsDetailsModal = function() {
+  const modal = document.getElementById("discountsDetailsModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+window.renderDiscountsModalTable = function() {
+  const isAr = (currentLang === "ar");
+  const tbody = document.getElementById("discountsDetailsTbody");
+  const q = document.getElementById("discSearchInp")?.value.toLowerCase().trim() || "";
+
+  const discStudents = Object.values(students || {}).filter(s => {
+    if (!s || !s.name) return false;
+    if (Number(s.discount) <= 0) return false;
+    if (q && !s.name.toLowerCase().includes(q) && !String(s.id).includes(q)) return false;
+    return true;
+  });
+
+  const totalDisc = Object.values(students || {}).reduce((sum, s) => sum + (Number(s?.discount) || 0), 0);
+  const totalCount = Object.values(students || {}).filter(s => Number(s?.discount) > 0).length;
+
+  if (document.getElementById("discModalTotalAmt")) document.getElementById("discModalTotalAmt").textContent = totalDisc.toLocaleString() + " ج";
+  if (document.getElementById("discModalCount")) document.getElementById("discModalCount").textContent = totalCount + (isAr ? " طالب" : " Students");
+
+  if (!tbody) return;
+  if (discStudents.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا يوجد طلاب حاصلين على خصومات تطابق البحث" : "No discounted students found"}</td></tr>`;
+  } else {
+    tbody.innerHTML = discStudents.map(s => {
+      const cls = (s.className && s.className !== 'عام' && s.className !== 'General') ? s.className : (isAr ? "بدون باقة" : "No Package");
+      const paid = Number(s.paid) || 0;
+      const disc = Number(s.discount) || 0;
+      const debt = Math.max(0, (Number(s.totalReq) || 0) - paid - disc);
+
+      return `
+        <tr>
+          <td style="font-weight:700; color:var(--text-secondary);">#${s.id}</td>
+          <td style="font-weight:800;">${s.name}</td>
+          <td><span class="badge" style="background:var(--bg-inset); color:var(--primary); font-weight:700;">${cls}</span></td>
+          <td style="font-weight:800; color:#06b6d4; font-size:1.05em;">${disc} ج</td>
+          <td style="font-weight:700; color:#10b981;">${paid} ج</td>
+          <td style="font-weight:700; color:${debt > 0 ? '#ef4444' : '#10b981'};">${debt > 0 ? debt + ' ج' : (isAr ? 'خالص' : 'Paid')}</td>
+          <td>
+            <a href="../assistant/index.html?openId=${s.id}" target="_blank" class="btn secondary smallBtn" style="padding:4px 10px; font-size:0.8em; text-decoration:none;">
+              <i class="fa-solid fa-folder-open"></i> ${isAr ? "الملف" : "Profile"}
+            </a>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+};
+
+
+// --- 5. REVENUE BREAKDOWN MODAL WITH DATE RANGE FILTER ---
+window.setRevQuickDate = function(mode) {
+  const sInp = document.getElementById("revFilterStartDate");
+  const eInp = document.getElementById("revFilterEndDate");
+  const btnAll = document.getElementById("revQuickAll");
+  const btnToday = document.getElementById("revQuickToday");
+
+  if (mode === 'today') {
+    if (sInp) sInp.value = nowDateStr();
+    if (eInp) eInp.value = nowDateStr();
+    if (btnToday) btnToday.classList.add("active");
+    if (btnAll) btnAll.classList.remove("active");
+  } else {
+    if (sInp) sInp.value = "";
+    if (eInp) eInp.value = "";
+    if (btnAll) btnAll.classList.add("active");
+    if (btnToday) btnToday.classList.remove("active");
+  }
+  window.filterRevenueModal();
+};
+
+window.filterRevenueModal = function() {
+  const isAr = (currentLang === "ar");
+  const sDate = document.getElementById("revFilterStartDate")?.value || "";
+  const eDate = document.getElementById("revFilterEndDate")?.value || "";
+  const tbody = document.getElementById("revenueFilteredTbody");
+  const curr = isAr ? " ج" : " EGP";
+
+  let regCash = 0, regInstapay = 0, regWallet = 0;
+  let sessCash = 0, sessInstapay = 0, sessWallet = 0;
+  let bklCash = 0, bklInstapay = 0, bklWallet = 0;
+  const inFlowItems = [];
+
+  // A. Regular Students Inflow
+  Object.values(students || {}).forEach(st => {
+    if (!st || !st.name) return;
+    if (st.payments && Array.isArray(st.payments)) {
+      st.payments.forEach(p => {
+        const d = p.date || "";
+        if (sDate && d < sDate) return;
+        if (eDate && d > eDate) return;
+        const amt = Number(p.amount) || 0;
+        const m = p.method || 'cash';
+        if (m === 'cash') regCash += amt;
+        else if (m === 'instapay') regInstapay += amt;
+        else if (m === 'wallet') regWallet += amt;
+        else regCash += amt;
+
+        inFlowItems.push({
+          date: d || nowDateStr(),
+          source: st.name + ` (#${st.id})`,
+          channel: isAr ? "اشتراك باقة" : "Package Subscription",
+          amount: amt,
+          method: m
+        });
+      });
+    } else if (Number(st.paid) > 0 && !sDate && !eDate) {
+      const amt = Number(st.paid);
+      const m = st.paymentPlan || 'cash';
+      if (m === 'cash') regCash += amt;
+      else if (m === 'instapay') regInstapay += amt;
+      else if (m === 'wallet') regWallet += amt;
+      else regCash += amt;
+    }
+  });
+
+  // B. Session Students Inflow
+  for (const d in sessionStudentsByDate) {
+    if (sDate && d < sDate) continue;
+    if (eDate && d > eDate) continue;
+    const sList = sessionStudentsByDate[d] || [];
+    sList.forEach(it => {
+      const amt = Number(it.amount) || 0;
+      const m = it.method || 'cash';
+      if (m === 'cash') sessCash += amt;
+      else if (m === 'instapay') sessInstapay += amt;
+      else if (m === 'wallet') sessWallet += amt;
+      else sessCash += amt;
+
+      inFlowItems.push({
+        date: d,
+        source: it.name + (it.className ? ` (${it.className})` : ""),
+        channel: isAr ? "طالب حصة فورية" : "Session Student",
+        amount: amt,
+        method: m
+      });
+    });
+  }
+
+  // C. Booklet Sales
+  if (!sDate && !eDate) {
+    Object.values(booklets || {}).forEach(b => {
+      const soldQty = Number(b.sold) || 0;
+      const price = Number(b.price) || 0;
+      const bRev = soldQty * price;
+      if (bRev > 0) {
+        bklCash += bRev;
+        inFlowItems.push({
+          date: nowDateStr(),
+          source: (isAr ? "مبيعات مذكرة: " : "Booklet: ") + (b.name || ""),
+          channel: isAr ? "مذكرات ومخزن" : "Booklet Inventory",
+          amount: bRev,
+          method: 'cash'
+        });
+      }
+    });
+  }
+
+  const regTotal = regCash + regInstapay + regWallet;
+  const sessTotal = sessCash + sessInstapay + sessWallet;
+  const bklTotal = bklCash + bklInstapay + bklWallet;
+  const gTotal = regTotal + sessTotal + bklTotal;
+
+  // Update UI Elements
+  if (document.getElementById("revModalGrandTotal")) document.getElementById("revModalGrandTotal").textContent = gTotal.toLocaleString() + curr;
+
+  const regPct = gTotal > 0 ? Math.round((regTotal / gTotal) * 100) : 0;
+  const sessPct = gTotal > 0 ? Math.round((sessTotal / gTotal) * 100) : 0;
+  const bklPct = gTotal > 0 ? Math.max(0, 100 - regPct - sessPct) : 0;
+
+  if (document.getElementById("revBarRegPct")) document.getElementById("revBarRegPct").textContent = regPct + "%";
+  if (document.getElementById("revBarSessPct")) document.getElementById("revBarSessPct").textContent = sessPct + "%";
+  if (document.getElementById("revBarBklPct")) document.getElementById("revBarBklPct").textContent = bklPct + "%";
+
+  if (document.getElementById("revBarReg")) document.getElementById("revBarReg").style.width = regPct + "%";
+  if (document.getElementById("revBarSess")) document.getElementById("revBarSess").style.width = sessPct + "%";
+  if (document.getElementById("revBarBkl")) document.getElementById("revBarBkl").style.width = bklPct + "%";
+
+  // Channel Cards
+  if (document.getElementById("revCardRegTotal")) document.getElementById("revCardRegTotal").textContent = regTotal.toLocaleString() + curr;
+  if (document.getElementById("revCardRegCash")) document.getElementById("revCardRegCash").textContent = regCash.toLocaleString() + curr;
+  if (document.getElementById("revCardRegInstapay")) document.getElementById("revCardRegInstapay").textContent = regInstapay.toLocaleString() + curr;
+  if (document.getElementById("revCardRegWallet")) document.getElementById("revCardRegWallet").textContent = regWallet.toLocaleString() + curr;
+
+  if (document.getElementById("revCardSessTotal")) document.getElementById("revCardSessTotal").textContent = sessTotal.toLocaleString() + curr;
+  if (document.getElementById("revCardSessCash")) document.getElementById("revCardSessCash").textContent = sessCash.toLocaleString() + curr;
+  if (document.getElementById("revCardSessInstapay")) document.getElementById("revCardSessInstapay").textContent = sessInstapay.toLocaleString() + curr;
+  if (document.getElementById("revCardSessWallet")) document.getElementById("revCardSessWallet").textContent = sessWallet.toLocaleString() + curr;
+
+  if (document.getElementById("revCardBklTotal")) document.getElementById("revCardBklTotal").textContent = bklTotal.toLocaleString() + curr;
+  if (document.getElementById("revCardBklCash")) document.getElementById("revCardBklCash").textContent = bklCash.toLocaleString() + curr;
+  if (document.getElementById("revCardBklInstapay")) document.getElementById("revCardBklInstapay").textContent = bklInstapay.toLocaleString() + curr;
+  if (document.getElementById("revCardBklWallet")) document.getElementById("revCardBklWallet").textContent = bklWallet.toLocaleString() + curr;
+
+  // Horizontal Totals
+  if (document.getElementById("revTotalMethodCash")) document.getElementById("revTotalMethodCash").textContent = (regCash + sessCash + bklCash).toLocaleString() + curr;
+  if (document.getElementById("revTotalMethodInstapay")) document.getElementById("revTotalMethodInstapay").textContent = (regInstapay + sessInstapay + bklInstapay).toLocaleString() + curr;
+  if (document.getElementById("revTotalMethodWallet")) document.getElementById("revTotalMethodWallet").textContent = (regWallet + sessWallet + bklWallet).toLocaleString() + curr;
+
+  if (document.getElementById("revFilterCountBadge")) {
+    document.getElementById("revFilterCountBadge").textContent = inFlowItems.length + (isAr ? " حركة" : " items");
+  }
+
+  // Render Table
+  if (!tbody) return;
+  if (inFlowItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد حركات إيراد في هذه الفترة" : "No revenue records found"}</td></tr>`;
+  } else {
+    const mBadges = {
+      cash: { text: isAr ? "كاش (درج)" : "Cash", bg: "rgba(16,185,129,0.12)", color: "#10b981" },
+      instapay: { text: isAr ? "إنستاباي" : "InstaPay", bg: "rgba(124,58,237,0.12)", color: "#7c3aed" },
+      wallet: { text: isAr ? "فودافون كاش" : "Vodafone Cash", bg: "rgba(239,68,68,0.12)", color: "#ef4444" }
+    };
+
+    tbody.innerHTML = inFlowItems.reverse().map(it => {
+      const mb = mBadges[it.method] || mBadges.cash;
+      return `
+        <tr>
+          <td style="font-weight:600;">${it.date}</td>
+          <td style="font-weight:700;">${it.source}</td>
+          <td><span class="badge" style="background:var(--bg-inset); color:var(--primary); font-weight:700;">${it.channel}</span></td>
+          <td style="font-weight:800; color:#10b981; font-size:1.05em;">+${it.amount} ج</td>
+          <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
+        </tr>
+      `;
+    }).join("");
+  }
 };
