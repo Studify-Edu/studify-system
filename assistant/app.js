@@ -8655,11 +8655,15 @@ document.addEventListener("DOMContentLoaded", () => {
     filterCampaignTarget();
   });
 
-  on("marketingMsgBody", "input", debounce(function() {
-    if (typeof window.renderCampaignPage === 'function') {
-      window.renderCampaignPage();
-    }
-  }, 250));
+  let _mktMsgInputTimer = null;
+  on("marketingMsgBody", "input", function() {
+    clearTimeout(_mktMsgInputTimer);
+    _mktMsgInputTimer = setTimeout(() => {
+      if (typeof window.renderCampaignPage === 'function') {
+        window.renderCampaignPage();
+      }
+    }, 250);
+  });
 
   let currentCampaignList = [];
   let campaignCurrentPage = 1;
