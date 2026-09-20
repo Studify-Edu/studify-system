@@ -6499,11 +6499,11 @@ body.system-hard-locked #loginBox {
 }
 
 /* ======================================================== */
-/* MARKETING TAB PREMIUM BADGE & GLOW ANIMATION */
+/* MARKETING TAB PROFESSIONAL PRO BADGE & ACCENTS */
 /* ======================================================== */
 #btnTabMarketing {
   position: relative;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.2s ease !important;
 }
 
 #btnTabMarketing::after {
@@ -6512,38 +6512,33 @@ body.system-hard-locked #loginBox {
   top: 50%;
   inset-inline-end: 12px;
   transform: translateY(-50%);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 800;
-  letter-spacing: 0.5px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  letter-spacing: 0.8px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #d97706, #b45309);
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+  border: 1px solid rgba(254, 243, 199, 0.35);
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.25);
   pointer-events: none;
-  animation: mktProPulse 2.5s infinite ease-in-out;
-}
-
-@keyframes mktProPulse {
-  0%, 100% {
-    box-shadow: 0 0 8px rgba(236, 72, 153, 0.4);
-    transform: translateY(-50%) scale(1);
-  }
-  50% {
-    box-shadow: 0 0 16px rgba(139, 92, 246, 0.7);
-    transform: translateY(-50%) scale(1.05);
-  }
+  transition: all 0.2s ease;
 }
 
 #btnTabMarketing:hover {
-  background: linear-gradient(90deg, rgba(236, 72, 153, 0.12), rgba(139, 92, 246, 0.08)) !important;
-  border-inline-start: 3px solid #ec4899 !important;
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-inline-start: 3px solid #2563eb !important;
 }
 
 #btnTabMarketing.active {
-  background: linear-gradient(90deg, rgba(236, 72, 153, 0.2), rgba(139, 92, 246, 0.15)) !important;
-  border-inline-start: 3px solid #ec4899 !important;
-  color: #ffffff !important;
+  background: rgba(37, 99, 235, 0.14) !important;
+  border-inline-start: 3px solid #2563eb !important;
+  color: var(--primary) !important;
+}
+
+#btnTabMarketing.active::after {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
 }
 
 /* Marketing Message Textarea - Strict Resize None & SaaS Polish */

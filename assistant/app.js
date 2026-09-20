@@ -843,7 +843,8 @@ document.addEventListener('DOMContentLoaded', function() {
  // ==========================================
  // 2. GLOBAL SYSTEM STATE
  // ==========================================
- let students = {}; 
+ let centerNotebookContent = "";
+  let students = {}; 
  let deletedStudents = {}; 
  let extraIds = []; 
  let attByDate = {}; 
@@ -1390,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', function() {
   "psm_total_cost": { ar: "إجمالي الباقات", en: "Total Packages" },
   "psm_total_paid": { ar: "المسدد", en: "Total Paid" },
   "psm_total_remain": { ar: "المتبقي", en: "Total Remaining" },
-  "msg_deposit": { ar: "تم تسجيل الدفعة وإيداع المبلغ بنجاح ✅", en: "Payment recorded and deposited successfully ✅" },
+  "msg_deposit": { ar: "تم تسجيل الدفعة وإيداع المبلغ بنجاح", en: "Payment recorded and deposited successfully" },
 
   // Hard Lock Screen
   "lock_shift_status": { ar: "حالة الشيفت: مغلق ومجمد", en: "Shift Status: Locked & Frozen" },
@@ -4793,7 +4794,7 @@ on("quickAttendBtn", "click", function() {
      const netRequired = Math.max(0, reqPrice - pkgDisc);
      const isFull = (netRequired > 0 && pPaid >= netRequired) || (reqPrice > 0 && pPaid >= reqPrice);
      const badgeHtml = isFull 
-       ? '<span class="badge" style="background:rgba(16,185,129,0.12); color:#10b981; font-size:0.85em; font-weight:800; padding:4px 10px; border-radius:6px;">مسددة بالكامل ✓</span>'
+       ? '<span class="badge" style="background:rgba(16,185,129,0.12); color:#10b981; font-size:0.85em; font-weight:800; padding:4px 10px; border-radius:6px;">مسددة بالكامل </span>'
        : `<span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; font-size:0.85em; font-weight:800; padding:4px 10px; border-radius:6px;">متبقي: ${Math.max(0, netRequired - pPaid)} ج</span>`;
      rRows += `
        <tr style="border-bottom: 1px solid var(--border);">
@@ -4979,13 +4980,13 @@ on("quickAttendBtn", "click", function() {
       const timeFormatted = dNow.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
 
       let pkgStatusLine = (pkgRemain === 0) 
-          ? "✅ حالة الباقة: تم سداد قيمة باقة (" + pkgName + ") بالكامل 🎉" 
-          : "⏳ المتبقي لباقة (" + pkgName + "): " + pkgRemain + " ج.";
+          ? "حالة الباقة: تم سداد قيمة باقة (" + pkgName + ") بالكامل" 
+          : " المتبقي لباقة (" + pkgName + "): " + pkgRemain + " ج.";
 
       // Build itemized breakdown of all enrolled packages
       let packagesBreakdown = "";
       if (st.packages && st.packages.length > 0) {
-          packagesBreakdown = "\r\n📋 كشف حساب باقات واشتراكات الطالب:\r\n";
+          packagesBreakdown = "\r\nكشف حساب باقات واشتراكات الطالب:\r\n";
           st.packages.forEach(pName => {
               const pDetail = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pName) : (groupFees[pName] || { price: 0 });
               const pReq = toInt(pDetail.price);
@@ -4996,25 +4997,25 @@ on("quickAttendBtn", "click", function() {
               });
               const pRem = Math.max(0, pReq - pSum);
               if (pRem === 0) {
-                  packagesBreakdown += "• " + pName + " (المطلوب: " + pReq + " ج | مدفوع: " + pSum + " ج) ⬅️ مسددة بالكامل ✅\r\n";
+                  packagesBreakdown += "• " + pName + " (المطلوب: " + pReq + " ج | مدفوع: " + pSum + " ج) — مسددة بالكامل\r\n";
               } else {
-                  packagesBreakdown += "• " + pName + " (المطلوب: " + pReq + " ج | مدفوع: " + pSum + " ج) ⬅️ المتبقي: " + pRem + " ج ⏳\r\n";
+                  packagesBreakdown += "• " + pName + " (المطلوب: " + pReq + " ج | مدفوع: " + pSum + " ج) — المتبقي: " + pRem + " ج \r\n";
               }
           });
       }
 
-      let msg = "مرحباً " + (st.name || "الطالب") + " 👋\r\n"
+      let msg = "مرحباً " + (st.name || "الطالب") + "\r\n"
               + "━━━━━━━━━━━━━━━━━━━\r\n"
-              + "تم استلام دفعة جديدة بنجاح 💵\r\n\r\n"
-              + "🔹 تفاصيل الدفعة المستلمة:\r\n"
+              + "تم استلام دفعة جديدة بنجاح\r\n\r\n"
+              + "تفاصيل الدفعة المستلمة:\r\n"
               + "• المبلغ المستلم: " + v + " ج (" + methodName + ")\r\n"
               + "• الباقة المحددة: " + pkgName + "\r\n"
               + "• " + pkgStatusLine + "\r\n"
               + "• تاريخ ووقت السداد: " + dateFormatted + " | " + timeFormatted + "\r\n"
-              + "• المستلم المسؤول: أ/ " + activeCollector + " 👤\r\n"
+              + "• المستلم المسؤول: أ/ " + activeCollector + " \r\n"
               + packagesBreakdown
               + "━━━━━━━━━━━━━━━━━━━\r\n"
-              + "⚡ نظام ستوديفاي التعليمي — Studify Edu System 🚀";
+              + "نظام ستوديفاي التعليمي — Studify Edu System";
 
       setTimeout(function() { 
           window.open("https://wa.me/20" + st.phone + "?text=" + encodeURIComponent(msg), '_blank'); 
@@ -8501,8 +8502,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       window.setNotebookSyncStatus('synced');
+      const timeStr = new Date().toLocaleTimeString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+      const lastSavedEl = $("notebookLastSavedTime");
+      if (lastSavedEl) {
+        lastSavedEl.textContent = (currentLang === 'ar' ? 'آخر حفظ سحابي: ' : 'Cloud synced at: ') + timeStr;
+      }
       if (showNotification) {
-        showToast(currentLang === 'ar' ? "تم حفظ المفكرة بالسحابة بنجاح" : "Notebook saved to cloud successfully", "success");
+        showToast(currentLang === 'ar' ? "تم حفظ ومزامنة المفكرة بالسحابة بنجاح" : "Notebook saved and synced to cloud successfully", "success");
       }
     } catch (err) {
       console.error("[saveNotebookContent] Error:", err);
@@ -8644,8 +8650,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (val === "debtors" && msgInp) {
       if (!msgInp.value || msgInp.value.trim() === "") {
         msgInp.value = currentLang === 'ar' 
-          ? "مساء الخير أ/ [اسم_الطالب]،\r\nنتمنى أن تكون بكل خير.\r\nحابة أفكّرك بأن الرصيد المتبقي من رسوم الكورس هو [المبلغ] ج، ونستأذنك في استكماله خلال حضورك في أقرب محاضرة لضمان استمرار الخدمة بسلاسة.\r\nشكراً جداً لتعاونك معنا 🌸"
-          : "Good afternoon [اسم_الطالب],\r\nWe hope you are well.\r\nThis is a friendly reminder that your outstanding course balance is [المبلغ] EGP. Please settle this amount during your next lecture.\r\nThank you! 🌸";
+          ? "مساء الخير أ/ [اسم_الطالب]،\r\nنتمنى أن تكون بكل خير.\r\nحابة أفكّرك بأن الرصيد المتبقي من رسوم الكورس هو [المبلغ] ج، ونستأذنك في استكماله خلال حضورك في أقرب محاضرة لضمان استمرار الخدمة بسلاسة.\r\nشكراً جزيلاً لتعاونك الدائم معنا."
+          : "Good afternoon [اسم_الطالب],\r\nWe hope you are well.\r\nThis is a friendly reminder that your outstanding course balance is [المبلغ] EGP. Please settle this amount during your next lecture.\r\nThank you for your cooperation.";
       }
     }
     filterCampaignTarget();
@@ -8742,10 +8748,10 @@ document.addEventListener("DOMContentLoaded", () => {
         let bClass = "badge-normal";
 
         if (st.rank === "vip") {
-          descText = isAr ? ("⭐ VIP (" + (stClassName || "بدون باقة") + ")") : ("⭐ VIP (" + (stClassName || "No Package") + ")");
+          descText = isAr ? ("VIP (" + (stClassName || "بدون باقة") + ")") : ("VIP (" + (stClassName || "No Package") + ")");
           bClass = "badge-vip";
         } else if (st.rank === "warning") {
-          descText = isAr ? ("⚠️ إنذار (" + (stClassName || "بدون باقة") + ")") : ("⚠️ Warned (" + (stClassName || "No Package") + ")");
+          descText = isAr ? ("إنذار (" + (stClassName || "بدون باقة") + ")") : ("Warned (" + (stClassName || "No Package") + ")");
           bClass = "badge-warning";
         }
 
@@ -8891,25 +8897,7 @@ document.addEventListener("DOMContentLoaded", () => {
     clist.innerHTML = cardsHtml + paginationHtml;
   };
 
-  on("btnFilterCampaign", "click", function() {
-    filterCampaignTarget();
-    showToast(currentLang === 'ar' ? "تم تحديث تصفية الأرقام بنجاح" : "Filter refreshed successfully");
-  });
-
-  on("btnCopyCampaignNumbers", "click", function() {
-    if (currentCampaignList.length === 0) {
-      showToast(currentLang === 'ar' ? "قائمة الأرقام فارغة، قم بتصفية داتا الطلاب أولاً." : "Target list is empty", "err");
-      return;
-    }
-    let arr = currentCampaignList.map(item => item.phone);
-    let textToCopy = arr.join("\r\n");
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      showToast(currentLang === 'ar' ? ("تم نسخ " + arr.length + " رقم موبايل بنجاح") : ("Copied " + arr.length + " phone numbers"), "success");
-      playSound("beep");
-    }).catch(() => {
-      showToast(currentLang === 'ar' ? "فشل النسخ المباشر، يرجى تكرار المحاولة" : "Copy failed", "err");
-    });
-  });
+  // (btnFilterCampaign and btnCopyCampaignNumbers removed by user request)
 
   // ==========================================
  // 17.9. SMART ANTI-BAN AUTO BROADCASTER

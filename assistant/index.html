@@ -671,9 +671,9 @@
         <input id="newPaymentInput" type="number" class="inp" placeholder="المبلغ" data-i18n-placeholder="plc_new_payment_amt" style="min-width:80px; flex:1; transition:all 0.3s ease;">
         <div class="payment-method-selector-wrap" style="position:relative; display:inline-flex; align-items:center;">
           <select id="newPaymentMethod" class="inp" style="width:auto; font-size:0.88em; padding-inline-start:34px; cursor:pointer; transition:all 0.3s ease;" onchange="window.updatePaymentMethodTheme(this.value)">
-            <option value="cash">💵 كاش (Cash)</option>
-            <option value="instapay">⚡ إنستاباي (InstaPay)</option>
-            <option value="wallet">📱 فودافون كاش (Vodafone Cash)</option>
+            <option value="cash">كاش (Cash)</option>
+            <option value="instapay">إنستاباي (InstaPay)</option>
+            <option value="wallet">فودافون كاش (Vodafone Cash)</option>
           </select>
           <span id="newPaymentMethodIcon" style="position:absolute; inset-inline-start:11px; pointer-events:none; font-size:0.95em; transition:all 0.25s ease;">
             <i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i>
@@ -1040,15 +1040,15 @@
  <div>
  <label class="lbl" data-i18n="mkt_target_lbl"><i class="fa-solid fa-filter"></i> اختر شريحة الطلاب المستهدفة</label>
  <select id="marketingTargetFilter" class="inp" style="background: var(--bg-inset); font-weight: 600; cursor: pointer;">
- <option value="all" data-i18n="mkt_opt_all">👥 جميع الطلاب الدائمين المسجلين بالسنتر</option>
- <option value="groups" data-i18n="mkt_opt_groups">📚 طلاب باقة / مجموعة محددة</option>
- <option value="session" data-i18n="mkt_opt_session">🎟️ داتا طلاب الحصة الفورية (المؤقتين)</option>
- <option value="vip" data-i18n="mkt_opt_vip">⭐ الطلاب أصحاب تصنيف VIP</option>
- <option value="warned" data-i18n="mkt_opt_warned">⚠️ الطلاب الذين عليهم تنبيهات / إنذار</option>
- <option value="debtors" data-i18n="mkt_opt_debtors">💰 الطلاب أصحاب الدفعات المتبقية (المديونين)</option>
- <option value="paid_full" data-i18n="mkt_opt_paid_full">✅ الطلاب الذين سددوا كامل الرسوم</option>
- <option value="present_today" data-i18n="mkt_opt_present_today">📅 الطلاب الذين حضروا اليوم</option>
- <option value="absent_today" data-i18n="mkt_opt_absent_today">❌ الطلاب الغائبون اليوم</option>
+ <option value="all" data-i18n="mkt_opt_all">جميع الطلاب الدائمين المسجلين بالسنتر</option>
+ <option value="groups" data-i18n="mkt_opt_groups">طلاب باقة / مجموعة محددة</option>
+ <option value="session" data-i18n="mkt_opt_session">بيانات طلاب الحصة الفورية (المؤقتين)</option>
+ <option value="vip" data-i18n="mkt_opt_vip">الطلاب أصحاب تصنيف VIP</option>
+ <option value="warned" data-i18n="mkt_opt_warned">الطلاب الذين عليهم تنبيهات أو إنذار</option>
+ <option value="debtors" data-i18n="mkt_opt_debtors">الطلاب أصحاب الدفعات المتبقية (المديونين)</option>
+ <option value="paid_full" data-i18n="mkt_opt_paid_full">الطلاب الذين سددوا كامل الرسوم</option>
+ <option value="present_today" data-i18n="mkt_opt_present_today">الطلاب الذين حضروا اليوم</option>
+ <option value="absent_today" data-i18n="mkt_opt_absent_today">الطلاب الغائبون اليوم</option>
  </select>
  </div>
  <div id="marketingGroupSelectContainer" style="display: none;">
@@ -1071,14 +1071,8 @@
  </div>
 
  <div class="row wrap" style="margin-top: 22px; gap: 12px; align-items: center;">
- <button id="btnStartAutoBroadcast" class="btn" style="padding: 12px 28px; font-weight: bold; font-size: 1.05em; background: linear-gradient(135deg, #2563eb, #1e40af); color: #ffffff; border: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); display: inline-flex; align-items: center; gap: 8px;" data-i18n="mkt_broadcast_btn">
+ <button id="btnStartAutoBroadcast" class="btn" style="padding: 13px 32px; font-weight: 700; font-size: 1.05em; background: linear-gradient(135deg, #1e40af, #2563eb); color: #ffffff; border: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); display: inline-flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.25s ease;" data-i18n="mkt_broadcast_btn">
  <i class="fa-solid fa-paper-plane"></i> <span>بدء الإرسال التلقائي الذكي (بفاصل آمن)</span>
- </button>
- <button id="btnCopyCampaignNumbers" class="btn success" style="padding: 12px 24px; font-weight: bold; font-size: 1.02em; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;" data-i18n="mkt_copy_btn">
- <i class="fa-regular fa-copy"></i> <span>نسخ جميع أرقام الموبايل</span>
- </button>
- <button id="btnFilterCampaign" class="btn secondary" style="padding: 12px 20px; font-weight: bold; font-size: 1em; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;" data-i18n="mkt_filter_btn">
- <i class="fa-solid fa-arrows-rotate"></i> <span>تحديث التصفية</span>
  </button>
  </div>
  </div>
@@ -1321,10 +1315,10 @@
         <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('[ ] ')" title="مهمة جديدة">
           <i class="fa-regular fa-square-check"></i> <span>مهمة</span>
         </button>
-        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('⭐ هام: ')" title="ملحوظة هامة">
+        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('[هام]: ')" title="ملحوظة هامة">
           <i class="fa-solid fa-star" style="color:#f59e0b;"></i> <span>هام</span>
         </button>
-        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('📌 تثبيت: ')" title="تثبيت ملاحظة">
+        <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('[تثبيت]: ')" title="تثبيت ملاحظة">
           <i class="fa-solid fa-thumbtack" style="color:#3b82f6;"></i> <span>تثبيت</span>
         </button>
         <div style="flex:1;"></div>
@@ -1368,8 +1362,8 @@
             <i class="fa-solid fa-circle-half-stroke" style="color:var(--primary);"></i> ثيم البرنامج:
           </label>
           <select id="themeSelector" class="inp" style="width:100%; font-weight:600; padding:10px 12px; font-size:0.95em;">
-            <option value="light" data-i18n="theme_light">☀️ الوضع النهاري (Light Mode)</option>
-            <option value="dark" data-i18n="theme_dark">🌙 الوضع الليلي (Dark Mode)</option>
+            <option value="light" data-i18n="theme_light">الوضع النهاري (Light Mode)</option>
+            <option value="dark" data-i18n="theme_dark">الوضع الليلي (Dark Mode)</option>
           </select>
           <div style="font-size:0.78em; color:var(--text-secondary); margin-top:8px;">
             يتكيف النظام تلقائياً مع ألوان الأجهزة وشاشات الهواتف والكمبيوتر.
@@ -1760,7 +1754,7 @@
  </div>
  <div style="text-align: left;">
  <div style="display: inline-block; background: #10b981; color: #ffffff; font-weight: 900; font-size: 1.15em; padding: 6px 18px; border-radius: 50px; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);" data-i18n="receipt_paid_full">
- خالص السداد ✓
+ خالص السداد
  </div>
  <div style="font-size: 0.85em; color: var(--text-secondary); margin-top: 6px; text-align: center;" id="receiptDate">التاريخ: 2026-06-29</div>
  </div>
@@ -1982,7 +1976,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V147"></script>
+  <script type="module" src="app.js?v=STUDIFY_V148"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
