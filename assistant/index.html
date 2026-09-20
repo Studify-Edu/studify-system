@@ -1270,7 +1270,7 @@
         <span>إعدادات النظام</span>
       </h2>
       <div id="settingsSaveIndicator" style="display:inline-flex; align-items:center; gap:6px; font-size:0.85em; padding:5px 12px; border-radius:20px; background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.25);">
-        <i class="fa-solid fa-circle-check"></i> <span>النظام متزامن ومحمي</span>
+        <i class="fa-solid fa-circle-check"></i> <span data-i18n="set_status_secured">النظام متزامن ومحمي</span>
       </div>
     </div>
 
@@ -1293,7 +1293,7 @@
 
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <span id="notebookSyncBadge" class="notebook-sync-badge sync-online" style="display:inline-flex; align-items:center; gap:6px; font-size:0.8em; padding:4px 10px; border-radius:20px; font-weight:700; transition:all 0.3s ease;">
-            <i class="fa-solid fa-cloud-check"></i> <span id="notebookSyncStatusText">متزامن سحابياً</span>
+            <i class="fa-solid fa-cloud-check"></i> <span id="notebookSyncStatusText" data-i18n="nb_status_synced">محفوظ بالسحابة</span>
           </span>
           <span id="notebookWordCountBadge" class="notebook-count-badge" style="font-size:0.8em; padding:4px 10px; border-radius:20px; background:var(--bg-inset); color:var(--text-secondary); border:1px solid var(--border);">
             0 كلمات | 0 أحرف
@@ -1304,29 +1304,29 @@
       <!-- Formatting & Productivity Quick Tools Bar -->
       <div class="smart-notebook-toolbar" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:8px 10px; background:var(--bg-inset); border:1px solid var(--border); border-radius:10px; margin-bottom:10px;">
         <button type="button" class="nb-tool-btn" onclick="window.insertNotebookTimestamp()" title="إدراج الوقت والتاريخ">
-          <i class="fa-regular fa-clock"></i> <span>تاريخ ووقت</span>
+          <i class="fa-regular fa-clock"></i> <span data-i18n="nb_tool_datetime">تاريخ ووقت</span>
         </button>
         <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('• ')" title="قائمة نقطية">
-          <i class="fa-solid fa-list-ul"></i> <span>نقطة</span>
+          <i class="fa-solid fa-list-ul"></i> <span data-i18n="nb_tool_bullet">نقطة</span>
         </button>
         <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('1. ')" title="ترقيم تلقائي">
-          <i class="fa-solid fa-list-ol"></i> <span>ترقيم</span>
+          <i class="fa-solid fa-list-ol"></i> <span data-i18n="nb_tool_numbered">ترقيم</span>
         </button>
         <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('[ ] ')" title="مهمة جديدة">
-          <i class="fa-regular fa-square-check"></i> <span>مهمة</span>
+          <i class="fa-regular fa-square-check"></i> <span data-i18n="nb_tool_task">مهمة</span>
         </button>
         <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('[هام]: ')" title="ملحوظة هامة">
-          <i class="fa-solid fa-star" style="color:#f59e0b;"></i> <span>هام</span>
+          <i class="fa-solid fa-star" style="color:#f59e0b;"></i> <span data-i18n="nb_tool_important">هام</span>
         </button>
         <button type="button" class="nb-tool-btn" onclick="window.insertNotebookPrefix('[تثبيت]: ')" title="تثبيت ملاحظة">
-          <i class="fa-solid fa-thumbtack" style="color:#3b82f6;"></i> <span>تثبيت</span>
+          <i class="fa-solid fa-thumbtack" style="color:#3b82f6;"></i> <span data-i18n="nb_tool_pin">تثبيت</span>
         </button>
         <div style="flex:1;"></div>
         <button type="button" class="nb-tool-btn" onclick="window.copyNotebookContent()" title="نسخ الملاحظات">
-          <i class="fa-regular fa-copy"></i> <span>نسخ</span>
+          <i class="fa-regular fa-copy"></i> <span data-i18n="nb_tool_copy">نسخ</span>
         </button>
         <button type="button" class="nb-tool-btn nb-tool-danger" onclick="window.clearNotebookContent()" title="مسح المفكرة">
-          <i class="fa-regular fa-trash-can"></i> <span>مسح</span>
+          <i class="fa-regular fa-trash-can"></i> <span data-i18n="nb_tool_clear">مسح</span>
         </button>
         <button type="button" class="btn success smallBtn nb-save-btn" id="saveNotebookBtn" onclick="window.saveNotebookManual()" style="padding:6px 14px; font-weight:bold; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
           <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="btn_save_notebook">حفظ فوري</span>
@@ -1338,8 +1338,8 @@
         <textarea id="centerNotebook" class="inp smart-notebook-textarea" style="width:100%; min-height:220px; line-height:1.7; font-size:0.95em; padding:14px; resize:vertical; font-family:'Cairo', sans-serif;" placeholder="اكتب ملاحظات السنتر، التنبيهات الإدارية، والمهام اليومية هنا... سيتم الحفظ التلقائي ومزامنتها فورياً مع السحابة." data-i18n-placeholder="note_plc_main"></textarea>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:0.78em; color:var(--text-secondary);">
-        <span><i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> يتم الحفظ تلقائياً في السحابة مع إمكانية استخدام اختصار <kbd style="background:var(--bg-inset); padding:2px 6px; border-radius:4px; border:1px solid var(--border);">Ctrl+S</kbd> للحفظ الفوري.</span>
-        <span id="notebookLastSavedTime">آخر حفظ: —</span>
+        <span id="notebookFooterHint" data-i18n="nb_footer_hint"><i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> يتم الحفظ تلقائياً في السحابة مع إمكانية استخدام اختصار <kbd style="background:var(--bg-inset); padding:2px 6px; border-radius:4px; border:1px solid var(--border);">Ctrl+S</kbd> للحفظ الفوري.</span>
+        <span id="notebookLastSavedTime" data-i18n="nb_last_saved">آخر حفظ: —</span>
       </div>
     </div>
 
@@ -1351,7 +1351,7 @@
         </div>
         <div>
           <h3 style="margin:0; font-size:1.15em; color:var(--text-primary);" data-i18n="set_ui_title">المظهر وتخصيص النظام</h3>
-          <span style="font-size:0.8em; color:var(--text-secondary);">تغيير ألوان الثيم ولغة الواجهة لراحة عين المستخدم</span>
+          <span style="font-size:0.8em; color:var(--text-secondary);" data-i18n="set_ui_desc">تغيير ألوان الثيم ولغة الواجهة لراحة عين المستخدم</span>
         </div>
       </div>
 
@@ -1365,16 +1365,12 @@
             <option value="light" data-i18n="theme_light">الوضع النهاري (Light Mode)</option>
             <option value="dark" data-i18n="theme_dark">الوضع الليلي (Dark Mode)</option>
           </select>
-          <div style="font-size:0.78em; color:var(--text-secondary); margin-top:8px;">
-            يتكيف النظام تلقائياً مع ألوان الأجهزة وشاشات الهواتف والكمبيوتر.
-          </div>
+          <div style="font-size:0.78em; color:var(--text-secondary); margin-top:8px;" data-i18n="set_theme_desc">يتكيف النظام تلقائياً مع ألوان الأجهزة وشاشات الهواتف والكمبيوتر.</div>
         </div>
 
         <!-- Language Switcher -->
         <div style="background:var(--bg-inset); padding:16px; border-radius:12px; border:1px solid var(--border);">
-          <label style="font-weight:bold; display:flex; align-items:center; gap:6px; margin-bottom:10px; color:var(--text-primary);">
-            <i class="fa-solid fa-language" style="color:var(--primary);"></i> لغة النظام:
-          </label>
+          <label style="font-weight:bold; display:flex; align-items:center; gap:6px; margin-bottom:10px; color:var(--text-primary);" data-i18n="lbl_system_lang"><i class="fa-solid fa-language" style="color:var(--primary);"></i> لغة النظام:</label>
           <div class="luxury-lang-switcher-card" style="margin:0;">
             <div class="lang-switch-info">
               <div class="lang-switch-icon-wrap">
@@ -1976,7 +1972,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V148"></script>
+  <script type="module" src="app.js?v=STUDIFY_V149"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

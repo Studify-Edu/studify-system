@@ -955,6 +955,28 @@ document.addEventListener('DOMContentLoaded', function() {
  // 3. THE COMPREHENSIVE DICTIONARY
  // ==========================================
  const dict = {
+  "set_status_secured": { ar: "النظام متزامن ومحمي", en: "System Synced & Secured" },
+  "note_subtitle": { ar: "ملاحظات ومهام إدارة السنتر المشتركة ومزامنة فورية مع السحابة", en: "Shared center tasks and notes with real-time cloud sync" },
+  "nb_status_synced": { ar: "محفوظ بالسحابة", en: "Saved to Cloud" },
+  "nb_status_saving": { ar: "جاري الحفظ...", en: "Saving..." },
+  "nb_status_ready": { ar: "جاهز", en: "Ready" },
+  "nb_tool_datetime": { ar: "تاريخ ووقت", en: "Timestamp" },
+  "nb_tool_bullet": { ar: "نقطة", en: "Bullet" },
+  "nb_tool_numbered": { ar: "ترقيم", en: "Numbered" },
+  "nb_tool_task": { ar: "مهمة", en: "Task" },
+  "nb_tool_important": { ar: "هام", en: "Important" },
+  "nb_tool_pin": { ar: "تثبيت", en: "Pin" },
+  "nb_tool_copy": { ar: "نسخ", en: "Copy" },
+  "nb_tool_clear": { ar: "مسح", en: "Clear" },
+  "btn_save_notebook": { ar: "حفظ فوري", en: "Save Now" },
+  "nb_footer_hint": { 
+    ar: '<i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> يتم الحفظ تلقائياً في السحابة مع إمكانية استخدام اختصار <kbd style="background:var(--bg-inset); padding:2px 6px; border-radius:4px; border:1px solid var(--border);">Ctrl+S</kbd> للحفظ الفوري.', 
+    en: '<i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> Automatically saved to cloud. You can also press <kbd style="background:var(--bg-inset); padding:2px 6px; border-radius:4px; border:1px solid var(--border);">Ctrl+S</kbd> to save immediately.' 
+  },
+  "nb_last_saved": { ar: "آخر حفظ: —", en: "Last saved: —" },
+  "set_ui_desc": { ar: "تغيير ألوان الثيم ولغة الواجهة لراحة عين المستخدم", en: "Customize theme colors and interface language for comfort" },
+  "set_theme_desc": { ar: "يتكيف النظام تلقائياً مع ألوان الأجهزة وشاشات الهواتف والكمبيوتر.", en: "The system automatically adapts to light and dark screen preferences." },
+  "lbl_system_lang": { ar: '<i class="fa-solid fa-language" style="color:var(--primary);"></i> لغة النظام:', en: '<i class="fa-solid fa-language" style="color:var(--primary);"></i> System Language:' },
   "debt_warning_prefix": { ar: "تنبيه: الطالب عليه مديونية متأخرة قدرها", en: "Notice: Student has an outstanding debt of" },
   "btn_close_profile": { ar: "إغلاق الملف", en: "Close File" },
   "currency_egp": { ar: "جنيه", en: "EGP" },
@@ -4159,6 +4181,8 @@ const st = students[id];
   if (typeof renderBookletsTable === "function") renderBookletsTable();
   if (typeof renderNotifications === "function") renderNotifications();
   if (typeof populateSubjectModalList === "function") populateSubjectModalList();
+  if (typeof window.updateNotebookCounters === "function") window.updateNotebookCounters();
+  if (typeof window.setNotebookSyncStatus === "function") window.setNotebookSyncStatus('synced');
 
   const isEn = (currentLang === 'en');
   if ($("sessRevenueCurr")) $("sessRevenueCurr").textContent = isEn ? "EGP" : "ج";
@@ -8455,7 +8479,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.updateNotebookCounters = function() {
     const nb = $("centerNotebook");
-    const counterEl = $("notebookWordCharCount");
+    const counterEl = $("notebookWordCountBadge") || $("notebookWordCharCount");
     if (!nb || !counterEl) return;
     const text = nb.value || "";
     const chars = text.length;
@@ -8467,15 +8491,16 @@ document.addEventListener("DOMContentLoaded", () => {
   window.setNotebookSyncStatus = function(state, text) {
     const badge = $("notebookSyncBadge");
     if (!badge) return;
+    const isAr = (currentLang === 'ar');
     if (state === 'saving') {
       badge.className = 'badge notebook-sync-badge sync-saving';
-      badge.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin"></i> <span>' + (text || (currentLang === 'ar' ? 'جاري الحفظ...' : 'Saving...')) + '</span>';
+      badge.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin"></i> <span id="notebookSyncStatusText">' + (text || (isAr ? 'جاري الحفظ...' : 'Saving...')) + '</span>';
     } else if (state === 'synced') {
       badge.className = 'badge notebook-sync-badge sync-online';
-      badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>' + (text || (currentLang === 'ar' ? 'محفوظ بالسحابة' : 'Saved to Cloud')) + '</span>';
+      badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span id="notebookSyncStatusText">' + (text || (isAr ? 'محفوظ بالسحابة' : 'Saved to Cloud')) + '</span>';
     } else {
       badge.className = 'badge notebook-sync-badge';
-      badge.innerHTML = '<i class="fa-regular fa-clock"></i> <span>' + (text || (currentLang === 'ar' ? 'جاهز' : 'Ready')) + '</span>';
+      badge.innerHTML = '<i class="fa-regular fa-clock"></i> <span id="notebookSyncStatusText">' + (text || (isAr ? 'جاهز' : 'Ready')) + '</span>';
     }
   };
 
