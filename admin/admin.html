@@ -73,7 +73,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V16">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V17">
 </head>
 <body>
 
@@ -678,6 +678,9 @@
               </div>
             </div>
 
+            <!-- Direct Decision Search Feedback Message -->
+            <div id="directDecisionSearchFeedback" class="hidden" style="margin-bottom: 14px;"></div>
+
             <!-- Student Summary Card -->
             <div id="directDecisionStudentCard" class="hidden" style="background: var(--surface-hover); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
@@ -713,7 +716,7 @@
                   <i class="fa-solid fa-boxes-packing" style="color: var(--primary); margin-inline-end: 4px;"></i>
                   <span>الباقة المستهدفة بالقرار</span> <span style="color: var(--danger);">*</span>
                 </label>
-                <select id="directDecisionTargetPackage" class="inp" style="font-weight: 600;">
+                <select id="directDecisionTargetPackage" class="inp" style="font-weight: 600;" onchange="window.handleDirectDecisionPackageChange()">
                   <option value="">-- اختر الباقة المستهدفة --</option>
                 </select>
               </div>

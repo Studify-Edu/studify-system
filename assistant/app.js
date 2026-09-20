@@ -3016,6 +3016,9 @@ function applyPermissions() {
 
       const pDetails = window.getPkgDetails(selectedPkg);
       const req = toInt(pDetails.price);
+      const pkgDisc = toInt((st.packageDiscounts && st.packageDiscounts[selectedPkg]) || 0);
+      const netReq = Math.max(0, req - pkgDisc);
+
       let paid = 0;
       if (st.payments) {
           st.payments.forEach(p => {
@@ -3023,15 +3026,22 @@ function applyPermissions() {
               if (pPkg === selectedPkg) paid += toInt(p.amount);
           });
       }
-      const rem = Math.max(0, req - paid);
-      const pct = req > 0 ? Math.min(100, Math.round((paid / req) * 100)) : 100;
+      const rem = Math.max(0, netReq - paid);
+      const pct = netReq > 0 ? Math.min(100, Math.round((paid / netReq) * 100)) : 100;
 
-      if (cardTitle) cardTitle.innerHTML = '<i class="fa-solid fa-cube" style="color:var(--primary);"></i> حساب باقة: <b>' + selectedPkg + '</b>';
+      if (cardTitle) {
+          let titleHtml = '<i class="fa-solid fa-cube" style="color:var(--primary);"></i> حساب باقة: <b>' + selectedPkg + '</b>';
+          if (pkgDisc > 0) {
+              titleHtml += ` <span class="badge" style="background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.3); font-size:0.75em; padding:2px 7px; border-radius:6px; margin-inline-start:6px;"><i class="fa-solid fa-tag"></i> خصم معتمد: ${pkgDisc} ج</span>`;
+          }
+          cardTitle.innerHTML = titleHtml;
+      }
+
       if (cardStatus) {
-          if (req === 0) {
+          if (req === 0 || netReq === 0) {
               cardStatus.style.background = "#dcfce7";
               cardStatus.style.color = "#15803d";
-              cardStatus.innerHTML = '<i class="fa-solid fa-check"></i> باقة مجانية';
+              cardStatus.innerHTML = '<i class="fa-solid fa-check"></i> ' + (netReq === 0 && pkgDisc > 0 ? 'معفى بقرار مدير' : 'باقة مجانية');
           } else if (rem === 0) {
               cardStatus.style.background = "#dcfce7";
               cardStatus.style.color = "#15803d";
@@ -3042,7 +3052,14 @@ function applyPermissions() {
               cardStatus.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> باقي: ' + rem + ' ج';
           }
       }
-      if (cardPrice) cardPrice.textContent = req + " ج";
+
+      if (cardPrice) {
+          if (pkgDisc > 0) {
+              cardPrice.innerHTML = `<span style="font-size:0.82em; text-decoration:line-through; opacity:0.6; margin-inline-end:5px;">${req} ج</span><b>${netReq} ج</b>`;
+          } else {
+              cardPrice.textContent = req + " ج";
+          }
+      }
       if (cardPaid) cardPaid.textContent = paid + " ج";
       if (cardRemain) {
           cardRemain.textContent = rem + " ج";
@@ -3243,32 +3260,35 @@ const st = students[id];
        allPkgs.forEach(pkgName => {
            const isSubscribed = st.packages.includes(pkgName);
            const pkgDetails = window.getPkgDetails(pkgName);
-           const req = toInt(pkgDetails.price);
-           
-           let pkgPaid = 0;
-           if (st.payments) {
-               st.payments.forEach(p => {
-                   const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
-                   if (pPkg === pkgName) pkgPaid += toInt(p.amount);
-               });
-           }
-           
-           const pkgRemain = Math.max(0, req - pkgPaid);
-           pkgStatsMap[pkgName] = { req, paid: pkgPaid, remain: pkgRemain, isPaidFull: (pkgPaid >= req && req > 0) };
+            const req = toInt(pkgDetails.price);
+            const pkgDisc = toInt((st.packageDiscounts && st.packageDiscounts[pkgName]) || 0);
+            const netReq = Math.max(0, req - pkgDisc);
+            
+            let pkgPaid = 0;
+            if (st.payments) {
+                st.payments.forEach(p => {
+                    const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
+                    if (pPkg === pkgName) pkgPaid += toInt(p.amount);
+                });
+            }
+            
+            const pkgRemain = Math.max(0, netReq - pkgPaid);
+            pkgStatsMap[pkgName] = { req: netReq, originalReq: req, discount: pkgDisc, paid: pkgPaid, remain: pkgRemain, isPaidFull: (pkgPaid >= netReq && netReq > 0) };
 
-           if (isSubscribed) {
-               totalReq += req;
-               totalPaid += pkgPaid;
-               totalRemain += pkgRemain;
-               const tagStatus = (pkgRemain > 0) ? 'has-debt' : 'paid-full';
-               const icon = (pkgRemain > 0) ? '<i class="fa-solid fa-hourglass-half" style="color:var(--danger)"></i>' : '<i class="fa-solid fa-check-circle" style="color:#10b981"></i>';
-               pkgsHtml += `<div class="pkg-summary-tag ${tagStatus}">
-                   ${icon}
-                   <span>${pkgName}</span>
-               </div>`;
-           }
-       });
-       if (st.packages.length === 0) {
+            if (isSubscribed) {
+                totalReq += netReq;
+                totalPaid += pkgPaid;
+                totalRemain += pkgRemain;
+                const tagStatus = (pkgRemain > 0) ? 'has-debt' : 'paid-full';
+                const icon = (pkgRemain > 0) ? '<i class="fa-solid fa-hourglass-half" style="color:var(--danger)"></i>' : '<i class="fa-solid fa-check-circle" style="color:#10b981"></i>';
+                const discNote = (pkgDisc > 0) ? `<small style="font-size:0.75em; opacity:0.85; margin-inline-start:4px; color:var(--warning); font-weight:700;">(خصم: ${pkgDisc} ج)</small>` : '';
+                pkgsHtml += `<div class="pkg-summary-tag ${tagStatus}">
+                    ${icon}
+                    <span>${pkgName}</span>${discNote}
+                </div>`;
+            }
+        });
+        if (st.packages.length === 0) {
            pkgsHtml = '<div style="color:var(--text-secondary); font-size:0.85em; width:100%; text-align:center;">لا توجد باقات محددة للطالب</div>';
        }
    }
@@ -7185,6 +7205,9 @@ if ('BroadcastChannel' in window) {
           if (typeof renderList === 'function') renderList(false);
           if (typeof updateStats === 'function') updateStats();
           if (typeof updateTopStats === 'function') updateTopStats();
+          if (typeof currentId !== 'undefined' && currentId && (String(currentId) === String(msg.student_id) || !msg.student_id) && typeof updateStudentUI === 'function') {
+            updateStudentUI(currentId);
+          }
         } catch(e) {}
       })();
     }
@@ -7228,6 +7251,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (payload.new && payload.new.config) {
           const cfg = payload.new.config;
+          if (cfg.student_package_discounts) {
+            const spd = cfg.student_package_discounts;
+            let changedSpd = false;
+            Object.keys(spd).forEach(stId => {
+              if (students[stId]) {
+                students[stId].packageDiscounts = spd[stId];
+                changedSpd = true;
+              }
+            });
+            if (changedSpd) {
+              secureSave(K_STUDENTS, students);
+              if (typeof currentId !== 'undefined' && currentId && students[currentId] && typeof updateStudentUI === 'function') {
+                updateStudentUI(currentId);
+              }
+              if (typeof renderTable === 'function') renderTable();
+            }
+          }
           if (cfg.group_fees) {
             groupFees = Object.assign({}, groupFees, cfg.group_fees);
             secureSave(K_GROUP_FEES, groupFees);
@@ -7309,6 +7349,7 @@ document.addEventListener("DOMContentLoaded", () => {
               notes: row.notes || (existing ? existing.notes : ''),
               status: row.status || (existing ? existing.status : 'active'),
               packages: Array.isArray(row.packages) ? row.packages : (existing ? existing.packages : []),
+              packageDiscounts: (existing ? existing.packageDiscounts : {}),
               installments: row.installments || (existing ? existing.installments : []),
               payments: row.payments || (existing ? existing.payments : []),
               attendanceDates: Array.from(new Set(row.attendance_dates || (existing ? existing.attendanceDates : []))),
@@ -7322,6 +7363,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (typeof renderList === 'function') renderList(false);
             if (typeof updateTopStats === 'function') updateTopStats();
+            if (typeof currentId !== 'undefined' && currentId && String(currentId) === String(row.id) && typeof updateStudentUI === 'function') {
+              updateStudentUI(currentId);
+            }
             secureSave(K_STUDENTS, students);
           } else if (payload.eventType === 'DELETE') {
             const oldId = payload.old && payload.old.id;
@@ -10802,6 +10846,8 @@ async function fetchNotifications() {
       notificationsList = data.map(m => ({
         id: m.id,
         message: m.message || m.title || '',
+        student_id: m.student_id || '',
+        target_pkg: m.target_pkg || '',
         type: m.title && m.title.includes('رفض') ? 'warning' : 'info',
         is_read: m.status === 'read',
         created_at: m.created_at || new Date().toISOString()
@@ -10861,6 +10907,18 @@ function renderNotifications() {
           ${iconWrap}
           <div class="notif-text">
             ${displayMsg}
+            ${(() => {
+              const stId = n.student_id || (n.message && n.message.match(/الطالب \((\d+)\)/) ? n.message.match(/الطالب \((\d+)\)/)[1] : '');
+              if (stId && students[stId]) {
+                const stObj = students[stId];
+                return `<div style="margin-top: 5px;">
+                  <a href="javascript:void(0)" class="notif-student-pill" onclick="event.stopPropagation(); window.openStudentFromNotif('${stId}')">
+                    <i class="fa-solid fa-user-check"></i> ${isArNotif ? 'فتح استمارة الطالب:' : 'Open Student:'} ${stObj.name || stId}
+                  </a>
+                </div>`;
+              }
+              return '';
+            })()}
           </div>
         </div>
         <button class="btn-delete-single-notif" data-id="${n.id}" title="${isArNotif ? 'حذف هذا الإشعار' : 'Delete this notification'}" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 2px 4px; font-size: 0.85em; opacity: 0.5; transition: opacity 0.2s, color 0.2s;" onmouseenter="this.style.opacity='1'; this.style.color='#ef4444';" onmouseleave="this.style.opacity='0.5'; this.style.color='var(--text-secondary)';">
@@ -10904,6 +10962,18 @@ function renderNotifications() {
     listEl.appendChild(item);
   });
 }
+
+window.openStudentFromNotif = function(stId) {
+  if (!stId || !students[String(stId)]) return;
+  if (typeof window.showStudentCard === 'function') window.showStudentCard();
+  if (typeof updateStudentUI === 'function') updateStudentUI(String(stId));
+  const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+  if (card) {
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  const drop = document.getElementById('notificationsDropdown');
+  if (drop) drop.classList.add('hidden');
+};
 
 function setupNotificationsUI() {
   const btn = document.getElementById('notificationsToggleBtn');

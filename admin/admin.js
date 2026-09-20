@@ -2926,11 +2926,15 @@ window.selectedDirectDecisionStudent = null;
 window.handleDirectDecisionStudentSearch = function(val) {
   const q = String(val || '').trim().toLowerCase();
   const card = document.getElementById("directDecisionStudentCard");
+  const feedback = document.getElementById("directDecisionSearchFeedback");
+
   if (!q) {
     if (card) card.classList.add("hidden");
+    if (feedback) { feedback.classList.add("hidden"); feedback.innerHTML = ""; }
     window.selectedDirectDecisionStudent = null;
     return;
   }
+
   let found = null;
   if (students[q]) {
     found = students[q];
@@ -2945,6 +2949,7 @@ window.handleDirectDecisionStudentSearch = function(val) {
   }
 
   if (found) {
+    if (feedback) { feedback.classList.add("hidden"); feedback.innerHTML = ""; }
     window.displayDirectDecisionStudent(found);
   } else {
     if (card) card.classList.add("hidden");
@@ -2955,13 +2960,43 @@ window.handleDirectDecisionStudentSearch = function(val) {
 window.searchDirectDecisionStudent = function() {
   const inp = document.getElementById("directDecisionStudentInput");
   const val = inp ? inp.value.trim() : '';
+  const card = document.getElementById("directDecisionStudentCard");
+  const feedback = document.getElementById("directDecisionSearchFeedback");
+
   if (!val) {
-    showToast("يرجى إدخال رقم أو اسم الطالب", "warn");
+    showToast("يرجى إدخال رقم أو اسم الطالب للبحث", "warn");
+    if (feedback) {
+      feedback.classList.remove("hidden");
+      feedback.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px; color:#f59e0b; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:12px 16px; font-weight:600;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>يرجى إدخال كود الطالب (ID) أو كتابة اسمه أولاً للقيام بالفحص.</span>
+        </div>`;
+    }
     return;
   }
+
   window.handleDirectDecisionStudentSearch(val);
+
   if (!window.selectedDirectDecisionStudent) {
+    if (card) card.classList.add("hidden");
+    if (feedback) {
+      feedback.classList.remove("hidden");
+      feedback.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; color:#ef4444; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); border-radius:10px; padding:12px 16px; font-weight:600;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-circle-xmark" style="font-size:1.15em;"></i>
+            <span>لم يتم العثور على أي طالب مسجل بالمعرف أو الاسم ( <b>${val}</b> ). يرجى التأكد من الرقم أو كتابة اسم الطالب بشكل صحيح.</span>
+          </div>
+          <button type="button" class="btn secondary smallBtn" onclick="document.getElementById('directDecisionStudentInput').focus();" style="padding:4px 10px; font-size:0.82em;">
+            إعادة المحاولة
+          </button>
+        </div>`;
+    }
     showToast("لم يتم العثور على طالب بهذا الرقم أو الاسم", "err");
+  } else {
+    if (feedback) { feedback.classList.add("hidden"); feedback.innerHTML = ""; }
+    showToast(`تم العثور على الطالب: ${window.selectedDirectDecisionStudent.name || window.selectedDirectDecisionStudent.id}`, "success");
   }
 };
 
@@ -2970,47 +3005,87 @@ window.displayDirectDecisionStudent = function(st) {
   const card = document.getElementById("directDecisionStudentCard");
   if (!card) return;
 
-  let req = 0;
-  const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
-  stPkgs.forEach(pName => {
-    if (packages && packages[pName]) req += (packages[pName].price || 0);
-    else if (groupFees && groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
-  });
-  if (req === 0 && st.paid) req = Number(st.paid);
-
-  const curDisc = Number(st.discount) || 0;
-  const curPaid = Number(st.paid) || 0;
-  const remaining = Math.max(0, req - curDisc - curPaid);
-
   const isAr = (currentLang === "ar");
   const currencySuffix = isAr ? " ج" : " EGP";
   document.getElementById("ddsIdBadge").textContent = "ID: " + st.id;
   document.getElementById("ddsName").textContent = st.name || (isAr ? "طالب بدون اسم" : "Unnamed Student");
   document.getElementById("ddsClass").textContent = st.className || (isAr ? "غير محدد" : "Unspecified");
-  document.getElementById("ddsRequired").textContent = req + currencySuffix;
-  document.getElementById("ddsCurrentDiscount").textContent = curDisc + currencySuffix;
-  document.getElementById("ddsPaid").textContent = curPaid + currencySuffix;
-  document.getElementById("ddsRemaining").textContent = remaining + currencySuffix;
 
-  const valInp = document.getElementById("directDecisionValueInput");
-  if (valInp) valInp.value = curDisc || "";
-
-  // Populate Target Package Selector
+  // Populate Target Package Selector (Strictly student packages only, no 'all' global option!)
+  const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? [st.className] : []);
   const pkgSelect = document.getElementById("directDecisionTargetPackage");
   if (pkgSelect) {
-    let optHtml = `<option value="">-- ${isAr ? 'اختر الباقة المستهدفة' : 'Select Targeted Package'} --</option>`;
+    let optHtml = `<option value="">-- ${isAr ? 'اختر الباقة المستهدفة بالقرار' : 'Select Targeted Package'} --</option>`;
     stPkgs.forEach(pName => {
       let pPrice = 0;
       if (packages && packages[pName]) pPrice = packages[pName].price || 0;
       else if (groupFees && groupFees[pName]) pPrice = groupFees[pName].price || groupFees[pName] || 0;
       optHtml += `<option value="${pName}">${pName} (${pPrice > 0 ? pPrice + currencySuffix : (isAr ? 'سعر مخصص' : 'Custom')})</option>`;
     });
-    optHtml += `<option value="all">${isAr ? 'كافة الباقات والاشتراكات المقررة (خصم إجمالي)' : 'All Packages (Global Discount)'}</option>`;
     pkgSelect.innerHTML = optHtml;
-    if (stPkgs.length === 1) pkgSelect.value = stPkgs[0];
+
+    // Auto-select first package if available
+    if (stPkgs.length > 0) {
+      pkgSelect.value = stPkgs[0];
+    }
   }
 
+  // Update stats display according to selected package
+  window.handleDirectDecisionPackageChange();
+
   card.classList.remove("hidden");
+};
+
+window.handleDirectDecisionPackageChange = function() {
+  const st = window.selectedDirectDecisionStudent;
+  if (!st) return;
+
+  const pkgSelect = document.getElementById("directDecisionTargetPackage");
+  const selectedPkg = pkgSelect ? pkgSelect.value : '';
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
+
+  if (!selectedPkg) {
+    document.getElementById("ddsRequired").textContent = "0" + currencySuffix;
+    document.getElementById("ddsCurrentDiscount").textContent = "0" + currencySuffix;
+    document.getElementById("ddsPaid").textContent = "0" + currencySuffix;
+    document.getElementById("ddsRemaining").textContent = "0" + currencySuffix;
+    return;
+  }
+
+  // Price of selected package
+  let pPrice = 0;
+  if (packages && packages[selectedPkg]) pPrice = packages[selectedPkg].price || 0;
+  else if (groupFees && groupFees[selectedPkg]) pPrice = groupFees[selectedPkg].price || groupFees[selectedPkg] || 0;
+
+  // Existing discount on this package
+  let curDisc = 0;
+  if (st.packageDiscounts && st.packageDiscounts[selectedPkg]) {
+    curDisc = Number(st.packageDiscounts[selectedPkg]) || 0;
+  }
+
+  // Payments applied to this package
+  let pPaid = 0;
+  if (st.payments && Array.isArray(st.payments)) {
+    st.payments.forEach(p => {
+      const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
+      if (pPkg === selectedPkg) pPaid += Number(p.amount) || 0;
+    });
+  }
+
+  // Net remaining after discount and payments
+  const netRequired = Math.max(0, pPrice - curDisc);
+  const pRemaining = Math.max(0, netRequired - pPaid);
+
+  document.getElementById("ddsRequired").textContent = pPrice + currencySuffix;
+  document.getElementById("ddsCurrentDiscount").textContent = curDisc + currencySuffix;
+  document.getElementById("ddsPaid").textContent = pPaid + currencySuffix;
+  document.getElementById("ddsRemaining").textContent = pRemaining + currencySuffix;
+
+  const valInp = document.getElementById("directDecisionValueInput");
+  if (valInp) {
+    valInp.value = curDisc > 0 ? curDisc : "";
+  }
 };
 
 window.handleDirectDecisionTypeChange = function(type) {
@@ -3040,7 +3115,7 @@ window.handleDirectDecisionTypeChange = function(type) {
 window.applyDirectDecision = async function() {
   const st = window.selectedDirectDecisionStudent;
   if (!st || !supabase) {
-    showToast("يرجى اختيار طالب أولاً", "err");
+    showToast("يرجى فحص واختيار طالب أولاً", "err");
     return;
   }
 
@@ -3054,58 +3129,67 @@ window.applyDirectDecision = async function() {
   const val = Number(document.getElementById("directDecisionValueInput")?.value) || 0;
   const reason = document.getElementById("directDecisionReasonInput")?.value.trim() || "قرار مباشر من المدير";
 
-  let req = 0;
-  const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
-  stPkgs.forEach(pName => {
-    if (packages && packages[pName]) req += (packages[pName].price || 0);
-    else if (groupFees && groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
-  });
-  if (req === 0 && st.paid) req = Number(st.paid);
+  // Price of targeted package
+  let pkgPrice = 0;
+  if (packages && packages[targetPkg]) pkgPrice = packages[targetPkg].price || 0;
+  else if (groupFees && groupFees[targetPkg]) pkgPrice = groupFees[targetPkg].price || groupFees[targetPkg] || 0;
 
-  let newDiscount = Number(st.discount) || 0;
-  const pkgLabel = targetPkg === "all" ? "كافة الباقات" : targetPkg;
+  let newPkgDiscount = 0;
   let summaryText = "";
 
   if (type === "exemption") {
-    newDiscount = req;
-    summaryText = `إعفاء كامل من المصاريف [${pkgLabel}] (المطلوب: ${req} ج)`;
+    newPkgDiscount = pkgPrice;
+    summaryText = `إعفاء كامل من مصاريف باقة [${targetPkg}] (المطلوب: ${pkgPrice} ج)`;
   } else if (type === "custom_fee") {
-    newDiscount = Math.max(0, req - val);
-    summaryText = `تحديد مصاريف جديدة بقيمة ${val} ج [${pkgLabel}] (خصم: ${newDiscount} ج)`;
+    newPkgDiscount = Math.max(0, pkgPrice - val);
+    summaryText = `تحديد مصاريف باقة [${targetPkg}] بقيمة ${val} ج (خصم: ${newPkgDiscount} ج)`;
   } else {
     if (val <= 0) {
-      showToast("يرجى إدخال قيمة خصم صحيحة", "warn");
+      showToast("يرجى إدخال قيمة خصم صحيحة أكبر من الصفر", "warn");
       return;
     }
-    newDiscount = Math.min(req, val);
-    summaryText = `خصم مالي بقيمة ${val} ج [${pkgLabel}]`;
+    newPkgDiscount = Math.min(pkgPrice, val);
+    summaryText = `خصم مالي بقيمة ${val} ج على باقة [${targetPkg}]`;
   }
 
   try {
-    st.discount = newDiscount;
-    if (targetPkg !== "all") {
-      st.packageDiscounts = st.packageDiscounts || {};
-      st.packageDiscounts[targetPkg] = (type === "exemption") ? req : (type === "custom_fee" ? newDiscount : val);
+    st.packageDiscounts = st.packageDiscounts || {};
+    st.packageDiscounts[targetPkg] = newPkgDiscount;
+
+    // Recalculate total student discount as sum of package discounts
+    let totalDiscount = 0;
+    for (const p in st.packageDiscounts) {
+      totalDiscount += Number(st.packageDiscounts[p]) || 0;
     }
+    st.discount = totalDiscount;
     st.lastModified = Date.now();
 
+    // 1. Update students table in Supabase
     await supabase.from('students').update({
       discount: st.discount,
       last_modified: st.lastModified
     }).eq('id', st.id);
 
-    if (targetPkg !== "all") {
-      const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
-      const cfg = (setRow && setRow.config) ? setRow.config : {};
-      if (!cfg.student_package_discounts) cfg.student_package_discounts = {};
-      cfg.student_package_discounts[st.id] = st.packageDiscounts;
-      await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
-    }
+    // 2. Update settings.config.student_package_discounts
+    const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+    const cfg = (setRow && setRow.config) ? setRow.config : {};
+    if (!cfg.student_package_discounts) cfg.student_package_discounts = {};
+    cfg.student_package_discounts[st.id] = st.packageDiscounts;
+    await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
 
+    // 3. Instant tab-to-tab sync via BroadcastChannel
     if (permChannel) {
-      try { permChannel.postMessage({ type: 'STUDENT_DISCOUNT_UPDATED', student_id: st.id, discount: st.discount, packageDiscounts: st.packageDiscounts }); } catch(e) {}
+      try {
+        permChannel.postMessage({
+          type: 'STUDENT_DISCOUNT_UPDATED',
+          student_id: st.id,
+          discount: st.discount,
+          packageDiscounts: st.packageDiscounts
+        });
+      } catch(e) {}
     }
 
+    // 4. Record the decision in communications
     const decId = "dec_" + Date.now();
     await supabase.from('communications').insert([{
       id: decId,
@@ -3113,27 +3197,31 @@ window.applyDirectDecision = async function() {
       title: type,
       student_id: String(st.id),
       target_pkg: targetPkg,
-      amount: type === "exemption" ? req : val,
+      amount: (type === "exemption") ? pkgPrice : (type === "custom_fee" ? newPkgDiscount : val),
       sender_name: 'مدير المركز (قرار مباشر)',
-      message: `[الباقة: ${pkgLabel}] ${reason}`,
+      message: `[الباقة: ${targetPkg}] ${reason}`,
       status: 'approved',
       created_at: new Date().toISOString()
     }]);
 
+    // 5. Send unread message to assistant with student_id
     await supabase.from('communications').insert([{
       id: "msg_" + Date.now(),
       type: 'assistant_message',
       title: 'قرار خصم مباشر من الإدارة',
+      student_id: String(st.id),
       message: `أصدر المدير قراراً للطالب ${st.name || st.id} (${summaryText}). السبب: ${reason}`,
       status: 'unread'
     }]);
 
-    showToast(`تم تطبيق القرار بنجاح للطالب: ${st.name || st.id}`, "success");
+    showToast(`تم تطبيق القرار بنجاح للطالب: ${st.name || st.id} على باقة [${targetPkg}]`, "success");
 
     const card = document.getElementById("directDecisionStudentCard");
     if (card) card.classList.add("hidden");
     const searchInp = document.getElementById("directDecisionStudentInput");
     if (searchInp) searchInp.value = "";
+    const feedback = document.getElementById("directDecisionSearchFeedback");
+    if (feedback) { feedback.classList.add("hidden"); feedback.innerHTML = ""; }
     window.selectedDirectDecisionStudent = null;
 
     if (typeof window.renderTermTable === 'function') window.renderTermTable();
@@ -3143,6 +3231,7 @@ window.applyDirectDecision = async function() {
     console.error(err);
     showToast("حدث خطأ أثناء تطبيق القرار: " + err.message, "err");
   }
+};
 };
 
 window.fetchDecisions = async function() {

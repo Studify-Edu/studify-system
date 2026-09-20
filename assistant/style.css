@@ -5784,6 +5784,27 @@ body.system-hard-locked #loginBox {
   color: #1d4ed8;
 }
 
+/* Student Direct Link Badge inside Notification */
+.notif-student-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78em;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-top: 4px;
+  width: fit-content;
+  transition: all 0.2s ease;
+}
+.notif-student-pill:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
 /* ==========================================================================
    LOCKED DECISION REQUEST BUTTONS
    ========================================================================== */
