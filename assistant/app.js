@@ -1988,6 +1988,14 @@ function showToast(msg, type = "success") {
         }
       });
 
+      // 6. Map student package discounts to persist in settings.config
+      const studentPkgDiscountsMap = {};
+      Object.values(students || {}).forEach(st => {
+        if (st && st.id && st.packageDiscounts && Object.keys(st.packageDiscounts).length > 0) {
+          studentPkgDiscountsMap[String(st.id)] = st.packageDiscounts;
+        }
+      });
+
       // Fetch latest settings config to merge safely without overwriting other keys (like daily_approval_map)
       let existingConfig = {};
       try {
@@ -2022,6 +2030,7 @@ function showToast(msg, type = "success") {
         })),
         student_packages: Object.assign({}, existingConfig.student_packages || {}, studentPackagesMap),
         student_ranks: Object.assign({}, existingConfig.student_ranks || {}, studentRanksMap),
+        student_package_discounts: Object.assign({}, existingConfig.student_package_discounts || {}, studentPkgDiscountsMap),
         group_fees: groupFees || {},
         center_notebook: currentNbVal
       });
@@ -2181,6 +2190,7 @@ async function loadAll() {
         const cfg = cd.config || {};
         const studentPackagesMap = cfg.student_packages || {};
         const studentRanksMap = cfg.student_ranks || {};
+        const studentPackageDiscountsMap = cfg.student_package_discounts || {};
 
         // 1. STUDENTS: Synchronize directly with cloud data
         if (!stRes.error && Array.isArray(stRes.data)) {
@@ -2204,6 +2214,7 @@ async function loadAll() {
 
             const restoredRank = (studentRanksMap && studentRanksMap[row.id]) || row.rank || 'normal';
 
+            const restoredDiscounts = (studentPackageDiscountsMap && studentPackageDiscountsMap[row.id]) || row.packageDiscounts || {};
             const stObj = {
               id: row.id,
               name: row.name || '',
@@ -2213,6 +2224,7 @@ async function loadAll() {
               paymentPlan: row.payment_plan || 'cash',
               paid: Number(row.paid) || 0,
               discount: Number(row.discount) || 0,
+              packageDiscounts: restoredDiscounts,
               notes: row.notes || '',
               status: row.status || 'active',
               rank: restoredRank,
@@ -4275,6 +4287,12 @@ const st = students[id];
  if(result.isConfirmed) {
  syllabusData.splice(index, 1);
  saveAll();
+ if ('BroadcastChannel' in window) {
+   try {
+     const bc = new BroadcastChannel('studify_permissions_sync');
+     bc.postMessage({ type: 'SYLLABUS_UPDATED' });
+   } catch(e) {}
+ }
  renderSyllabus();
  }
  });
@@ -4300,9 +4318,15 @@ const st = students[id];
  }
  
  saveAll();
+ if ('BroadcastChannel' in window) {
+   try {
+     const bc = new BroadcastChannel('studify_permissions_sync');
+     bc.postMessage({ type: 'SYLLABUS_UPDATED' });
+   } catch(e) {}
+ }
  renderSyllabus();
  
- let successMsg = currentLang === 'ar' ? "تم تحديث خريطة المنهج " : "Syllabus updated successfully ";
+ let successMsg = currentLang === 'ar' ? "تم تحديث خريطة المنهج" : "Syllabus updated successfully";
  showToast(successMsg, "success");
  
  $("syllName").value = "";
@@ -5810,6 +5834,12 @@ on("quickAttendBtn", "click", function() {
 
        window._editingPkgName = null;
        await saveAll();
+       if ('BroadcastChannel' in window) {
+         try {
+           const bc = new BroadcastChannel('studify_permissions_sync');
+           bc.postMessage({ type: 'PACKAGES_UPDATED' });
+         } catch(e) {}
+       }
        renderGroupFeesModal();
        populatePackages();
        if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
@@ -5870,6 +5900,12 @@ Deleting it will automatically unlink it from these students. Do you want to pro
            if (window._editingPkgName === g) window._editingPkgName = null;
 
            await saveAll();
+           if ('BroadcastChannel' in window) {
+             try {
+               const bc = new BroadcastChannel('studify_permissions_sync');
+               bc.postMessage({ type: 'PACKAGES_UPDATED' });
+             } catch(e) {}
+           }
            renderGroupFeesModal();
            populatePackages();
            if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
@@ -7077,6 +7113,33 @@ if ('BroadcastChannel' in window) {
       if (typeof window.applyShiftLockState === 'function') {
         window.applyShiftLockState(msg.date, isApproved, msg.reason);
       }
+    } else if (msg.type === 'PACKAGES_UPDATED') {
+      (async () => {
+        try {
+          await loadAll();
+          if (typeof renderGroupFeesModal === 'function') renderGroupFeesModal();
+          if (typeof populatePackages === 'function') populatePackages();
+          if (typeof renderTable === 'function') renderTable();
+          if (typeof renderManagerPackagesCard === 'function') renderManagerPackagesCard();
+        } catch(e) {}
+      })();
+    } else if (msg.type === 'SYLLABUS_UPDATED') {
+      (async () => {
+        try {
+          await loadAll();
+          if (typeof renderSyllabus === 'function') renderSyllabus();
+        } catch(e) {}
+      })();
+    } else if (msg.type === 'DECISION_APPROVED' || msg.type === 'STUDENT_DISCOUNT_UPDATED') {
+      (async () => {
+        try {
+          await loadAll();
+          if (typeof renderTable === 'function') renderTable();
+          if (typeof renderList === 'function') renderList(false);
+          if (typeof updateStats === 'function') updateStats();
+          if (typeof updateTopStats === 'function') updateTopStats();
+        } catch(e) {}
+      })();
     }
   };
 }
@@ -7116,8 +7179,61 @@ document.addEventListener("DOMContentLoaded", () => {
             secureSave(K_STUDENTS, students);
           }
         }
+        if (payload.new && payload.new.config) {
+          const cfg = payload.new.config;
+          if (cfg.group_fees) {
+            groupFees = Object.assign({}, groupFees, cfg.group_fees);
+            secureSave(K_GROUP_FEES, groupFees);
+            if (typeof renderGroupFeesModal === 'function') renderGroupFeesModal();
+            if (typeof populatePackages === 'function') populatePackages();
+            if (typeof renderTable === 'function') renderTable();
+          }
+          if (cfg.syllabus_data || cfg.syllabus) {
+            const sylSrc = cfg.syllabus_data || cfg.syllabus;
+            if (Array.isArray(sylSrc)) {
+              syllabusData = sylSrc.map(s => ({
+                name: s.name || s.title || '',
+                title: s.title || s.name || '',
+                status: s.status || 'not_started',
+                notes: s.notes || '',
+                date: s.date || s.updated_at || nowDateStr(),
+                updated_at: s.updated_at || new Date().toISOString()
+              }));
+              secureSave(K_SYLLABUS, syllabusData);
+              if (typeof renderSyllabus === 'function') renderSyllabus();
+            }
+          }
+        }
         if (typeof window.checkDailyShiftHeartbeat === 'function') {
           window.checkDailyShiftHeartbeat(false);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'packages' }, async (payload) => {
+        try {
+          if (payload.eventType === 'DELETE' && payload.old && payload.old.name) {
+            delete groupFees[payload.old.name];
+            await secureSave(K_GROUP_FEES, groupFees);
+          } else if (payload.new && payload.new.name) {
+            const p = payload.new;
+            const existing = groupFees[p.name] || {};
+            groupFees[p.name] = {
+              name: p.name,
+              subject: existing.subject || p.name,
+              price: Number(p.price) || 0,
+              hasInstallments: !!p.has_installments,
+              installmentPrice: Number(p.installment_price) || 0,
+              expiryType: existing.expiryType || 'none',
+              startDate: existing.startDate || '',
+              endDate: existing.endDate || '',
+              sessionLimit: existing.sessionLimit || 0
+            };
+            await secureSave(K_GROUP_FEES, groupFees);
+          }
+          if (typeof renderGroupFeesModal === 'function') renderGroupFeesModal();
+          if (typeof populatePackages === 'function') populatePackages();
+          if (typeof renderTable === 'function') renderTable();
+        } catch(e) {
+          console.warn('[Realtime Package Sync Error]:', e);
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_revenue_shifts' }, payload => {
@@ -8697,7 +8813,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   let currentCampaignList = [];
-  let campaignCurrentPage = 1;
+    let campaignCurrentPage = 1;
   const CAMPAIGN_PAGE_SIZE = 10;
 
   window.changeCampaignPage = function(delta) {
@@ -9326,27 +9442,41 @@ document.addEventListener("DOMContentLoaded", () => {
   }
  }
  
- // Cloud Sync Click Handler (Top bar cloud icon)
- if ($("cloudSyncIndicator")) {
-  $("cloudSyncIndicator").addEventListener("click", async function() {
-    showToast("جاري المزامنة والرفع إلى السحابة... ", "warning");
-    try {
-      await saveAll(); // This uses Supabase via the app's saveAll function
-      
-      // For assistants: reload permissions from Supabase and re-apply UI
-      if (currentUserRole !== 'admin') {
-        await loadPermissions();
-        applyPermissionsToAssistantUI();
-        showToast(" تمت المزامنة وتحديث الصلاحيات بنجاح", "success");
-      } else {
-        showToast(" تمت المزامنة ورفع البيانات إلى السحابة بنجاح", "success");
-      }
-    } catch(err) {
-      console.error('Cloud sync error:', err);
-      showToast(" خطأ في المزامنة، تحقق من الاتصال", "error");
-    }
-  });
- }
+   // Cloud Sync Click Handler (Top bar cloud icon)
+  if ($("cloudSyncIndicator")) {
+   $("cloudSyncIndicator").addEventListener("click", async function() {
+     showToast("جاري المزامنة مع السحابة وتحديث البيانات...", "warning");
+     try {
+       // 1. Pull freshest state from Supabase
+       await loadAll();
+
+       // 2. Re-render all views with freshest cloud data
+       if (typeof renderGroupFeesModal === 'function') renderGroupFeesModal();
+       if (typeof populatePackages === 'function') populatePackages();
+       if (typeof renderSyllabus === 'function') renderSyllabus();
+       if (typeof renderTable === 'function') renderTable();
+       if (typeof renderList === 'function') renderList(false);
+       if (typeof updateStats === 'function') updateStats();
+       if (typeof updateTopStats === 'function') updateTopStats();
+       if (typeof renderClassSelects === 'function') renderClassSelects();
+       if (typeof renderManagerPackagesCard === 'function') renderManagerPackagesCard();
+
+       // 3. For assistants: reload permissions from Supabase and re-apply UI
+       if (currentUserRole !== 'admin') {
+         await loadPermissions();
+         applyPermissionsToAssistantUI();
+       }
+
+       // 4. Safely push local state back
+       await saveAll();
+
+       showToast("تمت المزامنة وتحديث كافة البيانات والباقات سحابياً بنجاح", "success");
+     } catch(err) {
+       console.error('Cloud sync error:', err);
+       showToast("خطأ في المزامنة، تحقق من الاتصال بالإنترنت", "error");
+     }
+   });
+  }
 
  // Startup Sequence
  async function initSystem() {

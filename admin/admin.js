@@ -659,9 +659,68 @@ if (supabase) {
             if (typeof window.loadDailyReport === 'function') window.loadDailyReport(curDate);
             if (typeof window.renderDailyApprovalWidget === 'function') window.renderDailyApprovalWidget(curDate);
             if (cfg.subscription && typeof window.loadSubscriptionData === 'function') window.loadSubscriptionData();
+            if (cfg.group_fees) {
+              Object.keys(cfg.group_fees).forEach(pkgName => {
+                const extra = cfg.group_fees[pkgName] || {};
+                packages[pkgName] = {
+                  name: pkgName,
+                  subject: extra.subject || pkgName || '',
+                  price: Number(extra.price) || 0,
+                  installmentPrice: Number(extra.installmentPrice) || Number(extra.price) || 0,
+                  hasInstallments: !!extra.hasInstallments,
+                  expiryType: extra.expiryType || 'time',
+                  startDate: extra.startDate || '',
+                  endDate: extra.endDate || '',
+                  sessionLimit: Number(extra.sessionLimit) || 8
+                };
+                groupFees[pkgName] = Number(extra.price) || 0;
+              });
+              if (typeof window.renderAdminPackages === 'function') window.renderAdminPackages();
+              if (typeof window.renderTermTable === 'function') window.renderTermTable();
+            }
+            if (cfg.syllabus_data || cfg.syllabus) {
+              const sylRaw = cfg.syllabus_data || cfg.syllabus;
+              if (Array.isArray(sylRaw)) {
+                syllabusList = sylRaw.map(s => ({
+                  title: s.title || s.name || '',
+                  name: s.name || s.title || '',
+                  status: s.status || 'not_started',
+                  notes: s.notes || '',
+                  updated_at: s.updated_at || s.date || ''
+                }));
+                if (typeof window.renderAdminSyllabus === 'function') window.renderAdminSyllabus();
+              }
+            }
           }
         } catch(err) {
           console.warn('[Admin Realtime Settings] Error handling payload:', err);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'packages' }, async (payload) => {
+        try {
+          if (payload.eventType === 'DELETE' && payload.old && payload.old.name) {
+            delete packages[payload.old.name];
+            delete groupFees[payload.old.name];
+          } else if (payload.new && payload.new.name) {
+            const p = payload.new;
+            const existing = packages[p.name] || {};
+            packages[p.name] = {
+              name: p.name,
+              subject: existing.subject || p.name,
+              price: Number(p.price) || 0,
+              installmentPrice: Number(p.installment_price) || 0,
+              hasInstallments: !!p.has_installments,
+              expiryType: existing.expiryType || 'time',
+              startDate: existing.startDate || '',
+              endDate: existing.endDate || '',
+              sessionLimit: existing.sessionLimit || 8
+            };
+            groupFees[p.name] = Number(p.price) || 0;
+          }
+          if (typeof window.renderAdminPackages === 'function') window.renderAdminPackages();
+          if (typeof window.renderTermTable === 'function') window.renderTermTable();
+        } catch(err) {
+          console.warn('[Admin Realtime Packages] Error:', err);
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'communications' }, payload => {
@@ -2935,11 +2994,22 @@ window.applyDirectDecision = async function() {
     }
     st.lastModified = Date.now();
 
-    await supabase.from('students').upsert({
-      id: st.id,
+    await supabase.from('students').update({
       discount: st.discount,
       last_modified: st.lastModified
-    }, { onConflict: 'id' });
+    }).eq('id', st.id);
+
+    if (targetPkg !== "all") {
+      const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+      const cfg = (setRow && setRow.config) ? setRow.config : {};
+      if (!cfg.student_package_discounts) cfg.student_package_discounts = {};
+      cfg.student_package_discounts[st.id] = st.packageDiscounts;
+      await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
+    }
+
+    if (permChannel) {
+      try { permChannel.postMessage({ type: 'STUDENT_DISCOUNT_UPDATED', student_id: st.id, discount: st.discount, packageDiscounts: st.packageDiscounts }); } catch(e) {}
+    }
 
     const decId = "dec_" + Date.now();
     await supabase.from('communications').insert([{
@@ -3081,11 +3151,22 @@ window.approveDecision = async function(reqId, studentId, subType, amount, targe
       }
 
       st.lastModified = Date.now();
-      await supabase.from('students').upsert({
-        id: st.id,
+      await supabase.from('students').update({
         discount: st.discount,
         last_modified: st.lastModified
-      }, { onConflict: 'id' });
+      }).eq('id', st.id);
+
+      if (targetPkg && targetPkg !== 'all') {
+        const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+        const cfg = (setRow && setRow.config) ? setRow.config : {};
+        if (!cfg.student_package_discounts) cfg.student_package_discounts = {};
+        cfg.student_package_discounts[st.id] = st.packageDiscounts;
+        await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
+      }
+
+      if (permChannel) {
+        try { permChannel.postMessage({ type: 'DECISION_APPROVED', reqId, student_id: studentId, discount: st.discount, packageDiscounts: st.packageDiscounts }); } catch(e) {}
+      }
     }
 
     // 2. Mark request approved
@@ -3096,7 +3177,7 @@ window.approveDecision = async function(reqId, studentId, subType, amount, targe
     await supabase.from('communications').insert([{
       id: "msg_" + Date.now(),
       type: 'assistant_message',
-      title: ' تمت الموافقة على طلب القرار',
+      title: 'تمت الموافقة على طلب القرار',
       message: `وافق المدير على طلب الطالب (${studentId})${pkgText} بقيمة ${subType === "exemption" ? "إعفاء كامل" : amount + " ج"}`,
       status: 'unread'
     }]);
@@ -3448,7 +3529,6 @@ window.openAddPackageModal = async function() {
       await supabase.from('packages').upsert({
         name,
         price,
-        subject,
         has_installments: false,
         installment_price: 0
       }, { onConflict: 'name' });
@@ -3473,6 +3553,9 @@ window.openAddPackageModal = async function() {
 
       packages[name] = { name, subject, price, expiryType, startDate, endDate, sessionLimit: sessions, hasInstallments: false, installmentPrice: 0 };
       groupFees[name] = price;
+      if (permChannel) {
+        try { permChannel.postMessage({ type: 'PACKAGES_UPDATED' }); } catch(e) {}
+      }
       showToast(isAr ? "تمت إضافة الباقة بنجاح" : "Package added successfully", "success");
       window.renderAdminPackages();
       if (typeof window.renderTermTable === 'function') window.renderTermTable();
@@ -3640,7 +3723,6 @@ window.openEditPackageModal = async function(encodedName) {
       await supabase.from('packages').upsert({
         name: newName,
         price: newPrice,
-        subject: newSubject,
         has_installments: false,
         installment_price: 0
       }, { onConflict: 'name' });
@@ -3649,7 +3731,16 @@ window.openEditPackageModal = async function(encodedName) {
       const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
       const cfg = (setRow && setRow.config) ? setRow.config : {};
       if (!cfg.group_fees) cfg.group_fees = {};
-      if (newName !== name) delete cfg.group_fees[name];
+      if (newName !== name) {
+        delete cfg.group_fees[name];
+        if (cfg.student_packages) {
+          Object.keys(cfg.student_packages).forEach(stId => {
+            if (Array.isArray(cfg.student_packages[stId])) {
+              cfg.student_packages[stId] = cfg.student_packages[stId].map(p => p === name ? newName : p);
+            }
+          });
+        }
+      }
       cfg.group_fees[newName] = {
         name: newName,
         subject: newSubject,
@@ -3677,6 +3768,10 @@ window.openEditPackageModal = async function(encodedName) {
         installmentPrice: 0
       };
       groupFees[newName] = newPrice;
+
+      if (permChannel) {
+        try { permChannel.postMessage({ type: 'PACKAGES_UPDATED' }); } catch(e) {}
+      }
 
       showToast(isAr ? "تم تحديث الباقة بنجاح وحفظها سحابياً" : "Package updated and synced successfully", "success");
       window.renderAdminPackages();
@@ -3719,13 +3814,20 @@ window.adminDeletePackage = async function(encodedName) {
       // 1. Delete from Supabase packages table
       await supabase.from('packages').delete().eq('name', name);
 
-      // 2. Remove from settings.config.group_fees
+      // 2. Remove from settings.config.group_fees and student_packages
       const { data: setRow } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
       const cfg = (setRow && setRow.config) ? setRow.config : {};
       if (cfg.group_fees) {
         delete cfg.group_fees[name];
-        await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
       }
+      if (cfg.student_packages) {
+        Object.keys(cfg.student_packages).forEach(stId => {
+          if (Array.isArray(cfg.student_packages[stId])) {
+            cfg.student_packages[stId] = cfg.student_packages[stId].filter(p => p !== name);
+          }
+        });
+      }
+      await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
 
       // 3. Unlink from local students
       Object.values(students || {}).forEach(st => {
@@ -3736,6 +3838,10 @@ window.adminDeletePackage = async function(encodedName) {
 
       delete packages[name];
       delete groupFees[name];
+
+      if (permChannel) {
+        try { permChannel.postMessage({ type: 'PACKAGES_UPDATED' }); } catch(e) {}
+      }
 
       showToast(isAr ? "تم حذف الباقة نهائياً من السحابة والنظام" : "Package permanently deleted from cloud and system", "success");
       window.renderAdminPackages();
@@ -4072,6 +4178,9 @@ window.saveSyllabusLesson = async function() {
 
   try {
     await saveCenterConfig({ syllabus: syllabusList, syllabus_data: syllabusList });
+    if (permChannel) {
+      try { permChannel.postMessage({ type: 'SYLLABUS_UPDATED' }); } catch(e) {}
+    }
     showToast("تمت إضافة الدرس لخريطة المنهج", "success");
     document.getElementById("syllabusLessonName").value = "";
     document.getElementById("syllabusLessonNotes").value = "";
@@ -4083,6 +4192,9 @@ window.deleteSyllabusLesson = async function(idx) {
   syllabusList.splice(idx, 1);
   try {
     await saveCenterConfig({ syllabus: syllabusList, syllabus_data: syllabusList });
+    if (permChannel) {
+      try { permChannel.postMessage({ type: 'SYLLABUS_UPDATED' }); } catch(e) {}
+    }
     showToast("تم حذف الدرس من المنهج", "info");
     window.renderAdminSyllabus();
   } catch(e) { console.error(e); }
