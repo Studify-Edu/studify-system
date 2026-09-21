@@ -1914,6 +1914,19 @@ body {
     min-width: 580px !important;
   }
 
+  /* ── DIRECT DECISION RESPONSIVENESS ON MOBILE ── */
+  .decision-search-row,
+  .decision-action-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .decision-search-row .btn,
+  .decision-action-row .btn {
+    width: 100% !important;
+    height: 44px !important;
+    justify-content: center !important;
+  }
+
   /* ── MODALS: RESPONSIVE BOTTOM SHEET ON MOBILE ── */
   .modal-overlay {
     align-items: flex-end !important;
@@ -3746,6 +3759,38 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   }
   .swal-fields-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Compact Admin Topbar on Small Mobile Devices: prevent page title truncation */
+  .admin-user-badge #adminTopName {
+    display: none !important;
+  }
+  .admin-user-badge {
+    padding: 0 !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+  }
+  .admin-mobile-toggle .mobile-toggle-lbl {
+    display: none !important;
+  }
+  .admin-mobile-toggle {
+    padding: 0 !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+  }
+  .admin-topbar-title {
+    font-size: 0.95rem !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+  #adminPackagesListContainer {
+    grid-template-columns: 1fr !important;
   }
 }
 

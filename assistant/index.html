@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V91">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V92">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -457,6 +457,22 @@
  <!-- THE QUICK ACTION DROPDOWN / DRAWER -->
  <div id="userProfileDropdown" class="user-profile-dropdown hidden" style="position: absolute; top: 110%; inset-inline-end: 0; width: 260px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;">
  <div style="font-weight: bold; font-size: 0.95em; color: var(--primary); padding: 4px 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;" data-i18n="quick_controls_title">قائمة التحكم السريعة</div>
+ 
+  <!-- MOBILE ONLY: Theme & Language switches moved to Quick Menu on mobile -->
+  <button id="mobileThemeToggleBtn" type="button" class="btn secondary mobile-only-ctrl" style="width: 100%; display: none; align-items: center; justify-content: space-between; padding: 10px 12px; font-weight: bold; font-size: 0.9em; text-align: start;" onclick="document.getElementById('userProfileDropdown')?.classList.add('hidden'); document.getElementById('topbarThemeToggle').click()">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <i class="fa-solid fa-circle-half-stroke" style="color: var(--primary);"></i>
+      <span data-i18n="quick_theme_toggle">تبديل المظهر (ليلي / نهاري)</span>
+    </div>
+  </button>
+
+  <button id="mobileLangToggleBtn" type="button" class="btn secondary mobile-only-ctrl" style="width: 100%; display: none; align-items: center; justify-content: space-between; padding: 10px 12px; font-weight: bold; font-size: 0.9em; text-align: start;" onclick="document.getElementById('userProfileDropdown')?.classList.add('hidden'); document.getElementById('changeLangBtn').click()">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <i class="fa-solid fa-globe" style="color: var(--primary);"></i>
+      <span data-i18n="quick_lang_toggle">تبديل اللغة (Language)</span>
+    </div>
+    <span class="badge" style="background: var(--primary); color: #fff; font-size: 0.75em; padding: 2px 7px; border-radius: 6px;" id="mobileLangBadge">EN</span>
+  </button>
  
  
  
@@ -1986,7 +2002,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V155"></script>
+  <script type="module" src="app.js?v=STUDIFY_V156"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

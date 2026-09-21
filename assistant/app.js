@@ -1036,6 +1036,8 @@ let vaultTransfers = [];
   "mark_attend_btn": { ar: "حضور", en: "Present" },
   "mark_absent_btn": { ar: "غياب", en: "Absent" },
   "quick_controls_title": { ar: "قائمة التحكم السريعة", en: "Quick Controls" },
+  "quick_theme_toggle": { ar: "تبديل المظهر (ليلي / نهاري)", en: "Switch Theme (Dark / Light)" },
+  "quick_lang_toggle": { ar: "تبديل اللغة (Language)", en: "Switch Language (اللغة)" },
   "admin_portal_link": { ar: "لوحة الإدارة (Admin)", en: "Admin Dashboard" },
   "mute_sounds_lbl": { ar: "كتم الأصوات", en: "Mute Sounds" },
   "logout_system": { ar: "خروج من النظام", en: "Logout" },
@@ -4310,6 +4312,7 @@ const st = students[id];
  if($("changeLangBtn")) {
  const isAr = currentLang === "ar";
 	if($("topbarLangCode")) $("topbarLangCode").innerText = isAr ? "EN" : "عربي";
+	if($("mobileLangBadge")) $("mobileLangBadge").innerText = isAr ? "EN" : "عربي";
 	if($("asstLangBtnText")) $("asstLangBtnText").innerText = isAr ? "English" : "العربية";
 	if($("asstLangCurrentLabel")) $("asstLangCurrentLabel").innerText = isAr ? "اللغة الحالية: العربية" : "Current Language: English";
 	if($("asstLangSubLabel")) $("asstLangSubLabel").innerText = isAr ? "انقر للتحويل إلى English بالكامل" : "Click to switch completely to Arabic";

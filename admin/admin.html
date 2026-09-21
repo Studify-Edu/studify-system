@@ -73,7 +73,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V17">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V18">
 </head>
 <body>
 
@@ -658,7 +658,7 @@
             </div>
 
             <!-- Search & Type Row -->
-            <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 14px; align-items: end; margin-bottom: 16px;">
+            <div class="decision-search-row" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 14px; align-items: end; margin-bottom: 16px;">
               <div>
                 <label class="lbl" data-i18n="dec_student_lbl">رقم الطالب (ID) أو الاسم</label>
                 <input type="text" id="directDecisionStudentInput" class="inp" placeholder="ادخل كود الطالب أو ابحث بالاسم..." data-i18n-placeholder="dec_student_ph" oninput="window.handleDirectDecisionStudentSearch(this.value)">
@@ -722,7 +722,7 @@
               </div>
 
               <!-- Action Controls Row -->
-              <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 14px; align-items: end;">
+              <div class="decision-action-row" style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 14px; align-items: end;">
                 <div id="directDecisionValueWrap">
                   <label id="directDecisionValueLbl" class="lbl" data-i18n="dec_disc_val_lbl">قيمة الخصم المطلوبة (جنيه)</label>
                   <input type="number" id="directDecisionValueInput" class="inp" min="0" step="10" placeholder="مثال: 100" data-i18n-placeholder="dec_val_ph">
@@ -1833,7 +1833,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V29"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V30"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->
