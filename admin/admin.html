@@ -338,7 +338,11 @@
         <div id="viewTermReport" class="admin-view hidden">
           <!-- 1. Executive Master Financial KPIs (6 Cards) -->
           <div class="stats-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
-            <div class="stat-card" style="--stat-color: #3b82f6; --stat-bg: rgba(59, 130, 246, 0.12);">
+            <div class="stat-card stat-card-interactive" id="statTermStudentsCard" onclick="window.openStudentsListModal()" style="--stat-color: #3b82f6; --stat-bg: rgba(59, 130, 246, 0.12);" title="اضغط لعرض قائمة وبيانات الطلاب المسجلين">
+              <div class="stat-card-action-badge" style="color: #3b82f6; background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.3);">
+                <span data-i18n="lbl_breakdown_btn">عرض التفاصيل</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </div>
               <div class="stat-card-icon"><i class="fa-solid fa-users"></i></div>
               <div class="stat-card-val" id="statTermStudents">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_students">إجمالي الطلاب المسجلين</div>
@@ -374,13 +378,21 @@
               <div class="stat-card-lbl" data-i18n="stat_term_total_withdrawals">مسحوبات المستر / الشخصية (ج)</div>
             </div>
 
-            <div class="stat-card" style="--stat-color: #8b5cf6; --stat-bg: rgba(139, 92, 246, 0.12);">
+            <div class="stat-card stat-card-interactive" id="statTermNetVaultCard" onclick="window.openVaultsBreakdownModal()" style="--stat-color: #8b5cf6; --stat-bg: rgba(139, 92, 246, 0.12);" title="اضغط لعرض تفاصيل صافي رصيد الخزائن المتاح">
+              <div class="stat-card-action-badge" style="color: #8b5cf6; background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.3);">
+                <span data-i18n="lbl_breakdown_btn">عرض التفاصيل</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </div>
               <div class="stat-card-icon"><i class="fa-solid fa-vault"></i></div>
               <div class="stat-card-val" id="statTermNetVault">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_net_vault">صافي رصيد الخزائن المتاح (ج)</div>
             </div>
 
-            <div class="stat-card" style="--stat-color: #ec4899; --stat-bg: rgba(236, 72, 153, 0.12);">
+            <div class="stat-card stat-card-interactive" id="statTermDebtCard" onclick="window.openDebtsDetailsModal()" style="--stat-color: #ec4899; --stat-bg: rgba(236, 72, 153, 0.12);" title="اضغط لعرض تفاصيل المتبقي والديون على الطلاب">
+              <div class="stat-card-action-badge" style="color: #ec4899; background: rgba(236,72,153,0.12); border-color: rgba(236,72,153,0.3);">
+                <span data-i18n="lbl_breakdown_btn">عرض التفاصيل</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </div>
               <div class="stat-card-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
               <div class="stat-card-val" id="statTermDebt">—</div>
               <div class="stat-card-lbl" data-i18n="stat_term_total_debt">إجمالي المتبقي والديون (ج)</div>
@@ -1422,10 +1434,10 @@
 
 
   <!-- ======================================================== -->
-  <!-- 1. VAULT TRANSFER MODAL (تحويل بين الخزائن) -->
+  <!-- 1. VAULT TRANSFER MODAL (تحويل بين الخزائن) - LANDSCAPE -->
   <!-- ======================================================== -->
   <div id="vaultTransferModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
-    <div class="modal-box modal-box-premium" style="max-width: 520px; width: 95%;">
+    <div class="modal-box modal-box-premium" style="max-width: 860px; width: 95%; max-height: 90vh; overflow-y: auto;">
       <button type="button" class="modal-close-btn" onclick="window.closeVaultTransferModal()">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -1436,71 +1448,102 @@
         </div>
         <div>
           <h3 class="modal-title-premium" data-i18n="vault_trans_modal_title">تحويل أموال بين الخزائن الحية</h3>
-          <p class="modal-subtitle-premium" data-i18n="vault_trans_modal_subtitle">مناقلة نقدية وبنكية لضبط السيولة الفعلية دون المساس بإجمالي المقبوضات</p>
+          <p class="modal-subtitle-premium" data-i18n="vault_trans_modal_subtitle">مناقلة نقدية وبنكية لضبط السيولة الفعلية وتغذية الخزائن دون المساس بإجمالي المقبوضات</p>
         </div>
       </div>
 
-      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 16px;">
-        
-        <!-- Source & Destination Grid -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_from_vault">من خزينة (المصدر) *</label>
-            <select id="transFromVault" class="inp" onchange="window.updateTransferPreview()" style="font-weight: 700;">
-              <option value="cash" selected>درج الكاش (الخزينة النقدية)</option>
-              <option value="instapay">حساب إنستاباي (InstaPay)</option>
-              <option value="wallet">محفظة فودافون كاش</option>
-            </select>
-            <div style="font-size: 0.78em; color: var(--text-secondary); margin-top: 4px;">
-              <span data-i18n="lbl_avail_bal">الرصيد المتاح:</span> <b id="transFromAvailBal" class="text-success">0 ج</b>
+      <div class="modal-body-premium" style="padding: 20px 0;">
+        <div class="vault-transfer-grid">
+          
+          <!-- Column 1: Transfer Form Inputs -->
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <!-- Source & Destination -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_from_vault">من خزينة (المصدر) *</label>
+                <select id="transFromVault" class="inp" onchange="window.updateTransferPreview()" style="font-weight: 700;">
+                  <option value="cash" selected>درج الكاش (الخزينة النقدية)</option>
+                  <option value="instapay">حساب إنستاباي (InstaPay)</option>
+                  <option value="wallet">محفظة فودافون كاش</option>
+                </select>
+                <div style="font-size: 0.78em; color: var(--text-secondary); margin-top: 4px; display: flex; justify-content: space-between;">
+                  <span data-i18n="lbl_avail_bal">الرصيد المتاح:</span> <b id="transFromAvailBal" class="text-success">0 ج</b>
+                </div>
+              </div>
+
+              <div>
+                <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_to_vault">إلى خزينة (الهدف) *</label>
+                <select id="transToVault" class="inp" onchange="window.updateTransferPreview()" style="font-weight: 700;">
+                  <option value="instapay" selected>حساب إنستاباي (InstaPay)</option>
+                  <option value="cash">درج الكاش (الخزينة النقدية)</option>
+                  <option value="wallet">محفظة فودافون كاش</option>
+                </select>
+                <div style="font-size: 0.78em; color: var(--text-secondary); margin-top: 4px; display: flex; justify-content: space-between;">
+                  <span data-i18n="lbl_curr_bal">الرصيد الحالي:</span> <b id="transToCurrBal">0 ج</b>
+                </div>
+              </div>
+            </div>
+
+            <!-- Amount -->
+            <div>
+              <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_trans_amount">المبلغ المراد تحويله (جنيه) *</label>
+              <input type="number" id="transAmount" class="inp" placeholder="0" min="1" oninput="window.updateTransferPreview()" style="font-size: 1.15em; font-weight: 800;">
+              <!-- Quick Amount Chips -->
+              <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(50)">+50 ج</button>
+                <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(100)">+100 ج</button>
+                <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(200)">+200 ج</button>
+                <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(500)">+500 ج</button>
+                <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount('cover_deficit')">تغطية العجز</button>
+                <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount('all')">كامل المتاح</button>
+              </div>
+            </div>
+
+            <!-- Note / Statement -->
+            <div>
+              <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_trans_note">البيان / سبب التحويل (اختياري)</label>
+              <input type="text" id="transNote" class="inp" placeholder="مثال: تغذية حساب إنستاباي من درج الكاش لتغطية سحب" data-i18n-placeholder="trans_note_ph">
             </div>
           </div>
 
-          <div>
-            <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_to_vault">إلى خزينة (الهدف) *</label>
-            <select id="transToVault" class="inp" onchange="window.updateTransferPreview()" style="font-weight: 700;">
-              <option value="instapay" selected>حساب إنستاباي (InstaPay)</option>
-              <option value="cash">درج الكاش (الخزينة النقدية)</option>
-              <option value="wallet">محفظة فودافون كاش</option>
-            </select>
-            <div style="font-size: 0.78em; color: var(--text-secondary); margin-top: 4px;">
-              <span data-i18n="lbl_curr_bal">الرصيد الحالي:</span> <b id="transToCurrBal">0 ج</b>
+          <!-- Column 2: Visual Transfer Flow & Live Impact Preview -->
+          <div style="background: var(--bg-surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="font-size: 0.85em; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-chart-line" style="color: var(--primary);"></i>
+              <span>المعاينة المباشرة لأثر التحويل</span>
+            </div>
+
+            <!-- Visual Flow Box -->
+            <div style="display: flex; flex-direction: column; gap: 8px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-arrow-right-from-bracket" style="color: #ef4444;"></i>
+                  <span style="font-size: 0.82em; color: var(--text-secondary);">المصدر بعد التحويل:</span>
+                </div>
+                <b id="transFromAfterBal" style="font-size: 1.05em; color: #10b981;">0 ج</b>
+              </div>
+
+              <div style="text-align: center; color: var(--text-secondary); font-size: 0.9em; padding: 2px 0;">
+                <i class="fa-solid fa-arrow-down" style="color: var(--primary);"></i>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-arrow-right-to-bracket" style="color: #10b981;"></i>
+                  <span style="font-size: 0.82em; color: var(--text-secondary);">الهدف بعد التحويل:</span>
+                </div>
+                <b id="transToAfterBal" style="font-size: 1.05em; color: #10b981;">0 ج</b>
+              </div>
+            </div>
+
+            <!-- Liquidity Safety Guarantee Note -->
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 10px; font-size: 0.8em; color: #10b981; display: flex; align-items: flex-start; gap: 8px;">
+              <i class="fa-solid fa-shield-halved" style="margin-top: 2px; flex-shrink: 0;"></i>
+              <span style="line-height: 1.4;">إجمالي السيولة الكلية يبقى ثابتاً 100%، العملية فقط إعادة توزيع وتغذية بين الخزائن لضبط الأرصدة.</span>
             </div>
           </div>
-        </div>
 
-        <!-- Amount -->
-        <div>
-          <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_trans_amount">المبلغ المراد تحويله (جنيه) *</label>
-          <input type="number" id="transAmount" class="inp" placeholder="0" min="1" oninput="window.updateTransferPreview()" style="font-size: 1.15em; font-weight: 800;">
-          <!-- Quick Amount Chips -->
-          <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
-            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(50)">+50 ج</button>
-            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(100)">+100 ج</button>
-            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(200)">+200 ج</button>
-            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(500)">+500 ج</button>
-            <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount('all')">كامل المتاح</button>
-          </div>
         </div>
-
-        <!-- Note / Statement -->
-        <div>
-          <label class="lbl" style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="lbl_trans_note">البيان / سبب التحويل (اختياري)</label>
-          <input type="text" id="transNote" class="inp" placeholder="مثال: تغذية حساب إنستاباي من درج الكاش لتغطية سحب" data-i18n-placeholder="trans_note_ph">
-        </div>
-
-        <!-- Live Preview Impact Box -->
-        <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 0.85em; display: flex; flex-direction: column; gap: 6px;">
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-secondary);" data-i18n="lbl_from_after">رصيد المصدر المتوقع بعد التحويل:</span>
-            <b id="transFromAfterBal">0 ج</b>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-secondary);" data-i18n="lbl_to_after">رصيد الهدف المتوقع بعد التحويل:</span>
-            <b id="transToAfterBal">0 ج</b>
-          </div>
-        </div>
-
       </div>
 
       <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: flex-end; gap: 10px;">
@@ -1800,8 +1843,301 @@
     </div>
   </div>
 
+
+  <!-- ======================================================== -->
+  <!-- 6. DEBTS DETAILS MODAL (تفاصيل المتبقي والديون على الطلاب) -->
+  <!-- ======================================================== -->
+  <div id="debtsDetailsModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 880px; width: 95%; max-height: 90vh; overflow-y: auto;">
+      <button type="button" class="modal-close-btn" onclick="window.closeDebtsDetailsModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: rgba(236, 72, 153, 0.15); color: #ec4899;">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="debts_modal_title">تفاصيل المتبقي والديون على الطلاب</h3>
+          <p class="modal-subtitle-premium" data-i18n="debts_modal_subtitle">حصر شامل لكافة المبالغ المتبقية والديون المستحقة على الطلاب مع إمكانية البحث والفلترة</p>
+        </div>
+      </div>
+
+      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 16px;">
+        <!-- Summary KPI Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+          <div style="background: rgba(236, 72, 153, 0.08); border: 1.5px solid rgba(236, 72, 153, 0.25); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: #ec4899; font-weight: 700;" data-i18n="debts_modal_total_lbl">إجمالي الديون المتبقية:</div>
+            <div id="debtsModalTotal" style="font-size: 1.6em; font-weight: 800; color: #ec4899;">0 ج</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="debts_modal_count_lbl">عدد الطلاب المدينين:</div>
+            <div id="debtsModalCount" style="font-size: 1.3em; font-weight: 800; color: var(--text-primary);">0 طالب</div>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div style="position: relative;">
+          <i class="fa-solid fa-magnifying-glass" style="position: absolute; top: 50%; right: 14px; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.9em;"></i>
+          <input type="text" id="debtsSearchInp" class="inp" placeholder="بحث باسم الطالب أو الكود #ID..." oninput="window.debtsModalCurrentPage=1; window.renderDebtsModalTable();" style="padding-inline-start: 38px; font-weight: 600;">
+        </div>
+
+        <!-- Table -->
+        <div class="fin-modal-table-wrap">
+          <table class="fin-modal-table">
+            <thead>
+              <tr>
+                <th style="width: 10%;">#ID</th>
+                <th style="width: 26%;" data-i18n="tbl_th_student">اسم الطالب</th>
+                <th style="width: 18%;" data-i18n="tbl_th_class">الباقة / الصف</th>
+                <th style="width: 13%;" data-i18n="tbl_th_required">المطلوب</th>
+                <th style="width: 13%;" data-i18n="tbl_th_paid">المدفوع</th>
+                <th style="width: 12%;" data-i18n="tbl_th_debt">المتبقي</th>
+                <th style="width: 8%;" data-i18n="tbl_th_action">الملف</th>
+              </tr>
+            </thead>
+            <tbody id="debtsDetailsTbody">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="fin-modal-pagination" id="debtsModalPagination">
+          <button type="button" class="btn secondary smallBtn pagination-btn" id="debtsPrevBtn" onclick="window.debtsModalPrevPage()" disabled>
+            <i class="fa-solid fa-chevron-right"></i> <span data-i18n="btn_prev">السابق</span>
+          </button>
+          <div class="pagination-info">
+            <span>صفحة <b id="debtsCurrentPageNum">1</b> من <b id="debtsTotalPagesNum">1</b></span>
+            <span class="pagination-subinfo">(عرض <span id="debtsShowingCount">0</span> من إجمالي <span id="debtsTotalCount">0</span> طالب مدين)</span>
+          </div>
+          <button type="button" class="btn secondary smallBtn pagination-btn" id="debtsNextBtn" onclick="window.debtsModalNextPage()">
+            <span data-i18n="btn_next">التالي</span> <i class="fa-solid fa-chevron-left"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 7. VAULTS BREAKDOWN MODAL (تفاصيل صافي رصيد الخزائن المتاح) -->
+  <!-- ======================================================== -->
+  <div id="vaultsBreakdownModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 860px; width: 95%; max-height: 90vh; overflow-y: auto;">
+      <button type="button" class="modal-close-btn" onclick="window.closeVaultsBreakdownModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+          <i class="fa-solid fa-vault"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="vaults_breakdown_title">تفاصيل صافي رصيد الخزائن المتاح</h3>
+          <p class="modal-subtitle-premium" data-i18n="vaults_breakdown_subtitle">بيان فوري ومفصل للسيولة النقدية والإلكترونية المتوفرة عبر كافة وسائل الدفع</p>
+        </div>
+      </div>
+
+      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 18px;">
+        <!-- Grand Total Liquidity Header Card -->
+        <div style="background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(37,99,235,0.08)); border: 1.5px solid rgba(139,92,246,0.3); border-radius: 14px; padding: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="font-size: 0.88em; color: var(--text-secondary); font-weight: 700;" data-i18n="lbl_grand_liquidity">إجمالي السيولة النقدية والبنكية الصافية:</div>
+            <div id="vaultsModalGrandTotal" style="font-size: 2em; font-weight: 900; color: #8b5cf6; line-height: 1.2;">0 ج</div>
+          </div>
+          <button type="button" class="btn primary smallBtn" onclick="window.closeVaultsBreakdownModal(); window.openVaultTransferModal();" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 8px 16px;">
+            <i class="fa-solid fa-money-bill-transfer"></i> <span data-i18n="btn_transfer_vaults">تحويل بين الخزائن</span>
+          </button>
+        </div>
+
+        <!-- 3 Detailed Vault Cards Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px;">
+          <!-- Vault 1: Cash Drawer -->
+          <div style="background: var(--bg-surface); border: 1.5px solid rgba(16, 185, 129, 0.3); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.1em;">
+                  <i class="fa-solid fa-cash-register"></i>
+                </div>
+                <div>
+                  <div style="font-weight: 800; font-size: 0.95em;" data-i18n="opt_cash">درج الكاش (الخزينة النقدية)</div>
+                  <div style="font-size: 0.75em; color: var(--text-secondary);">المقبوضات الورقية</div>
+                </div>
+              </div>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; font-weight: 700;">كاش</span>
+            </div>
+
+            <div style="background: var(--bg-inset); border-radius: 10px; padding: 10px; font-size: 0.82em; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">المقبوض نقداً:</span>
+                <b id="vaultsModalCashIn" style="color: #10b981;">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">المنصرف كاش:</span>
+                <b id="vaultsModalCashOut" style="color: #ef4444;">0 ج</b>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85em; font-weight: 700; color: var(--text-secondary);">الرصيد الفعلي المتاح:</span>
+              <span id="vaultsModalCashBal" style="font-size: 1.3em; font-weight: 900; color: #10b981;">0 ج</span>
+            </div>
+          </div>
+
+          <!-- Vault 2: InstaPay -->
+          <div style="background: var(--bg-surface); border: 1.5px solid rgba(124, 58, 237, 0.3); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(124, 58, 237, 0.15); color: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 1.1em;">
+                  <i class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <div>
+                  <div style="font-weight: 800; font-size: 0.95em;" data-i18n="opt_instapay">حساب إنستاباي (InstaPay)</div>
+                  <div style="font-size: 0.75em; color: var(--text-secondary);">التحويلات اللحظية</div>
+                </div>
+              </div>
+              <span class="badge" style="background: rgba(124, 58, 237, 0.12); color: #7c3aed; font-weight: 700;">InstaPay</span>
+            </div>
+
+            <div style="background: var(--bg-inset); border-radius: 10px; padding: 10px; font-size: 0.82em; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">المقبوض بإنستاباي:</span>
+                <b id="vaultsModalInstapayIn" style="color: #10b981;">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">المنصرف / المسحوب:</span>
+                <b id="vaultsModalInstapayOut" style="color: #ef4444;">0 ج</b>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85em; font-weight: 700; color: var(--text-secondary);">الرصيد الفعلي الحالي:</span>
+              <span id="vaultsModalInstapayBal" style="font-size: 1.3em; font-weight: 900; color: #7c3aed;">0 ج</span>
+            </div>
+          </div>
+
+          <!-- Vault 3: Vodafone Cash -->
+          <div style="background: var(--bg-surface); border: 1.5px solid rgba(239, 68, 68, 0.3); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 1.1em;">
+                  <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                  <div style="font-weight: 800; font-size: 0.95em;" data-i18n="opt_wallet">محفظة فودافون كاش</div>
+                  <div style="font-size: 0.75em; color: var(--text-secondary);">المحافظ الإلكترونية الذكية</div>
+                </div>
+              </div>
+              <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; font-weight: 700;">محفظة</span>
+            </div>
+
+            <div style="background: var(--bg-inset); border-radius: 10px; padding: 10px; font-size: 0.82em; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">المقبوض بالمحفظة:</span>
+                <b id="vaultsModalWalletIn" style="color: #10b981;">0 ج</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">المنصرف / المسحوب:</span>
+                <b id="vaultsModalWalletOut" style="color: #ef4444;">0 ج</b>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85em; font-weight: 700; color: var(--text-secondary);">الرصيد الفعلي الحالي:</span>
+              <span id="vaultsModalWalletBal" style="font-size: 1.3em; font-weight: 900; color: #ef4444;">0 ج</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 8. REGISTERED STUDENTS LIST MODAL (قائمة الطلاب المسجلين) -->
+  <!-- ======================================================== -->
+  <div id="studentsListModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 920px; width: 95%; max-height: 90vh; overflow-y: auto;">
+      <button type="button" class="modal-close-btn" onclick="window.closeStudentsListModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="modal-icon-badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-premium" data-i18n="students_modal_title">قائمة وبيانات الطلاب المسجلين</h3>
+          <p class="modal-subtitle-premium" data-i18n="students_modal_subtitle">استعراض شامل لبيانات واشتراكات الطلاب مع ترقيم الصفحات والبحث الفوري</p>
+        </div>
+      </div>
+
+      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 16px;">
+        <!-- KPI Badges -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <div style="background: rgba(59, 130, 246, 0.08); border: 1.5px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: #3b82f6; font-weight: 700;">إجمالي الطلاب المسجلين:</div>
+            <div id="studentsModalTotal" style="font-size: 1.6em; font-weight: 800; color: #3b82f6;">0</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;">طلاب باقات / عام:</div>
+            <div id="studentsModalPackages" style="font-size: 1.3em; font-weight: 800; color: #10b981;">0</div>
+          </div>
+          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;">طلاب حصص فردية:</div>
+            <div id="studentsModalSingle" style="font-size: 1.3em; font-weight: 800; color: #7c3aed;">0</div>
+          </div>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <div style="position: relative; flex: 2; min-width: 200px;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; top: 50%; right: 14px; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.9em;"></i>
+            <input type="text" id="studentsSearchInp" class="inp" placeholder="بحث بالاسم أو الكود أو رقم الهاتف..." oninput="window.studentsModalCurrentPage=1; window.renderStudentsListModal();" style="padding-inline-start: 38px; font-weight: 600;">
+          </div>
+          <select id="studentsClassFilter" class="inp" onchange="window.studentsModalCurrentPage=1; window.renderStudentsListModal();" style="flex: 1; min-width: 160px; font-weight: 700;">
+            <option value="">جميع المجموعات والصفوف</option>
+          </select>
+        </div>
+
+        <!-- Table -->
+        <div class="fin-modal-table-wrap">
+          <table class="fin-modal-table">
+            <thead>
+              <tr>
+                <th style="width: 10%;">#ID</th>
+                <th style="width: 24%;" data-i18n="tbl_th_student">اسم الطالب</th>
+                <th style="width: 20%;" data-i18n="tbl_th_class">الصف / المجموعة</th>
+                <th style="width: 16%;">هاتف الطالب</th>
+                <th style="width: 16%;">هاتف ولي الأمر</th>
+                <th style="width: 14%;">حالة السداد</th>
+              </tr>
+            </thead>
+            <tbody id="studentsListModalTbody">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls (30 per page) -->
+        <div class="fin-modal-pagination" id="studentsModalPagination">
+          <button type="button" class="btn secondary smallBtn pagination-btn" id="studentsPrevBtn" onclick="window.studentsModalPrevPage()" disabled>
+            <i class="fa-solid fa-chevron-right"></i> <span data-i18n="btn_prev">السابق</span>
+          </button>
+          <div class="pagination-info">
+            <span>صفحة <b id="studentsCurrentPageNum">1</b> من <b id="studentsTotalPagesNum">1</b></span>
+            <span class="pagination-subinfo">(عرض <span id="studentsShowingCount">0</span> من إجمالي <span id="studentsTotalCount">0</span> طالب)</span>
+          </div>
+          <button type="button" class="btn secondary smallBtn pagination-btn" id="studentsNextBtn" onclick="window.studentsModalNextPage()">
+            <span data-i18n="btn_next">التالي</span> <i class="fa-solid fa-chevron-left"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V35"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V36"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

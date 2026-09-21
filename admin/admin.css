@@ -4347,7 +4347,10 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
 #vaultTransfersHistoryModal,
 #expensesDetailsModal,
 #withdrawalsDetailsModal,
-#discountsDetailsModal {
+#discountsDetailsModal,
+#debtsDetailsModal,
+#vaultsBreakdownModal,
+#studentsListModal {
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -4357,7 +4360,10 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
 #vaultTransfersHistoryModal:not(.hidden),
 #expensesDetailsModal:not(.hidden),
 #withdrawalsDetailsModal:not(.hidden),
-#discountsDetailsModal:not(.hidden) {
+#discountsDetailsModal:not(.hidden),
+#debtsDetailsModal:not(.hidden),
+#vaultsBreakdownModal:not(.hidden),
+#studentsListModal:not(.hidden) {
   opacity: 1;
   visibility: visible;
   pointer-events: all;
@@ -4368,7 +4374,10 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
 #vaultTransfersHistoryModal .modal-box-premium,
 #expensesDetailsModal .modal-box-premium,
 #withdrawalsDetailsModal .modal-box-premium,
-#discountsDetailsModal .modal-box-premium {
+#discountsDetailsModal .modal-box-premium,
+#debtsDetailsModal .modal-box-premium,
+#vaultsBreakdownModal .modal-box-premium,
+#studentsListModal .modal-box-premium {
   transform: translateY(24px) scale(0.97);
   opacity: 0;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
@@ -4378,7 +4387,10 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
 #vaultTransfersHistoryModal:not(.hidden) .modal-box-premium,
 #expensesDetailsModal:not(.hidden) .modal-box-premium,
 #withdrawalsDetailsModal:not(.hidden) .modal-box-premium,
-#discountsDetailsModal:not(.hidden) .modal-box-premium {
+#discountsDetailsModal:not(.hidden) .modal-box-premium,
+#debtsDetailsModal:not(.hidden) .modal-box-premium,
+#vaultsBreakdownModal:not(.hidden) .modal-box-premium,
+#studentsListModal:not(.hidden) .modal-box-premium {
   transform: translateY(0) scale(1);
   opacity: 1;
 }
@@ -4465,7 +4477,10 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   #vaultTransfersHistoryModal .modal-box-premium,
   #expensesDetailsModal .modal-box-premium,
   #withdrawalsDetailsModal .modal-box-premium,
-  #discountsDetailsModal .modal-box-premium {
+  #discountsDetailsModal .modal-box-premium,
+  #debtsDetailsModal .modal-box-premium,
+  #vaultsBreakdownModal .modal-box-premium,
+  #studentsListModal .modal-box-premium {
     max-width: 100% !important;
     width: 100% !important;
     max-height: 92vh !important;
@@ -4481,7 +4496,10 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   #vaultTransfersHistoryModal:not(.hidden) .modal-box-premium,
   #expensesDetailsModal:not(.hidden) .modal-box-premium,
   #withdrawalsDetailsModal:not(.hidden) .modal-box-premium,
-  #discountsDetailsModal:not(.hidden) .modal-box-premium {
+  #discountsDetailsModal:not(.hidden) .modal-box-premium,
+  #debtsDetailsModal:not(.hidden) .modal-box-premium,
+  #vaultsBreakdownModal:not(.hidden) .modal-box-premium,
+  #studentsListModal:not(.hidden) .modal-box-premium {
     transform: translateY(0) scale(1) !important;
   }
 
@@ -4510,7 +4528,9 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   #expensesDetailsModal .fin-modal-table-wrap,
   #withdrawalsDetailsModal .fin-modal-table-wrap,
   #vaultTransfersHistoryModal .fin-modal-table-wrap,
-  #discountsDetailsModal .fin-modal-table-wrap {
+  #discountsDetailsModal .fin-modal-table-wrap,
+  #debtsDetailsModal .fin-modal-table-wrap,
+  #studentsListModal .fin-modal-table-wrap {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
     max-height: 240px !important;
@@ -4556,5 +4576,46 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   /* KPI cards single column */
   .fin-summary-cards {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   VAULT TRANSFER LANDSCAPE & NEW MODALS STYLES
+   ========================================================= */
+.vault-transfer-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+@media (max-width: 768px) {
+  .vault-transfer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+}
+
+/* Debts & Students Modals: Table Centering & Balanced Columns */
+#debtsDetailsModal .fin-modal-table th,
+#debtsDetailsModal .fin-modal-table td,
+#studentsListModal .fin-modal-table th,
+#studentsListModal .fin-modal-table td {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+#debtsDetailsModal .fin-modal-table {
+  font-size: 0.85em;
+}
+
+#studentsListModal .fin-modal-table {
+  font-size: 0.85em;
+}
+
+@media (max-width: 768px) {
+  #debtsDetailsModal .fin-modal-table,
+  #studentsListModal .fin-modal-table {
+    font-size: 0.80em !important;
   }
 }

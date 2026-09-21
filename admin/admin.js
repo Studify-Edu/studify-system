@@ -5494,6 +5494,7 @@ window.updateTransferPreview = function() {
 
 window.setTransferAmount = function(val) {
   const fromSel = document.getElementById("transFromVault");
+  const toSel = document.getElementById("transToVault");
   const amtInp = document.getElementById("transAmount");
   if (!amtInp) return;
 
@@ -5502,6 +5503,15 @@ window.setTransferAmount = function(val) {
     const b = window.vaultLiveBalances || { cash: 0, wallet: 0, instapay: 0 };
     const avail = Math.max(0, Number(b[fromV]) || 0);
     amtInp.value = avail;
+  } else if (val === 'cover_deficit') {
+    const toV = toSel ? toSel.value : 'instapay';
+    const b = window.vaultLiveBalances || { cash: 0, wallet: 0, instapay: 0 };
+    const targetBal = Number(b[toV]) || 0;
+    if (targetBal < 0) {
+      amtInp.value = Math.abs(targetBal);
+    } else {
+      amtInp.value = 50;
+    }
   } else {
     const cur = Number(amtInp.value) || 0;
     amtInp.value = cur + Number(val);
@@ -6095,4 +6105,380 @@ window.filterRevenueModal = function() {
       `;
     }).join("");
   }
+};
+
+
+// ========================================================
+// 5. HELPER: Calculate Student Financial Status
+// ========================================================
+window.getStudentFinancialStatus = function(st) {
+  if (!st) return { req: 0, paid: 0, discount: 0, debt: 0 };
+  let req = 0;
+  const normName = str => String(str || '').replace(/^باقة\s+/, '').trim().toLowerCase();
+
+  const getPriceForPkg = (candidate) => {
+    if (!candidate) return 0;
+    const clean = normName(candidate);
+    if (packages && packages[candidate]) return Number(packages[candidate].price) || 0;
+    if (groupFees && groupFees[candidate]) {
+      return typeof groupFees[candidate] === 'object' ? (Number(groupFees[candidate].price) || 0) : (Number(groupFees[candidate]) || 0);
+    }
+    for (const pk in (packages || {})) {
+      if (normName(pk) === clean) return Number(packages[pk].price) || 0;
+    }
+    for (const gk in (groupFees || {})) {
+      if (normName(gk) === clean) {
+        return typeof groupFees[gk] === 'object' ? (Number(groupFees[gk].price) || 0) : (Number(groupFees[gk]) || 0);
+      }
+    }
+    return 0;
+  };
+
+  const cls = st.className;
+  const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) 
+    ? st.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package') 
+    : (cls && cls !== 'عام' && cls !== 'General' && cls !== 'بدون باقة' && cls !== 'No Package' ? [cls] : []);
+  const checked = new Set();
+  stPkgs.forEach(pName => {
+    const clean = normName(pName);
+    if (!clean || checked.has(clean)) return;
+    checked.add(clean);
+    req += getPriceForPkg(pName);
+  });
+  
+  const paid = Number(st.paid) || 0;
+  const discount = Number(st.discount) || 0;
+  const debt = Math.max(0, req - paid - discount);
+
+  return { req, paid, discount, debt };
+};
+
+
+// ========================================================
+// 6. DEBTS DETAILS MODAL (تفاصيل المتبقي والديون على الطلاب)
+// ========================================================
+window.debtsModalCurrentPage = 1;
+const DEBTS_MODAL_PAGE_SIZE = 25;
+
+window.openDebtsDetailsModal = function() {
+  const modal = document.getElementById("debtsDetailsModal");
+  if (!modal) return;
+  window.debtsModalCurrentPage = 1;
+  const searchInp = document.getElementById("debtsSearchInp");
+  if (searchInp) searchInp.value = "";
+  window.renderDebtsModalTable();
+  modal.classList.remove("hidden");
+};
+
+window.closeDebtsDetailsModal = function() {
+  const modal = document.getElementById("debtsDetailsModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+window.debtsModalPrevPage = function() {
+  if (window.debtsModalCurrentPage > 1) {
+    window.debtsModalCurrentPage--;
+    window.renderDebtsModalTable();
+  }
+};
+
+window.debtsModalNextPage = function() {
+  window.debtsModalCurrentPage++;
+  window.renderDebtsModalTable();
+};
+
+window.renderDebtsModalTable = function() {
+  const isAr = (currentLang === "ar");
+  const tbody = document.getElementById("debtsDetailsTbody");
+  const q = (document.getElementById("debtsSearchInp")?.value || "").toLowerCase().trim();
+
+  const allStudents = Object.values(students || {});
+  const debtors = [];
+  let totalDebtAmount = 0;
+
+  allStudents.forEach(st => {
+    if (!st || !st.name) return;
+    const fin = window.getStudentFinancialStatus(st);
+    if (fin.debt > 0) {
+      totalDebtAmount += fin.debt;
+      if (q && !st.name.toLowerCase().includes(q) && !String(st.id).includes(q)) return;
+      debtors.push({
+        id: st.id,
+        name: st.name,
+        className: (st.className && st.className !== 'عام' && st.className !== 'General') ? st.className : (isAr ? "بدون باقة" : "No Package"),
+        phone: st.phone || "—",
+        parentPhone: st.parentPhone || "—",
+        req: fin.req,
+        paid: fin.paid,
+        debt: fin.debt
+      });
+    }
+  });
+
+  // Sort highest debt first
+  debtors.sort((a, b) => b.debt - a.debt);
+
+  // Update KPI counters
+  if (document.getElementById("debtsModalTotal")) {
+    document.getElementById("debtsModalTotal").textContent = totalDebtAmount.toLocaleString() + " ج";
+  }
+  if (document.getElementById("debtsModalCount")) {
+    document.getElementById("debtsModalCount").textContent = debtors.length + (isAr ? " طالب" : " Students");
+  }
+
+  // Pagination calculation
+  const totalPages = Math.ceil(debtors.length / DEBTS_MODAL_PAGE_SIZE) || 1;
+  if (window.debtsModalCurrentPage > totalPages) window.debtsModalCurrentPage = totalPages;
+  if (window.debtsModalCurrentPage < 1) window.debtsModalCurrentPage = 1;
+
+  const startIdx = (window.debtsModalCurrentPage - 1) * DEBTS_MODAL_PAGE_SIZE;
+  const pageItems = debtors.slice(startIdx, startIdx + DEBTS_MODAL_PAGE_SIZE);
+
+  // Update pagination UI controls
+  const prevBtn = document.getElementById("debtsPrevBtn");
+  const nextBtn = document.getElementById("debtsNextBtn");
+  const curPageEl = document.getElementById("debtsCurrentPageNum");
+  const totalPagesEl = document.getElementById("debtsTotalPagesNum");
+  const showingCountEl = document.getElementById("debtsShowingCount");
+  const totalCountEl = document.getElementById("debtsTotalCount");
+
+  if (prevBtn) prevBtn.disabled = (window.debtsModalCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (window.debtsModalCurrentPage >= totalPages);
+  if (curPageEl) curPageEl.textContent = window.debtsModalCurrentPage;
+  if (totalPagesEl) totalPagesEl.textContent = totalPages;
+  if (showingCountEl) showingCountEl.textContent = pageItems.length;
+  if (totalCountEl) totalCountEl.textContent = debtors.length;
+
+  if (!tbody) return;
+  if (debtors.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--text-secondary); font-weight:600;">${isAr ? "لا توجد ديون مسجلة مطابقة للبحث" : "No debt records found"}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = pageItems.map(st => {
+    return `
+      <tr>
+        <td style="font-weight:700; color:var(--text-secondary);">#${st.id}</td>
+        <td style="font-weight:800; color:var(--text-primary);">${st.name}</td>
+        <td><span class="badge" style="background:var(--bg-inset); color:var(--primary); font-weight:700;">${st.className}</span></td>
+        <td style="font-weight:700;">${st.req} ج</td>
+        <td style="font-weight:700; color:#10b981;">${st.paid} ج</td>
+        <td style="font-weight:900; color:#ef4444; font-size:1.05em;">${st.debt} ج</td>
+        <td>
+          <a href="../assistant/index.html?openId=${st.id}" target="_blank" class="btn secondary smallBtn" style="padding:4px 10px; font-size:0.8em; text-decoration:none;" title="${isAr ? 'فتح ملف الطالب' : 'Open Profile'}">
+            <i class="fa-solid fa-folder-open"></i>
+          </a>
+        </td>
+      </tr>
+    `;
+  }).join("");
+};
+
+
+// ========================================================
+// 7. VAULTS BREAKDOWN MODAL (تفاصيل صافي رصيد الخزائن المتاح)
+// ========================================================
+window.openVaultsBreakdownModal = function() {
+  const modal = document.getElementById("vaultsBreakdownModal");
+  if (!modal) return;
+
+  const isAr = (currentLang === "ar");
+  const b = window.vaultLiveBalances || {};
+  const cashIn = Number(b.cashIn) || 0;
+  const cashOut = Number(b.cashOut) || 0;
+  const cashBal = Number(b.cash) || 0;
+
+  const instapayIn = Number(b.instapayIn) || 0;
+  const instapayOut = Number(b.instapayOut) || 0;
+  const instapayBal = Number(b.instapay) || 0;
+
+  const walletIn = Number(b.walletIn) || 0;
+  const walletOut = Number(b.walletOut) || 0;
+  const walletBal = Number(b.wallet) || 0;
+
+  const grandNet = cashBal + instapayBal + walletBal;
+
+  // Grand Total Liquidity
+  const grandEl = document.getElementById("vaultsModalGrandTotal");
+  if (grandEl) grandEl.textContent = grandNet.toLocaleString() + " ج";
+
+  // Cash Drawer
+  if (document.getElementById("vaultsModalCashIn")) document.getElementById("vaultsModalCashIn").textContent = cashIn.toLocaleString() + " ج";
+  if (document.getElementById("vaultsModalCashOut")) document.getElementById("vaultsModalCashOut").textContent = cashOut.toLocaleString() + " ج";
+  const cashBalEl = document.getElementById("vaultsModalCashBal");
+  if (cashBalEl) {
+    cashBalEl.textContent = cashBal.toLocaleString() + " ج";
+    cashBalEl.style.color = cashBal < 0 ? "#ef4444" : "#10b981";
+  }
+
+  // InstaPay
+  if (document.getElementById("vaultsModalInstapayIn")) document.getElementById("vaultsModalInstapayIn").textContent = instapayIn.toLocaleString() + " ج";
+  if (document.getElementById("vaultsModalInstapayOut")) document.getElementById("vaultsModalInstapayOut").textContent = instapayOut.toLocaleString() + " ج";
+  const instapayBalEl = document.getElementById("vaultsModalInstapayBal");
+  if (instapayBalEl) {
+    if (instapayBal < 0) {
+      instapayBalEl.innerHTML = `<span style="color:#ef4444; direction:ltr; unicode-bidi:embed;">-${Math.abs(instapayBal).toLocaleString()} ج</span> <span class="badge" style="background:rgba(239,68,68,0.12); color:#ef4444; font-size:0.65em; font-weight:700; margin-inline-start:4px;">${isAr ? 'عجز مؤقت' : 'Deficit'}</span>`;
+    } else {
+      instapayBalEl.textContent = instapayBal.toLocaleString() + " ج";
+      instapayBalEl.style.color = "#7c3aed";
+    }
+  }
+
+  // Vodafone Cash Wallet
+  if (document.getElementById("vaultsModalWalletIn")) document.getElementById("vaultsModalWalletIn").textContent = walletIn.toLocaleString() + " ج";
+  if (document.getElementById("vaultsModalWalletOut")) document.getElementById("vaultsModalWalletOut").textContent = walletOut.toLocaleString() + " ج";
+  const walletBalEl = document.getElementById("vaultsModalWalletBal");
+  if (walletBalEl) {
+    walletBalEl.textContent = walletBal.toLocaleString() + " ج";
+    walletBalEl.style.color = walletBal < 0 ? "#ef4444" : "#ef4444";
+  }
+
+  modal.classList.remove("hidden");
+};
+
+window.closeVaultsBreakdownModal = function() {
+  const modal = document.getElementById("vaultsBreakdownModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+
+// ========================================================
+// 8. REGISTERED STUDENTS LIST MODAL (قائمة وبيانات الطلاب)
+// ========================================================
+window.studentsModalCurrentPage = 1;
+const STUDENTS_MODAL_PAGE_SIZE = 30; // 30 students per page as requested
+
+window.openStudentsListModal = function() {
+  const modal = document.getElementById("studentsListModal");
+  if (!modal) return;
+  window.studentsModalCurrentPage = 1;
+  const searchInp = document.getElementById("studentsSearchInp");
+  if (searchInp) searchInp.value = "";
+
+  // Populate classes filter dropdown
+  const filterSel = document.getElementById("studentsClassFilter");
+  if (filterSel) {
+    const isAr = (currentLang === "ar");
+    const classSet = new Set();
+    Object.values(students || {}).forEach(s => {
+      if (s && s.className && s.className !== 'عام' && s.className !== 'General') {
+        classSet.add(s.className);
+      }
+    });
+    filterSel.innerHTML = `<option value="">${isAr ? 'جميع المجموعات والصفوف' : 'All Classes'}</option>` + 
+      [...classSet].sort().map(c => `<option value="${c}">${c}</option>`).join("");
+  }
+
+  window.renderStudentsListModal();
+  modal.classList.remove("hidden");
+};
+
+window.closeStudentsListModal = function() {
+  const modal = document.getElementById("studentsListModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+window.studentsModalPrevPage = function() {
+  if (window.studentsModalCurrentPage > 1) {
+    window.studentsModalCurrentPage--;
+    window.renderStudentsListModal();
+  }
+};
+
+window.studentsModalNextPage = function() {
+  window.studentsModalCurrentPage++;
+  window.renderStudentsListModal();
+};
+
+window.renderStudentsListModal = function() {
+  const isAr = (currentLang === "ar");
+  const tbody = document.getElementById("studentsListModalTbody");
+  const q = (document.getElementById("studentsSearchInp")?.value || "").toLowerCase().trim();
+  const clsFilter = document.getElementById("studentsClassFilter")?.value || "";
+
+  const allStudents = Object.values(students || {}).filter(s => s && s.name);
+  const totalRegCount = allStudents.length;
+  let pkgCount = 0;
+  let singleCount = (typeof window.getAdminUniqueSessionStudentsCount === 'function') ? window.getAdminUniqueSessionStudentsCount() : 0;
+
+  const filtered = [];
+  allStudents.forEach(st => {
+    const cls = (st.className && st.className !== 'عام' && st.className !== 'General') ? st.className : (isAr ? "بدون باقة" : "No Package");
+    if (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') {
+      pkgCount++;
+    }
+
+    if (clsFilter && st.className !== clsFilter) return;
+    if (q) {
+      const matchName = (st.name || '').toLowerCase().includes(q);
+      const matchId = String(st.id || '').includes(q);
+      const matchPhone = String(st.phone || '').includes(q);
+      const matchParent = String(st.parentPhone || '').includes(q);
+      if (!matchName && !matchId && !matchPhone && !matchParent) return;
+    }
+
+    const fin = window.getStudentFinancialStatus(st);
+    filtered.push({
+      id: st.id,
+      name: st.name,
+      className: cls,
+      phone: st.phone || "—",
+      parentPhone: st.parentPhone || "—",
+      debt: fin.debt
+    });
+  });
+
+  // Sort by ID
+  filtered.sort((a, b) => Number(a.id) - Number(b.id));
+
+  // Update KPI counters
+  if (document.getElementById("studentsModalTotal")) document.getElementById("studentsModalTotal").textContent = totalRegCount;
+  if (document.getElementById("studentsModalPackages")) document.getElementById("studentsModalPackages").textContent = pkgCount;
+  if (document.getElementById("studentsModalSingle")) document.getElementById("studentsModalSingle").textContent = singleCount;
+
+  // Pagination calculation
+  const totalPages = Math.ceil(filtered.length / STUDENTS_MODAL_PAGE_SIZE) || 1;
+  if (window.studentsModalCurrentPage > totalPages) window.studentsModalCurrentPage = totalPages;
+  if (window.studentsModalCurrentPage < 1) window.studentsModalCurrentPage = 1;
+
+  const startIdx = (window.studentsModalCurrentPage - 1) * STUDENTS_MODAL_PAGE_SIZE;
+  const pageItems = filtered.slice(startIdx, startIdx + STUDENTS_MODAL_PAGE_SIZE);
+
+  // Update pagination UI controls
+  const prevBtn = document.getElementById("studentsPrevBtn");
+  const nextBtn = document.getElementById("studentsNextBtn");
+  const curPageEl = document.getElementById("studentsCurrentPageNum");
+  const totalPagesEl = document.getElementById("studentsTotalPagesNum");
+  const showingCountEl = document.getElementById("studentsShowingCount");
+  const totalCountEl = document.getElementById("studentsTotalCount");
+
+  if (prevBtn) prevBtn.disabled = (window.studentsModalCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (window.studentsModalCurrentPage >= totalPages);
+  if (curPageEl) curPageEl.textContent = window.studentsModalCurrentPage;
+  if (totalPagesEl) totalPagesEl.textContent = totalPages;
+  if (showingCountEl) showingCountEl.textContent = pageItems.length;
+  if (totalCountEl) totalCountEl.textContent = filtered.length;
+
+  if (!tbody) return;
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:32px; color:var(--text-secondary); font-weight:600;">${isAr ? "لا يوجد طلاب يطابقون خيارات البحث" : "No matching students found"}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = pageItems.map(st => {
+    const statusBadge = st.debt > 0
+      ? `<span class="badge" style="background:rgba(239,68,68,0.12); color:#ef4444; font-weight:700;">${isAr ? 'متبقي ' + st.debt + ' ج' : 'Debt ' + st.debt + ' EGP'}</span>`
+      : `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700;">${isAr ? 'خالص' : 'Paid'}</span>`;
+
+    return `
+      <tr>
+        <td style="font-weight:700; color:var(--text-secondary);">#${st.id}</td>
+        <td style="font-weight:800; color:var(--text-primary);">${st.name}</td>
+        <td><span class="badge" style="background:var(--bg-inset); color:var(--primary); font-weight:700;">${st.className}</span></td>
+        <td style="font-weight:600;">${st.phone}</td>
+        <td style="font-weight:600; color:var(--text-secondary);">${st.parentPhone}</td>
+        <td>${statusBadge}</td>
+      </tr>
+    `;
+  }).join("");
 };
