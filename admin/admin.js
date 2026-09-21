@@ -888,13 +888,6 @@ export const PERMISSIONS_DEFS = [
     group: "financial" 
   },
   { 
-    key: "require_daily_approval", 
-    label: { ar: "تفعيل الاعتماد اليومي", en: "Enable Daily Shift Closeout" }, 
-    desc: { ar: "يجعل الإيراد معلقاً ولا يُضاف للإجمالي حتى يعتمده المدير", en: "Keeps revenue pending until approved by manager" }, 
-    icon: "fa-shield-halved", 
-    group: "financial" 
-  },
-  { 
     key: "can_request_discount", 
     label: { ar: "طلب خصم / إعفاء", en: "Request Discount / Exemption" }, 
     desc: { ar: "إظهار زر 'خصم' عند الدفع ليتمكن المساعد من طلب إعفاء", en: "Show 'Discount' button during payment to request exemption" }, 

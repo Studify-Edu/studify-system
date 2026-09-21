@@ -6913,7 +6913,7 @@ async function fetchManagerAssistants() {
         const permGroups = [
           {
             title: "<i class='fa-solid fa-money-bill-wave'></i> الصلاحيات المالية",
-            keys: ["show_revenue", "require_daily_approval", "can_request_discount"]
+            keys: ["show_revenue", "can_request_discount"]
           },
           {
             title: "<i class='fa-solid fa-server'></i> إدارة البيانات والنظام",
@@ -7253,7 +7253,6 @@ window.deleteAssistant = async function(asstKey) {
  // 17.11. MANAGER: PERMISSIONS SYSTEM
  // ==========================================
  const PERMISSIONS_DEFS = [
-  { key: "require_daily_approval", label: "تفعيل الاعتماد اليومي", desc: "يجعل الإيراد معلقاً ولا يُضاف للإجمالي حتى يعتمده المدير" },
   { key: "show_revenue", label: "إظهار الإيراد اليومي", desc: "يعرض رقم إيراد الوردية الحالي في الشريط العلوي للمساعد" },
   { key: "can_add_student", label: "إضافة طالب جديد", desc: "يسمح بفتح كارت 'إضافة طالب جديد' وتسجيل البيانات" },
   { key: "can_manage_packages", label: "إدارة الباقات والأسعار", desc: "إتاحة فتح صفحة إدارة الباقات والأسعار من القائمة الجانبية" },
@@ -11037,7 +11036,6 @@ let notificationsList = [];
 const NOTIF_PERM_TITLES = {
   'can_add_student': 'إضافة وتعديل بيانات الطلاب',
   'show_revenue': 'عرض الإيرادات والخزينة',
-  'require_daily_approval': 'الاعتماد اليومي للإيرادات',
   'can_request_discount': 'طلب خصم أو إعفاء',
   'can_manage_packages': 'إدارة الباقات والاشتراكات',
   'can_access_settings': 'إعدادات النظام والنسخ الاحتياطي',
