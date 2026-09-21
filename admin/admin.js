@@ -1703,6 +1703,7 @@ async function loadAllAdminData() {
       const cfg = s.config || {};
       dailyShiftStatus = s.daily_shift_status || 'open';
       dailyApprovalMap = cfg.daily_approval_map || dailyApprovalMap || {};
+      window.shiftSystemEnabled = (cfg.shift_system_enabled !== false);
       
       const today = nowDateStr();
       // If today is not yet explicitly set in the map, inherit from global daily_shift_status
@@ -1840,87 +1841,192 @@ export function renderDailyApprovalWidget(dateStr) {
   const widget = document.getElementById("dailyApprovalWidget");
   if (!widget) return;
 
+  const isAr = (currentLang === "ar");
+  const isFeatureEnabled = (window.shiftSystemEnabled !== false);
   const info = dailyApprovalMap[d];
   const isApproved = info ? (info.status === 'approved' || info === 'approved' || info === true) : (dailyShiftStatus === 'open');
-  const isAr = (currentLang === "ar");
 
+  if (!isFeatureEnabled) {
+    // ── STATE 1: FEATURE DISABLED (OFF) ──
+    // In this state, the feature itself is off. Assistants operate without daily shift lockout.
+    // As per user request: When OFF, NEVER show "تمت المراجعة والقراءة" or action buttons!
+    widget.className = "approval-card feature-disabled";
+    widget.innerHTML = `
+      <div class="approval-card-header">
+        <div class="approval-header-left">
+          <div class="approval-card-title">
+            <span class="approval-status-icon icon-disabled"><i class="fa-solid fa-power-off"></i></span>
+            <span class="approval-title-text">${isAr ? 'نظام الشيفت اليومي والاعتماد' : 'Daily Shift & Approval System'}</span>
+            <span class="approval-badge-pill disabled">
+              <i class="fa-solid fa-ban"></i> ${isAr ? 'معطل بالكامل (OFF)' : 'Disabled (OFF)'}
+            </span>
+          </div>
+        </div>
+        <div class="approval-header-switch">
+          <div class="switch-control-group">
+            <span class="switch-control-label">${isAr ? 'مفتاح الميزة:' : 'Feature:'}</span>
+            <button type="button" class="master-power-switch state-off" onclick="window.toggleShiftSystemFeature(true)" title="${isAr ? 'تفعيل نظام الشيفتات' : 'Enable Shift System'}" aria-label="تفعيل نظام الشيفتات">
+              <span class="switch-rail">
+                <span class="rail-text-on">ON</span>
+                <span class="rail-text-off">OFF</span>
+                <span class="switch-knob">
+                  <i class="fa-solid fa-power-off"></i>
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="approval-card-body">
+        <p class="approval-card-desc">
+          ${isAr 
+            ? 'ميزة إغلاق واعتماد الشيفت اليومي معطلة حالياً. العمليات متاحة للمساعدين بشكل دائم ومستمر دون الحاجة لاعتماد يومي أو إغلاق يدوي للشيفت.'
+            : 'The daily shift system is currently disabled. Assistants have uninterrupted access to operations without daily shift requirements.'}
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  // ── STATE 2: FEATURE ENABLED (ON) ──
   const titleText = isAr ? `حالة تشغيل الشيفت اليومي (${d})` : `Daily Shift Status (${d})`;
   const badgeHtml = isApproved 
-    ? (isAr ? '<i class="fa-solid fa-circle-play"></i> مفتوح للعمل (ON)' : '<i class="fa-solid fa-circle-play"></i> Active for Work (ON)')
-    : (isAr ? '<i class="fa-solid fa-lock"></i> مغلق ومجمد (OFF)' : '<i class="fa-solid fa-lock"></i> Locked & Suspended (OFF)');
+    ? (isAr ? '<i class="fa-solid fa-circle-play"></i> مفتوح للعمل (نشط)' : '<i class="fa-solid fa-circle-play"></i> Active (ON)')
+    : (isAr ? '<i class="fa-solid fa-lock"></i> مغلق ومجمد (بانتظار الاعتماد)' : '<i class="fa-solid fa-lock"></i> Locked & Suspended (OFF)');
 
   const descText = isApproved
     ? (isAr 
-        ? 'الشيفت مفتوح ونشط حالياً. يمكن للمساعدين تسجيل الحضور والتحصيل والعمليات بشكل طبيعي. عند انتهاء اليوم، قم بإيقاف السويتش لإغلاق الشيفت ومراجعة واعتماد الحسابات.'
-        : 'The shift is currently active and assistants are logging attendance and operations normally. Turn off switch to close shift and audit accounts.')
+        ? 'الشيفت مفتوح ونشط حالياً. يمكن للمساعدين تسجيل الحضور والتحصيل والعمليات بشكل طبيعي. عند انتهاء اليوم، انقر على زر إغلاق الشيفت لتجميد العمليات ومراجعة الحسابات.'
+        : 'The shift is currently active and assistants can log attendance and collections. Click Close Shift to freeze operations and audit accounts.')
     : (isAr
-        ? 'الشيفت مغلق ومجمد حالياً لدى المساعدين. تم تجميد العمليات لحين مراجعة واعتماد اليومية. انقر على "اعتماد اليومية وفتح الشيفت" للبدء.'
-        : 'The shift is currently locked and all assistant operations are frozen until opened. Click "Approve Report & Open Shift" to activate.');
+        ? 'الشيفت مغلق ومجمد حالياً لدى المساعدين. تم تجميد كافة العمليات لحين مراجعة واعتماد اليومية. انقر على "اعتماد اليومية وفتح الشيفت" للبدء.'
+        : 'The shift is currently locked and all assistant operations are frozen. Click "Approve Report & Open Shift" to activate.');
 
-  const toggleStatusText = isApproved 
-    ? (isAr ? 'مفتوح (ON)' : 'Open (ON)')
-    : (isAr ? 'مغلق (OFF)' : 'Locked (OFF)');
-  const toggleHintText = isApproved
-    ? (isAr ? 'العمليات متاحة للمساعدين' : 'Operations Active')
-    : (isAr ? 'العمليات متوقفة ومجمدة' : 'Operations Frozen');
-  const switchTitle = isApproved
-    ? (isAr ? 'إغلاق وتجميد الشيفت (Turn OFF)' : 'Close Shift (Turn OFF)')
-    : (isAr ? 'فتح الشيفت للعمليات (Turn ON)' : 'Open Shift (Turn ON)');
-
-  widget.className = `approval-card ${isApproved ? 'approved' : 'pending'}`;
+  widget.className = `approval-card feature-enabled ${isApproved ? 'approved' : 'pending'}`;
   widget.innerHTML = `
-    <div class="approval-card-info">
-      <div class="approval-card-title">
-        <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-lock'}" style="color: ${isApproved ? 'var(--success)' : '#EF4444'}; font-size: 1.3em;"></i>
-        <span>${titleText}</span>
-        <span class="approval-badge-pill ${isApproved ? 'approved' : 'pending'}">
-          ${badgeHtml}
-        </span>
+    <div class="approval-card-header">
+      <div class="approval-header-left">
+        <div class="approval-card-title">
+          <span class="approval-status-icon ${isApproved ? 'icon-approved' : 'icon-pending'}">
+            <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-lock'}"></i>
+          </span>
+          <span class="approval-title-text">${titleText}</span>
+          <span class="approval-badge-pill ${isApproved ? 'approved' : 'pending'}">
+            ${badgeHtml}
+          </span>
+        </div>
       </div>
+      <div class="approval-header-switch">
+        <div class="switch-control-group">
+          <span class="switch-control-label active">${isAr ? 'الميزة مفعلة:' : 'Feature:'}</span>
+          <button type="button" class="master-power-switch state-on" onclick="window.toggleShiftSystemFeature(false)" title="${isAr ? 'تعطيل ميزة نظام الشيفتات' : 'Disable Shift System'}" aria-label="تعطيل ميزة نظام الشيفتات">
+            <span class="switch-rail">
+              <span class="rail-text-on">ON</span>
+              <span class="rail-text-off">OFF</span>
+              <span class="switch-knob">
+                <i class="fa-solid fa-lock-open"></i>
+              </span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="approval-card-body">
       <p class="approval-card-desc">
         ${descText}
       </p>
       ${(info && info.approved_by && isApproved) ? `
-        <div style="font-size: 0.78em; color: var(--success); font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+        <div class="approval-approved-by">
           <i class="fa-solid fa-signature"></i> <span>${isAr ? 'تم اعتماد اليومية وفتح الشيفت بواسطة:' : 'Approved & opened by:'} ${info.approved_by}</span>
         </div>
       ` : ''}
     </div>
-    <div class="approval-card-actions" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+
+    <div class="approval-card-footer">
       ${!isApproved ? `
-        <button type="button" class="btn success btn-review-approve" onclick="window.approveDailyReportAndOpenShift('${d}')" style="padding: 10px 18px; font-weight: 800; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); cursor: pointer; font-size: 0.9em;">
+        <button type="button" class="btn-shift-action btn-shift-open" onclick="window.approveDailyReportAndOpenShift('${d}')">
           <i class="fa-solid fa-check-double"></i>
           <span>${isAr ? 'تمت المراجعة والقراءة — اعتماد وفتح الشيفت (ON)' : 'Reviewed & Approved — Open Shift (ON)'}</span>
         </button>
       ` : `
-        <button type="button" class="btn secondary btn-close-shift" onclick="window.toggleDailyApproval('${d}', false)" style="padding: 8px 14px; font-weight: 700; border-radius: 10px; font-size: 0.84em; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+        <button type="button" class="btn-shift-action btn-shift-close" onclick="window.toggleDailyApproval('${d}', false)">
           <i class="fa-solid fa-lock"></i>
-          <span>${isAr ? 'إغلاق وتجميد الشيفت (Turn OFF)' : 'Close Shift (Turn OFF)'}</span>
+          <span>${isAr ? 'إغلاق وتجميد الشيفت (Turn OFF)' : 'Close & Freeze Shift (Turn OFF)'}</span>
         </button>
       `}
-
-      <div class="approval-toggle-wrapper">
-        <div class="approval-toggle-status">
-          <span class="toggle-status-badge ${isApproved ? 'badge-on' : 'badge-off'}">
-            <span class="toggle-pulse-dot"></span>
-            <span>${toggleStatusText}</span>
-          </span>
-          <span class="toggle-sub-hint">${toggleHintText}</span>
-        </div>
-        <button type="button" class="master-power-switch ${isApproved ? 'state-on' : 'state-off'}" onclick="window.toggleDailyApproval('${d}', ${!isApproved})" title="${switchTitle}" aria-label="سويتش تشغيل الشيفت">
-          <span class="switch-rail">
-            <span class="rail-text-on">ON</span>
-            <span class="rail-text-off">OFF</span>
-            <span class="switch-knob">
-              <i class="fa-solid ${isApproved ? 'fa-lock-open' : 'fa-lock'}"></i>
-            </span>
-          </span>
-        </button>
-      </div>
     </div>
   `;
 }
 window.renderDailyApprovalWidget = renderDailyApprovalWidget;
+
+export async function toggleShiftSystemFeature(enable) {
+  const isAr = (currentLang === "ar");
+  const d = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+
+  if (!enable) {
+    const res = await Swal.fire({
+      title: isAr ? 'تعطيل ميزة نظام الشيفتات' : 'Disable Shift System',
+      text: isAr ? 'عند تعطيل الميزة، سيعمل النظام لدى المساعدين بشكل دائم ومستمر دون أي حجب أو قفل يومي. هل تريد الاستمرار؟' : 'Disabling this will allow assistants to operate continuously without daily lockouts. Proceed?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: isAr ? 'نعم، تعطيل الميزة (OFF)' : 'Yes, Disable (OFF)',
+      confirmButtonColor: '#EF4444',
+      cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
+    });
+    if (!res.isConfirmed) return;
+  }
+
+  window.shiftSystemEnabled = enable;
+  window.renderDailyApprovalWidget(d);
+
+  showToast(
+    enable 
+      ? (isAr ? 'تم تفعيل ميزة نظام الشيفت واليومية بنجاح.' : 'Shift system enabled.') 
+      : (isAr ? 'تم تعطيل نظام الشيفتات — العمليات متاحة للمساعدين دائماً.' : 'Shift system disabled.'),
+    enable ? 'success' : 'info'
+  );
+
+  try {
+    const isApprovedNow = enable ? (dailyApprovalMap[d]?.status === 'approved' || dailyShiftStatus === 'open') : true;
+
+    if (permChannel) {
+      permChannel.postMessage({ 
+        type: 'DAILY_SHIFT_CHANGE', 
+        date: d, 
+        isApproved: isApprovedNow, 
+        shift_system_enabled: enable 
+      });
+    }
+    if (realtimeShiftChannel) {
+      realtimeShiftChannel.send({
+        type: 'broadcast',
+        event: 'DAILY_SHIFT_CHANGE',
+        payload: { 
+          date: d, 
+          isApproved: isApprovedNow, 
+          shift_system_enabled: enable,
+          managerId: currentCenterId, 
+          updatedAt: new Date().toISOString() 
+        }
+      });
+    }
+    if (supabase) {
+      const { data: curSettings } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+      const cfg = curSettings?.config || {};
+      cfg.shift_system_enabled = enable;
+      cfg.last_shift_update = Date.now();
+
+      await supabase.from('settings').update({
+        config: cfg,
+        updated_at: new Date().toISOString()
+      }).eq('id', 1);
+    }
+  } catch(e) {
+    console.error("Toggle shift system feature error:", e);
+  }
+}
+window.toggleShiftSystemFeature = toggleShiftSystemFeature;
 
 export async function approveDailyReportAndOpenShift(dateStr) {
   const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);

@@ -7298,9 +7298,15 @@ if ('BroadcastChannel' in window) {
         }
       }
     } else if (msg.type === 'DAILY_SHIFT_CHANGE' || msg.type === 'DAILY_SHIFT_APPROVED' || msg.type === 'DAILY_SHIFT_REJECTED') {
-      const isApproved = msg.type === 'DAILY_SHIFT_APPROVED' || msg.isApproved === true;
-      if (typeof window.applyShiftLockState === 'function') {
-        window.applyShiftLockState(msg.date, isApproved, msg.reason);
+      if (msg.shift_system_enabled === false) {
+        if (typeof window.applyShiftLockState === 'function') {
+          window.applyShiftLockState(msg.date, true, '');
+        }
+      } else {
+        const isApproved = msg.type === 'DAILY_SHIFT_APPROVED' || msg.isApproved === true;
+        if (typeof window.applyShiftLockState === 'function') {
+          window.applyShiftLockState(msg.date, isApproved, msg.reason);
+        }
       }
     } else if (msg.type === 'PACKAGES_UPDATED') {
       (async () => {
@@ -9787,7 +9793,11 @@ window.openSessionStudentModal = function(item) {
             console.log('[Assistant Realtime Shift] Received broadcast:', payload);
             const d = payload.payload;
             if (d && typeof window.applyShiftLockState === 'function') {
-              window.applyShiftLockState(d.date, d.isApproved, d.reason);
+              if (d.shift_system_enabled === false) {
+                window.applyShiftLockState(d.date, true, '');
+              } else {
+                window.applyShiftLockState(d.date, d.isApproved, d.reason);
+              }
             }
           })
           .subscribe((status) => {
