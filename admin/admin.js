@@ -5577,7 +5577,7 @@ window.openVaultTransfersHistoryModal = function() {
 
   const list = Array.isArray(vaultTransfers) ? [...vaultTransfers].reverse() : [];
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد حركات تحويل سابقة بين الخزائن" : "No transfer history found"}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد حركات تحويل سابقة بين الخزائن" : "No transfer history found"}</td></tr>`;
   } else {
     tbody.innerHTML = list.map((t, idx) => {
       return `
@@ -5586,12 +5586,7 @@ window.openVaultTransfersHistoryModal = function() {
           <td><span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; font-weight:700;">${vNames[t.from_vault] || t.from_vault}</span></td>
           <td><span class="badge" style="background:rgba(16,185,129,0.1); color:#10b981; font-weight:700;">${vNames[t.to_vault] || t.to_vault}</span></td>
           <td style="font-weight:800; color:var(--primary); font-size:1.05em;">${t.amount} ج</td>
-          <td style="color:var(--text-secondary);">${t.note || "—"}</td>
-          <td>
-            <button type="button" class="btn danger smallBtn" onclick="window.deleteVaultTransfer('${t.id}')" style="padding:4px 10px; font-size:0.8em;" title="تراجع وحذف التحويل">
-              <i class="fa-solid fa-trash-can"></i> ${isAr ? "حذف" : "Delete"}
-            </button>
-          </td>
+          <td style="color:var(--text-secondary); font-weight:600;">${t.note || "—"}</td>
         </tr>
       `;
     }).join("");
@@ -5707,7 +5702,7 @@ window.filterExpensesModal = function() {
 
   if (!tbody) return;
   if (expItems.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد مصروفات تشغيلية مسجلة في هذه الفترة" : "No expenses found for this period"}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد مصروفات تشغيلية مسجلة في هذه الفترة" : "No expenses found for this period"}</td></tr>`;
   } else {
     tbody.innerHTML = expItems.map(e => {
       const mb = mBadges[e.method] || mBadges.cash;
@@ -5796,7 +5791,7 @@ window.filterWithdrawalsModal = function() {
 
   if (!tbody) return;
   if (wdItems.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد مسحوبات مسجلة في هذه الفترة" : "No withdrawals found for this period"}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا توجد مسحوبات مسجلة في هذه الفترة" : "No withdrawals found for this period"}</td></tr>`;
   } else {
     tbody.innerHTML = wdItems.map(e => {
       const mb = mBadges[e.method] || mBadges.cash;
@@ -5804,8 +5799,8 @@ window.filterWithdrawalsModal = function() {
         <tr>
           <td style="font-weight:600;">${e.date || "—"}</td>
           <td style="font-weight:800; color:#f59e0b; font-size:1.05em;">${e.amount} ج</td>
-          <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
           <td style="font-weight:600;">${e.reason || (isAr ? "مسحوبات شخصية" : "Withdrawal")} ${e.recipient ? `(${e.recipient})` : ""}</td>
+          <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
         </tr>
       `;
     }).join("");

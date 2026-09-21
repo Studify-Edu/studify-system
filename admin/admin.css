@@ -1007,6 +1007,7 @@ body {
   font-weight: 700;
   color: var(--text-secondary);
   white-space: nowrap;
+  text-align: inherit;
 }
 .admin-table td {
   padding: 12px 16px;
@@ -4120,7 +4121,7 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.86em;
-  text-align: start;
+  text-align: center;
 }
 .fin-modal-table th {
   position: sticky;
@@ -4128,16 +4129,52 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   background: var(--bg-inset);
   color: var(--text-secondary);
   font-weight: 700;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-bottom: 1.5px solid var(--border);
   z-index: 2;
   white-space: nowrap;
+  text-align: center;
 }
 .fin-modal-table td {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
   white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Explicit balanced column widths for Expenses & Withdrawals modals */
+#expensesDetailsModal .fin-modal-table th:nth-child(1),
+#expensesDetailsModal .fin-modal-table td:nth-child(1),
+#withdrawalsDetailsModal .fin-modal-table th:nth-child(1),
+#withdrawalsDetailsModal .fin-modal-table td:nth-child(1) {
+  width: 20%;
+  text-align: center !important;
+}
+
+#expensesDetailsModal .fin-modal-table th:nth-child(2),
+#expensesDetailsModal .fin-modal-table td:nth-child(2),
+#withdrawalsDetailsModal .fin-modal-table th:nth-child(2),
+#withdrawalsDetailsModal .fin-modal-table td:nth-child(2) {
+  width: 20%;
+  text-align: center !important;
+}
+
+#expensesDetailsModal .fin-modal-table th:nth-child(3),
+#expensesDetailsModal .fin-modal-table td:nth-child(3),
+#withdrawalsDetailsModal .fin-modal-table th:nth-child(3),
+#withdrawalsDetailsModal .fin-modal-table td:nth-child(3) {
+  width: 32%;
+  text-align: center !important;
+}
+
+#expensesDetailsModal .fin-modal-table th:nth-child(4),
+#expensesDetailsModal .fin-modal-table td:nth-child(4),
+#withdrawalsDetailsModal .fin-modal-table th:nth-child(4),
+#withdrawalsDetailsModal .fin-modal-table td:nth-child(4) {
+  width: 28%;
+  text-align: center !important;
 }
 .fin-modal-table tr:hover td {
   background: rgba(0, 0, 0, 0.02);
