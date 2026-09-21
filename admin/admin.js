@@ -2349,7 +2349,7 @@ window.renderTermTransactionsTable = function() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-secondary);">${isAr ? "لا توجد حركات مسجلة" : "No recorded transactions"}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-secondary);">${isAr ? "لا توجد حركات مسجلة" : "No recorded transactions"}</td></tr>`;
     return;
   }
 
@@ -2378,11 +2378,6 @@ window.renderTermTransactionsTable = function() {
         <td style="font-weight:700; color:var(--text-primary);">${item.reason || '—'}</td>
         <td>${methodBadge}</td>
         <td style="font-weight:900; color:${amtColor}; white-space:nowrap;">${Number(item.amount || 0).toLocaleString()} ${currencySuffix}</td>
-        <td>
-          <button class="btn danger smallBtn iconOnly" onclick="window.deleteTermTransaction('${rawId}')" title="${isAr ? 'حذف الحركة' : 'Delete'}">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-        </td>
       </tr>
     `;
   });
@@ -4506,6 +4501,9 @@ window.saveTransactionRecord = async function({ type, amount, reason, method, da
 };
 
 window.deleteTermTransaction = async function(rawId) {
+  // ⚠️ DISABLED: Expense/Withdrawal deletion is permanently locked for accountability.
+  console.warn('[SECURITY] deleteTermTransaction is disabled — financial records cannot be deleted.');
+  return;
   const isAr = (currentLang === "ar");
   const result = await Swal.fire({
     title: isAr ? "تأكيد حذف الحركة" : "Confirm Deletion",
@@ -5719,11 +5717,6 @@ window.filterExpensesModal = function() {
           <td style="font-weight:800; color:#ef4444; font-size:1.05em;">${e.amount} ج</td>
           <td style="font-weight:600;">${e.reason || "مصروف سنتر"}</td>
           <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
-          <td>
-            <button type="button" class="btn danger smallBtn" onclick="window.deleteTermTransaction('${e.id}')" style="padding:4px 10px; font-size:0.8em;" title="حذف المصروف">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </td>
         </tr>
       `;
     }).join("");
@@ -5813,11 +5806,6 @@ window.filterWithdrawalsModal = function() {
           <td style="font-weight:800; color:#f59e0b; font-size:1.05em;">${e.amount} ج</td>
           <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
           <td style="font-weight:600;">${e.reason || (isAr ? "مسحوبات شخصية" : "Withdrawal")} ${e.recipient ? `(${e.recipient})` : ""}</td>
-          <td>
-            <button type="button" class="btn danger smallBtn" onclick="window.deleteTermTransaction('${e.id}')" style="padding:4px 10px; font-size:0.8em;" title="حذف المسحوب">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </td>
         </tr>
       `;
     }).join("");
