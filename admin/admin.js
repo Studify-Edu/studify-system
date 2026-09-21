@@ -646,6 +646,7 @@ let booklets = {};
 let syllabusList = [];
 let currentCenterId = localStorage.getItem("ca_manager_id") || "ahmedqutb11232_gmail_com";
 let dailyApprovalMap = JSON.parse(localStorage.getItem('studify_daily_approval_map') || '{}');
+let dailyShiftStatus = 'open';
 
 // SUBSCRIPTION STATE (always loaded from Supabase, never stored in localStorage)
 let SUBSCRIPTION = {
@@ -1700,13 +1701,14 @@ async function loadAllAdminData() {
     if (setRes && setRes.data) {
       const s = setRes.data;
       const cfg = s.config || {};
+      dailyShiftStatus = s.daily_shift_status || 'open';
       dailyApprovalMap = cfg.daily_approval_map || dailyApprovalMap || {};
       
       const today = nowDateStr();
       // If today is not yet explicitly set in the map, inherit from global daily_shift_status
       if (!dailyApprovalMap[today]) {
         dailyApprovalMap[today] = {
-          status: s.daily_shift_status === 'open' ? 'approved' : 'pending',
+          status: dailyShiftStatus === 'open' ? 'approved' : 'pending',
           updated_at: s.updated_at
         };
       }
@@ -1763,14 +1765,20 @@ async function loadAllAdminData() {
   } finally {
     const today = nowDateStr();
     const dateInput = document.getElementById("adminDailyDateInput");
+    const activeDate = (dateInput && dateInput.value) ? dateInput.value : today;
     if (dateInput && !dateInput.value) dateInput.value = today;
-    window.loadDailyReport(dateInput ? dateInput.value : today);
-    window.renderTermTable();
-    window.renderAdminPackages();
-    window.renderAdminSyllabus();
-    fetchDecisionsCount();
-    // Load subscription after all data is ready
-    if (typeof window.loadSubscriptionData === 'function') window.loadSubscriptionData();
+    
+    try {
+      if (typeof window.renderDailyApprovalWidget === 'function') window.renderDailyApprovalWidget(activeDate);
+      if (typeof window.loadDailyReport === 'function') window.loadDailyReport(activeDate);
+      if (typeof window.renderTermTable === 'function') window.renderTermTable();
+      if (typeof window.renderAdminPackages === 'function') window.renderAdminPackages();
+      if (typeof window.renderAdminSyllabus === 'function') window.renderAdminSyllabus();
+      if (typeof fetchDecisionsCount === 'function') fetchDecisionsCount();
+      if (typeof window.loadSubscriptionData === 'function') window.loadSubscriptionData();
+    } catch(err) {
+      console.warn('Initial admin render warning:', err);
+    }
   }
 }
 
@@ -1825,41 +1833,45 @@ window.switchAdminTab = function(tabKey) {
 };
 
 // ========================================================
-window.renderDailyApprovalWidget = function(dateStr) {
+// 4. DAILY SHIFT OPERATIONS & REPORT ENGINE
+// ========================================================
+export function renderDailyApprovalWidget(dateStr) {
   const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
   const widget = document.getElementById("dailyApprovalWidget");
   if (!widget) return;
 
   const info = dailyApprovalMap[d];
-  const isApproved = info && (info.status === 'approved' || info === 'approved' || info === true);
+  const isApproved = info ? (info.status === 'approved' || info === 'approved' || info === true) : (dailyShiftStatus === 'open');
   const isAr = (currentLang === "ar");
 
-  const titleText = isAr ? `حالة تشغيل الشيفت اليومي (${d})` : `Daily Shift Operation Status (${d})`;
+  const titleText = isAr ? `حالة تشغيل الشيفت اليومي (${d})` : `Daily Shift Status (${d})`;
   const badgeHtml = isApproved 
-    ? (isAr ? '<i class="fa-solid fa-check"></i> مفتوح للعمل (ON)' : '<i class="fa-solid fa-check"></i> Active for Work (ON)')
-    : (isAr ? '<i class="fa-solid fa-lock"></i> مغلق ومعلق (OFF)' : '<i class="fa-solid fa-lock"></i> Locked & Suspended (OFF)');
+    ? (isAr ? '<i class="fa-solid fa-circle-play"></i> مفتوح للعمل (ON)' : '<i class="fa-solid fa-circle-play"></i> Active for Work (ON)')
+    : (isAr ? '<i class="fa-solid fa-lock"></i> مغلق ومجمد (OFF)' : '<i class="fa-solid fa-lock"></i> Locked & Suspended (OFF)');
+
   const descText = isApproved
     ? (isAr 
-        ? 'الشيفت مفتوح حالياً والمساعدون يسجلون الحضور والمصروفات بشكل طبيعي. عند انتهاء اليوم، قم بإيقاف السويتش لإغلاق الشيفت واعتماد الحسابات.'
-        : 'The shift is currently active and assistants are logging attendance and expenses normally. At the end of the day, turn off the switch to close the shift and audit accounts.')
+        ? 'الشيفت مفتوح ونشط حالياً. يمكن للمساعدين تسجيل الحضور والتحصيل والعمليات بشكل طبيعي. عند انتهاء اليوم، قم بإيقاف السويتش لإغلاق الشيفت ومراجعة واعتماد الحسابات.'
+        : 'The shift is currently active and assistants are logging attendance and operations normally. Turn off switch to close shift and audit accounts.')
     : (isAr
-        ? 'الشيفت مغلق حالياً، وكافة العمليات مجمدة لدى المساعدين لحين فتح الشيفت. انقر على السويتش لتحويله إلى (ON) لفتح الشيفت والبدء.'
-        : 'The shift is currently locked and all assistant operations are frozen until opened. Click switch to turn ON and start operations.');
+        ? 'الشيفت مغلق ومجمد حالياً لدى المساعدين. تم تجميد العمليات لحين مراجعة واعتماد اليومية. انقر على "اعتماد اليومية وفتح الشيفت" للبدء.'
+        : 'The shift is currently locked and all assistant operations are frozen until opened. Click "Approve Report & Open Shift" to activate.');
+
   const toggleStatusText = isApproved 
     ? (isAr ? 'مفتوح (ON)' : 'Open (ON)')
     : (isAr ? 'مغلق (OFF)' : 'Locked (OFF)');
   const toggleHintText = isApproved
-    ? (isAr ? 'انقر لإغلاق الشيفت' : 'Click to close shift')
-    : (isAr ? 'انقر لفتح الشيفت' : 'Click to open shift');
+    ? (isAr ? 'العمليات متاحة للمساعدين' : 'Operations Active')
+    : (isAr ? 'العمليات متوقفة ومجمدة' : 'Operations Frozen');
   const switchTitle = isApproved
-    ? (isAr ? 'إغلاق الشيفت (Turn OFF)' : 'Close Shift (Turn OFF)')
-    : (isAr ? 'فتح الشيفت (Turn ON)' : 'Open Shift (Turn ON)');
+    ? (isAr ? 'إغلاق وتجميد الشيفت (Turn OFF)' : 'Close Shift (Turn OFF)')
+    : (isAr ? 'فتح الشيفت للعمليات (Turn ON)' : 'Open Shift (Turn ON)');
 
   widget.className = `approval-card ${isApproved ? 'approved' : 'pending'}`;
   widget.innerHTML = `
     <div class="approval-card-info">
       <div class="approval-card-title">
-        <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-lock'}" style="color: ${isApproved ? 'var(--success)' : 'var(--danger)'}; font-size: 1.25em;"></i>
+        <i class="fa-solid ${isApproved ? 'fa-circle-check' : 'fa-lock'}" style="color: ${isApproved ? 'var(--success)' : '#EF4444'}; font-size: 1.3em;"></i>
         <span>${titleText}</span>
         <span class="approval-badge-pill ${isApproved ? 'approved' : 'pending'}">
           ${badgeHtml}
@@ -1868,8 +1880,25 @@ window.renderDailyApprovalWidget = function(dateStr) {
       <p class="approval-card-desc">
         ${descText}
       </p>
+      ${(info && info.approved_by && isApproved) ? `
+        <div style="font-size: 0.78em; color: var(--success); font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-signature"></i> <span>${isAr ? 'تم اعتماد اليومية وفتح الشيفت بواسطة:' : 'Approved & opened by:'} ${info.approved_by}</span>
+        </div>
+      ` : ''}
     </div>
-    <div class="approval-card-actions">
+    <div class="approval-card-actions" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      ${!isApproved ? `
+        <button type="button" class="btn success btn-review-approve" onclick="window.approveDailyReportAndOpenShift('${d}')" style="padding: 10px 18px; font-weight: 800; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); cursor: pointer; font-size: 0.9em;">
+          <i class="fa-solid fa-check-double"></i>
+          <span>${isAr ? 'تمت المراجعة والقراءة — اعتماد وفتح الشيفت (ON)' : 'Reviewed & Approved — Open Shift (ON)'}</span>
+        </button>
+      ` : `
+        <button type="button" class="btn secondary btn-close-shift" onclick="window.toggleDailyApproval('${d}', false)" style="padding: 8px 14px; font-weight: 700; border-radius: 10px; font-size: 0.84em; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+          <i class="fa-solid fa-lock"></i>
+          <span>${isAr ? 'إغلاق وتجميد الشيفت (Turn OFF)' : 'Close Shift (Turn OFF)'}</span>
+        </button>
+      `}
+
       <div class="approval-toggle-wrapper">
         <div class="approval-toggle-status">
           <span class="toggle-status-badge ${isApproved ? 'badge-on' : 'badge-off'}">
@@ -1890,39 +1919,70 @@ window.renderDailyApprovalWidget = function(dateStr) {
       </div>
     </div>
   `;
-};
+}
+window.renderDailyApprovalWidget = renderDailyApprovalWidget;
 
-window.toggleDailyApproval = async function(dateStr, toActive) {
+export async function approveDailyReportAndOpenShift(dateStr) {
   const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+  const isAr = (currentLang === "ar");
+
+  const idsCount = (attByDate && attByDate[d]) ? attByDate[d].length : 0;
+  const revAmount = (revenueByDate && revenueByDate[d]) ? revenueByDate[d] : 0;
+  const sessCount = (sessionStudentsByDate && sessionStudentsByDate[d]) ? sessionStudentsByDate[d].length : 0;
+  const totalAtt = idsCount + sessCount;
+
+  const res = await Swal.fire({
+    title: isAr ? 'اعتماد اليومية وفتح الشيفت' : 'Approve Report & Open Shift',
+    html: isAr
+      ? `<div style="text-align: start; font-size: 0.95em; line-height: 1.6;">
+          <p style="margin-bottom: 12px;">هل قمت بمراجعة إحصائيات يومية <b>(${d})</b> وتريد اعتمادها وفتح الشيفت للعمل لدى المساعدين فوراً؟</p>
+          <div style="background: var(--bg-inset, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 10px; padding: 12px; display: flex; justify-content: space-around; text-align: center;">
+            <div>
+              <div style="font-size: 0.8em; color: var(--text-secondary);">حضور اليوم</div>
+              <strong style="color: var(--success); font-size: 1.2em;">${totalAtt} طالب</strong>
+            </div>
+            <div style="border-inline-start: 1px solid var(--border, #e2e8f0);"></div>
+            <div>
+              <div style="font-size: 0.8em; color: var(--text-secondary);">إيراد اليومية</div>
+              <strong style="color: var(--primary); font-size: 1.2em;">${revAmount.toLocaleString()} ج</strong>
+            </div>
+          </div>
+        </div>`
+      : `<p>Confirm review of daily report for <b>(${d})</b> and open shift operations for assistants?</p>`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: isAr ? 'نعم، تم الاطلاع والاعتماد (فتح الشيفت ON)' : 'Yes, Approve & Open (ON)',
+    confirmButtonColor: '#10B981',
+    cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
+  });
+
+  if (!res.isConfirmed) return;
+
+  await window.toggleDailyApproval(d, true);
+}
+window.approveDailyReportAndOpenShift = approveDailyReportAndOpenShift;
+
+export async function toggleDailyApproval(dateStr, toActive) {
+  const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+  const isAr = (currentLang === "ar");
+  const managerName = localStorage.getItem("ca_admin_username") || "Ahmed Qutb";
 
   if (toActive) {
-    const isAr = (currentLang === "ar");
-    const res = await Swal.fire({
-      title: isAr ? 'فتح الشيفت اليومي (Turn ON)' : 'Open Daily Shift (Turn ON)',
-      text: isAr ? `هل تريد تفعيل وفتح شيفت يوم (${d}) فوراً لجميع المساعدين لبدء تسجيل الحضور والعمليات؟` : `Do you want to activate and open shift for day (${d}) immediately for all assistants?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: isAr ? 'نعم، فتح الشيفت (ON)' : 'Yes, Open Shift (ON)',
-      confirmButtonColor: '#10B981',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
-    });
-    if (!res.isConfirmed) return;
-
-    // 1. Update state & local storage immediately
-    dailyApprovalMap[d] = { status: 'approved', approved_at: new Date().toISOString() };
+    dailyShiftStatus = 'open';
+    dailyApprovalMap[d] = {
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+      approved_by: managerName
+    };
     localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
-    
-    // 2. Optimistic instant UI update (0ms)
+
     window.renderDailyApprovalWidget(d);
-    showToast(`تم فتح شيفت يوم (${d}) بنجاح وبدء عمليات المساعدين.`, "success");
+    showToast(`تم فتح شيفت يوم (${d}) بنجاح وبدء عمليات المساعدين فوراً.`, "success");
 
     try {
-      // 3. Multi-tab broadcast (same device / browser profile)
       if (permChannel) {
         permChannel.postMessage({ type: 'DAILY_SHIFT_CHANGE', date: d, isApproved: true });
       }
-
-      // 4. Supabase Realtime Broadcast (all online assistant devices globally in < 150ms)
       if (realtimeShiftChannel) {
         realtimeShiftChannel.send({
           type: 'broadcast',
@@ -1930,8 +1990,6 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
           payload: { date: d, isApproved: true, managerId: currentCenterId, updatedAt: new Date().toISOString() }
         });
       }
-
-      // 5. Database persistence in settings (id: 1)
       if (supabase) {
         const { data: curSettings } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
         const cfg = curSettings?.config || {};
@@ -1940,20 +1998,18 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
 
         await supabase.from('settings').update({
           daily_shift_status: 'open',
-          daily_approved_by: localStorage.getItem("ca_admin_username") || "Ahmed Qutb",
+          daily_approved_by: managerName,
           config: cfg,
           updated_at: new Date().toISOString()
         }).eq('id', 1);
       }
     } catch(e) {
-      console.error("Shift save error:", e);
-      showToast("تنبيه: حدث بطء في مزامنة السحابة، جاري الإعادة تلقائياً", "warning");
+      console.error("Shift open error:", e);
     }
   } else {
-    const isAr = (currentLang === "ar");
     const res = await Swal.fire({
       title: isAr ? 'إغلاق وتجميد الشيفت (Turn OFF)' : 'Close & Freeze Shift (Turn OFF)',
-      text: isAr ? `هل أنت متأكد من إغلاق شيفت يوم (${d}) واعتماد اليومية وتجميد عمليات المساعدين؟` : `Are you sure you want to close shift for day (${d}) and freeze assistant operations?`,
+      text: isAr ? `هل أنت متأكد من إغلاق شيفت يوم (${d}) وتجميد كافة العمليات لدى المساعدين لحين مراجعة اليومية؟` : `Are you sure you want to close shift for day (${d}) and freeze assistant operations?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: isAr ? 'نعم، إغلاق الشيفت (OFF)' : 'Yes, Close Shift (OFF)',
@@ -1962,21 +2018,21 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
     });
     if (!res.isConfirmed) return;
 
-    // 1. Update state & local storage immediately
-    dailyApprovalMap[d] = { status: 'pending', locked_at: new Date().toISOString() };
+    dailyShiftStatus = 'closed';
+    dailyApprovalMap[d] = {
+      status: 'pending',
+      locked_at: new Date().toISOString(),
+      locked_by: managerName
+    };
     localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
-    
-    // 2. Optimistic instant UI update (0ms)
+
     window.renderDailyApprovalWidget(d);
     showToast(`تم إغلاق شيفت يوم (${d}) وتجميد العمليات لدى المساعدين فورياً.`, "warning");
 
     try {
-      // 3. Multi-tab broadcast (same device / browser profile)
       if (permChannel) {
         permChannel.postMessage({ type: 'DAILY_SHIFT_CHANGE', date: d, isApproved: false });
       }
-
-      // 4. Supabase Realtime Broadcast (all online assistant devices globally in < 150ms)
       if (realtimeShiftChannel) {
         realtimeShiftChannel.send({
           type: 'broadcast',
@@ -1984,8 +2040,6 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
           payload: { date: d, isApproved: false, managerId: currentCenterId, updatedAt: new Date().toISOString() }
         });
       }
-
-      // 5. Database persistence in settings (id: 1)
       if (supabase) {
         const { data: curSettings } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
         const cfg = curSettings?.config || {};
@@ -1994,27 +2048,29 @@ window.toggleDailyApproval = async function(dateStr, toActive) {
 
         await supabase.from('settings').update({
           daily_shift_status: 'closed',
-          daily_approved_by: localStorage.getItem("ca_admin_username") || "المدير العام",
+          daily_approved_by: managerName,
           config: cfg,
           updated_at: new Date().toISOString()
         }).eq('id', 1);
       }
     } catch(e) {
-      console.error("Shift save error:", e);
-      showToast("تنبيه: حدث بطء في مزامنة السحابة، جاري الإعادة تلقائياً", "warning");
+      console.error("Shift close error:", e);
     }
   }
-};
+}
+window.toggleDailyApproval = toggleDailyApproval;
 
-window.confirmRejectDailyShift = async function() {
+export async function confirmRejectDailyShift() {
   const note = (document.getElementById("dailyRejectReasonInput")?.value || "").trim();
   const d = document.getElementById("adminDailyDateInput")?.value || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
   if (!note) return showToast("يرجى كتابة سبب تعليق أو رفض اليومية", "err");
   
+  dailyShiftStatus = 'closed';
   dailyApprovalMap[d] = {
     status: 'pending',
     reason: note,
-    locked_at: new Date().toISOString()
+    locked_at: new Date().toISOString(),
+    locked_by: localStorage.getItem("ca_admin_username") || "Ahmed Qutb"
   };
   localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
   window.renderDailyApprovalWidget(d);
@@ -2044,16 +2100,19 @@ window.confirmRejectDailyShift = async function() {
       }).eq('id', 1);
     }
   } catch(e) { console.error(e); }
-};
+}
+window.confirmRejectDailyShift = confirmRejectDailyShift;
 
-// 4. DAILY REPORT & APPROVAL
-// ========================================================
-window.loadDailyReport = function(dateStr) {
+export function loadDailyReport(dateStr) {
   const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
-  window.renderDailyApprovalWidget(d);
-  const ids = attByDate[d] || [];
-  const sessList = sessionStudentsByDate[d] || [];
-  const rev = revenueByDate[d] || 0;
+  
+  if (typeof window.renderDailyApprovalWidget === 'function') {
+    window.renderDailyApprovalWidget(d);
+  }
+
+  const ids = (attByDate && attByDate[d]) ? attByDate[d] : [];
+  const sessList = (sessionStudentsByDate && sessionStudentsByDate[d]) ? sessionStudentsByDate[d] : [];
+  const rev = (revenueByDate && revenueByDate[d]) ? revenueByDate[d] : 0;
   let expArr = [];
   if (Array.isArray(expensesByDate)) {
     expArr = expensesByDate.filter(e => e && e.date === d);
@@ -2061,7 +2120,7 @@ window.loadDailyReport = function(dateStr) {
     expArr = Array.isArray(expensesByDate[d]) ? expensesByDate[d] : [];
   }
   const sessCount = (typeof window.getAdminUniqueSessionStudentsCount === 'function') ? window.getAdminUniqueSessionStudentsCount() : 0;
-  const totalSt = Object.keys(students).length + sessCount;
+  const totalSt = Object.keys(students || {}).length + sessCount;
   let totalExp = 0;
   expArr.forEach(e => totalExp += (Number(e && e.amount) || 0));
 
@@ -2088,12 +2147,12 @@ window.loadDailyReport = function(dateStr) {
     } else {
       let groups = {};
       ids.forEach(id => {
-        const st = students[id];
+        const st = (students && students[id]) ? students[id] : null;
         const cls = (st && st.className && st.className !== 'عام' && st.className !== 'General') ? st.className.trim() : (isAr ? "بدون باقة" : "No Package");
         if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
         groups[cls].count++;
         if (st && st.paid !== undefined) {
-          const p = packages[cls];
+          const p = (packages && packages[cls]) ? packages[cls] : null;
           let req = p ? p.price : 0;
           if (req > 0) groups[cls].revenue += req;
         }
@@ -2148,8 +2207,8 @@ window.loadDailyReport = function(dateStr) {
       expBody.innerHTML = '';
     }
   }
-};
-
+}
+window.loadDailyReport = loadDailyReport;
 
 
 // ========================================================

@@ -275,41 +275,8 @@
         <!-- ==================================================== -->
         <div id="viewDailyReport" class="admin-view">
           
-          <!-- Daily Approval Widget -->
-          <div id="dailyApprovalWidget" class="approval-card pending">
-            <div class="approval-card-info">
-              <div class="approval-card-title">
-                <i class="fa-solid fa-lock" style="color: var(--danger); font-size: 1.25em;"></i>
-                <span data-i18n="daily_shift_title">حالة تشغيل الشيفت واليومية</span>
-                <span class="approval-badge-pill pending">
-                  <i class="fa-solid fa-lock"></i> مغلق ومجمد (OFF)
-                </span>
-              </div>
-              <p class="approval-card-desc">
-                الشيفت مغلق حالياً والعمليات متوقفة لدى المساعدين. قم بتشغيل السويتش إلى (ON) لفتح النظام والسماح بالعمليات.
-              </p>
-            </div>
-            <div class="approval-card-actions">
-              <div class="approval-toggle-wrapper">
-                <div class="approval-toggle-status">
-                  <span class="toggle-status-badge badge-off">
-                    <span class="toggle-pulse-dot"></span>
-                    <span>مغلق (OFF)</span>
-                  </span>
-                  <span class="toggle-sub-hint">انقر لفتح الشيفت</span>
-                </div>
-                <button type="button" class="master-power-switch state-off" onclick="window.toggleDailyApproval(document.getElementById('adminDailyDateInput')?.value || (window.nowDateStr ? window.nowDateStr() : ''), true)" title="فتح الشيفت (Turn ON)" aria-label="سويتش تشغيل الشيفت">
-                  <span class="switch-rail">
-                    <span class="rail-text-on">ON</span>
-                    <span class="rail-text-off">OFF</span>
-                    <span class="switch-knob">
-                      <i class="fa-solid fa-lock"></i>
-                    </span>
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
+          <!-- Daily Approval Widget (Dynamically Populated) -->
+          <div id="dailyApprovalWidget" class="approval-card"></div>
 
           <!-- Reject Note Area -->
           <div id="rejectNoteBox" class="card hidden" style="border-inline-start: 4px solid var(--danger);">
@@ -324,25 +291,25 @@
           <div class="stats-grid">
             <div class="stat-card" style="--stat-color: var(--success); --stat-bg: var(--bg-success-subtle);">
               <div class="stat-card-icon"><i class="fa-solid fa-user-check"></i></div>
-              <div class="stat-card-val" id="statDailyAttend">—</div>
+              <div class="stat-card-val" id="statDailyAttend">0</div>
               <div class="stat-card-lbl" data-i18n="stat_attended_today">طلاب حضروا اليوم</div>
             </div>
 
             <div class="stat-card" style="--stat-color: var(--primary);">
               <div class="stat-card-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
-              <div class="stat-card-val" id="statDailyRevenue">—</div>
+              <div class="stat-card-val" id="statDailyRevenue">0 ج</div>
               <div class="stat-card-lbl" data-i18n="stat_shift_revenue">إيراد الوردية (ج)</div>
             </div>
 
             <div class="stat-card" style="--stat-color: var(--danger); --stat-bg: var(--bg-danger-subtle);">
               <div class="stat-card-icon"><i class="fa-solid fa-user-xmark"></i></div>
-              <div class="stat-card-val" id="statDailyAbsent">—</div>
+              <div class="stat-card-val" id="statDailyAbsent">0</div>
               <div class="stat-card-lbl" data-i18n="stat_absent_today">غياب اليوم</div>
             </div>
 
             <div class="stat-card" style="--stat-color: var(--warning); --stat-bg: var(--bg-warning-subtle);">
               <div class="stat-card-icon"><i class="fa-solid fa-receipt"></i></div>
-              <div class="stat-card-val" id="statDailyExpenses">—</div>
+              <div class="stat-card-val" id="statDailyExpenses">0 ج</div>
               <div class="stat-card-lbl" data-i18n="stat_expenses_today">مصروفات اليوم (ج)</div>
             </div>
           </div>
@@ -1833,7 +1800,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V30"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V31"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

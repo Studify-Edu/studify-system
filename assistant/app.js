@@ -9547,14 +9547,6 @@ window.openSessionStudentModal = function(item) {
     const titleEl = document.getElementById("assistantHardLockTitle");
     const msgEl = document.getElementById("assistantHardLockMsg");
 
-    // Admin or manager session is NEVER locked
-    const role = window.CURRENT_ROLE || localStorage.getItem("ca_role") || "";
-    if (role === 'admin' || localStorage.getItem("ca_admin_session") || localStorage.getItem("ca_admin_username")) {
-      if (overlay) overlay.classList.add("hidden");
-      document.body.classList.remove("system-hard-locked");
-      return;
-    }
-
     if (isApproved === true) {
       document.body.classList.remove("system-hard-locked");
       if (overlay && !overlay.classList.contains("hidden")) {
@@ -9566,9 +9558,9 @@ window.openSessionStudentModal = function(item) {
     } else {
       document.body.classList.add("system-hard-locked");
       if (overlay) {
-        if (titleEl) titleEl.textContent = "اليومية معلقة ومغلقة من قِبل الإدارة";
+        if (titleEl) titleEl.textContent = "الشيفت معلق ومغلق من قِبل الإدارة";
         if (msgEl) {
-          msgEl.textContent = reason || "تم إيقاف اليومية من قِبل المدير العام. تم تجميد كافة العمليات لحين فتح الشيفت مجدداً.";
+          msgEl.textContent = reason || "تم إيقاف الشيفت اليومي من قِبل المدير العام. تم تجميد كافة العمليات (تسجيل الحضور، التحصيل، التعديل) لحين مراجعة واعتماد اليومية وفتح الشيفت مجدداً.";
         }
         overlay.classList.remove("hidden");
       }
@@ -9588,6 +9580,10 @@ window.openSessionStudentModal = function(item) {
 
       const today = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
       const cfg = data.config || {};
+      if (cfg.shift_system_enabled === false) {
+        window.applyShiftLockState(today, true, '');
+        return;
+      }
       const approvalMap = cfg.daily_approval_map || {};
       const todayInfo = approvalMap[today];
 
