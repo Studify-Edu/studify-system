@@ -4577,6 +4577,26 @@ if($("assistantLoginBtn")) {
     const p = $("assistantPass") ? $("assistantPass").value.trim() : "";
     if (!rawU || !p) return showToast("أدخل اسم المستخدم وكلمة المرور", "err");
 
+    // If shift is closed, show warning and stylish lock modal with direct link to admin!
+    if (window.IS_SHIFT_APPROVED === false) {
+      const overlay = document.getElementById("assistantHardLockOverlay");
+      const titleEl = document.getElementById("assistantHardLockTitle");
+      const msgEl = document.getElementById("assistantHardLockMsg");
+      const dismissTextEl = document.getElementById("hardLockDismissText");
+
+      if (titleEl) titleEl.textContent = "الشيفت معلق ومغلق من قِبل الإدارة";
+      if (msgEl) {
+        msgEl.textContent = window.SHIFT_LOCK_REASON || "تم إيقاف الشيفت اليومي من قِبل المدير العام. تم تجميد كافة العمليات لحين فتح الشيفت مجدداً.";
+      }
+      if (dismissTextEl) dismissTextEl.textContent = "العودة لشاشة الدخول";
+      if (overlay) overlay.classList.remove("hidden");
+
+      if (typeof showToast === 'function') {
+        showToast("عذراً، الشيفت واليومية مغلقة حالياً من قِبل المدير العام.", "warn");
+      }
+      return triggerShake("assistantLoginBtn");
+    }
+
     try {
       if (!window.supabaseClient) return showToast("فشل الاتصال بالسحابة", "err");
 
@@ -9633,10 +9653,48 @@ window.openSessionStudentModal = function(item) {
   // DAILY ADMINISTRATIVE HARD-LOCK SYSTEM
   // Real-Time Multi-Device Live Sync Engine
   // ==========================================
+  // Global helpers for Hard Lock interactions
+  window.goToAdminFromLock = function() {
+    if (typeof window.navigateWithTransition === 'function') {
+      window.navigateWithTransition('../admin/admin.html');
+    } else {
+      window.location.href = '../admin/admin.html';
+    }
+  };
+
+  window.dismissOrLogoutFromLock = function() {
+    const overlay = document.getElementById("assistantHardLockOverlay");
+    const isLoggedIn = (localStorage.getItem(K_AUTH) === "1");
+    if (isLoggedIn) {
+      if (typeof window.logout === 'function') {
+        window.logout();
+      } else {
+        localStorage.removeItem(K_AUTH);
+        localStorage.removeItem(K_ROLE);
+        window.location.reload();
+      }
+    } else {
+      if (overlay) overlay.classList.add("hidden");
+      document.body.classList.remove("system-hard-locked");
+    }
+  };
+
   window.applyShiftLockState = function(dateStr, isApproved, reason) {
+    window.IS_SHIFT_APPROVED = (isApproved === true);
+    window.SHIFT_LOCK_REASON = reason || "";
+
     const overlay = document.getElementById("assistantHardLockOverlay");
     const titleEl = document.getElementById("assistantHardLockTitle");
     const msgEl = document.getElementById("assistantHardLockMsg");
+    const dismissTextEl = document.getElementById("hardLockDismissText");
+
+    const isLoggedIn = (localStorage.getItem(K_AUTH) === "1");
+    const loginBox = document.getElementById("loginBox");
+    const isLoginVisible = loginBox && !loginBox.classList.contains("hidden");
+
+    if (dismissTextEl) {
+      dismissTextEl.textContent = isLoggedIn ? "تسجيل الخروج / تبديل الحساب" : "العودة لشاشة الدخول";
+    }
 
     if (isApproved === true) {
       document.body.classList.remove("system-hard-locked");
@@ -9647,6 +9705,16 @@ window.openSessionStudentModal = function(item) {
         }
       }
     } else {
+      // Shift is closed!
+      // If user is currently on the login screen, NEVER lock them out of the login screen!
+      // Keep login screen fully interactive so the admin/teacher can switch to Admin portal or login.
+      if (!isLoggedIn || isLoginVisible) {
+        document.body.classList.remove("system-hard-locked");
+        if (overlay) overlay.classList.add("hidden");
+        return;
+      }
+
+      // If assistant is logged in inside appBox:
       document.body.classList.add("system-hard-locked");
       if (overlay) {
         if (titleEl) titleEl.textContent = "الشيفت معلق ومغلق من قِبل الإدارة";

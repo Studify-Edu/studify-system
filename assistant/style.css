@@ -4860,40 +4860,41 @@ body.system-hard-locked {
   overflow: hidden !important;
 }
 
-body.system-hard-locked #appBox,
-body.system-hard-locked #loginBox {
-  filter: blur(16px) !important;
+/* Never blur or disable the loginBox so users can switch to Admin or type */
+body.system-hard-locked #appBox {
+  filter: blur(14px) !important;
   pointer-events: none !important;
   user-select: none !important;
 }
 
 .hard-lock-card {
-  background: var(--bg-card, #1e293b);
-  border: 1.5px solid rgba(239, 68, 68, 0.4);
-  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.8), 0 0 50px rgba(239, 68, 68, 0.18);
-  border-radius: 28px;
-  max-width: 480px;
-  width: 100%;
-  padding: 38px 28px 30px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  animation: hardLockCardPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  background: #0f172a !important; /* Fixed elegant dark slate for supreme contrast in all modes */
+  border: 1.5px solid rgba(239, 68, 68, 0.45) !important;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.85), 0 0 50px rgba(239, 68, 68, 0.22) !important;
+  border-radius: 26px !important;
+  max-width: 490px !important;
+  width: 100% !important;
+  padding: 36px 28px 26px !important;
+  text-align: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+  animation: hardLockCardPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  color: #f8fafc !important;
 }
 
 @keyframes hardLockCardPop {
-  0% { transform: scale(0.9) translateY(20px); opacity: 0; }
+  0% { transform: scale(0.92) translateY(18px); opacity: 0; }
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .hard-lock-icon-container {
   position: relative;
-  width: 88px;
-  height: 88px;
-  margin-bottom: 20px;
+  width: 86px;
+  height: 86px;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4919,8 +4920,8 @@ body.system-hard-locked #loginBox {
 }
 
 .hard-lock-icon-circle {
-  width: 76px;
-  height: 76px;
+  width: 74px;
+  height: 74px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.15));
   border: 2px solid rgba(239, 68, 68, 0.6);
@@ -4938,17 +4939,17 @@ body.system-hard-locked #loginBox {
 }
 
 .hard-lock-badge-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
-  padding: 5px 14px;
-  border-radius: 30px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  margin-bottom: 14px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(239, 68, 68, 0.18) !important;
+  border: 1px solid rgba(239, 68, 68, 0.45) !important;
+  color: #fca5a5 !important;
+  padding: 6px 16px !important;
+  border-radius: 30px !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 14px !important;
 }
 
 .hard-lock-dot {
@@ -4966,67 +4967,119 @@ body.system-hard-locked #loginBox {
 }
 
 .hard-lock-title {
-  font-family: 'Cairo', sans-serif;
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin-bottom: 10px;
-  line-height: 1.4;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  margin-bottom: 12px !important;
+  line-height: 1.4 !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
 }
 
 .hard-lock-desc {
-  font-family: 'Cairo', sans-serif;
-  font-size: 0.92rem;
-  color: #cbd5e1;
-  line-height: 1.65;
-  margin-bottom: 20px;
-  padding: 0 8px;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 0.95rem !important;
+  color: #e2e8f0 !important;
+  line-height: 1.7 !important;
+  margin-bottom: 22px !important;
+  padding: 0 10px !important;
+  font-weight: 500 !important;
 }
 
 .hard-lock-sync-info {
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.22);
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 0.82rem;
-  color: #93c5fd;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-align: right;
-  line-height: 1.45;
-  margin-bottom: 20px;
-  width: 100%;
+  background: rgba(30, 58, 138, 0.25) !important;
+  border: 1px solid rgba(59, 130, 246, 0.35) !important;
+  border-radius: 14px !important;
+  padding: 12px 16px !important;
+  font-size: 0.84rem !important;
+  color: #bfdbfe !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-align: right !important;
+  line-height: 1.55 !important;
+  margin-bottom: 24px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .hard-lock-actions {
-  width: 100%;
-  display: flex;
-  justify-content: center;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
 }
 
 .hard-lock-btn-retry {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  font-family: 'Cairo', sans-serif;
-  font-weight: 700;
-  font-size: 0.9rem;
-  padding: 12px 20px;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  padding: 13px 20px !important;
+  border-radius: 14px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35) !important;
+  transition: all 0.2s ease !important;
 }
 
 .hard-lock-btn-retry:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45) !important;
+}
+
+.hard-lock-btn-admin {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.92rem !important;
+  padding: 12px 20px !important;
+  border-radius: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.hard-lock-btn-admin:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+.hard-lock-btn-dismiss {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  transition: color 0.2s ease !important;
+  margin-top: 2px !important;
+}
+
+.hard-lock-btn-dismiss:hover {
+  color: #f1f5f9 !important;
+  text-decoration: underline !important;
 }
 
 
