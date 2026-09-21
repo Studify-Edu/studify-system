@@ -4296,3 +4296,228 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* =========================================================
+   FINANCIAL MODALS — Shared Smooth Animations & Mobile
+   (vaultTransferModal, vaultTransfersHistoryModal,
+    expensesDetailsModal, withdrawalsDetailsModal,
+    discountsDetailsModal)
+   ========================================================= */
+
+/* --- Shared overlay fade-in / fade-out for all financial modals --- */
+#vaultTransferModal,
+#vaultTransfersHistoryModal,
+#expensesDetailsModal,
+#withdrawalsDetailsModal,
+#discountsDetailsModal {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  pointer-events: none;
+}
+#vaultTransferModal:not(.hidden),
+#vaultTransfersHistoryModal:not(.hidden),
+#expensesDetailsModal:not(.hidden),
+#withdrawalsDetailsModal:not(.hidden),
+#discountsDetailsModal:not(.hidden) {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+
+/* --- Modal box entrance animation --- */
+#vaultTransferModal .modal-box-premium,
+#vaultTransfersHistoryModal .modal-box-premium,
+#expensesDetailsModal .modal-box-premium,
+#withdrawalsDetailsModal .modal-box-premium,
+#discountsDetailsModal .modal-box-premium {
+  transform: translateY(24px) scale(0.97);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#vaultTransferModal:not(.hidden) .modal-box-premium,
+#vaultTransfersHistoryModal:not(.hidden) .modal-box-premium,
+#expensesDetailsModal:not(.hidden) .modal-box-premium,
+#withdrawalsDetailsModal:not(.hidden) .modal-box-premium,
+#discountsDetailsModal:not(.hidden) .modal-box-premium {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* --- Staggered section entrance for modal body sections --- */
+#vaultTransferModal:not(.hidden) .modal-header-premium,
+#vaultTransfersHistoryModal:not(.hidden) .modal-header-premium,
+#expensesDetailsModal:not(.hidden) .modal-header-premium,
+#withdrawalsDetailsModal:not(.hidden) .modal-header-premium,
+#discountsDetailsModal:not(.hidden) .modal-header-premium {
+  animation: revSectionIn 0.4s 0.05s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+#vaultTransferModal:not(.hidden) .modal-body-premium > *,
+#vaultTransfersHistoryModal:not(.hidden) .modal-body-premium > *,
+#expensesDetailsModal:not(.hidden) .modal-body-premium > *,
+#withdrawalsDetailsModal:not(.hidden) .modal-body-premium > *,
+#discountsDetailsModal:not(.hidden) .modal-body-premium > * {
+  animation: revSectionIn 0.4s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+}
+#vaultTransferModal:not(.hidden) .modal-body-premium > *:nth-child(2),
+#vaultTransfersHistoryModal:not(.hidden) .modal-body-premium > *:nth-child(2),
+#expensesDetailsModal:not(.hidden) .modal-body-premium > *:nth-child(2),
+#withdrawalsDetailsModal:not(.hidden) .modal-body-premium > *:nth-child(2),
+#discountsDetailsModal:not(.hidden) .modal-body-premium > *:nth-child(2) {
+  animation-delay: 0.15s;
+}
+#vaultTransferModal:not(.hidden) .modal-body-premium > *:nth-child(3),
+#vaultTransfersHistoryModal:not(.hidden) .modal-body-premium > *:nth-child(3),
+#expensesDetailsModal:not(.hidden) .modal-body-premium > *:nth-child(3),
+#withdrawalsDetailsModal:not(.hidden) .modal-body-premium > *:nth-child(3),
+#discountsDetailsModal:not(.hidden) .modal-body-premium > *:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+/* --- Stagger on modal-actions-premium footer bar --- */
+#vaultTransferModal:not(.hidden) .modal-actions-premium,
+#vaultTransfersHistoryModal:not(.hidden) .modal-actions-premium,
+#expensesDetailsModal:not(.hidden) .modal-actions-premium,
+#withdrawalsDetailsModal:not(.hidden) .modal-actions-premium,
+#discountsDetailsModal:not(.hidden) .modal-actions-premium {
+  animation: revSectionIn 0.4s 0.25s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* --- Close button smooth spin on hover (shared) --- */
+#vaultTransferModal .modal-close-btn,
+#vaultTransfersHistoryModal .modal-close-btn,
+#expensesDetailsModal .modal-close-btn,
+#withdrawalsDetailsModal .modal-close-btn,
+#discountsDetailsModal .modal-close-btn {
+  transition: transform 0.25s ease, background 0.2s ease, color 0.2s ease;
+}
+#vaultTransferModal .modal-close-btn:hover,
+#vaultTransfersHistoryModal .modal-close-btn:hover,
+#expensesDetailsModal .modal-close-btn:hover,
+#withdrawalsDetailsModal .modal-close-btn:hover,
+#discountsDetailsModal .modal-close-btn:hover {
+  transform: rotate(90deg) scale(1.15);
+}
+
+/* --- KPI summary cards hover lift --- */
+#expensesDetailsModal .fin-summary-cards > div,
+#withdrawalsDetailsModal .fin-summary-cards > div {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#expensesDetailsModal .fin-summary-cards > div:hover,
+#withdrawalsDetailsModal .fin-summary-cards > div:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.18);
+}
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+  #vaultTransferModal,
+  #vaultTransfersHistoryModal,
+  #expensesDetailsModal,
+  #withdrawalsDetailsModal,
+  #discountsDetailsModal {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  #vaultTransferModal .modal-box-premium,
+  #vaultTransfersHistoryModal .modal-box-premium,
+  #expensesDetailsModal .modal-box-premium,
+  #withdrawalsDetailsModal .modal-box-premium,
+  #discountsDetailsModal .modal-box-premium {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 22px 22px 0 0 !important;
+    padding: 20px 16px !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Override entry animation for mobile (slides up from bottom) */
+    transform: translateY(40px) scale(1) !important;
+  }
+
+  #vaultTransferModal:not(.hidden) .modal-box-premium,
+  #vaultTransfersHistoryModal:not(.hidden) .modal-box-premium,
+  #expensesDetailsModal:not(.hidden) .modal-box-premium,
+  #withdrawalsDetailsModal:not(.hidden) .modal-box-premium,
+  #discountsDetailsModal:not(.hidden) .modal-box-premium {
+    transform: translateY(0) scale(1) !important;
+  }
+
+  /* Expenses/Withdrawals: KPI cards stack in 2 cols then 1 col */
+  .fin-summary-cards {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Date filter bar wraps */
+  .fin-date-filter-bar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .fin-date-group {
+    min-width: 0 !important;
+    flex: 1 1 140px !important;
+  }
+  .fin-quick-dates {
+    width: 100% !important;
+  }
+  .fin-quick-btn {
+    flex: 1 !important;
+  }
+
+  /* Tables: horizontal scroll on mobile */
+  #expensesDetailsModal .fin-modal-table-wrap,
+  #withdrawalsDetailsModal .fin-modal-table-wrap,
+  #vaultTransfersHistoryModal .fin-modal-table-wrap,
+  #discountsDetailsModal .fin-modal-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: 240px !important;
+  }
+
+  /* Vault transfer form: stack fields vertically */
+  #vaultTransferModal .form-row {
+    flex-direction: column !important;
+  }
+
+  /* Discounts table: shrink font a bit */
+  #discountsDetailsModal .fin-modal-table {
+    font-size: 0.82em !important;
+  }
+
+  /* Footer action bars: wrap on small screens */
+  .modal-actions-premium {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .modal-actions-premium .btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Header: compact */
+  #vaultTransferModal .modal-header-premium,
+  #vaultTransfersHistoryModal .modal-header-premium,
+  #expensesDetailsModal .modal-header-premium,
+  #withdrawalsDetailsModal .modal-header-premium,
+  #discountsDetailsModal .modal-header-premium {
+    gap: 10px !important;
+  }
+
+  .modal-title-premium {
+    font-size: 1.05rem !important;
+  }
+}
+
+/* ─── Extra small ≤ 480px ─── */
+@media (max-width: 480px) {
+  /* KPI cards single column */
+  .fin-summary-cards {
+    grid-template-columns: 1fr !important;
+  }
+}
