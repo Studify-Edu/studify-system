@@ -73,7 +73,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V19">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V20">
 </head>
 <body>
 
@@ -1210,29 +1210,30 @@
     </div>
   </div>
 
+  <!-- ========================================================<!-- ======================================================== -->
+  <!-- REVENUE DETAILED BREAKDOWN MODAL (تفاصيل وتوزيع الإيرادات) -->
   <!-- ======================================================== -->
-  <!-- REVENUE DETAILED BREAKDOWN MODAL -->
-  <!-- ======================================================== -->
-  <div id="revenueBreakdownModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
-    <div class="modal-box modal-box-premium" style="max-width: 860px; width: 95%;">
+  <div id="revenueBreakdownModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.75); z-index: 99999;">
+    <div class="modal-box modal-box-premium" style="max-width: 1060px; width: 96%; max-height: 90vh; display: flex; flex-direction: column;">
+      
       <!-- Close button -->
       <button type="button" class="modal-close-btn" onclick="window.closeRevenueBreakdownModal()">
         <i class="fa-solid fa-xmark"></i>
       </button>
 
       <!-- Modal Header -->
-      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+      <div class="modal-header-premium" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-shrink: 0;">
         <div class="modal-icon-badge" style="background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2)); color: #10b981;">
           <i class="fa-solid fa-chart-pie"></i>
         </div>
         <div>
           <h3 class="modal-title-premium" data-i18n="rev_modal_title">تفاصيل وتوزيع الإيرادات المحصلة</h3>
-          <p class="modal-subtitle-premium" data-i18n="rev_modal_subtitle">تحليل مالي تفصيلي لمصادر الدخل وتوزيع التدفقات النقدية والبنكية</p>
+          <p class="modal-subtitle-premium" data-i18n="rev_modal_subtitle">تحليل مالي تفصيلي لمصادر الدخل وتوزيع التدفقات النقدية والبنكية مع فلترة بالتاريخ</p>
         </div>
       </div>
 
-      <!-- Modal Body -->
-      <div class="modal-body-premium" style="padding: 20px 0; display: flex; flex-direction: column; gap: 20px;">
+      <!-- Modal Body (Landscape & Organized) -->
+      <div class="modal-body-premium" style="padding: 18px 0; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; flex: 1;">
         
         <!-- Date Range Filter Bar for Revenue -->
         <div class="fin-date-filter-bar">
@@ -1244,47 +1245,84 @@
             <span class="fin-date-lbl" data-i18n="lbl_to_date">إلى تاريخ:</span>
             <input type="date" id="revFilterEndDate" class="fin-date-inp">
           </div>
-          <button type="button" class="btn primary smallBtn" onclick="window.filterRevenueModal()" data-i18n="btn_apply_filter">تطبيق</button>
+          <button type="button" class="btn primary smallBtn" onclick="window.filterRevenueModal()" data-i18n="btn_apply_filter">
+            <i class="fa-solid fa-filter"></i> <span>تطبيق</span>
+          </button>
           <div class="fin-quick-dates">
             <button type="button" class="fin-quick-btn active" id="revQuickAll" onclick="window.setRevQuickDate('all')" data-i18n="btn_all_term">كل الترم</button>
             <button type="button" class="fin-quick-btn" id="revQuickToday" onclick="window.setRevQuickDate('today')" data-i18n="btn_today">اليوم</button>
           </div>
         </div>
 
-        <!-- Big Total Header Card -->
-        <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;">
-          <div>
-            <span style="font-size: 0.85em; color: var(--text-secondary); font-weight: 600;" data-i18n="rev_grand_total_lbl">إجمالي الإيرادات الكلية المحصلة</span>
-            <div id="revModalGrandTotal" style="font-size: 2.2em; font-weight: 800; color: #10b981; line-height: 1.2;">0 ج</div>
+        <!-- 1. Horizontal 4-Card Summary KPIs Row -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
+          <!-- Grand Total -->
+          <div style="background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.08)); border: 1.5px solid rgba(16,185,129,0.35); border-radius: 14px; padding: 14px 18px;">
+            <div style="font-size: 0.82em; color: #10b981; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+              <span data-i18n="rev_grand_total_lbl">إجمالي الإيرادات المحصلة</span>
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <div id="revModalGrandTotal" style="font-size: 1.8em; font-weight: 800; color: #10b981; margin-top: 4px;">0 ج</div>
           </div>
-          <!-- Visual Distribution Bar -->
-          <div style="flex: 1; min-width: 250px;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.78em; color: var(--text-secondary); margin-bottom: 6px;">
+          
+          <!-- Cash Treasury -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 3.5px solid #10b981; border-radius: 14px; padding: 14px 18px;">
+            <div style="font-size: 0.82em; color: var(--text-secondary); font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+              <span data-i18n="treasury_cash_total">المحصل كاش (الدرج)</span>
+              <i class="fa-solid fa-money-bill-wave" style="color: #10b981;"></i>
+            </div>
+            <div id="revTotalMethodCash" style="font-size: 1.5em; font-weight: 800; color: #10b981; margin-top: 4px;">0 ج</div>
+          </div>
+
+          <!-- Instapay Treasury -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 3.5px solid #0284c7; border-radius: 14px; padding: 14px 18px;">
+            <div style="font-size: 0.82em; color: var(--text-secondary); font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+              <span data-i18n="treasury_instapay_total">المحصل إنستاباي</span>
+              <i class="fa-solid fa-bolt-lightning" style="color: #0284c7;"></i>
+            </div>
+            <div id="revTotalMethodInstapay" style="font-size: 1.5em; font-weight: 800; color: #0284c7; margin-top: 4px;">0 ج</div>
+          </div>
+
+          <!-- Vodafone Wallet Treasury -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 3.5px solid #ef4444; border-radius: 14px; padding: 14px 18px;">
+            <div style="font-size: 0.82em; color: var(--text-secondary); font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+              <span data-i18n="treasury_wallet_total">المحصل فودافون كاش</span>
+              <i class="fa-solid fa-wallet" style="color: #ef4444;"></i>
+            </div>
+            <div id="revTotalMethodWallet" style="font-size: 1.5em; font-weight: 800; color: #ef4444; margin-top: 4px;">0 ج</div>
+          </div>
+        </div>
+
+        <!-- 2. Visual Distribution Bar -->
+        <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.82em; color: var(--text-secondary); margin-bottom: 8px;">
+            <span style="font-weight: 700; color: var(--text-primary);"><i class="fa-solid fa-chart-simple"></i> نسب التوزيع حسب القنوات:</span>
+            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
               <span><i class="fa-solid fa-square" style="color: #10b981;"></i> <span data-i18n="rev_src_regular">طلاب منتظمين</span>: <b id="revBarRegPct">0%</b></span>
               <span><i class="fa-solid fa-square" style="color: #0284c7;"></i> <span data-i18n="rev_src_session">طلاب حصة</span>: <b id="revBarSessPct">0%</b></span>
               <span><i class="fa-solid fa-square" style="color: #8b5cf6;"></i> <span data-i18n="rev_src_booklets">مذكرات ومخزن</span>: <b id="revBarBklPct">0%</b></span>
             </div>
-            <div style="height: 10px; border-radius: 6px; background: var(--bg-surface); overflow: hidden; display: flex; border: 1px solid var(--border);">
-              <div id="revBarReg" style="width: 0%; background: #10b981; transition: width 0.4s ease;"></div>
-              <div id="revBarSess" style="width: 0%; background: #0284c7; transition: width 0.4s ease;"></div>
-              <div id="revBarBkl" style="width: 0%; background: #8b5cf6; transition: width 0.4s ease;"></div>
-            </div>
+          </div>
+          <div style="height: 10px; border-radius: 6px; background: var(--bg-surface); overflow: hidden; display: flex; border: 1px solid var(--border);">
+            <div id="revBarReg" style="width: 0%; background: #10b981; transition: width 0.4s ease;"></div>
+            <div id="revBarSess" style="width: 0%; background: #0284c7; transition: width 0.4s ease;"></div>
+            <div id="revBarBkl" style="width: 0%; background: #8b5cf6; transition: width 0.4s ease;"></div>
           </div>
         </div>
 
-        <!-- 3 Source Channels Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+        <!-- 3. Channels 3-Card Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
           
           <!-- 1. Regular Students -->
           <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 4px solid #10b981; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 6px;">
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-users" style="color: #10b981;"></i>
                 <span data-i18n="rev_card_regular_title">اشتراكات الطلاب المنتظمين</span>
               </div>
             </div>
             <div id="revCardRegTotal" style="font-size: 1.6em; font-weight: 800; color: var(--text-primary);">0 ج</div>
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.84em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
               <div style="display: flex; justify-content: space-between;">
                 <span><i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i> <span data-i18n="opt_cash">كاش:</span></span>
                 <b id="revCardRegCash" style="color:var(--text-primary);">0 ج</b>
@@ -1303,13 +1341,13 @@
           <!-- 2. Session Students -->
           <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 4px solid #0284c7; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 6px;">
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-user-clock" style="color: #0284c7;"></i>
                 <span data-i18n="rev_card_session_title">حضور طلاب الحصة الفورية</span>
               </div>
             </div>
             <div id="revCardSessTotal" style="font-size: 1.6em; font-weight: 800; color: var(--text-primary);">0 ج</div>
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.84em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
               <div style="display: flex; justify-content: space-between;">
                 <span><i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i> <span data-i18n="opt_cash">كاش:</span></span>
                 <b id="revCardSessCash" style="color:var(--text-primary);">0 ج</b>
@@ -1328,13 +1366,13 @@
           <!-- 3. Booklets & Inventory -->
           <div style="background: var(--bg-surface); border: 1px solid var(--border); border-top: 4px solid #8b5cf6; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 6px;">
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-book-bookmark" style="color: #8b5cf6;"></i>
                 <span data-i18n="rev_card_booklets_title">مبيعات المذكرات والمخزن</span>
               </div>
             </div>
             <div id="revCardBklTotal" style="font-size: 1.6em; font-weight: 800; color: var(--text-primary);">0 ج</div>
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.84em; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 10px;">
               <div style="display: flex; justify-content: space-between;">
                 <span><i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i> <span data-i18n="opt_cash">كاش:</span></span>
                 <b id="revCardBklCash" style="color:var(--text-primary);">0 ج</b>
@@ -1352,50 +1390,16 @@
 
         </div>
 
-        <!-- Horizontal Dashboard by Payment Method -->
+        <!-- 4. Detailed Inflow Log Table for the Period -->
         <div>
-          <div style="font-size: 0.9em; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-vault"></i>
-            <span data-i18n="rev_sec_treasury_title">إجمالي المقبوضات حسب وسيلة الدفع (شامل كافة المصادر)</span>
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
-            
-            <div style="background: rgba(16,185,129,0.06); border: 1.5px solid rgba(16,185,129,0.25); border-radius: 12px; padding: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; color: #10b981; font-size: 0.85em; font-weight: 700; margin-bottom: 6px;">
-                <span><i class="fa-solid fa-money-bill-wave"></i> <span data-i18n="treasury_cash_total">إجمالي الكاش (الدرج)</span></span>
-              </div>
-              <div id="revTotalMethodCash" style="font-size: 1.45em; font-weight: 800; color: #10b981;">0 ج</div>
-            </div>
-
-            <div style="background: rgba(2,132,199,0.06); border: 1.5px solid rgba(2,132,199,0.25); border-radius: 12px; padding: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; color: #0284c7; font-size: 0.85em; font-weight: 700; margin-bottom: 6px;">
-                <span><i class="fa-solid fa-bolt-lightning"></i> <span data-i18n="treasury_instapay_total">إجمالي إنستاباي</span></span>
-              </div>
-              <div id="revTotalMethodInstapay" style="font-size: 1.45em; font-weight: 800; color: #0284c7;">0 ج</div>
-            </div>
-
-            <div style="background: rgba(239,68,68,0.06); border: 1.5px solid rgba(239,68,68,0.25); border-radius: 12px; padding: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; color: #ef4444; font-size: 0.85em; font-weight: 700; margin-bottom: 6px;">
-                <span><i class="fa-solid fa-wallet"></i> <span data-i18n="treasury_wallet_total">إجمالي فودافون كاش</span></span>
-              </div>
-              <div id="revTotalMethodWallet" style="font-size: 1.45em; font-weight: 800; color: #ef4444;">0 ج</div>
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-
-        <!-- Detailed Inflow Log Table for the Period -->
-        <div>
-          <div style="font-size: 0.9em; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <i class="fa-solid fa-list-check"></i>
+          <div style="font-size: 0.92em; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-list-check" style="color: #10b981;"></i>
               <span data-i18n="rev_tbl_title">سجل حركات التحصيل والتوريد في الفترة المحددة</span>
             </div>
-            <span id="revFilterCountBadge" class="badge" style="background: var(--bg-inset); color: var(--text-secondary);">0 حركة</span>
+            <span id="revFilterCountBadge" class="badge" style="background: rgba(16,185,129,0.12); color: #10b981; font-weight: 800; padding: 4px 10px; border-radius: 20px;">0 حركة</span>
           </div>
-          <div class="fin-modal-table-wrap">
+          <div class="fin-modal-table-wrap" style="max-height: 280px;">
             <table class="fin-modal-table">
               <thead>
                 <tr>
@@ -1416,8 +1420,8 @@
       </div>
 
       <!-- Actions -->
-      <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: flex-end;">
-        <button type="button" class="btn secondary" onclick="window.closeRevenueBreakdownModal()" style="padding: 9px 24px; border-radius: 10px;" data-i18n="btn_close">
+      <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 8px; display: flex; justify-content: flex-end; flex-shrink: 0;">
+        <button type="button" class="btn secondary" onclick="window.closeRevenueBreakdownModal()" style="padding: 10px 26px; border-radius: 10px; font-weight: 700;" data-i18n="btn_close">
           إغلاق النافذة
         </button>
       </div>
@@ -1791,6 +1795,20 @@
           </table>
         </div>
 
+        <!-- Pagination Controls -->
+        <div class="fin-modal-pagination" id="discModalPagination">
+          <button type="button" class="btn secondary smallBtn pagination-btn" id="discPrevBtn" onclick="window.discModalPrevPage()" disabled>
+            <i class="fa-solid fa-chevron-right"></i> <span data-i18n="btn_prev">السابق</span>
+          </button>
+          <div class="pagination-info">
+            <span>صفحة <b id="discCurrentPageNum">1</b> من <b id="discTotalPagesNum">1</b></span>
+            <span class="pagination-subinfo">(عرض <span id="discShowingCount">0</span> من إجمالي <span id="discTotalCount">0</span> طالب)</span>
+          </div>
+          <button type="button" class="btn secondary smallBtn pagination-btn" id="discNextBtn" onclick="window.discModalNextPage()">
+            <span data-i18n="btn_next">التالي</span> <i class="fa-solid fa-chevron-left"></i>
+          </button>
+        </div>
+
       </div>
 
       <div class="modal-actions-premium" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; display: flex; justify-content: flex-end;">
@@ -1800,7 +1818,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V32"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V33"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

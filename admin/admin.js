@@ -5426,59 +5426,7 @@ window.contactForRenewal = function(planKey) {
 window.openRevenueBreakdownModal = function() {
   const modal = document.getElementById("revenueBreakdownModal");
   if (!modal) return;
-
-  const data = window.financialBreakdownData || {
-    regTotal: 0, regCash: 0, regInstapay: 0, regWallet: 0,
-    sessTotal: 0, sessCash: 0, sessInstapay: 0, sessWallet: 0,
-    bklTotal: 0, bklCash: 0, bklInstapay: 0, bklWallet: 0,
-    grandTotal: 0, totalCash: 0, totalInstapay: 0, totalWallet: 0,
-    currencySuffix: (currentLang === "ar" ? " ج" : " EGP")
-  };
-
-  const curr = data.currencySuffix || (currentLang === "ar" ? " ج" : " EGP");
-
-  // Big Totals
-  const gTotal = data.grandTotal || 0;
-  if (document.getElementById("revModalGrandTotal")) {
-    document.getElementById("revModalGrandTotal").textContent = gTotal.toLocaleString() + curr;
-  }
-
-  // Distribution Percentages
-  const regPct = gTotal > 0 ? Math.round((data.regTotal / gTotal) * 100) : 0;
-  const sessPct = gTotal > 0 ? Math.round((data.sessTotal / gTotal) * 100) : 0;
-  const bklPct = gTotal > 0 ? Math.max(0, 100 - regPct - sessPct) : 0;
-
-  if (document.getElementById("revBarRegPct")) document.getElementById("revBarRegPct").textContent = regPct + "%";
-  if (document.getElementById("revBarSessPct")) document.getElementById("revBarSessPct").textContent = sessPct + "%";
-  if (document.getElementById("revBarBklPct")) document.getElementById("revBarBklPct").textContent = bklPct + "%";
-
-  if (document.getElementById("revBarReg")) document.getElementById("revBarReg").style.width = regPct + "%";
-  if (document.getElementById("revBarSess")) document.getElementById("revBarSess").style.width = sessPct + "%";
-  if (document.getElementById("revBarBkl")) document.getElementById("revBarBkl").style.width = bklPct + "%";
-
-  // 1. Regular Students Card
-  if (document.getElementById("revCardRegTotal")) document.getElementById("revCardRegTotal").textContent = data.regTotal.toLocaleString() + curr;
-  if (document.getElementById("revCardRegCash")) document.getElementById("revCardRegCash").textContent = data.regCash.toLocaleString() + curr;
-  if (document.getElementById("revCardRegInstapay")) document.getElementById("revCardRegInstapay").textContent = data.regInstapay.toLocaleString() + curr;
-  if (document.getElementById("revCardRegWallet")) document.getElementById("revCardRegWallet").textContent = data.regWallet.toLocaleString() + curr;
-
-  // 2. Session Students Card
-  if (document.getElementById("revCardSessTotal")) document.getElementById("revCardSessTotal").textContent = data.sessTotal.toLocaleString() + curr;
-  if (document.getElementById("revCardSessCash")) document.getElementById("revCardSessCash").textContent = data.sessCash.toLocaleString() + curr;
-  if (document.getElementById("revCardSessInstapay")) document.getElementById("revCardSessInstapay").textContent = data.sessInstapay.toLocaleString() + curr;
-  if (document.getElementById("revCardSessWallet")) document.getElementById("revCardSessWallet").textContent = data.sessWallet.toLocaleString() + curr;
-
-  // 3. Booklets Card
-  if (document.getElementById("revCardBklTotal")) document.getElementById("revCardBklTotal").textContent = data.bklTotal.toLocaleString() + curr;
-  if (document.getElementById("revCardBklCash")) document.getElementById("revCardBklCash").textContent = data.bklCash.toLocaleString() + curr;
-  if (document.getElementById("revCardBklInstapay")) document.getElementById("revCardBklInstapay").textContent = data.bklInstapay.toLocaleString() + curr;
-  if (document.getElementById("revCardBklWallet")) document.getElementById("revCardBklWallet").textContent = data.bklWallet.toLocaleString() + curr;
-
-  // Horizontal Dashboard Totals
-  if (document.getElementById("revTotalMethodCash")) document.getElementById("revTotalMethodCash").textContent = data.totalCash.toLocaleString() + curr;
-  if (document.getElementById("revTotalMethodInstapay")) document.getElementById("revTotalMethodInstapay").textContent = data.totalInstapay.toLocaleString() + curr;
-  if (document.getElementById("revTotalMethodWallet")) document.getElementById("revTotalMethodWallet").textContent = data.totalWallet.toLocaleString() + curr;
-
+  window.setRevQuickDate('all');
   modal.classList.remove("hidden");
 };
 
@@ -5877,10 +5825,14 @@ window.filterWithdrawalsModal = function() {
 };
 
 
-// --- 4. DISCOUNTS & EXEMPTIONS DETAILS MODAL ---
+// --- 4. DISCOUNTS & EXEMPTIONS DETAILS MODAL WITH PAGINATION ---
+window.discModalCurrentPage = 1;
+const DISC_MODAL_PAGE_SIZE = 5;
+
 window.openDiscountsDetailsModal = function() {
   const modal = document.getElementById("discountsDetailsModal");
   if (!modal) return;
+  window.discModalCurrentPage = 1;
   if (document.getElementById("discSearchInp")) document.getElementById("discSearchInp").value = "";
   window.renderDiscountsModalTable();
   modal.classList.remove("hidden");
@@ -5889,6 +5841,28 @@ window.openDiscountsDetailsModal = function() {
 window.closeDiscountsDetailsModal = function() {
   const modal = document.getElementById("discountsDetailsModal");
   if (modal) modal.classList.add("hidden");
+};
+
+window.discModalPrevPage = function() {
+  if (window.discModalCurrentPage > 1) {
+    window.discModalCurrentPage--;
+    window.renderDiscountsModalTable();
+  }
+};
+
+window.discModalNextPage = function() {
+  const q = document.getElementById("discSearchInp")?.value.toLowerCase().trim() || "";
+  const discStudents = Object.values(students || {}).filter(s => {
+    if (!s || !s.name) return false;
+    if (Number(s.discount) <= 0) return false;
+    if (q && !s.name.toLowerCase().includes(q) && !String(s.id).includes(q)) return false;
+    return true;
+  });
+  const totalPages = Math.ceil(discStudents.length / DISC_MODAL_PAGE_SIZE) || 1;
+  if (window.discModalCurrentPage < totalPages) {
+    window.discModalCurrentPage++;
+    window.renderDiscountsModalTable();
+  }
 };
 
 window.renderDiscountsModalTable = function() {
@@ -5909,11 +5883,34 @@ window.renderDiscountsModalTable = function() {
   if (document.getElementById("discModalTotalAmt")) document.getElementById("discModalTotalAmt").textContent = totalDisc.toLocaleString() + " ج";
   if (document.getElementById("discModalCount")) document.getElementById("discModalCount").textContent = totalCount + (isAr ? " طالب" : " Students");
 
+  // Pagination calculation
+  const totalPages = Math.ceil(discStudents.length / DISC_MODAL_PAGE_SIZE) || 1;
+  if (window.discModalCurrentPage > totalPages) window.discModalCurrentPage = totalPages;
+  if (window.discModalCurrentPage < 1) window.discModalCurrentPage = 1;
+
+  const startIdx = (window.discModalCurrentPage - 1) * DISC_MODAL_PAGE_SIZE;
+  const pageItems = discStudents.slice(startIdx, startIdx + DISC_MODAL_PAGE_SIZE);
+
+  // Update pagination UI
+  const prevBtn = document.getElementById("discPrevBtn");
+  const nextBtn = document.getElementById("discNextBtn");
+  const curPageEl = document.getElementById("discCurrentPageNum");
+  const totalPagesEl = document.getElementById("discTotalPagesNum");
+  const showingCountEl = document.getElementById("discShowingCount");
+  const totalCountEl = document.getElementById("discTotalCount");
+
+  if (prevBtn) prevBtn.disabled = (window.discModalCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (window.discModalCurrentPage >= totalPages);
+  if (curPageEl) curPageEl.textContent = window.discModalCurrentPage;
+  if (totalPagesEl) totalPagesEl.textContent = totalPages;
+  if (showingCountEl) showingCountEl.textContent = pageItems.length;
+  if (totalCountEl) totalCountEl.textContent = discStudents.length;
+
   if (!tbody) return;
   if (discStudents.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "لا يوجد طلاب حاصلين على خصومات تطابق البحث" : "No discounted students found"}</td></tr>`;
   } else {
-    tbody.innerHTML = discStudents.map(s => {
+    tbody.innerHTML = pageItems.map(s => {
       const cls = (s.className && s.className !== 'عام' && s.className !== 'General') ? s.className : (isAr ? "بدون باقة" : "No Package");
       const paid = Number(s.paid) || 0;
       const disc = Number(s.discount) || 0;
@@ -5937,7 +5934,6 @@ window.renderDiscountsModalTable = function() {
     }).join("");
   }
 };
-
 
 // --- 5. REVENUE BREAKDOWN MODAL WITH DATE RANGE FILTER ---
 window.setRevQuickDate = function(mode) {

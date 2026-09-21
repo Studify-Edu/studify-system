@@ -4021,7 +4021,68 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   font-size: 0.85em;
   font-weight: 600;
   outline: none;
+  direction: ltr !important;
+  text-align: right !important;
   transition: border-color 0.2s ease;
+}
+
+/* ── MODAL PAGINATION CONTROLS ── */
+.fin-modal-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-top: 10px;
+}
+
+.fin-modal-pagination .pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fin-modal-pagination .pagination-subinfo {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+@media (max-width: 600px) {
+  .fin-modal-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+  .fin-modal-pagination .pagination-info {
+    width: 100%;
+    justify-content: center;
+    order: -1;
+  }
 }
 .fin-date-inp:focus {
   border-color: var(--primary);
