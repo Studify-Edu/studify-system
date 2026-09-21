@@ -4677,29 +4677,295 @@ window.deleteSyllabusLesson = async function(idx) {
 // ========================================================
 // 11. ADVANCED SETTINGS & BACKUP
 // ========================================================
-window.exportAllDataToExcel = function() {
+window.exportAllDataToExcel = async function() {
+  const isAr = (currentLang === "ar");
+  if (typeof XLSX === 'undefined') {
+    showToast(isAr ? "مكتبة Excel غير متوفرة" : "Excel library not loaded", "err");
+    return;
+  }
+
+  showToast(isAr ? "جاري تجميع وقراءة كافة بيانات قاعدة البيانات من السيرفر..." : "Exporting full database from server...", "info");
+
   try {
+    // 1. Fetch fresh, complete data directly from Supabase in parallel
+    let stData = [], pkgData = [], bklData = [], asstData = [], sRow = {};
+    if (supabase) {
+      const [stRes, pkgRes, bklRes, asstRes, setRes] = await Promise.all([
+        supabase.from('students').select('*').order('id', { ascending: true }),
+        supabase.from('packages').select('*'),
+        supabase.from('booklets').select('*'),
+        supabase.from('assistants').select('*'),
+        supabase.from('settings').select('*').eq('id', 1).maybeSingle()
+      ]);
+      stData = (stRes && stRes.data) || [];
+      pkgData = (pkgRes && pkgRes.data) || [];
+      bklData = (bklRes && bklRes.data) || [];
+      asstData = (asstRes && asstRes.data) || [];
+      sRow = (setRes && setRes.data) || {};
+    }
+
+    // Fallback or merge with in-memory state if needed
+    if (stData.length === 0 && typeof students === 'object') {
+      stData = Object.values(students);
+    }
+    if (pkgData.length === 0 && typeof packages === 'object') {
+      pkgData = Object.values(packages);
+    }
+    if (bklData.length === 0 && typeof booklets === 'object') {
+      bklData = Object.values(booklets);
+    }
+
+    const cfg = sRow.config || {};
     const wb = XLSX.utils.book_new();
 
-    // Students sheet
-    const stData = [["كود الطالب", "اسم الطالب", "المجموعة", "رقم الهاتف", "هاتف ولي الأمر", "المبلغ المدفوع", "الحالة"]];
-    Object.values(students).forEach(s => {
-      stData.push([s.id, s.name, s.className, s.phone, s.parentPhone, s.paid || 0, s.status || 'نشط']);
+    // ==========================================
+    // SHEET 1: الطلاب (Students)
+    // ==========================================
+    const studentsSheet = [
+      [
+        "كود الطالب",
+        "اسم الطالب",
+        "الصف / المجموعة",
+        "رقم الهاتف",
+        "هاتف ولي الأمر",
+        "المبلغ المدفوع",
+        "قيمة الخصم",
+        "نظام الدفع",
+        "الباقات المسجلة",
+        "الرتبة",
+        "الحالة",
+        "تواريخ الحضور",
+        "ملاحظات",
+        "تاريخ الإنشاء"
+      ]
+    ];
+    stData.forEach(s => {
+      const pList = Array.isArray(s.packages) ? s.packages.join(' | ') : (s.packages || '');
+      const attList = Array.isArray(s.attendance_dates) ? s.attendance_dates.join(' , ') : (s.attendance_dates || '');
+      const stRank = (cfg.student_ranks && cfg.student_ranks[s.id]) || s.rank || 'normal';
+      studentsSheet.push([
+        s.id || '',
+        s.name || '',
+        s.class_name || s.className || '',
+        s.phone || '',
+        s.parent_phone || s.parentPhone || '',
+        Number(s.paid) || 0,
+        Number(s.discount) || 0,
+        s.payment_plan || s.paymentPlan || 'cash',
+        pList,
+        stRank,
+        s.status || 'active',
+        attList,
+        s.notes || '',
+        s.created_at || ''
+      ]);
     });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(stData), "الطلاب");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(studentsSheet), "الطلاب");
 
-    // Packages sheet
-    const pkgData = [["اسم الباقة", "السعر الأساسي", "سعر القسط"]];
-    Object.values(packages).forEach(p => {
-      pkgData.push([p.name, p.price, p.installmentPrice || p.price]);
+    // ==========================================
+    // SHEET 2: الباقات والاشتراكات (Packages)
+    // ==========================================
+    const packagesSheet = [
+      [
+        "اسم الباقة",
+        "المادة",
+        "السعر الأساسي",
+        "سعر القسط",
+        "يقبل أقساط",
+        "الحد الأقصى للحصص",
+        "تاريخ الإنشاء"
+      ]
+    ];
+    pkgData.forEach(p => {
+      packagesSheet.push([
+        p.name || '',
+        p.subject || '',
+        Number(p.price) || 0,
+        Number(p.installment_price || p.installmentPrice || p.price) || 0,
+        (p.has_installments || p.hasInstallments) ? 'نعم' : 'لا',
+        Number(p.session_limit || p.sessionLimit) || 8,
+        p.created_at || ''
+      ]);
     });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pkgData), "الباقات");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(packagesSheet), "الباقات");
 
-    XLSX.writeFile(wb, `Studify_Backup_${nowDateStr()}.xlsx`);
-    showToast("تم تصدير نسخة Excel بنجاح.", "success");
+    // ==========================================
+    // SHEET 3: المذكرات والمخزن (Booklets)
+    // ==========================================
+    const bookletsSheet = [
+      [
+        "كود المذكرة",
+        "اسم المذكرة",
+        "الصف الدراسي",
+        "سعر البيع",
+        "تكلفة الطباعة",
+        "الكمية المتاحة بالمخزن",
+        "إجمالي المباع"
+      ]
+    ];
+    bklData.forEach(b => {
+      bookletsSheet.push([
+        b.id || '',
+        b.title || b.name || '',
+        b.grade || b.className || '',
+        Number(b.price) || 0,
+        Number(b.cost) || 0,
+        Number(b.stock) || 0,
+        Number(b.sold) || 0
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bookletsSheet), "المذكرات");
+
+    // ==========================================
+    // SHEET 4: المساعدين والصلاحيات (Assistants)
+    // ==========================================
+    const assistantsSheet = [
+      [
+        "اسم المستخدم",
+        "كلمة المرور",
+        "البريد الإلكتروني",
+        "الصلاحيات (JSON)",
+        "تاريخ الإنشاء"
+      ]
+    ];
+    asstData.forEach(a => {
+      assistantsSheet.push([
+        a.username || '',
+        a.password || '',
+        a.email || '',
+        typeof a.permissions === 'object' ? JSON.stringify(a.permissions) : (a.permissions || '{}'),
+        a.created_at || ''
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(assistantsSheet), "المساعدين");
+
+    // ==========================================
+    // SHEET 5: تحويلات الخزائن الحية (Vault Transfers)
+    // ==========================================
+    const vTransfers = Array.isArray(cfg.vault_transfers) ? cfg.vault_transfers : (vaultTransfers || []);
+    const transfersSheet = [
+      [
+        "معرف التحويل",
+        "التاريخ",
+        "التوقيت",
+        "من خزينة",
+        "إلى خزينة",
+        "المبلغ بالجنيه",
+        "البيان / ملاحظات",
+        "المسؤول"
+      ]
+    ];
+    const vNames = { cash: 'درج الكاش', instapay: 'حساب إنستاباي', wallet: 'محفظة فودافون كاش' };
+    vTransfers.forEach(t => {
+      transfersSheet.push([
+        t.id || '',
+        t.date || '',
+        t.timestamp || '',
+        vNames[t.from_vault] || t.from_vault || '',
+        vNames[t.to_vault] || t.to_vault || '',
+        Number(t.amount) || 0,
+        t.note || '',
+        t.created_by || ''
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(transfersSheet), "تحويلات الخزائن");
+
+    // ==========================================
+    // SHEET 6: المصروفات والمسحوبات (Expenses & Withdrawals)
+    // ==========================================
+    let expList = [];
+    if (Array.isArray(cfg.expenses_by_date)) {
+      expList = cfg.expenses_by_date;
+    } else if (typeof cfg.expenses_by_date === 'object' && cfg.expenses_by_date) {
+      for (const dKey in cfg.expenses_by_date) {
+        const arr = cfg.expenses_by_date[dKey];
+        if (Array.isArray(arr)) arr.forEach(item => { if (item) expList.push({ ...item, date: item.date || dKey }); });
+      }
+    } else if (Array.isArray(expensesByDate)) {
+      expList = expensesByDate;
+    }
+
+    const expensesSheet = [
+      [
+        "معرف المعاملة",
+        "التاريخ",
+        "بند المصروف / السبب",
+        "نوع المعاملة",
+        "الخزينة المصروف منها",
+        "المبلغ بالجنيه",
+        "التفاصيل",
+        "المسؤول / المستلم"
+      ]
+    ];
+    expList.forEach(e => {
+      expensesSheet.push([
+        e.id || '',
+        e.date || '',
+        e.category || e.reason || e.text || '',
+        e.type === 'withdrawal' ? 'محسوب للمستر (مسحوبات)' : 'مصروفات سنتر تشغيلية',
+        vNames[e.vault] || e.vault || 'درج الكاش',
+        Number(e.amount) || 0,
+        e.note || '',
+        e.created_by || ''
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expensesSheet), "المصروفات والمسحوبات");
+
+    // ==========================================
+    // SHEET 7: سجل الحضور واليوميات (Attendance & Daily)
+    // ==========================================
+    const allDates = new Set([
+      ...Object.keys(cfg.revenue_by_date || revenueByDate || {}),
+      ...Object.keys(cfg.att_by_date || attByDate || {}),
+      ...Object.keys(cfg.daily_approval_map || dailyApprovalMap || {})
+    ]);
+    const dailySheet = [
+      [
+        "التاريخ",
+        "إجمالي إيراد اليومية (ج)",
+        "عدد الحضور اليومي",
+        "حالة الشيفت والاعتماد",
+        "تاريخ آخر اعتماد"
+      ]
+    ];
+    Array.from(allDates).sort().reverse().forEach(d => {
+      const rev = Number((cfg.revenue_by_date || revenueByDate || {})[d]) || 0;
+      const attCount = Array.isArray((cfg.att_by_date || attByDate || {})[d]) ? (cfg.att_by_date || attByDate)[d].length : 0;
+      const appInfo = (cfg.daily_approval_map || dailyApprovalMap || {})[d];
+      const statusStr = appInfo ? (appInfo.status === 'approved' ? 'معتمد ومغلق' : 'معلق') : 'مفتوح';
+      dailySheet.push([
+        d,
+        rev,
+        attCount,
+        statusStr,
+        appInfo && appInfo.updated_at ? appInfo.updated_at : ''
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dailySheet), "اليوميات والاعتمادات");
+
+    // ==========================================
+    // SHEET 8: إعدادات النظام والنسخ (System Config)
+    // ==========================================
+    const settingsSheet = [
+      ["مفتاح الإعداد", "القيمة", "الوصف"],
+      ["shift_system_enabled", cfg.shift_system_enabled !== false ? "مفعل (ON)" : "معطل (OFF)", "حالة ميزة نظام الشيفتات والاعتماد اليومي"],
+      ["daily_shift_status", sRow.daily_shift_status || 'open', "الحالة العامة للشيفت اليومي"],
+      ["backup_date", nowDateStr(), "تاريخ تصدير هذه النسخة الاحتياطية"],
+      ["total_students", stData.length, "إجمالي عدد الطلاب المسجلين بالنسخة"],
+      ["total_packages", pkgData.length, "إجمالي عدد الباقات المسجلة"],
+      ["total_transfers", vTransfers.length, "إجمالي تحويلات الخزائن المسجلة"],
+      ["total_expenses", expList.length, "إجمالي المصروفات والمسحوبات المسجلة"]
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(settingsSheet), "إعدادات النظام");
+
+    // Download File
+    const fileName = `Studify_Full_Database_Backup_${nowDateStr()}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+
+    showToast(isAr ? `تم تصدير قاعدة البيانات كاملة بنجاح (${stData.length} طالب، ${pkgData.length} باقة، ${vTransfers.length} تحويل)` : "Full database exported successfully", "success");
   } catch(e) {
-    console.error(e);
-    showToast("فشل تصدير البيانات إلى Excel", "err");
+    console.error("exportAllDataToExcel error:", e);
+    showToast(isAr ? "فشل تصدير قاعدة البيانات الكاملة: " + e.message : "Export failed", "err");
   }
 };
 
@@ -4713,11 +4979,23 @@ window.importDataFromExcel = async function(event) {
 
   const isAr = (currentLang === "ar");
   const confirmRes = await Swal.fire({
-    title: isAr ? 'استيراد بيانات الطلاب من Excel' : 'Import Students from Excel',
-    text: isAr ? 'هل تريد دمج واستيراد بيانات الطلاب من هذا الملف؟ سيتم تحديث الطلاب الحاليين وإضافة الجدد.' : 'Do you want to merge and import student data from this file? Existing students will be updated and new ones added.',
+    title: isAr ? 'استيراد واسترجاع قاعدة البيانات من Excel' : 'Import Full Database from Excel',
+    html: isAr 
+      ? `<div style="text-align: right; line-height: 1.8;">
+           <p style="font-weight: 700; margin-bottom: 8px;">هل تريد فحص واستيراد البيانات من هذا الملف؟</p>
+           <p style="color: var(--text-secondary); font-size: 0.9em; margin-bottom: 6px;">سيقوم النظام بقراءة كافة الشيتات الموجودة بالملف:</p>
+           <ul style="color: var(--text-secondary); font-size: 0.88em; padding-right: 20px; margin: 0;">
+             <li>تحديث وإضافة الطلاب وبياناتهم المالية</li>
+             <li>تحديث باقات واشتراكات السنتر</li>
+             <li>استرجاع تحويلات الخزائن الحية</li>
+             <li>استرجاع سجل المصروفات والمسحوبات</li>
+             <li>استرجاع حسابات وصلاحيات المساعدين</li>
+           </ul>
+         </div>`
+      : '<p>Merge and restore database tables from this workbook? Existing records will be updated and new ones added.</p>',
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: isAr ? 'نعم، استيراد' : 'Yes, Import',
+    confirmButtonText: isAr ? 'نعم، فحص واستيراد البيانات' : 'Yes, Import Data',
     confirmButtonColor: '#2563EB',
     cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
   });
@@ -4728,75 +5006,286 @@ window.importDataFromExcel = async function(event) {
   }
 
   try {
+    showToast(isAr ? "جاري قراءة وتحليل ملف Excel..." : "Reading Excel file...", "info");
     const data = await file.arrayBuffer();
     const wb = XLSX.read(data, { type: 'array' });
-    const sheetName = wb.SheetNames.find(n => n.includes('طلاب') || n.toLowerCase().includes('student')) || wb.SheetNames[0];
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
 
-    if (!rows || rows.length === 0) {
-      showToast("الملف فارغ أو لا يحتوي على بيانات صالحة", "warning");
-      event.target.value = '';
-      return;
+    let importedStudents = 0;
+    let importedPackages = 0;
+    let importedAssistants = 0;
+    let importedTransfers = 0;
+    let importedExpenses = 0;
+
+    // Helper: Find sheet by keywords
+    const findSheet = (keywords) => {
+      return wb.SheetNames.find(name => {
+        const lower = name.toLowerCase();
+        return keywords.some(kw => lower.includes(kw.toLowerCase()));
+      });
+    };
+
+    // 1. IMPORT STUDENTS
+    const stSheetName = findSheet(['طلاب', 'student', 'Sheet1']);
+    if (stSheetName) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[stSheetName]);
+      const studentRowsToUpsert = [];
+
+      rows.forEach(r => {
+        const id = String(r['كود الطالب'] || r['كود'] || r['id'] || r['ID'] || r['Code'] || '').trim();
+        const name = String(r['اسم الطالب'] || r['الاسم'] || r['name'] || r['Name'] || '').trim();
+        if (!id && !name) return;
+
+        const studentId = id || String(Date.now() + Math.floor(Math.random() * 1000));
+        const phone = String(r['رقم الهاتف'] || r['الموبايل'] || r['الهاتف'] || r['phone'] || r['Phone'] || '').trim();
+        const parentPhone = String(r['هاتف ولي الأمر'] || r['ولي الأمر'] || r['parentPhone'] || r['parent_phone'] || '').trim();
+        const className = String(r['الصف / المجموعة'] || r['المجموعة'] || r['الصف'] || r['className'] || r['class_name'] || '').trim();
+        const paid = Number(r['المبلغ المدفوع'] || r['المدفوع'] || r['paid'] || 0) || 0;
+        const discount = Number(r['قيمة الخصم'] || r['الخصم'] || r['discount'] || 0) || 0;
+        const paymentPlan = String(r['نظام الدفع'] || r['payment_plan'] || r['paymentPlan'] || 'cash').trim();
+        const status = String(r['الحالة'] || r['status'] || 'active').trim();
+        const notes = String(r['ملاحظات'] || r['notes'] || '').trim();
+
+        // Packages parsing
+        const rawPkgs = r['الباقات المسجلة'] || r['الباقات'] || r['packages'] || '';
+        let pkgs = [];
+        if (typeof rawPkgs === 'string' && rawPkgs.trim()) {
+          pkgs = rawPkgs.split(/[|,]/).map(p => p.trim()).filter(Boolean);
+        } else if (Array.isArray(rawPkgs)) {
+          pkgs = rawPkgs;
+        }
+
+        const existing = (typeof students === 'object' && students[studentId]) || {};
+        const updated = {
+          ...existing,
+          id: studentId,
+          name: name || existing.name || '',
+          phone: phone || existing.phone || '',
+          parentPhone: parentPhone || existing.parentPhone || '',
+          className: className || existing.className || '',
+          paid: paid !== 0 ? paid : (existing.paid || 0),
+          discount: discount !== 0 ? discount : (existing.discount || 0),
+          paymentPlan: paymentPlan || existing.paymentPlan || 'cash',
+          packages: pkgs.length > 0 ? pkgs : (existing.packages || []),
+          status: status === 'محذوف' || status === 'deleted' ? 'deleted' : 'active',
+          notes: notes || existing.notes || '',
+          lastModified: Date.now()
+        };
+
+        if (typeof students === 'object') students[studentId] = updated;
+
+        studentRowsToUpsert.push({
+          id: studentId,
+          name: updated.name,
+          phone: updated.phone,
+          parent_phone: updated.parentPhone,
+          class_name: updated.className,
+          paid: updated.paid,
+          discount: updated.discount,
+          payment_plan: updated.paymentPlan,
+          packages: updated.packages,
+          status: updated.status,
+          notes: updated.notes,
+          last_modified: updated.lastModified
+        });
+        importedStudents++;
+      });
+
+      if (supabase && studentRowsToUpsert.length > 0) {
+        for (let i = 0; i < studentRowsToUpsert.length; i += 50) {
+          const chunk = studentRowsToUpsert.slice(i, i + 50);
+          await supabase.from('students').upsert(chunk, { onConflict: 'id' });
+        }
+      }
     }
 
-    let importedCount = 0;
-    const studentRowsToUpsert = [];
+    // 2. IMPORT PACKAGES
+    const pkgSheetName = findSheet(['باقات', 'package']);
+    if (pkgSheetName) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[pkgSheetName]);
+      const pkgRowsToUpsert = [];
+      rows.forEach(r => {
+        const name = String(r['اسم الباقة'] || r['الاسم'] || r['name'] || '').trim();
+        if (!name) return;
+        const subject = String(r['المادة'] || r['subject'] || name).trim();
+        const price = Number(r['السعر الأساسي'] || r['السعر'] || r['price'] || 0) || 0;
+        const instPrice = Number(r['سعر القسط'] || r['installment_price'] || price) || price;
+        const hasInst = String(r['يقبل أقساط'] || r['has_installments'] || '').includes('نعم') || r['has_installments'] === true;
+        const sessionLimit = Number(r['الحد الأقصى للحصص'] || r['session_limit'] || 8) || 8;
 
-    rows.forEach(r => {
-      const id = String(r['كود الطالب'] || r['كود'] || r['id'] || r['ID'] || r['Code'] || '').trim();
-      const name = String(r['اسم الطالب'] || r['الاسم'] || r['name'] || r['Name'] || '').trim();
-      if (!id && !name) return;
-
-      const studentId = id || String(Date.now() + Math.floor(Math.random() * 1000));
-      const phone = String(r['رقم الهاتف'] || r['الموبايل'] || r['الهاتف'] || r['phone'] || r['Phone'] || '').trim();
-      const parentPhone = String(r['هاتف ولي الأمر'] || r['ولي الأمر'] || r['parentPhone'] || r['Parent Phone'] || '').trim();
-      const className = String(r['المجموعة'] || r['الصف'] || r['className'] || r['Class'] || '').trim();
-      const paid = Number(r['المبلغ المدفوع'] || r['المدفوع'] || r['paid'] || r['Paid'] || 0) || 0;
-      const status = String(r['الحالة'] || r['status'] || 'active').trim();
-
-      const existing = students[studentId] || {};
-      const updated = {
-        ...existing,
-        id: studentId,
-        name: name || existing.name || '',
-        phone: phone || existing.phone || '',
-        parentPhone: parentPhone || existing.parentPhone || '',
-        className: className || existing.className || '',
-        paid: paid !== 0 ? paid : (existing.paid || 0),
-        status: status === 'محذوف' || status === 'deleted' ? 'deleted' : 'active',
-        lastModified: Date.now()
-      };
-
-      students[studentId] = updated;
-      studentRowsToUpsert.push({
-        id: studentId,
-        name: updated.name,
-        phone: updated.phone,
-        parent_phone: updated.parentPhone,
-        class_name: updated.className,
-        paid: updated.paid,
-        status: updated.status,
-        last_modified: updated.lastModified
+        pkgRowsToUpsert.push({
+          name,
+          subject,
+          price,
+          installment_price: instPrice,
+          has_installments: hasInst,
+          session_limit: sessionLimit,
+          created_at: new Date().toISOString()
+        });
+        importedPackages++;
       });
-      importedCount++;
+
+      if (supabase && pkgRowsToUpsert.length > 0) {
+        await supabase.from('packages').upsert(pkgRowsToUpsert, { onConflict: 'name' });
+      }
+    }
+
+    // 3. IMPORT ASSISTANTS
+    const asstSheetName = findSheet(['مساعدين', 'assistant']);
+    if (asstSheetName) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[asstSheetName]);
+      const asstRowsToUpsert = [];
+      rows.forEach(r => {
+        const username = String(r['اسم المستخدم'] || r['username'] || '').trim();
+        if (!username) return;
+        const password = String(r['كلمة المرور'] || r['password'] || '123456').trim();
+        const email = String(r['البريد الإلكتروني'] || r['email'] || `${username}@studify.com`).trim();
+        let permissions = {};
+        try {
+          const rawPerm = r['الصلاحيات (JSON)'] || r['الصلاحيات'] || r['permissions'];
+          if (typeof rawPerm === 'string' && rawPerm.startsWith('{')) permissions = JSON.parse(rawPerm);
+        } catch(e) {}
+
+        asstRowsToUpsert.push({
+          username,
+          password,
+          email,
+          permissions,
+          created_at: new Date().toISOString()
+        });
+        importedAssistants++;
+      });
+
+      if (supabase && asstRowsToUpsert.length > 0) {
+        await supabase.from('assistants').upsert(asstRowsToUpsert, { onConflict: 'username' });
+      }
+    }
+
+    // 4. IMPORT TRANSFERS & EXPENSES INTO SETTINGS CONFIG
+    const transSheetName = findSheet(['تحويلات', 'transfer']);
+    const expSheetName = findSheet(['مصروفات', 'مسحوبات', 'expense']);
+    
+    if (transSheetName || expSheetName) {
+      if (supabase) {
+        const { data: curSettings } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+        const cfg = curSettings?.config || {};
+        let cfgModified = false;
+
+        // Transfers
+        if (transSheetName) {
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets[transSheetName]);
+          const existingTransfers = Array.isArray(cfg.vault_transfers) ? cfg.vault_transfers : [];
+          const existingIds = new Set(existingTransfers.map(t => t.id));
+
+          rows.forEach(r => {
+            const id = String(r['معرف التحويل'] || r['id'] || `vt_${Date.now()}_${Math.random().toString(36).slice(2,6)}`).trim();
+            if (existingIds.has(id)) return;
+
+            const fromVRaw = String(r['من خزينة'] || r['from_vault'] || '').toLowerCase();
+            const toVRaw = String(r['إلى خزينة'] || r['to_vault'] || '').toLowerCase();
+            const fromV = fromVRaw.includes('إنستا') || fromVRaw.includes('insta') ? 'instapay' : (fromVRaw.includes('فودافون') || fromVRaw.includes('wallet') ? 'wallet' : 'cash');
+            const toV = toVRaw.includes('إنستا') || toVRaw.includes('insta') ? 'instapay' : (toVRaw.includes('فودافون') || toVRaw.includes('wallet') ? 'wallet' : 'cash');
+            const amount = Number(r['المبلغ بالجنيه'] || r['المبلغ'] || r['amount'] || 0) || 0;
+            if (amount <= 0) return;
+
+            existingTransfers.push({
+              id,
+              date: String(r['التاريخ'] || r['date'] || nowDateStr()),
+              timestamp: String(r['التوقيت'] || r['timestamp'] || ''),
+              from_vault: fromV,
+              to_vault: toV,
+              amount,
+              note: String(r['البيان / ملاحظات'] || r['البيان'] || r['note'] || ''),
+              created_by: String(r['المسؤول'] || r['created_by'] || 'Admin')
+            });
+            existingIds.add(id);
+            importedTransfers++;
+          });
+
+          cfg.vault_transfers = existingTransfers;
+          vaultTransfers = existingTransfers;
+          cfgModified = true;
+        }
+
+        // Expenses
+        if (expSheetName) {
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets[expSheetName]);
+          let existingExpenses = [];
+          if (Array.isArray(cfg.expenses_by_date)) {
+            existingExpenses = cfg.expenses_by_date;
+          } else if (typeof cfg.expenses_by_date === 'object' && cfg.expenses_by_date) {
+            for (const dk in cfg.expenses_by_date) {
+              const arr = cfg.expenses_by_date[dk];
+              if (Array.isArray(arr)) arr.forEach(item => { if (item) existingExpenses.push({ ...item, date: item.date || dk }); });
+            }
+          }
+          const existingIds = new Set(existingExpenses.map(e => e.id));
+
+          rows.forEach(r => {
+            const id = String(r['معرف المعاملة'] || r['id'] || `tx_${Date.now()}_${Math.random().toString(36).slice(2,6)}`).trim();
+            if (existingIds.has(id)) return;
+
+            const vRaw = String(r['الخزينة المصروف منها'] || r['vault'] || '').toLowerCase();
+            const vault = vRaw.includes('إنستا') || vRaw.includes('insta') ? 'instapay' : (vRaw.includes('فودافون') || vRaw.includes('wallet') ? 'wallet' : 'cash');
+            const typeRaw = String(r['نوع المعاملة'] || r['type'] || '').toLowerCase();
+            const type = typeRaw.includes('مستر') || typeRaw.includes('مسحوبات') || typeRaw.includes('withdrawal') ? 'withdrawal' : 'expense';
+            const amount = Number(r['المبلغ بالجنيه'] || r['المبلغ'] || r['amount'] || 0) || 0;
+            if (amount <= 0) return;
+
+            existingExpenses.push({
+              id,
+              date: String(r['التاريخ'] || r['date'] || nowDateStr()),
+              category: String(r['بند المصروف / السبب'] || r['category'] || r['reason'] || ''),
+              type,
+              vault,
+              amount,
+              note: String(r['التفاصيل'] || r['note'] || ''),
+              created_by: String(r['المسؤول / المستلم'] || r['created_by'] || 'Admin')
+            });
+            existingIds.add(id);
+            importedExpenses++;
+          });
+
+          cfg.expenses_by_date = existingExpenses;
+          expensesByDate = existingExpenses;
+          cfgModified = true;
+        }
+
+        if (cfgModified) {
+          cfg.last_modified = Date.now();
+          await supabase.from('settings').update({ config: cfg, updated_at: new Date().toISOString() }).eq('id', 1);
+        }
+      }
+    }
+
+    // Refresh UI & in-memory caches
+    if (typeof loadAllAdminData === 'function') await loadAllAdminData();
+    if (typeof window.renderTermTable === 'function') window.renderTermTable();
+    if (typeof window.loadDailyReport === 'function') window.loadDailyReport(nowDateStr());
+    if (typeof window.fetchAssistants === 'function') window.fetchAssistants();
+
+    // Show summary modal
+    await Swal.fire({
+      title: isAr ? 'تم استيراد قاعدة البيانات بنجاح' : 'Database Imported Successfully',
+      html: isAr 
+        ? `<div style="text-align: right; line-height: 1.8;">
+             <p style="color: var(--success); font-weight: 700; font-size: 1.1em; margin-bottom: 12px;"><i class="fa-solid fa-circle-check"></i> اكتملت عملية الاستيراد والمزامنة مع السيرفر:</p>
+             <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.95em;">
+               <li style="padding: 4px 0;"><i class="fa-solid fa-user-graduate" style="color:var(--primary); width:20px;"></i> الطلاب: <b>${importedStudents}</b> طالب</li>
+               <li style="padding: 4px 0;"><i class="fa-solid fa-box-open" style="color:#10b981; width:20px;"></i> الباقات: <b>${importedPackages}</b> باقة</li>
+               <li style="padding: 4px 0;"><i class="fa-solid fa-users-gear" style="color:#6366f1; width:20px;"></i> المساعدين: <b>${importedAssistants}</b> مساعد</li>
+               <li style="padding: 4px 0;"><i class="fa-solid fa-money-bill-transfer" style="color:#8b5cf6; width:20px;"></i> تحويلات الخزائن: <b>${importedTransfers}</b> تحويل</li>
+               <li style="padding: 4px 0;"><i class="fa-solid fa-receipt" style="color:#f59e0b; width:20px;"></i> المصروفات والمسحوبات: <b>${importedExpenses}</b> معاملة</li>
+             </ul>
+           </div>`
+        : `<p>Successfully imported: ${importedStudents} students, ${importedPackages} packages, ${importedTransfers} transfers, ${importedExpenses} expenses.</p>`,
+      icon: 'success',
+      confirmButtonText: isAr ? 'تم' : 'OK',
+      confirmButtonColor: '#10B981'
     });
 
-    if (supabase && studentRowsToUpsert.length > 0) {
-      await supabase.from('students').upsert(studentRowsToUpsert, { onConflict: 'id' });
-    }
-
-    if (window.localforage) {
-      try {
-        await window.localforage.setItem('ca_students_v6', JSON.stringify(students));
-      } catch(e) {}
-    }
-
-    showToast(`تم استيراد ${importedCount} طالب بنجاح`, "success");
-    window.renderTermTable();
-    window.loadDailyReport(nowDateStr());
   } catch(err) {
     console.error("Excel import error:", err);
-    showToast("حدث خطأ أثناء قراءة ملف Excel: " + err.message, "err");
+    showToast(isAr ? "حدث خطأ أثناء استيراد الملف: " + err.message : "Import failed", "err");
   } finally {
     event.target.value = '';
   }
