@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V93">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V94">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -321,10 +321,10 @@
   <span class="nav-icon"><i class="fa-solid fa-book-bookmark"></i></span>
   <span class="nav-text" data-i18n="nav_booklets">مخزون المذكرات</span>
   </button>
-  <button id="btnTabMarketing" class="nav-item adminOnly mkt-nav-item">
+  <button id="btnTabMarketing" class="nav-item adminOnly mkt-premium-nav">
   <span class="nav-icon"><i class="fa-solid fa-bullhorn"></i></span>
   <span class="nav-text" data-i18n="nav_marketing">حملات التسويق</span>
-  <span class="mkt-nav-badge">PRO</span>
+  <span class="mkt-nav-sparkle"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
   </button>
   </div>
   </div>
@@ -996,14 +996,29 @@
 
  <!-- ====== MARKETING CAMPAIGNS ====== -->
  <section id="secMarketing" class="tab-section hidden adminOnly">
- <div class="section-header-beautiful" style="margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, var(--bg-surface), var(--bg-inset)); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
- <h2 style="color: var(--primary); margin: 0; font-size: 1.6em; display: flex; align-items: center; gap: 10px;" data-i18n="mkt_main_title">
- <span></span> حملات التسويق وإعادة الاستهداف الذكية
- </h2>
- <p style="color: var(--text-secondary); margin: 8px 0 0 0; font-size: 0.95em;" data-i18n="mkt_main_desc">
- استهداف ذكي لجميع أرقام وداتا الطلاب المسجلة في السنتر لإطلاق حملات إعلانية لكورسات ومراجعات جديدة بضغطة زر.
- </p>
- </div>
+  <div class="mkt-command-hero">
+    <div class="mkt-hero-content">
+      <div class="mkt-hero-topline">
+        <span class="mkt-hero-badge">
+          <i class="fa-solid fa-tower-broadcast"></i>
+          <span data-i18n="mkt_badge_system">منظومة الاستهداف الرقمي والتسويق الذكي</span>
+        </span>
+        <span class="mkt-shield-badge">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span data-i18n="mkt_badge_safe">درع حماية ضد الحظر (Anti-Ban Shield)</span>
+        </span>
+      </div>
+      <h2 class="mkt-hero-title" data-i18n="mkt_main_title">حملات التسويق وإعادة الاستهداف المتقدمة</h2>
+      <p class="mkt-hero-desc" data-i18n="mkt_main_desc">منصة ذكية متكاملة لإطلاق حملات الواتساب والتنبيهات المباشرة لجميع شرائح الطلاب بدقة فائقة وبفواصل زمنية مدروسة لحماية أرقام المركز.</p>
+    </div>
+    <div class="mkt-hero-gears-cluster" title="محرك البث والتوجيه التلقائي">
+      <div class="mkt-radar-ring"></div>
+      <div class="mkt-radar-ring outer"></div>
+      <i class="fa-solid fa-gear mkt-gear-main"></i>
+      <i class="fa-solid fa-gear mkt-gear-secondary"></i>
+      <i class="fa-solid fa-bolt-lightning mkt-gear-core"></i>
+    </div>
+  </div>
 
  <div class="bento-grid" style="display: grid; grid-template-columns: 1fr; gap: 25px;">
  <!-- اختيار شريحة الاستهداف ونص الرسالة -->
@@ -1052,36 +1067,53 @@
  </div>
  </div>
 
- <!-- لوحة التحكم في البث التلقائي (مخفية حتى بدء البث) -->
- <div id="broadcastControllerPanel" class="card bento-card hidden" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #3b82f6; border-radius: 12px; padding: 25px; color: #ffffff;">
- <div class="flexBetween wrap" style="gap: 15px; border-bottom: 1px solid #334155; padding-bottom: 15px; margin-bottom: 20px;">
- <div style="display: flex; align-items: center; gap: 12px;">
- <span id="broadcastPulseIcon" style="font-size: 2.2em; animation: pulse 1.5s infinite;"></span>
- <div>
- <h3 id="broadcastStatusTitle" style="margin: 0; font-size: 1.4em; color: #38bdf8;" data-i18n="mkt_broad_prep">جاري الاستعداد لبدء البث التلقائي..</h3>
- <p id="broadcastStatusSub" style="margin: 5px 0 0 0; font-size: 0.95em; color: #94a3b8;" data-i18n="mkt_broad_sub">سيتم فتح نوافذ المحادثات تباعاً بفاصل زمني آمن لحماية حسابك من الحظر (Anti-Ban).</p>
- </div>
- </div>
- <div style="display: flex; align-items: center; gap: 10px;">
- <button id="btnPauseBroadcast" class="btn" style="background: #f59e0b; color: #fff; font-weight: bold; padding: 8px 18px; border: none;" data-i18n="btn_pause"> إيقاف مؤقت</button>
- <button id="btnStopBroadcast" class="btn" style="background: #ef4444; color: #fff; font-weight: bold; padding: 8px 18px; border: none;" data-i18n="btn_stop"> إنهاء البث</button>
- </div>
- </div>
+  <!-- لوحة التحكم في البث التلقائي (مخفية حتى بدء البث) -->
+  <div id="broadcastControllerPanel" class="card bento-card mkt-controller-card hidden">
+    <div class="mkt-controller-head">
+      <div class="mkt-controller-status-wrap">
+        <div class="mkt-pulse-radar">
+          <i id="broadcastPulseIcon" class="fa-solid fa-tower-broadcast mkt-broadcast-icon mkt-pulse-active"></i>
+          <span class="mkt-pulse-ring ring-1"></span>
+          <span class="mkt-pulse-ring ring-2"></span>
+        </div>
+        <div>
+          <h3 id="broadcastStatusTitle" class="mkt-ctrl-title" data-i18n="mkt_broad_prep">جاري الاستعداد لبدء البث التلقائي...</h3>
+          <p id="broadcastStatusSub" class="mkt-ctrl-sub" data-i18n="mkt_broad_sub">يتم فتح نوافذ المحادثات تباعاً بفاصل زمني آمن ومدروس لحماية حسابك من الحظر (Anti-Ban).</p>
+        </div>
+      </div>
+      <div class="mkt-ctrl-actions">
+        <button id="btnPauseBroadcast" type="button" class="mkt-ctrl-btn mkt-ctrl-pause" data-i18n="btn_pause">
+          <i class="fa-solid fa-pause"></i> <span>إيقاف مؤقت</span>
+        </button>
+        <button id="btnStopBroadcast" type="button" class="mkt-ctrl-btn mkt-ctrl-stop" data-i18n="btn_stop">
+          <i class="fa-solid fa-stop"></i> <span>إنهاء البث</span>
+        </button>
+      </div>
+    </div>
 
- <div style="background: #0b0f19; padding: 18px; border-radius: 10px; border: 1px solid #1e293b;">
- <div class="flexBetween" style="margin-bottom: 10px; font-size: 1.05em;">
- <span style="color: #94a3b8;"><span data-i18n="lbl_progress">مستوى التقدم:</span> <b id="broadcastProgressText" style="color: #38bdf8;">0 / 0</b></span>
- <span style="color: #94a3b8;"><span data-i18n="lbl_next_win">النافذة التالية خلال:</span> <b id="broadcastTimerText" style="color: #f43f5e; font-size: 1.2em;">10</b> <span data-i18n="lbl_seconds">ثواني</span></span>
- </div>
- <div style="width: 100%; background: #1e293b; height: 10px; border-radius: 5px; overflow: hidden;">
- <div id="broadcastProgressBar" style="width: 0%; height: 100%; background: linear-gradient(to right, #3b82f6, #06b6d4); transition: width 0.4s ease;"></div>
- </div>
- </div>
+    <div class="mkt-controller-metrics">
+      <div class="mkt-metrics-row">
+        <span class="mkt-metric-item">
+          <i class="fa-solid fa-chart-pie" style="color: #38bdf8;"></i>
+          <span data-i18n="lbl_progress">مستوى التقدم:</span>
+          <b id="broadcastProgressText" class="mkt-highlight-cyan">0 / 0</b>
+        </span>
+        <span class="mkt-metric-item">
+          <i class="fa-regular fa-clock" style="color: #f43f5e;"></i>
+          <span data-i18n="lbl_next_win">النافذة التالية خلال:</span>
+          <b id="broadcastTimerText" class="mkt-highlight-rose">10</b>
+          <span data-i18n="lbl_seconds">ثواني</span>
+        </span>
+      </div>
+      <div class="mkt-progress-track">
+        <div id="broadcastProgressBar" class="mkt-progress-fill" style="width: 0%;"></div>
+      </div>
+    </div>
 
- <div id="broadcastCurrentStudentInfo" style="margin-top: 15px; text-align: center; font-size: 1.1em; color: #10b981; font-weight: bold;">
- --
- </div>
- </div>
+    <div id="broadcastCurrentStudentInfo" class="mkt-current-target-strip">
+      --
+    </div>
+  </div>
 
  <!-- جدول الداتا والأرقام المستهدفة -->
  <div class="card bento-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px;">
@@ -1947,7 +1979,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V158"></script>
+  <script type="module" src="app.js?v=STUDIFY_V159"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

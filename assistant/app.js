@@ -296,6 +296,12 @@ const GLOBAL_NOTIF_DICT = {
   "نجاح": "Success",
   "هل أنت متأكد؟": "Are you sure?",
   "هل أنت متأكد من الحذف؟": "Are you sure you want to delete?",
+  "تم إنهاء البث التلقائي بنجاح وإلغاء الجلسة": "Automatic broadcast session terminated successfully",
+  "تم إيقاف البث مؤقتاً": "Automatic broadcast paused",
+  "تم استئناف البث التلقائي": "Automatic broadcast resumed",
+  "اكتمل البث التلقائي الذكي لجميع الطلاب بنجاح": "Automatic broadcast completed for all students successfully",
+  "بدء تشغيل البث التلقائي الآمن، يرجى السماح بالنوافذ المنبثقة (Pop-ups)": "Starting safe auto-broadcast, please allow pop-ups",
+  "قائمة الأرقام فارغة، يرجى اختيار شريحة الطلاب أولاً.": "Target list is empty, please select a student segment first.",
   "لا يمكن التراجع عن هذه الخطوة!": "This action cannot be undone!",
   "تنبيه": "Notice",
   "تنبيه عام": "General Notice",
@@ -9444,9 +9450,9 @@ window.openSessionStudentModal = function(item) {
 
  broadcastCurrentIndex++;
  if ($("broadcastProgressText")) $("broadcastProgressText").textContent = `${broadcastCurrentIndex} / ${currentCampaignList.length}`;
- if ($("broadcastCurrentStudentInfo")) {
- $("broadcastCurrentStudentInfo").innerHTML = ` جاري التواصل مع: <b>${item.name}</b> ( ${item.phone}) <br><span style="font-size:0.85em; color:#94a3b8; font-weight:normal;"> اضغط إرسال (Enter) في نافذة الواتساب المفتوحة.. النافذة التالية تفتح قريباً.</span>`;
- }
+  if ($("broadcastCurrentStudentInfo")) {
+    $("broadcastCurrentStudentInfo").innerHTML = `<i class="fa-brands fa-whatsapp" style="color:#25d366; margin-inline-end:6px;"></i> جاري مراسلة: <b>${item.name}</b> (${item.phone}) <br><span style="font-size:0.85em; color:#94a3b8; font-weight:normal;">اضغط إرسال (Enter) في نافذة الواتساب المفتوحة.. النافذة التالية ستفتح تلقائياً.</span>`;
+  }
 
  let pct = (broadcastCurrentIndex / currentCampaignList.length) * 100;
  if ($("broadcastProgressBar")) $("broadcastProgressBar").style.width = pct + "%";
@@ -9471,64 +9477,155 @@ window.openSessionStudentModal = function(item) {
  }, 1000);
  }
 
- function endBroadcast(completed) {
- if (broadcastTimer) clearInterval(broadcastTimer);
- broadcastTimer = null;
- broadcastIsPaused = false;
- if ($("btnPauseBroadcast")) $("btnPauseBroadcast").textContent = " إيقاف مؤقت";
- if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = completed ? " اكتمل البث التلقائي بنجاح" : " تم إنهاء البث التلقائي";
- if ($("broadcastStatusSub")) $("broadcastStatusSub").textContent = completed ? "تم فتح جميع المحادثات بنجاح وإرسال الإشعارات بدون التعرض لأي حظر." : "تم إيقاف عملية البث التلقائي بناءً على طلبك.";
- if ($("broadcastPulseIcon")) $("broadcastPulseIcon").style.animation = "none";
- if ($("broadcastCurrentStudentInfo")) $("broadcastCurrentStudentInfo").innerHTML = completed ? " اكتملت المهمة بنجاح" : "تم الإيقاف";
- showToast(completed ? "اكتمل البث التلقائي الذكي لجميع الطلاب " : "تم إيقاف البث التلقائي ", completed ? "success" : "warning");
- playSound(completed ? "beep" : "error");
- }
+  function resetPauseButtonUI() {
+    const btnPause = $("btnPauseBroadcast");
+    if (btnPause) {
+      btnPause.className = "mkt-ctrl-btn mkt-ctrl-pause";
+      btnPause.innerHTML = '<i class="fa-solid fa-pause"></i> <span>إيقاف مؤقت</span>';
+    }
+  }
 
- on("btnStartAutoBroadcast", "click", function() {
- if (currentCampaignList.length === 0) {
- showToast(" قائمة الأرقام فارغة، قم بتصفية داتا الطلاب أولاً.", "err");
- return;
- }
- if (broadcastTimer) clearInterval(broadcastTimer);
- 
- broadcastCurrentIndex = 0;
- broadcastIsPaused = false;
- broadcastCurrentCount = broadcastIntervalSeconds;
- 
- if ($("broadcastControllerPanel")) $("broadcastControllerPanel").classList.remove("hidden");
- if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = " جاري تشغيل البث التلقائي المضاد للحظر (Anti-Ban)...";
- if ($("broadcastStatusSub")) $("broadcastStatusSub").textContent = "سيتم فتح نوافذ المحادثات تباعاً بفاصل زمني آمن لحماية حسابك من الحظر (Anti-Ban).";
- if ($("broadcastPulseIcon")) $("broadcastPulseIcon").style.animation = "pulse 1.5s infinite";
- if ($("broadcastProgressText")) $("broadcastProgressText").textContent = `0 / ${currentCampaignList.length}`;
- if ($("broadcastProgressBar")) $("broadcastProgressBar").style.width = "0%";
- if ($("btnPauseBroadcast")) $("btnPauseBroadcast").textContent = " إيقاف مؤقت";
+  function terminateBroadcastSession(silent) {
+    if (broadcastTimer) clearInterval(broadcastTimer);
+    broadcastTimer = null;
+    broadcastIsPaused = false;
+    broadcastCurrentIndex = 0;
+    broadcastCurrentCount = broadcastIntervalSeconds;
 
- showToast(" بدء تشغيل البث التلقائي الآمن، يرجى السماح بالنوافذ المنبثقة (Pop-ups)", "success");
- playSound("beep");
- 
- // البدء بالنافذة الأولى فوراً
- startNextBroadcastWindow();
- });
+    const ctrlPanel = $("broadcastControllerPanel");
+    if (ctrlPanel) {
+      ctrlPanel.classList.add("hidden");
+    }
 
- on("btnPauseBroadcast", "click", function() {
- if (!broadcastTimer && !broadcastIsPaused) return;
- broadcastIsPaused = !broadcastIsPaused;
- if (broadcastIsPaused) {
- this.textContent = "▶ استئناف البث";
- if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = " البث التلقائي متوقف مؤقتاً...";
- if ($("broadcastPulseIcon")) $("broadcastPulseIcon").style.animation = "none";
- showToast("تم إيقاف البث مؤقتاً ", "warning");
- } else {
- this.textContent = " إيقاف مؤقت";
- if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = " جاري تشغيل البث التلقائي المضاد للحظر (Anti-Ban)...";
- if ($("broadcastPulseIcon")) $("broadcastPulseIcon").style.animation = "pulse 1.5s infinite";
- showToast("تم استئناف البث التلقائي ▶", "success");
- }
- });
+    if ($("broadcastProgressText")) $("broadcastProgressText").textContent = "0 / 0";
+    if ($("broadcastProgressBar")) $("broadcastProgressBar").style.width = "0%";
+    if ($("broadcastTimerText")) $("broadcastTimerText").textContent = broadcastIntervalSeconds;
+    if ($("broadcastCurrentStudentInfo")) $("broadcastCurrentStudentInfo").innerHTML = "--";
 
- on("btnStopBroadcast", "click", function() {
- endBroadcast(false);
- });
+    resetPauseButtonUI();
+
+    const btnStart = $("btnStartAutoBroadcast");
+    if (btnStart) {
+      btnStart.disabled = false;
+      btnStart.style.opacity = "1";
+      btnStart.style.pointerEvents = "auto";
+    }
+
+    if (!silent) {
+      showToast("تم إنهاء البث التلقائي بنجاح وإلغاء الجلسة", "info");
+      playSound("tap");
+    }
+  }
+
+  function endBroadcast(completed) {
+    if (broadcastTimer) clearInterval(broadcastTimer);
+    broadcastTimer = null;
+    broadcastIsPaused = false;
+    resetPauseButtonUI();
+
+    if (completed) {
+      if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = "اكتمل البث التلقائي بنجاح";
+      if ($("broadcastStatusSub")) $("broadcastStatusSub").textContent = "تم فتح جميع المحادثات بنجاح وإرسال الإشعارات بدون التعرض لأي حظر.";
+      const pulseIcon = $("broadcastPulseIcon");
+      if (pulseIcon) pulseIcon.classList.remove("mkt-pulse-active");
+      if ($("broadcastCurrentStudentInfo")) {
+        $("broadcastCurrentStudentInfo").innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981; margin-inline-end:6px;"></i> اكتملت عملية الإرسال لجميع الطلاب بنجاح';
+      }
+      showToast("اكتمل البث التلقائي الذكي لجميع الطلاب بنجاح", "success");
+      playSound("beep");
+
+      // Auto close after 4 seconds
+      setTimeout(() => {
+        const ctrlPanel = $("broadcastControllerPanel");
+        if (ctrlPanel && !broadcastTimer && !broadcastIsPaused) {
+          ctrlPanel.classList.add("hidden");
+          const btnStart = $("btnStartAutoBroadcast");
+          if (btnStart) {
+            btnStart.disabled = false;
+            btnStart.style.opacity = "1";
+            btnStart.style.pointerEvents = "auto";
+          }
+        }
+      }, 4000);
+    } else {
+      terminateBroadcastSession(false);
+    }
+  }
+
+  on("btnStartAutoBroadcast", "click", function() {
+    if (!currentCampaignList || currentCampaignList.length === 0) {
+      showToast("قائمة الأرقام فارغة، يرجى اختيار شريحة الطلاب أولاً.", "err");
+      return;
+    }
+    if (broadcastTimer) clearInterval(broadcastTimer);
+    
+    broadcastCurrentIndex = 0;
+    broadcastIsPaused = false;
+    broadcastCurrentCount = broadcastIntervalSeconds;
+    
+    const ctrlPanel = $("broadcastControllerPanel");
+    if (ctrlPanel) {
+      ctrlPanel.classList.remove("hidden");
+      ctrlPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = "جاري تشغيل البث التلقائي المضاد للحظر (Anti-Ban)...";
+    if ($("broadcastStatusSub")) $("broadcastStatusSub").textContent = "يتم فتح نوافذ المحادثات تباعاً بفاصل زمني آمن ومدروس لحماية حسابك من الحظر.";
+    const pulseIcon = $("broadcastPulseIcon");
+    if (pulseIcon) pulseIcon.classList.add("mkt-pulse-active");
+    if ($("broadcastProgressText")) $("broadcastProgressText").textContent = `0 / ${currentCampaignList.length}`;
+    if ($("broadcastProgressBar")) $("broadcastProgressBar").style.width = "0%";
+    if ($("broadcastTimerText")) $("broadcastTimerText").textContent = broadcastIntervalSeconds;
+    
+    resetPauseButtonUI();
+
+    showToast("بدء تشغيل البث التلقائي الآمن، يرجى السماح بالنوافذ المنبثقة (Pop-ups)", "success");
+    playSound("beep");
+    
+    // البدء بالنافذة الأولى فوراً
+    startNextBroadcastWindow();
+  });
+
+  on("btnPauseBroadcast", "click", function() {
+    if (!broadcastTimer && !broadcastIsPaused) return;
+    broadcastIsPaused = !broadcastIsPaused;
+    
+    const pulseIcon = $("broadcastPulseIcon");
+    if (broadcastIsPaused) {
+      this.className = "mkt-ctrl-btn mkt-ctrl-resume";
+      this.innerHTML = '<i class="fa-solid fa-play"></i> <span>استئناف البث</span>';
+      if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = "البث التلقائي متوقف مؤقتاً...";
+      if (pulseIcon) pulseIcon.classList.remove("mkt-pulse-active");
+      showToast("تم إيقاف البث مؤقتاً", "warning");
+      playSound("tap");
+    } else {
+      this.className = "mkt-ctrl-btn mkt-ctrl-pause";
+      this.innerHTML = '<i class="fa-solid fa-pause"></i> <span>إيقاف مؤقت</span>';
+      if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = "جاري تشغيل البث التلقائي المضاد للحظر (Anti-Ban)...";
+      if (pulseIcon) pulseIcon.classList.add("mkt-pulse-active");
+      showToast("تم استئناف البث التلقائي", "success");
+      playSound("beep");
+    }
+  });
+
+  on("btnStopBroadcast", "click", async function() {
+    if (typeof Swal !== "undefined") {
+      const isAr = (currentLang === "ar");
+      const res = await Swal.fire({
+        title: isAr ? "إنهاء جلسة البث التلقائي" : "Terminate Broadcast Session",
+        text: isAr ? "هل تريد بالفعل إنهاء وإلغاء جلسة البث الحالية فوراً وإعادة ضبط العدادات؟" : "Are you sure you want to stop and cancel the current broadcast session?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: isAr ? "نعم، إنهاء البث الآن" : "Yes, Terminate Now",
+        cancelButtonText: isAr ? "تراجع ومتابعة" : "Cancel & Continue",
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#475569",
+        reverseButtons: true
+      });
+      if (!res.isConfirmed) return;
+    }
+    terminateBroadcastSession(false);
+  });
 
  // ==========================================
  // DAILY ADMINISTRATIVE HARD-LOCK SYSTEM
