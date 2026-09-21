@@ -4142,3 +4142,157 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
 .fin-modal-table tr:hover td {
   background: rgba(0, 0, 0, 0.02);
 }
+
+
+/* =========================================================
+   REVENUE BREAKDOWN MODAL — Smooth Animations & Mobile Responsive
+   ========================================================= */
+
+/* === Overlay fade-in / fade-out === */
+#revenueBreakdownModal {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  pointer-events: none;
+}
+#revenueBreakdownModal:not(.hidden) {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+
+/* === Modal box entrance animation === */
+#revenueBreakdownModal .modal-box-premium {
+  transform: translateY(24px) scale(0.97);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#revenueBreakdownModal:not(.hidden) .modal-box-premium {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* Stagger animations for inner sections */
+#revenueBreakdownModal:not(.hidden) .modal-header-premium {
+  animation: revSectionIn 0.4s 0.05s cubic-bezier(0.16,1,0.3,1) both;
+}
+#revenueBreakdownModal:not(.hidden) .fin-date-filter-bar {
+  animation: revSectionIn 0.4s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+}
+#revenueBreakdownModal:not(.hidden) .modal-body-premium > *:nth-child(2) {
+  animation: revSectionIn 0.4s 0.15s cubic-bezier(0.16,1,0.3,1) both;
+}
+#revenueBreakdownModal:not(.hidden) .modal-body-premium > *:nth-child(3) {
+  animation: revSectionIn 0.4s 0.2s cubic-bezier(0.16,1,0.3,1) both;
+}
+#revenueBreakdownModal:not(.hidden) .modal-body-premium > *:nth-child(4) {
+  animation: revSectionIn 0.4s 0.25s cubic-bezier(0.16,1,0.3,1) both;
+}
+#revenueBreakdownModal:not(.hidden) .modal-body-premium > *:nth-child(5) {
+  animation: revSectionIn 0.4s 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes revSectionIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* === Close button spin on hover === */
+#revenueBreakdownModal .modal-close-btn {
+  transition: transform 0.25s ease, background 0.2s ease, color 0.2s ease;
+}
+#revenueBreakdownModal .modal-close-btn:hover {
+  transform: rotate(90deg) scale(1.15);
+}
+
+/* === Hover lift on KPI cards === */
+#revenueBreakdownModal .modal-body-premium > div > div[style*="border-radius: 14px"],
+#revenueBreakdownModal .modal-body-premium > div > div[style*="border-radius:14px"] {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#revenueBreakdownModal .modal-body-premium > div > div[style*="border-radius: 14px"]:hover,
+#revenueBreakdownModal .modal-body-premium > div > div[style*="border-radius:14px"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.2);
+}
+
+/* === MOBILE — Full responsive overrides ≤ 768px === */
+@media (max-width: 768px) {
+  #revenueBreakdownModal {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  #revenueBreakdownModal .modal-box-premium {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 22px 22px 0 0 !important;
+    padding: 20px 16px !important;
+    overflow-y: auto;
+    transform: translateY(40px) scale(1) !important;
+  }
+
+  #revenueBreakdownModal:not(.hidden) .modal-box-premium {
+    transform: translateY(0) scale(1) !important;
+  }
+
+  /* KPI 4-card row → 2 columns */
+  #revenueBreakdownModal .modal-body-premium > div[style*="grid-template-columns: repeat(auto-fit, minmax(210px"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Source 3-card row → 1 column */
+  #revenueBreakdownModal .modal-body-premium > div[style*="grid-template-columns: repeat(auto-fit, minmax(280px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Filter bar → wrap naturally */
+  .fin-date-filter-bar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .fin-date-group {
+    min-width: 0 !important;
+    flex: 1 1 140px !important;
+  }
+  .fin-quick-dates {
+    width: 100% !important;
+    justify-content: stretch !important;
+  }
+  .fin-quick-btn {
+    flex: 1 !important;
+  }
+
+  /* Table horizontal scroll */
+  #revenueBreakdownModal .fin-modal-table-wrap {
+    max-height: 220px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* KPI font sizes — slightly smaller for small screens */
+  #revenueBreakdownModal [id^="revModalGrandTotal"],
+  #revenueBreakdownModal [id^="revCardReg"],
+  #revenueBreakdownModal [id^="revCardSess"],
+  #revenueBreakdownModal [id^="revCardBkl"] {
+    font-size: 1.3em !important;
+  }
+
+  /* Modal header stacks on very small screens */
+  #revenueBreakdownModal .modal-header-premium {
+    gap: 10px !important;
+  }
+  #revenueBreakdownModal .modal-title-premium {
+    font-size: 1.05rem !important;
+  }
+}
+
+/* === Extra small ≤ 480px === */
+@media (max-width: 480px) {
+  /* 4-card KPIs → single column */
+  #revenueBreakdownModal .modal-body-premium > div[style*="grid-template-columns: repeat(auto-fit, minmax(210px"] {
+    grid-template-columns: 1fr !important;
+  }
+}
