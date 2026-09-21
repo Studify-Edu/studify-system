@@ -5473,7 +5473,31 @@ window.updateTransferPreview = function() {
     document.getElementById("transFromAvailBal").textContent = currFromBal.toLocaleString() + " ج";
   }
   if (document.getElementById("transToCurrBal")) {
-    document.getElementById("transToCurrBal").textContent = currToBal.toLocaleString() + " ج";
+    if (currToBal < 0) {
+      document.getElementById("transToCurrBal").innerHTML = `<span style="color:#ef4444; direction:ltr; unicode-bidi:embed;">-${Math.abs(currToBal).toLocaleString()} ج</span> <span class="badge" style="background:rgba(239,68,68,0.12); color:#ef4444; font-size:0.7em; font-weight:700;">عجز</span>`;
+    } else {
+      document.getElementById("transToCurrBal").textContent = currToBal.toLocaleString() + " ج";
+    }
+  }
+
+  // Dynamic Cover Deficit button badge
+  const btnDeficit = document.getElementById("btnCoverDeficit");
+  if (btnDeficit) {
+    const isAr = (currentLang === "ar");
+    if (currToBal < 0) {
+      const deficitAmt = Math.abs(currToBal);
+      btnDeficit.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> ${isAr ? 'تغطية العجز (' + deficitAmt.toLocaleString() + ' ج)' : 'Cover Deficit (' + deficitAmt.toLocaleString() + ')'}`;
+      btnDeficit.style.background = "rgba(37, 99, 235, 0.15)";
+      btnDeficit.style.color = "var(--primary)";
+      btnDeficit.style.borderColor = "var(--primary)";
+      btnDeficit.style.fontWeight = "800";
+    } else {
+      btnDeficit.innerHTML = isAr ? 'تغطية العجز' : 'Cover Deficit';
+      btnDeficit.style.background = "var(--bg-inset)";
+      btnDeficit.style.color = "var(--text-secondary)";
+      btnDeficit.style.borderColor = "var(--border)";
+      btnDeficit.style.fontWeight = "600";
+    }
   }
 
   const afterFrom = currFromBal - amt;
@@ -5508,9 +5532,14 @@ window.setTransferAmount = function(val) {
     const b = window.vaultLiveBalances || { cash: 0, wallet: 0, instapay: 0 };
     const targetBal = Number(b[toV]) || 0;
     if (targetBal < 0) {
+      // There is an actual deficit -> cover it exactly
       amtInp.value = Math.abs(targetBal);
     } else {
-      amtInp.value = 50;
+      // NO deficit -> keep it 0 as user requested!
+      amtInp.value = 0;
+      if (typeof window.showNotification === 'function') {
+        window.showNotification(currentLang === 'ar' ? "الخزينة المحددة ليس بها عجز حالياً" : "Selected vault has no deficit", "info");
+      }
     }
   } else {
     const cur = Number(amtInp.value) || 0;

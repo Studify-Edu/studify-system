@@ -1437,7 +1437,7 @@
   <!-- 1. VAULT TRANSFER MODAL (تحويل بين الخزائن) - LANDSCAPE -->
   <!-- ======================================================== -->
   <div id="vaultTransferModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
-    <div class="modal-box modal-box-premium" style="max-width: 860px; width: 95%; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-box modal-box-premium" style="max-width: 840px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px 24px;">
       <button type="button" class="modal-close-btn" onclick="window.closeVaultTransferModal()">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -1452,7 +1452,7 @@
         </div>
       </div>
 
-      <div class="modal-body-premium" style="padding: 20px 0;">
+      <div class="modal-body-premium" style="flex: 1; overflow-y: auto; padding: 14px 4px;">
         <div class="vault-transfer-grid">
           
           <!-- Column 1: Transfer Form Inputs -->
@@ -1494,7 +1494,7 @@
                 <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(100)">+100 ج</button>
                 <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(200)">+200 ج</button>
                 <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount(500)">+500 ج</button>
-                <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount('cover_deficit')">تغطية العجز</button>
+                <button type="button" class="fin-quick-btn" id="btnCoverDeficit" onclick="window.setTransferAmount('cover_deficit')">تغطية العجز</button>
                 <button type="button" class="fin-quick-btn" onclick="window.setTransferAmount('all')">كامل المتاح</button>
               </div>
             </div>
@@ -1848,7 +1848,7 @@
   <!-- 6. DEBTS DETAILS MODAL (تفاصيل المتبقي والديون على الطلاب) -->
   <!-- ======================================================== -->
   <div id="debtsDetailsModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
-    <div class="modal-box modal-box-premium" style="max-width: 880px; width: 95%; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-box modal-box-premium" style="max-width: 860px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px 24px;">
       <button type="button" class="modal-close-btn" onclick="window.closeDebtsDetailsModal()">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -1923,7 +1923,7 @@
   <!-- 7. VAULTS BREAKDOWN MODAL (تفاصيل صافي رصيد الخزائن المتاح) -->
   <!-- ======================================================== -->
   <div id="vaultsBreakdownModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
-    <div class="modal-box modal-box-premium" style="max-width: 860px; width: 95%; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-box modal-box-premium" style="max-width: 840px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px 24px;">
       <button type="button" class="modal-close-btn" onclick="window.closeVaultsBreakdownModal()">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -2057,7 +2057,7 @@
   <!-- 8. REGISTERED STUDENTS LIST MODAL (قائمة الطلاب المسجلين) -->
   <!-- ======================================================== -->
   <div id="studentsListModal" class="modal-overlay hidden" style="backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.7); z-index: 99999;">
-    <div class="modal-box modal-box-premium" style="max-width: 920px; width: 95%; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-box modal-box-premium" style="max-width: 880px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px 24px;">
       <button type="button" class="modal-close-btn" onclick="window.closeStudentsListModal()">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -2137,7 +2137,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V36"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V37"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->

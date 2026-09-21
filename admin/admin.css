@@ -4468,7 +4468,10 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   #vaultTransfersHistoryModal,
   #expensesDetailsModal,
   #withdrawalsDetailsModal,
-  #discountsDetailsModal {
+  #discountsDetailsModal,
+  #debtsDetailsModal,
+  #vaultsBreakdownModal,
+  #studentsListModal {
     align-items: flex-end !important;
     padding: 0 !important;
   }
@@ -4617,5 +4620,36 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   #debtsDetailsModal .fin-modal-table,
   #studentsListModal .fin-modal-table {
     font-size: 0.80em !important;
+  }
+}
+
+/* Mobile enhancements for new modals */
+@media (max-width: 768px) {
+  .vault-transfer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  #vaultTransferModal .modal-box-premium,
+  #debtsDetailsModal .modal-box-premium,
+  #vaultsBreakdownModal .modal-box-premium,
+  #studentsListModal .modal-box-premium {
+    padding: 18px 14px !important;
+    max-height: 90vh !important;
+  }
+
+  #studentsListModal .modal-body-premium > div[style*="display: flex; gap: 10px;"] {
+    flex-direction: column !important;
+  }
+
+  #vaultsBreakdownModal div[style*="linear-gradient"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  #vaultsBreakdownModal div[style*="linear-gradient"] button {
+    width: 100% !important;
+    justify-content: center !important;
   }
 }
