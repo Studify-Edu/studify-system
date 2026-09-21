@@ -3368,7 +3368,6 @@ window.applyDirectDecision = async function() {
     showToast("حدث خطأ أثناء تطبيق القرار: " + err.message, "err");
   }
 };
-};
 
 window.fetchDecisions = async function() {
   const listEl = document.getElementById("adminDecisionsList");
@@ -5159,7 +5158,7 @@ export function checkStudentLimit() {
     Swal.fire({
       icon: 'warning',
       title: 'تم الوصول للحد الأقصى للطلاب',
-      html: `<p style="color:var(--text-secondary);margin-bottom:12px">باقتك الحالية تسمح بحد أقصى <b>${SUBSCRIPTION.maxStudents} طالب</b>.<br>لديك حالياً <b>${count} طالب</b> مسجل (بما فيهم طلاب الحصة).</p>`<p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> يرجى ترقية باقة الاشتراك لإضافة المزيد من الطلاب.</p>`,
+      html: `<p style="color:var(--text-secondary);margin-bottom:12px">باقتك الحالية تسمح بحد أقصى <b>${SUBSCRIPTION.maxStudents} طالب</b>.<br>لديك حالياً <b>${count} طالب</b> مسجل (بما فيهم طلاب الحصة).</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> يرجى ترقية باقة الاشتراك لإضافة المزيد من الطلاب.</p>`,
       confirmButtonText: 'عرض خطط الاشتراك',
       confirmButtonColor: '#2563EB',
       showCancelButton: true, cancelButtonText: 'إغلاق'
