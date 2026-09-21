@@ -1054,6 +1054,7 @@ let vaultTransfers = [];
  "grp_daily": { ar: "الإدارة اليومية", en: "Daily Operations" },
  "nav_session_st": { ar: "طلاب الحصة", en: "Session Students" },
  "grp_finance": { ar: "الحسابات والتقارير", en: "Finance & Reports" },
+ "grp_reports_system": { ar: "التقارير وإعدادات النظام", en: "Reports & System Settings" },
  "grp_tools": { ar: "أدوات وتسويق", en: "Tools & Marketing" },
  "nav_booklets": { ar: "مخزون المذكرات", en: "Booklets Inventory" },
  "nav_marketing": { ar: "حملات التسويق", en: "Marketing Campaigns" },
@@ -2759,12 +2760,12 @@ function applyPermissionsToAssistantUI() {
   // Reports
   if (p.can_view_reports !== false) {
     if(document.getElementById('btnTabReports')) document.getElementById('btnTabReports').classList.remove('locked-feature');
-    if(document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.remove('locked-feature');
+    
     if(document.getElementById('btnManagerDailyReport')) document.getElementById('btnManagerDailyReport').classList.remove('locked-feature');
     if(document.getElementById('btnManagerTermReport')) document.getElementById('btnManagerTermReport').classList.remove('locked-feature');
   } else {
     if(document.getElementById('btnTabReports')) document.getElementById('btnTabReports').classList.add('locked-feature');
-    if(document.getElementById('btnTabInstallments')) document.getElementById('btnTabInstallments').classList.add('locked-feature');
+    
   }
 
   // Marketing (Gated by both subscription plan and manager permission)
@@ -8043,14 +8044,7 @@ document.addEventListener("DOMContentLoaded", () => {
  // 18. INITIALIZATION (START ENGINE)
  // ==========================================
  function checkDailyBackup() {
- const last = localStorage.getItem(K_LAST_BACKUP);
- if(last !== nowDateStr()) {
- if($("btnTabAdmin")) $("btnTabAdmin").classList.add("needs-backup");
- setTimeout(function() {
- let msg = currentLang==='ar' ? ' تذكير: لم تقم بتصدير نسخة Excel اليوم' : ' Backup reminder';
- showToast(msg, 'warning');
- }, 3000);
- }
+   // Excel backup reminder removed per user request
  }
 
  function checkQR() {
@@ -9966,15 +9960,7 @@ window.openSessionStudentModal = function(item) {
  checkAuth();
  initSystem();
 
- if ($("btnTabInstallments")) {
-  on("btnTabInstallments", "click", function() {
-    window.switchTab("Installments");
-    if (typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard();
-    if (window.innerWidth <= 768 && $("sidebar")) $("sidebar").classList.remove("open");
-  });
- }
- if ($("filterInstallmentsStatus")) on("filterInstallmentsStatus", "change", () => { if(typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard(); });
- if ($("refreshInstallmentsBtn")) on("refreshInstallmentsBtn", "click", () => { if(typeof renderInstallmentsDashboard === "function") renderInstallmentsDashboard(); });
+// Installments tab removed per user request
 
  window.currentGlobalSubject = "";
  
@@ -10347,7 +10333,6 @@ window.applyTableAnimation = function(tableEl) {
     { label: 'الباقات والأسعار', icon: 'fa-boxes-packing', action: () => window.switchTab('Packages') },
     { label: 'المنهج الدراسي', icon: 'fa-book-open', action: () => window.switchTab('Syllabus') },
     { label: 'التقارير', icon: 'fa-chart-pie', action: () => { window.switchTab('Reports'); if(typeof renderReportsPage === 'function') renderReportsPage(); } },
-    { label: 'متابعة الأقساط', icon: 'fa-hand-holding-dollar', action: () => window.switchTab('Installments') },
     { label: 'مخزون المذكرات', icon: 'fa-book-bookmark', action: () => window.switchTab('Booklets') },
     { label: 'الإعدادات', icon: 'fa-gear', action: () => window.switchTab('Admin') },
     { label: 'حفظ البيانات', icon: 'fa-cloud-arrow-up', action: () => { if(typeof saveAll === 'function') saveAll(); } },

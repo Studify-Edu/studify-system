@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V92">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V93">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -273,105 +273,85 @@
  </div>
 
  <nav class="sidebar-menu">
- <!-- 1. DAILY OPERATIONS -->
- <div class="nav-group">
- <button class="nav-group-header" onclick="toggleNavGroup(this)" type="button">
- <span class="nav-group-title" data-i18n="grp_daily">الإدارة اليومية</span>
- <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
- <polyline points="6 9 12 15 18 9"></polyline>
- </svg>
- </button>
- <div class="nav-group-items-wrapper">
- <div class="nav-group-items">
- <button id="btnTabHome" class="nav-item active">
- <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
- <span class="nav-text" data-i18n="nav_home">الرئيسية</span>
- </button>
- <button id="btnTabStudents" class="nav-item">
- <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
- <span class="nav-text" data-i18n="nav_students">الطلاب</span>
- </button>
- <button id="btnTabSessionStudents" class="nav-item">
- <span class="nav-icon"><i class="fa-solid fa-user-check"></i></span>
- <span class="nav-text" data-i18n="nav_session_st">طلاب الحصة</span>
- </button>
- <button id="btnTabPackages" class="nav-item">
- <span class="nav-icon"><i class="fa-solid fa-boxes-packing"></i></span>
- <span class="nav-text" data-i18n="nav_packages_menu">الباقات والأسعار</span>
- </button>
- <button id="btnTabSyllabus" class="nav-item">
- <span class="nav-icon"><i class="fa-solid fa-book-open"></i></span>
- <span class="nav-text" data-i18n="nav_syllabus">المنهج</span>
- </button>
- </div>
- </div>
- </div>
+  <!-- 1. DAILY OPERATIONS -->
+  <div class="nav-group">
+  <button class="nav-group-header" onclick="toggleNavGroup(this)" type="button">
+  <span class="nav-group-title" data-i18n="grp_daily">الإدارة اليومية</span>
+  <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="6 9 12 15 18 9"></polyline>
+  </svg>
+  </button>
+  <div class="nav-group-items-wrapper">
+  <div class="nav-group-items">
+  <button id="btnTabHome" class="nav-item active">
+  <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+  <span class="nav-text" data-i18n="nav_home">الرئيسية</span>
+  </button>
+  <button id="btnTabStudents" class="nav-item">
+  <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+  <span class="nav-text" data-i18n="nav_students">الطلاب</span>
+  </button>
+  <button id="btnTabSessionStudents" class="nav-item">
+  <span class="nav-icon"><i class="fa-solid fa-user-check"></i></span>
+  <span class="nav-text" data-i18n="nav_session_st">طلاب الحصة</span>
+  </button>
+  <button id="btnTabPackages" class="nav-item">
+  <span class="nav-icon"><i class="fa-solid fa-boxes-packing"></i></span>
+  <span class="nav-text" data-i18n="nav_packages_menu">الباقات والأسعار</span>
+  </button>
+  <button id="btnTabSyllabus" class="nav-item">
+  <span class="nav-icon"><i class="fa-solid fa-book-open"></i></span>
+  <span class="nav-text" data-i18n="nav_syllabus">المنهج</span>
+  </button>
+  </div>
+  </div>
+  </div>
 
- <!-- 2. REPORTS -->
- <div class="nav-group">
- <button class="nav-group-header" onclick="toggleNavGroup(this)" type="button">
- <span class="nav-group-title" data-i18n="grp_finance">الحسابات والتقارير</span>
- <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
- <polyline points="6 9 12 15 18 9"></polyline>
- </svg>
- </button>
- <div class="nav-group-items-wrapper">
- <div class="nav-group-items">
- <button id="btnTabReports" class="nav-item">
- <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
- <span class="nav-text" data-i18n="nav_reports">التقارير</span>
- </button>
+  <!-- 2. TOOLS & MARKETING -->
+  <div class="nav-group collapsed">
+  <button class="nav-group-header" onclick="toggleNavGroup(this)" type="button">
+  <span class="nav-group-title" data-i18n="grp_tools">أدوات وتسويق</span>
+  <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="6 9 12 15 18 9"></polyline>
+  </svg>
+  </button>
+  <div class="nav-group-items-wrapper">
+  <div class="nav-group-items">
+  <button id="btnTabBooklets" class="nav-item adminOnly">
+  <span class="nav-icon"><i class="fa-solid fa-book-bookmark"></i></span>
+  <span class="nav-text" data-i18n="nav_booklets">مخزون المذكرات</span>
+  </button>
+  <button id="btnTabMarketing" class="nav-item adminOnly mkt-nav-item">
+  <span class="nav-icon"><i class="fa-solid fa-bullhorn"></i></span>
+  <span class="nav-text" data-i18n="nav_marketing">حملات التسويق</span>
+  <span class="mkt-nav-badge">PRO</span>
+  </button>
+  </div>
+  </div>
+  </div>
 
- <button id="btnTabInstallments" class="nav-item" onclick="window.switchTab('Installments'); if(typeof renderInstallmentsDashboard==='function') renderInstallmentsDashboard(); if(window.innerWidth <= 768 && document.getElementById('sidebar')) document.getElementById('sidebar').classList.remove('open');">
- <span class="nav-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
- <span class="nav-text" data-i18n="nav_installments">متابعة الأقساط</span>
- </button>
-
- </div>
- </div>
- </div>
-
- <!-- 3. TOOLS & MARKETING -->
- <div class="nav-group collapsed">
- <button class="nav-group-header" onclick="toggleNavGroup(this)" type="button">
- <span class="nav-group-title" data-i18n="grp_tools">أدوات وتسويق</span>
- <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
- <polyline points="6 9 12 15 18 9"></polyline>
- </svg>
- </button>
- <div class="nav-group-items-wrapper">
- <div class="nav-group-items">
- <button id="btnTabBooklets" class="nav-item adminOnly">
- <span class="nav-icon"><i class="fa-solid fa-book-bookmark"></i></span>
- <span class="nav-text" data-i18n="nav_booklets">مخزون المذكرات</span>
- </button>
- <button id="btnTabMarketing" class="nav-item adminOnly mkt-nav-item">
- <span class="nav-icon"><i class="fa-solid fa-bullhorn"></i></span>
- <span class="nav-text" data-i18n="nav_marketing">حملات التسويق</span>
- <span class="mkt-nav-badge">PRO</span>
- </button>
- </div>
- </div>
- </div>
-
- <!-- 4. SYSTEM -->
- <div class="nav-group collapsed">
- <button class="nav-group-header" onclick="toggleNavGroup(this)" type="button">
- <span class="nav-group-title" data-i18n="grp_system">إعدادات النظام</span>
- <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
- <polyline points="6 9 12 15 18 9"></polyline>
- </svg>
- </button>
- <div class="nav-group-items-wrapper">
- <div class="nav-group-items">
- <button id="btnTabAdmin" class="nav-item adminOnly needs-backup">
- <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
- <span class="nav-text" data-i18n="nav_settings">الإعدادات</span>
- </button>
- </div>
- </div>
- </div>
- </nav>
+  <!-- 3. REPORTS & SYSTEM SETTINGS -->
+  <div class="nav-group collapsed">
+  <button class="nav-group-header" onclick="toggleNavGroup(this)" type="button">
+  <span class="nav-group-title" data-i18n="grp_reports_system">التقارير وإعدادات النظام</span>
+  <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="6 9 12 15 18 9"></polyline>
+  </svg>
+  </button>
+  <div class="nav-group-items-wrapper">
+  <div class="nav-group-items">
+  <button id="btnTabReports" class="nav-item">
+  <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+  <span class="nav-text" data-i18n="nav_reports">التقارير</span>
+  </button>
+  <button id="btnTabAdmin" class="nav-item adminOnly">
+  <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+  <span class="nav-text" data-i18n="nav_settings">الإعدادات</span>
+  </button>
+  </div>
+  </div>
+  </div>
+  </nav>
 
  <div class="sidebar-footer">
  <button id="sidebarCollapseBtn" class="sidebar-collapse-btn" title="طي القائمة"><i class="fa-solid fa-chevron-right"></i></button>
@@ -784,42 +764,7 @@
  </section>
 
  
-  <!-- ====== INSTALLMENTS DASHBOARD ====== -->
-  <section id="secInstallments" class="tab-section hidden">
-    <div class="card">
-      <div class="flexBetween" style="margin-bottom:15px;">
-        <h2 style="color:var(--primary);"><i class="fa-solid fa-hand-holding-dollar"></i> <span data-i18n="inst_title">لوحة متابعة الأقساط</span></h2>
-        <div style="display:flex; gap:10px;">
-           <select id="filterInstallmentsStatus" class="inp" style="width:auto;">
-             <option value="all" data-i18n="inst_all">كل الأقساط المفتوحة</option>
-             <option value="overdue" data-i18n="inst_overdue">المتأخرة فقط</option>
-             <option value="upcoming" data-i18n="inst_upcoming">المستحقة قريباً (7 أيام)</option>
-           </select>
-           <button class="btn secondary" id="refreshInstallmentsBtn" title="تحديث"><i class="fa-solid fa-rotate"></i></button>
-        </div>
-      </div>
-      
-      <div class="tableWrap">
-        <table id="installmentsTable">
-          <thead>
-            <tr>
-              <th data-i18n="inst_th_student">الطالب</th>
-              <th data-i18n="inst_th_phone">رقم الموبايل</th>
-              <th data-i18n="inst_th_package">الباقة</th>
-              <th data-i18n="inst_th_installment">اسم القسط</th>
-              <th data-i18n="inst_th_amount">المبلغ</th>
-              <th data-i18n="inst_th_due_date">تاريخ الاستحقاق</th>
-              <th data-i18n="inst_th_status">الحالة</th>
-              <th data-i18n="inst_th_actions">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="installmentsTbody">
-            <!-- Populated via JS -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
+
 
 
   <!-- ====== STUDENTS ====== -->
@@ -2002,7 +1947,7 @@
 
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="app.js?v=STUDIFY_V157"></script>
+  <script type="module" src="app.js?v=STUDIFY_V158"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
