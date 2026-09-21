@@ -13,6 +13,36 @@ window.supabaseClient = supabase;
 // BroadcastChannel for 0-latency multi-tab sync
 const permChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('studify_permissions_sync') : null;
 
+// Instant Shift System State from cache to prevent any visual flicker on reload
+const cachedShiftSys = localStorage.getItem('studify_shift_system_enabled');
+window.shiftSystemEnabled = (cachedShiftSys === 'true'); // Defaults to false (OFF) if null or 'false'
+
+// Listen for cross-tab shift changes
+if (permChannel) {
+  permChannel.onmessage = (e) => {
+    const data = e.data;
+    if (data && data.type === 'DAILY_SHIFT_CHANGE') {
+      if (typeof data.shift_system_enabled === 'boolean') {
+        window.shiftSystemEnabled = data.shift_system_enabled;
+        localStorage.setItem('studify_shift_system_enabled', data.shift_system_enabled ? 'true' : 'false');
+        const curD = document.getElementById("adminDailyDateInput")?.value || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+        if (typeof window.renderDailyApprovalWidget === 'function') {
+          window.renderDailyApprovalWidget(curD);
+        }
+      }
+      if (data.date && typeof dailyApprovalMap === 'object' && dailyApprovalMap) {
+        dailyApprovalMap[data.date] = {
+          status: data.isApproved ? 'approved' : 'pending',
+          updated_at: new Date().toISOString()
+        };
+        if (typeof window.renderDailyApprovalWidget === 'function') {
+          window.renderDailyApprovalWidget(data.date);
+        }
+      }
+    }
+  };
+}
+
 // =============================================================================
 // COMPLETE ADMIN LOCALIZATION DICTIONARY & I18N ENGINE
 // =============================================================================
@@ -587,9 +617,31 @@ let realtimeShiftChannel = null;
 if (supabase) {
   try {
     realtimeShiftChannel = supabase.channel('studify_realtime_shift_sync');
-    realtimeShiftChannel.subscribe((status) => {
-      console.log('[Admin Realtime Shift] Status:', status);
-    });
+    realtimeShiftChannel
+      .on('broadcast', { event: 'DAILY_SHIFT_CHANGE' }, (event) => {
+        const payload = event.payload || {};
+        console.log('[Admin Realtime Sync] Received DAILY_SHIFT_CHANGE:', payload);
+        if (typeof payload.shift_system_enabled === 'boolean') {
+          window.shiftSystemEnabled = payload.shift_system_enabled;
+          localStorage.setItem('studify_shift_system_enabled', payload.shift_system_enabled ? 'true' : 'false');
+          const curD = document.getElementById("adminDailyDateInput")?.value || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+          if (typeof window.renderDailyApprovalWidget === 'function') {
+            window.renderDailyApprovalWidget(curD);
+          }
+        }
+        if (payload.date && typeof dailyApprovalMap === 'object' && dailyApprovalMap) {
+          dailyApprovalMap[payload.date] = {
+            status: payload.isApproved ? 'approved' : 'pending',
+            updated_at: payload.updatedAt || new Date().toISOString()
+          };
+          if (typeof window.renderDailyApprovalWidget === 'function') {
+            window.renderDailyApprovalWidget(payload.date);
+          }
+        }
+      })
+      .subscribe((status) => {
+        console.log('[Admin Realtime Shift] Status:', status);
+      });
   } catch(e) {
     console.warn('[Admin Realtime Shift] Error:', e);
   }
@@ -1703,7 +1755,12 @@ async function loadAllAdminData() {
       const cfg = s.config || {};
       dailyShiftStatus = s.daily_shift_status || 'open';
       dailyApprovalMap = cfg.daily_approval_map || dailyApprovalMap || {};
-      window.shiftSystemEnabled = (cfg.shift_system_enabled !== false);
+      if (typeof cfg.shift_system_enabled === 'boolean') {
+        window.shiftSystemEnabled = cfg.shift_system_enabled;
+      } else {
+        window.shiftSystemEnabled = (cfg.shift_system_enabled !== false);
+      }
+      localStorage.setItem('studify_shift_system_enabled', window.shiftSystemEnabled ? 'true' : 'false');
       
       const today = nowDateStr();
       // If today is not yet explicitly set in the map, inherit from global daily_shift_status
@@ -1978,6 +2035,7 @@ export async function toggleShiftSystemFeature(enable) {
   }
 
   window.shiftSystemEnabled = enable;
+  localStorage.setItem('studify_shift_system_enabled', enable ? 'true' : 'false');
   window.renderDailyApprovalWidget(d);
 
   showToast(
