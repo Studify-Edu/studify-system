@@ -17,11 +17,12 @@ const permChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('studi
 const cachedShiftSys = localStorage.getItem('studify_shift_system_enabled');
 window.shiftSystemEnabled = (cachedShiftSys === 'true'); // Defaults to false (OFF) if null or 'false'
 
-// Listen for cross-tab shift changes
+// Listen for cross-tab shift changes and discount updates
 if (permChannel) {
   permChannel.onmessage = (e) => {
     const data = e.data;
-    if (data && data.type === 'DAILY_SHIFT_CHANGE') {
+    if (!data) return;
+    if (data.type === 'DAILY_SHIFT_CHANGE') {
       if (typeof data.shift_system_enabled === 'boolean') {
         window.shiftSystemEnabled = data.shift_system_enabled;
         localStorage.setItem('studify_shift_system_enabled', data.shift_system_enabled ? 'true' : 'false');
@@ -39,6 +40,21 @@ if (permChannel) {
           window.renderDailyApprovalWidget(data.date);
         }
       }
+    } else if (data.type === 'STUDENT_DISCOUNT_UPDATED' || data.type === 'DECISION_APPROVED') {
+      const stId = String(data.student_id);
+      if (typeof students === 'object' && students[stId]) {
+        if (data.discount !== undefined) students[stId].discount = Number(data.discount) || 0;
+        if (data.packageDiscounts) students[stId].packageDiscounts = data.packageDiscounts;
+      }
+      if (window.selectedDirectDecisionStudent && String(window.selectedDirectDecisionStudent.id) === stId) {
+        if (data.discount !== undefined) window.selectedDirectDecisionStudent.discount = Number(data.discount) || 0;
+        if (data.packageDiscounts) window.selectedDirectDecisionStudent.packageDiscounts = data.packageDiscounts;
+        if (typeof window.handleDirectDecisionPackageChange === 'function') {
+          window.handleDirectDecisionPackageChange();
+        }
+      }
+      if (typeof window.renderAdminPackages === 'function') window.renderAdminPackages();
+      if (typeof window.renderTermTable === 'function') window.renderTermTable();
     }
   };
 }
@@ -733,6 +749,7 @@ if (supabase) {
                 parentPhone: row.parent_phone || row.parentPhone || existing.parentPhone || '',
                 paid: Number(row.paid !== undefined ? row.paid : existing.paid) || 0,
                 discount: Number(row.discount !== undefined ? row.discount : existing.discount) || 0,
+                packageDiscounts: row.package_discounts || row.packageDiscounts || existing.packageDiscounts || {},
                 paymentPlan: row.payment_plan || row.paymentPlan || existing.paymentPlan || 'cash',
                 packages: Array.isArray(row.packages) ? row.packages : (existing.packages || []),
                 payments: row.payments || existing.payments || [],
@@ -741,6 +758,7 @@ if (supabase) {
               };
             }
           }
+          if (typeof window.renderAdminPackages === 'function') window.renderAdminPackages();
           if (typeof window.renderTermTable === 'function') window.renderTermTable();
           const dInput = document.getElementById("adminDailyDateInput");
           if (typeof window.loadDailyReport === 'function') window.loadDailyReport(dInput ? dInput.value : nowDateStr());
@@ -758,6 +776,27 @@ if (supabase) {
             if (cfg.daily_approval_map) {
               dailyApprovalMap = cfg.daily_approval_map;
               localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
+            }
+            if (cfg.student_package_discounts) {
+              const spd = cfg.student_package_discounts;
+              Object.keys(spd).forEach(stId => {
+                if (students[stId]) {
+                  students[stId].packageDiscounts = spd[stId];
+                  let tot = 0;
+                  for (const p in spd[stId]) {
+                    tot += Number(spd[stId][p]) || 0;
+                  }
+                  students[stId].discount = tot;
+                }
+              });
+              if (window.selectedDirectDecisionStudent && spd[window.selectedDirectDecisionStudent.id]) {
+                window.selectedDirectDecisionStudent.packageDiscounts = spd[window.selectedDirectDecisionStudent.id];
+                if (typeof window.handleDirectDecisionPackageChange === 'function') {
+                  window.handleDirectDecisionPackageChange();
+                }
+              }
+              if (typeof window.renderAdminPackages === 'function') window.renderAdminPackages();
+              if (typeof window.renderTermTable === 'function') window.renderTermTable();
             }
             if (Array.isArray(cfg.expenses_by_date)) {
               expensesByDate = cfg.expenses_by_date;
@@ -1667,10 +1706,11 @@ async function loadAllAdminData() {
     const cfg = sRow.config || {};
     const stPkgsMap = cfg.student_packages || {};
     const stRanksMap = cfg.student_ranks || {};
+    const stPkgDiscountsMap = cfg.student_package_discounts || {};
     const cfgGroupFees = cfg.group_fees || {};
     vaultTransfers = Array.isArray(cfg.vault_transfers) ? cfg.vault_transfers : [];
 
-    // Students (with packages, payments, attendanceDates)
+    // Students (with packages, payments, attendanceDates, discounts)
     if (stRes.data) {
       students = {};
       stRes.data.forEach(s => {
@@ -1683,6 +1723,8 @@ async function loadAllAdminData() {
         if (!Array.isArray(pList)) pList = [];
         pList = pList.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'بدون باقة' && p !== 'No Package');
 
+        const restoredDiscounts = (stPkgDiscountsMap && stPkgDiscountsMap[s.id]) || s.package_discounts || s.packageDiscounts || (Number(s.discount) > 0 && pList.length === 1 ? { [pList[0]]: Number(s.discount) } : {});
+
         students[String(s.id)] = {
           id: s.id,
           name: s.name || '',
@@ -1691,6 +1733,7 @@ async function loadAllAdminData() {
           parentPhone: s.parent_phone || s.parentPhone || '',
           paid: Number(s.paid) || 0,
           discount: Number(s.discount) || 0,
+          packageDiscounts: restoredDiscounts,
           paymentPlan: s.payment_plan || s.paymentPlan || 'cash',
           rank: stRanksMap[s.id] || s.rank || 'normal',
           packages: pList,
@@ -3367,22 +3410,57 @@ window.handleDirectDecisionPackageChange = function() {
 
   // Price of selected package
   let pPrice = 0;
-  if (packages && packages[selectedPkg]) pPrice = packages[selectedPkg].price || 0;
-  else if (groupFees && groupFees[selectedPkg]) pPrice = groupFees[selectedPkg].price || groupFees[selectedPkg] || 0;
+  if (packages && packages[selectedPkg]) pPrice = Number(packages[selectedPkg].price) || 0;
+  else if (groupFees && groupFees[selectedPkg]) pPrice = Number(groupFees[selectedPkg].price || groupFees[selectedPkg]) || 0;
 
-  // Existing discount on this package
+  // Existing discount on this package (matching exact key, normalized key, or legacy student.discount)
+  const normName = str => String(str || '').replace(/^باقة\s+/, '').trim().toLowerCase();
+  const cleanSel = normName(selectedPkg);
+
   let curDisc = 0;
-  if (st.packageDiscounts && st.packageDiscounts[selectedPkg]) {
+  if (st.packageDiscounts && st.packageDiscounts[selectedPkg] !== undefined) {
     curDisc = Number(st.packageDiscounts[selectedPkg]) || 0;
+  } else if (st.packageDiscounts) {
+    for (const p in st.packageDiscounts) {
+      if (normName(p) === cleanSel) {
+        curDisc = Number(st.packageDiscounts[p]) || 0;
+        break;
+      }
+    }
+  }
+
+  const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : (st.className ? [st.className] : []);
+  if (curDisc === 0 && Number(st.discount) > 0 && stPkgs.length <= 1) {
+    curDisc = Number(st.discount) || 0;
   }
 
   // Payments applied to this package
   let pPaid = 0;
+  let hasExplicitPkgPayment = false;
   if (st.payments && Array.isArray(st.payments)) {
     st.payments.forEach(p => {
-      const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
-      if (pPkg === selectedPkg) pPaid += Number(p.amount) || 0;
+      const pPkg = p.pkgName || (stPkgs.length === 1 ? stPkgs[0] : "");
+      if (pPkg && normName(pPkg) === cleanSel) {
+        pPaid += Number(p.amount) || 0;
+        hasExplicitPkgPayment = true;
+      }
     });
+  }
+
+  if (!hasExplicitPkgPayment) {
+    let totalReq = 0;
+    stPkgs.forEach(pkgName => {
+      let foundPrice = packages[pkgName] ? Number(packages[pkgName].price) : (Number(groupFees[pkgName]) || 0);
+      if (!foundPrice) {
+        for (const pk in packages) {
+          if (normName(pk) === normName(pkgName)) { foundPrice = Number(packages[pk].price) || 0; break; }
+        }
+      }
+      totalReq += foundPrice;
+    });
+    if (totalReq === 0) totalReq = pPrice;
+    const studentPaid = Number(st.paid) || 0;
+    pPaid = totalReq > 0 ? Math.round((pPrice / totalReq) * studentPaid) : studentPaid;
   }
 
   // Net remaining after discount and payments
@@ -3476,6 +3554,13 @@ window.applyDirectDecision = async function() {
     st.discount = totalDiscount;
     st.lastModified = Date.now();
 
+    // Immediately keep memory store in sync
+    if (students && students[String(st.id)]) {
+      students[String(st.id)].packageDiscounts = st.packageDiscounts;
+      students[String(st.id)].discount = st.discount;
+      students[String(st.id)].lastModified = st.lastModified;
+    }
+
     // 1. Update students table in Supabase
     await supabase.from('students').update({
       discount: st.discount,
@@ -3536,6 +3621,7 @@ window.applyDirectDecision = async function() {
     if (feedback) { feedback.classList.add("hidden"); feedback.innerHTML = ""; }
     window.selectedDirectDecisionStudent = null;
 
+    if (typeof window.renderAdminPackages === 'function') window.renderAdminPackages();
     if (typeof window.renderTermTable === 'function') window.renderTermTable();
     if (typeof window.fetchDecisions === 'function') window.fetchDecisions();
 
@@ -3776,13 +3862,31 @@ window.renderAdminPackages = function() {
     });
     const count = enrolledStudents.length;
 
-    // Financial analytics calculation
-    const expectedRevenue = count * price;
+    // Financial analytics calculation (taking package discounts and explicit payments into account)
+    let totalPkgExpected = 0;
     let collectedRevenue = 0;
 
     enrolledStudents.forEach(st => {
-      let totalReq = 0;
+      let curDisc = 0;
+      if (st.packageDiscounts && st.packageDiscounts[k] !== undefined) {
+        curDisc = Number(st.packageDiscounts[k]) || 0;
+      } else if (st.packageDiscounts) {
+        for (const p in st.packageDiscounts) {
+          if (normName(p) === cleanK) {
+            curDisc = Number(st.packageDiscounts[p]) || 0;
+            break;
+          }
+        }
+      }
       const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages : (st.className ? [st.className] : []);
+      if (curDisc === 0 && Number(st.discount) > 0 && stPkgs.length <= 1) {
+        curDisc = Number(st.discount) || 0;
+      }
+
+      const netExpected = Math.max(0, price - curDisc);
+      totalPkgExpected += netExpected;
+
+      let totalReq = 0;
       stPkgs.forEach(pkgName => {
         const cleanP = normName(pkgName);
         let foundPrice = packages[pkgName] ? Number(packages[pkgName].price) : (Number(groupFees[pkgName]) || 0);
@@ -3795,11 +3899,29 @@ window.renderAdminPackages = function() {
       });
       if (totalReq === 0) totalReq = price;
 
-      const studentPaid = Number(st.paid) || 0;
-      const pkgShare = totalReq > 0 ? Math.min(price, Math.round((price / totalReq) * studentPaid)) : Math.min(price, studentPaid);
+      let explicitPaid = 0;
+      let hasExplicit = false;
+      if (st.payments && Array.isArray(st.payments)) {
+        st.payments.forEach(p => {
+          const pPkg = p.pkgName || (stPkgs.length === 1 ? stPkgs[0] : "");
+          if (pPkg && normName(pPkg) === cleanK) {
+            explicitPaid += Number(p.amount) || 0;
+            hasExplicit = true;
+          }
+        });
+      }
+
+      let pkgShare = 0;
+      if (hasExplicit) {
+        pkgShare = Math.min(netExpected, explicitPaid);
+      } else {
+        const studentPaid = Number(st.paid) || 0;
+        pkgShare = totalReq > 0 ? Math.min(netExpected, Math.round((price / totalReq) * studentPaid)) : Math.min(netExpected, studentPaid);
+      }
       collectedRevenue += pkgShare;
     });
 
+    const expectedRevenue = totalPkgExpected;
     const remainingRevenue = Math.max(0, expectedRevenue - collectedRevenue);
     const collectedPercent = expectedRevenue > 0 ? Math.min(100, Math.round((collectedRevenue / expectedRevenue) * 100)) : 0;
 
