@@ -7117,37 +7117,3 @@ body.system-hard-locked #appBox {
 
 
 
-/* Premium Animated SVG UI Feedback */
-.premium-svg {
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  display: block;
-  stroke-width: 3.5;
-  stroke: white;
-  stroke-miterlimit: 10;
-  margin: 0 auto;
-  filter: drop-shadow(0 0 15px rgba(255,255,255,0.2));
-}
-.premium-svg.success { stroke: #10B981; filter: drop-shadow(0 0 20px rgba(16,185,129,0.4)); }
-.premium-svg.warning { stroke: #F59E0B; filter: drop-shadow(0 0 20px rgba(245,158,11,0.4)); }
-.premium-svg.error { stroke: #EF4444; filter: drop-shadow(0 0 20px rgba(239,68,68,0.4)); }
-.premium-circle {
-  stroke-dasharray: 166;
-  stroke-dashoffset: 166;
-  fill: none;
-  animation: p-stroke 0.5s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-}
-.premium-check, .premium-exclam, .premium-cross {
-  transform-origin: 50% 50%;
-  stroke-dasharray: 48;
-  stroke-dashoffset: 48;
-  animation: p-stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
-}
-@keyframes p-stroke { 100% { stroke-dashoffset: 0; } }
-
-#fullscreenFeedback {
-    background: rgba(11, 17, 32, 0.7) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    transition: opacity 0.3s ease;
-}
