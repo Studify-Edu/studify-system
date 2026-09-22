@@ -4653,3 +4653,89 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
     justify-content: center !important;
   }
 }
+
+/* ======================================================== */
+/* STANDARDIZED DETAIL MODALS (UNIFIED SIZE & VISIBLE SCROLLBAR) */
+/* ======================================================== */
+.term-details-modal-box,
+#expensesDetailsModal .modal-box-premium,
+#withdrawalsDetailsModal .modal-box-premium,
+#discountsDetailsModal .modal-box-premium,
+#debtsDetailsModal .modal-box-premium,
+#vaultsBreakdownModal .modal-box-premium,
+#studentsListModal .modal-box-premium,
+#vaultTransferModal .modal-box-premium,
+#vaultTransfersHistoryModal .modal-box-premium {
+  max-width: 860px !important;
+  width: 95% !important;
+  max-height: 86vh !important;
+  padding: 20px 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin !important;
+  scrollbar-color: #94a3b8 var(--bg-inset, rgba(0, 0, 0, 0.06)) !important;
+}
+
+/* Prominent, stylish vertical scrollbar on the side of the modal */
+.term-details-modal-box::-webkit-scrollbar,
+#expensesDetailsModal .modal-box-premium::-webkit-scrollbar,
+#withdrawalsDetailsModal .modal-box-premium::-webkit-scrollbar,
+#discountsDetailsModal .modal-box-premium::-webkit-scrollbar,
+#debtsDetailsModal .modal-box-premium::-webkit-scrollbar,
+#vaultsBreakdownModal .modal-box-premium::-webkit-scrollbar,
+#studentsListModal .modal-box-premium::-webkit-scrollbar,
+#vaultTransferModal .modal-box-premium::-webkit-scrollbar,
+#vaultTransfersHistoryModal .modal-box-premium::-webkit-scrollbar,
+.fin-modal-table-wrap::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+  display: block !important;
+}
+
+.term-details-modal-box::-webkit-scrollbar-track,
+#expensesDetailsModal .modal-box-premium::-webkit-scrollbar-track,
+#withdrawalsDetailsModal .modal-box-premium::-webkit-scrollbar-track,
+#discountsDetailsModal .modal-box-premium::-webkit-scrollbar-track,
+#debtsDetailsModal .modal-box-premium::-webkit-scrollbar-track,
+#vaultsBreakdownModal .modal-box-premium::-webkit-scrollbar-track,
+#studentsListModal .modal-box-premium::-webkit-scrollbar-track,
+#vaultTransferModal .modal-box-premium::-webkit-scrollbar-track,
+#vaultTransfersHistoryModal .modal-box-premium::-webkit-scrollbar-track,
+.fin-modal-table-wrap::-webkit-scrollbar-track {
+  background: var(--bg-inset, rgba(0, 0, 0, 0.06)) !important;
+  border-radius: 10px !important;
+  margin: 6px 0 !important;
+}
+
+.term-details-modal-box::-webkit-scrollbar-thumb,
+#expensesDetailsModal .modal-box-premium::-webkit-scrollbar-thumb,
+#withdrawalsDetailsModal .modal-box-premium::-webkit-scrollbar-thumb,
+#discountsDetailsModal .modal-box-premium::-webkit-scrollbar-thumb,
+#debtsDetailsModal .modal-box-premium::-webkit-scrollbar-thumb,
+#vaultsBreakdownModal .modal-box-premium::-webkit-scrollbar-thumb,
+#studentsListModal .modal-box-premium::-webkit-scrollbar-thumb,
+#vaultTransferModal .modal-box-premium::-webkit-scrollbar-thumb,
+#vaultTransfersHistoryModal .modal-box-premium::-webkit-scrollbar-thumb,
+.fin-modal-table-wrap::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border-radius: 10px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+.term-details-modal-box::-webkit-scrollbar-thumb:hover,
+#expensesDetailsModal .modal-box-premium::-webkit-scrollbar-thumb:hover,
+#withdrawalsDetailsModal .modal-box-premium::-webkit-scrollbar-thumb:hover,
+#discountsDetailsModal .modal-box-premium::-webkit-scrollbar-thumb:hover,
+#debtsDetailsModal .modal-box-premium::-webkit-scrollbar-thumb:hover,
+#vaultsBreakdownModal .modal-box-premium::-webkit-scrollbar-thumb:hover,
+#studentsListModal .modal-box-premium::-webkit-scrollbar-thumb:hover,
+#vaultTransferModal .modal-box-premium::-webkit-scrollbar-thumb:hover,
+#vaultTransfersHistoryModal .modal-box-premium::-webkit-scrollbar-thumb:hover,
+.fin-modal-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--primary, #3b82f6) !important;
+}
