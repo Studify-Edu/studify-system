@@ -248,6 +248,35 @@
   }
 
   // =========================================================================
+  // AUTOMATIC CHECKBOX, RADIO, & FORM SELECTION SOUNDS
+  // =========================================================================
+  function handleFormInteractions(e) {
+    if (isMuted()) return;
+    var target = e.target;
+    if (!target) return;
+    var tag = (target.tagName || '').toLowerCase();
+    var type = (target.type || '').toLowerCase();
+
+    if (tag === 'input' && (type === 'checkbox' || type === 'radio')) {
+      if (target.checked) {
+        // Crisp checkmark sound when marked checked (تحديد / علامة صح)
+        play('tap', 0.85);
+        vibe([12]);
+      } else {
+        play('touch_tick', 0.6);
+        vibe([6]);
+      }
+    } else if (tag === 'select') {
+      play('tap', 0.7);
+      vibe([8]);
+    }
+  }
+
+  if (typeof document.addEventListener === 'function') {
+    document.addEventListener('change', handleFormInteractions, { passive: true, capture: true });
+  }
+
+  // =========================================================================
   // AUTOMATIC NAVIGATION TOUCH & TAB SWITCH SOUNDS
   // =========================================================================
   var lastTouchTickTime = 0;
@@ -278,19 +307,10 @@
         }
       }, { passive: true });
 
-      // Distinct contextual sound on clicking tabs and pages
-      if (el.classList.contains('nav-item') || el.classList.contains('tab-btn') || el.classList.contains('admin-nav-item')) {
+      // Standard uniform sound on clicking tabs and pages
+      if (el.classList.contains('nav-item') || el.classList.contains('tab-btn')) {
         el.addEventListener('click', function () {
-          var id = el.id || '';
-          if (id === 'btnTabHome' || id === 'navBtnDailyReport') {
-            SFX.pageAttendance();
-          } else if (id === 'btnTabStudents') {
-            SFX.pageStudents();
-          } else if (id === 'btnTabSyllabus' || id === 'btnTabPackages' || id === 'navBtnSyllabus' || id === 'navBtnPackages') {
-            SFX.pageSyllabus();
-          } else {
-            SFX.tabSwitch();
-          }
+          SFX.tabSwitch();
         }, { passive: true });
       }
     });
@@ -482,6 +502,15 @@
     },
     keyDelete: function () {
       play('key_delete', 0.85);
+    },
+    checkToggle: function (checked) {
+      if (checked !== false) {
+        play('tap', 0.85);
+        vibe([12]);
+      } else {
+        play('touch_tick', 0.6);
+        vibe([6]);
+      }
     },
     muteAnnouncement: function (muted) {
       if (!muted) play('scan', 0.8);

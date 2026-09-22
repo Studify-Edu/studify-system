@@ -6476,13 +6476,14 @@ on("importExcelInput", "change", async function(e) {
     delBtn.addEventListener("touchcancel", cancelDeleteHold);
   }
 
-  on("openAllStudentsBtn", "click", function() { renderSimpleTable(); if ($("allStudentsModal")) $("allStudentsModal").classList.remove("hidden"); });
- on("closeModalBtn", "click", function() { if ($("allStudentsModal")) $("allStudentsModal").classList.add("hidden"); });
- on("simplePrevPageBtn", "click", function() { if(simpleCurrentPage > 1) { simpleCurrentPage--; renderSimpleTable(); } });
- on("simpleNextPageBtn", "click", function() { simpleCurrentPage++; renderSimpleTable(); });
+  on("openAllStudentsBtn", "click", function() { if (typeof AssistantSounds !== "undefined") AssistantSounds.modalOpen(); renderSimpleTable(); if ($("allStudentsModal")) $("allStudentsModal").classList.remove("hidden"); });
+  on("closeModalBtn", "click", function() { if (typeof AssistantSounds !== "undefined") AssistantSounds.modalClose(); if ($("allStudentsModal")) $("allStudentsModal").classList.add("hidden"); });
+  on("simplePrevPageBtn", "click", function() { if(simpleCurrentPage > 1) { simpleCurrentPage--; renderSimpleTable(); } });
+  on("simpleNextPageBtn", "click", function() { simpleCurrentPage++; renderSimpleTable(); });
 
- on("todayCountTopCard", "click", function() {
- const today = nowDateStr(); 
+  on("todayCountTopCard", "click", function() {
+  if (typeof AssistantSounds !== "undefined") AssistantSounds.cardClick();
+  const today = nowDateStr(); 
  const ids = attByDate[today] || [];
  const sessList = sessionStudentsByDate[today] || [];
  if(ids.length === 0 && sessList.length === 0) { 
@@ -10176,6 +10177,9 @@ window.goToPackagesFromSubjectModal = function() {
 };
 
 window.openSubjectSelectionModal = function() {
+    if (typeof AssistantSounds !== "undefined") {
+        AssistantSounds.menuOpen();
+    }
     const modal = document.getElementById("subjectSelectionModal");
     const list = document.getElementById("subjectSelectionList");
     const clearWrap = document.getElementById("subjectSelectionClearWrap");
@@ -10254,6 +10258,10 @@ window.openSubjectSelectionModal = function() {
 };
  
  window.selectGlobalSubject = function(sub) {
+     if (typeof AssistantSounds !== "undefined") {
+         if (sub) AssistantSounds.tap();
+         else AssistantSounds.touchTick();
+     }
      window.currentGlobalSubject = sub;
      const txt = document.getElementById("globalSubjectText");
      if (txt) txt.textContent = sub || "-- مادة الحضور --";
@@ -10381,10 +10389,16 @@ window.openSubjectSelectionModal = function() {
   };
 
   window.togglePackageSelection = function(pkgName) {
+      let isNowSelected = false;
       if (window.tempSelectedPackages.has(pkgName)) {
           window.tempSelectedPackages.delete(pkgName);
       } else {
           window.tempSelectedPackages.add(pkgName);
+          isNowSelected = true;
+      }
+      if (typeof AssistantSounds !== 'undefined') {
+          if (isNowSelected) AssistantSounds.tap();
+          else AssistantSounds.touchTick();
       }
       renderPackageSelectionGrid();
   };
