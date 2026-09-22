@@ -1434,6 +1434,11 @@ installSwalInterceptor();
 
 // Helper: Toast
 export function showToast(rawMsg, type = "info") {
+  if (typeof AssistantSounds !== "undefined") {
+    AssistantSounds.notification();
+  } else if (typeof window.AssistantSounds !== "undefined") {
+    window.AssistantSounds.notification();
+  }
   const msg = translateNotification(rawMsg);
   const c = document.getElementById("toastContainer");
   if (!c) return;
@@ -1863,6 +1868,25 @@ window.switchAdminTab = function(tabKey) {
   if (btnEl) btnEl.classList.add("active");
   if (titleEl) titleEl.textContent = c.title;
   if (iconEl) iconEl.className = `fa-solid ${c.icon}`;
+
+  // Contextual page audio feedback
+  if (typeof AssistantSounds !== "undefined") {
+    if (tabKey === "dailyReport") {
+      AssistantSounds.pageAttendance();
+    } else if (tabKey === "syllabus" || tabKey === "packages") {
+      AssistantSounds.pageSyllabus();
+    } else {
+      AssistantSounds.tabSwitch();
+    }
+  } else if (typeof window.AssistantSounds !== "undefined") {
+    if (tabKey === "dailyReport") {
+      window.AssistantSounds.pageAttendance();
+    } else if (tabKey === "syllabus" || tabKey === "packages") {
+      window.AssistantSounds.pageSyllabus();
+    } else {
+      window.AssistantSounds.tabSwitch();
+    }
+  }
 
   // Auto-close mobile sidebar drawer on tab selection
   if (typeof window.toggleAdminMobileSidebar === 'function') {

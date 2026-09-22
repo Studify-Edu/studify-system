@@ -1822,7 +1822,17 @@ function showToast(msg, type = "success") {
  document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
  const activeBtn = $("btnTab" + tabId); 
  if(activeBtn) {
-   if (typeof AssistantSounds !== "undefined") AssistantSounds.tabSwitch();
+   if (typeof AssistantSounds !== "undefined") {
+     if (tabId === "Home") {
+       AssistantSounds.pageAttendance();
+     } else if (tabId === "Students") {
+       AssistantSounds.pageStudents();
+     } else if (tabId === "Syllabus" || tabId === "Packages") {
+       AssistantSounds.pageSyllabus();
+     } else {
+       AssistantSounds.tabSwitch();
+     }
+   }
    activeBtn.classList.add('active');
    const activeGroup = activeBtn.closest('.nav-group');
    if (activeGroup) {

@@ -45,6 +45,11 @@
   // GLOBAL POPUP INTERCEPTOR - ZERO NATIVE CHROME POPUPS
   (function() {
     window.showToast = function(msg, type = "success") {
+      if (typeof AssistantSounds !== "undefined") {
+        AssistantSounds.notification();
+      } else if (typeof window.AssistantSounds !== "undefined") {
+        window.AssistantSounds.notification();
+      }
       let container = document.getElementById("toastContainer");
       if (!container) {
         container = document.createElement("div");
@@ -1990,8 +1995,8 @@
  <!-- Supabase Client SDK -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
-  <script src="sounds.js?v=STUDIO_REAL_V3"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_1790044500000"></script>
+  <script src="sounds.js?v=STUDIO_REAL_V4"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_1790045000000"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

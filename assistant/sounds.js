@@ -50,7 +50,12 @@
     sync_start:    'sync_start.mp3',    // Real Cloud Uplink / Sync Start Sound
     sync_done:     'sync_done.mp3',     // Real Cloud Upload Complete Chime
     globe:         'globe.mp3',         // Real Cosmic Globe Spin Chime (Language Switch)
-    notif:         'notif.mp3',         // Real Crystal Notification Chime (Messages & Alerts)
+    notif:         'notif.mp3',         // Authentic Apple iOS Note / WhatsApp Tri-Tone Message Chime
+    notif_iphone:  'notif_iphone.mp3',  // Direct alias for iPhone notification chime
+    page_attendance: 'page_attendance.mp3', // Real Attendance Clock-in Stamp + Arrival Chime (اليومية / الحضور)
+    page_students:   'page_students.mp3',   // Real Index Card Ledger / Roster Flip (المسجلين)
+    page_syllabus:   'page_syllabus.mp3',   // Real Academic Coursebook / Lecture Chime (المادة / المنهج)
+    paper_sheet:     'paper_sheet.mp3',     // Real Crisp Paper Sheet Registration Form (طالب جديد)
     tab_switch:    'tab_switch.mp3',    // Real Mechanical Push Sound (Tab / Page Switch)
     touch_tick:    'touch_tick.mp3',    // Real Subtle Micro-Tick (Touch / Hover on Nav)
     warning:       'warning.mp3',       // Real Caution / Alert Sound
@@ -260,10 +265,19 @@
         }
       }, { passive: true });
 
-      // Distinct mechanical push on clicking tabs
-      if (el.classList.contains('nav-item') || el.classList.contains('tab-btn')) {
+      // Distinct contextual sound on clicking tabs and pages
+      if (el.classList.contains('nav-item') || el.classList.contains('tab-btn') || el.classList.contains('admin-nav-item')) {
         el.addEventListener('click', function () {
-          SFX.tabSwitch();
+          var id = el.id || '';
+          if (id === 'btnTabHome' || id === 'navBtnDailyReport') {
+            SFX.pageAttendance();
+          } else if (id === 'btnTabStudents') {
+            SFX.pageStudents();
+          } else if (id === 'btnTabSyllabus' || id === 'btnTabPackages' || id === 'navBtnSyllabus' || id === 'navBtnPackages') {
+            SFX.pageSyllabus();
+          } else {
+            SFX.tabSwitch();
+          }
         }, { passive: true });
       }
     });
@@ -345,7 +359,27 @@
       vibe([20]);
     },
 
-    // 6. Navigation, Tabs & Micro-Ticks
+    // 6. Navigation, Tabs & Contextual Pages
+    pageAttendance: function () {
+      // Real electronic attendance clock-in stamp + arrival confirmation chime (اليومية / تسجيل الحضور)
+      play('page_attendance', 1.0);
+      vibe([18, 30]);
+    },
+    pageStudents: function () {
+      // Real index card ledger / registered student roster flip (الطلاب المسجلين)
+      play('page_students', 0.95);
+      vibe([15]);
+    },
+    pageSyllabus: function () {
+      // Real academic coursebook opening & study lecture chime (المادة / المنهج)
+      play('page_syllabus', 1.0);
+      vibe([20]);
+    },
+    paperSheet: function () {
+      // Real crisp registration paper form rustle and desk slide (كارت / استمارة طالب جديد)
+      play('paper_sheet', 1.0);
+      vibe([16]);
+    },
     tabSwitch: function () {
       play('tab_switch', 0.9);
       vibe([12]);
@@ -355,10 +389,14 @@
       vibe([5]);
     },
 
-    // 7. Notifications & Alerts
+    // 7. Notifications & Alerts (Authentic Apple iOS Note / WhatsApp Tri-Tone Message Chime)
     notification: function () {
-      play('notif', 0.95);
-      vibe([20]);
+      play('notif', 1.0);
+      vibe([25, 40]);
+    },
+    notificationIPhone: function () {
+      play('notif_iphone', 1.0);
+      vibe([25, 40]);
     },
     error: function () {
       play('error', 0.95);
@@ -412,7 +450,9 @@
       play('scan', 0.9);
     },
     newStudentForm: function () {
-      play('menu', 0.85);
+      // Real crisp registration paper form rustle and desk slide
+      play('paper_sheet', 1.0);
+      vibe([16]);
     },
 
     // 11. Tactile UI Clicks & Keyboard
