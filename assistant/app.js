@@ -670,7 +670,7 @@ document.addEventListener('DOMContentLoaded', function() {
  localStorage.setItem("ca_muted", window.isMuted ? "1" : "0");
  if($("muteSoundsToggle")) $("muteSoundsToggle").checked = window.isMuted;
  if($("soundIcon")) $("soundIcon").innerHTML = window.isMuted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
- if (!window.isMuted) playSound("click");
+ if (typeof AssistantSounds !== "undefined") { AssistantSounds.muteAnnouncement(window.isMuted); } else if (!window.isMuted) { playSound("click"); }
  });
  }
 
@@ -1880,6 +1880,7 @@ function showToast(msg, type = "success") {
  };
 
  window.hideStudentCard = function() {
+   if (typeof AssistantSounds !== "undefined") AssistantSounds.studentClose();
    if (window.isPendingNewStudent && students[window.isPendingNewStudent]) {
      const pendingSt = students[window.isPendingNewStudent];
      if (!window.isStudentRegistered(pendingSt)) {
@@ -1915,6 +1916,7 @@ function showToast(msg, type = "success") {
  };
 
  window.extOpen = function(id) {
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.studentOpen();
  if(!id || !students[String(id)]) {
  showToast(currentLang === 'ar' ? "الطالب غير مسجل" : "Student not found", "err");
  return;
@@ -4274,6 +4276,10 @@ const st = students[id];
  }
 
  function switchThemeWithAnimation(targetTheme) {
+ if (typeof AssistantSounds !== "undefined") {
+   if (targetTheme === "dark") AssistantSounds.themeNight();
+   else AssistantSounds.themeMorning();
+ }
  const overlay = $("themeSwitchOverlay");
  const iconBox = $("themeSwitchIconBox");
  const textEl = $("themeSwitchText");
@@ -4788,7 +4794,7 @@ on("quickAttendBtn", "click", function() {
  
  // 3. addAttendance handles student name, package, payments
  const res = addAttendance(id, nowDateStr());
- if (res.ok) playSound("pop"); else playSound("error");
+ if (res.ok) { if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceSuccess(); else playSound("pop"); } else { if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceWarning(); else playSound("error"); }
  showToast(res.msg, res.ok ? "success" : "warning");
  updateStudentUI(id); updateTopStats(); 
  idInp.value = ""; idInp.focus();
@@ -4908,6 +4914,7 @@ on("quickAttendBtn", "click", function() {
    window.justAddedStudentId = String(id);
    window.isPendingNewStudent = String(id);
    showToast(currentLang === "ar" ? `تم فتح استمارة طالب جديد برقم #${id}، يرجى كتابة البيانات والضغط على حفظ` : `Opened new student profile #${id}`, "info");
+   if (typeof AssistantSounds !== "undefined") AssistantSounds.newStudentForm();
    window.showStudentCard();
    updateStudentUI(String(id));
    if ($("newId")) $("newId").value = "";
@@ -4940,7 +4947,7 @@ on("quickAttendBtn", "click", function() {
    window.isPendingNewStudent = null;
    window.justAddedStudentId = null;
    if ($("newBadge")) $("newBadge").classList.add("hidden");
- playSound("click");
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.studentSave(); else playSound("click");
  saveAll(); showToast(t("msg_saved")); updateStudentUI(currentId);
  
  let sClass = s.className ? s.className.trim() : "";
@@ -5059,6 +5066,7 @@ on("quickAttendBtn", "click", function() {
  on("rankVipBtn", "click", function() {
  if(!currentId) return;
  students[currentId].rank = "vip";
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.rankVIP();
  if (typeof window.updateStudentCardRankTheme === "function") window.updateStudentCardRankTheme("vip");
  saveAll(); updateStudentUI(currentId); showToast("تم الترقية لـ VIP ");
  });
@@ -5066,6 +5074,7 @@ on("quickAttendBtn", "click", function() {
  on("rankWarnBtn", "click", function() {
  if(!currentId) return;
  students[currentId].rank = "warn";
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.rankWarn();
  if (typeof window.updateStudentCardRankTheme === "function") window.updateStudentCardRankTheme("warn");
  saveAll(); updateStudentUI(currentId); showToast("تم إعطاء إنذار ", "warning");
  });
@@ -5085,8 +5094,10 @@ on("quickAttendBtn", "click", function() {
     const res = addAttendance(currentId, nowDateStr());
     if (res && !res.ok) {
       showToast(res.msg, "warning");
+      if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceWarning();
       return;
     }
+    if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceSuccess();
     showToast(t("msg_att_ok"), "success");
     updateStudentUI(currentId);
     renderReport(nowDateStr());
@@ -5094,6 +5105,7 @@ on("quickAttendBtn", "click", function() {
 });
 
  on("unmarkTodayBtn", "click", function() { 
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceRemove();
  if(currentId) { removeAttendance(currentId, nowDateStr()); updateStudentUI(currentId); renderReport(nowDateStr()); }
  });
 
@@ -5184,8 +5196,14 @@ on("quickAttendBtn", "click", function() {
   updateStudentUI(currentId);
   if (payInp) payInp.value = "";
   
-  if(req > 0 && pkgPaid >= req) fireConfetti();
-  playSound("money");
+  if(req > 0 && pkgPaid >= req) {
+    fireConfetti();
+    if (typeof AssistantSounds !== "undefined") AssistantSounds.debtCleared();
+    else playSound("money");
+  } else {
+    if (typeof AssistantSounds !== "undefined") AssistantSounds.cashPayment();
+    else playSound("money");
+  }
   showToast(t("msg_deposit"));
   
   if(st.phone) {
@@ -5449,6 +5467,7 @@ on("quickAttendBtn", "click", function() {
  });
 
  on("waBtn", "click", function() { 
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.messageSend();
  const phInp = $("stPhone");
  if (phInp && phInp.value) {
    let ph = phInp.value.trim().replace(/\D/g, '');
@@ -5460,6 +5479,7 @@ on("quickAttendBtn", "click", function() {
  });
 
  on("waParentBtn", "click", function() { 
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.messageSend();
  const phInp = $("stParentPhone");
  if (phInp && phInp.value) {
    let ph = phInp.value.trim().replace(/\D/g, '');
@@ -6109,6 +6129,7 @@ Deleting it will automatically unlink it from these students. Do you want to pro
   });
 
  on("changeLangBtn", "click", function() { 
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.langSwitch();
  const targetLang = (currentLang === "ar" ? "en" : "ar");
  const overlay = $("langSwitchOverlay");
  const textEl = $("langSwitchText");
@@ -6440,6 +6461,7 @@ on("importExcelInput", "change", async function(e) {
           await saveAll();
           updateStudentUI(null);
           window.switchTab('Home');
+          if (typeof AssistantSounds !== "undefined") AssistantSounds.deleteSwoosh();
           showToast(isAr ? "تم حذف الطالب وسجلاته بالكامل من السحابة بنجاح" : "Student permanently deleted from cloud successfully", "success");
         }
       });
@@ -8325,7 +8347,12 @@ document.addEventListener("DOMContentLoaded", () => {
   on("btnTabAdmin", "click", function() { window.switchTab('Admin'); if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard(); });
  on("btnTabSyllabus", "click", function() { window.switchTab('Syllabus'); renderSyllabus(); });
  on("btnTabBooklets", "click", function() { window.switchTab('Booklets'); renderBookletsStock(); });
- on("btnTabMarketing", "click", function() { window.switchTab('Marketing'); populateMarketingGroups(); filterCampaignTarget(); });
+ on("btnTabMarketing", "click", function() {
+   if (typeof AssistantSounds !== "undefined") AssistantSounds.marketingPulse();
+   window.switchTab('Marketing');
+   populateMarketingGroups();
+   filterCampaignTarget();
+ });
 
  
 // ========================================================
@@ -8643,7 +8670,8 @@ window.openSessionStudentModal = function(item) {
  });
 
  on("openRevenueModalBtn", "click", function(e) {
- if(isRevHidden) return; 
+ if(isRevHidden) return;
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.revenueOpen(); 
  const today = nowDateStr();
  let html = "";
  let count = 0;
@@ -9986,6 +10014,7 @@ window.openSessionStudentModal = function(item) {
    // Cloud Sync Click Handler (Top bar cloud icon)
   if ($("cloudSyncIndicator")) {
    $("cloudSyncIndicator").addEventListener("click", async function() {
+     if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncStart();
      showToast("جاري المزامنة مع السحابة وتحديث البيانات...", "warning");
      try {
        // 1. Pull freshest state from Supabase
@@ -10011,9 +10040,11 @@ window.openSessionStudentModal = function(item) {
        // 4. Safely push local state back
        await saveAll();
 
+       if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncSuccess();
        showToast("تمت المزامنة وتحديث كافة البيانات والباقات سحابياً بنجاح", "success");
      } catch(err) {
        console.error('Cloud sync error:', err);
+       if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncError();
        showToast("خطأ في المزامنة، تحقق من الاتصال بالإنترنت", "error");
      }
    });
