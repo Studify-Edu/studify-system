@@ -1736,28 +1736,7 @@ function showToast(msg, type = "success") {
  }
  window.isMuted = (localStorage.getItem("ca_muted") === "1");
 
- function playSound(type) {
- if (window.isMuted) return;
- try {
- const ctx = new (window.AudioContext || window.webkitAudioContext)();
- const osc = ctx.createOscillator(); const gain = ctx.createGain();
- osc.connect(gain); gain.connect(ctx.destination);
- if(type === "money") { 
- osc.type = "sine"; 
- osc.frequency.setValueAtTime(1200, ctx.currentTime); 
- osc.frequency.exponentialRampToValueAtTime(2500, ctx.currentTime + 0.1); 
- gain.gain.setValueAtTime(0.2, ctx.currentTime); 
- gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5); 
- osc.start(); osc.stop(ctx.currentTime + 0.5); 
- } else if(type === "success") {
- osc.frequency.setValueAtTime(587, ctx.currentTime); 
- osc.frequency.exponentialRampToValueAtTime(1174, ctx.currentTime + 0.1); 
- gain.gain.setValueAtTime(0.1, ctx.currentTime); 
- gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3); 
- osc.start(); osc.stop(ctx.currentTime + 0.3); 
- }
- } catch(e) {}
- }
+ // Legacy playSound function removed. Using window.playSound bridge from assistant-sounds.js.
 
  function makeEmptyStudent(id) {
  return { id: id, name: "", className: "", phone: "", paid: 0, notes: "", rank: "normal", joinedDate: nowDateStr(), attendanceDates: [] };
