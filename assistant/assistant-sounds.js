@@ -1,74 +1,83 @@
 /**
  * =======================================================================
- * STUDIFY ASSISTANT SOUND ENGINE — STUDIO EDITION v3.0
+ * STUDIFY — CINEMATIC SFX ENGINE v4.0
  * =======================================================================
  *
- * Architecture: Physical Modelling + Procedural Synthesis
- * Inspiration:  Apple iOS Taptic Engine · macOS Sound Design ·
- *               Stripe · Linear · Cash App · Duolingo
+ * PHILOSOPHY — WHY THIS IS DIFFERENT:
+ * ─────────────────────────────────────────────────────────────────────
+ * Every previous version used musical notes: chimes, arpeggios, bells.
+ * That is why they sounded like games. Real premium UI audio (Apple
+ * Vision Pro, Stripe, Linear, Bloomberg, Figma) does NOT use music.
  *
- * Key Technologies:
- *  - Karplus-Strong physical string synthesis  → chimes, dings, bells
- *  - Noise-excitation + resonant filters       → mechanical clicks, keys
- *  - Convolution reverb (IR generated on-init) → depth & space
- *  - Multi-oscillator beating chords           → harmonics & richness
- *  - Dynamic gain shaping (ADSR)               → natural attack & decay
- *  - DynamicsCompressor master bus             → glue & polish
- *  - navigator.vibrate haptic integration      → mobile tactile feedback
- *  - 'input' + 'keydown' listeners             → catches virtual keyboards
- *  - 'touchstart' gesture unlock               → iOS audio context unlock
+ * This engine uses ONLY:
  *
+ *  ① Sub-bass physical impacts  (40–100 Hz sine + pitch envelope)
+ *     → You FEEL it, not just hear it. Camera shutters. Vault locks.
+ *
+ *  ② FM synthesis               (Frequency Modulation)
+ *     → Complex metallic timbre without any oscillator sounding "pure"
+ *     → The technique behind DX7, Bell textures, and all cinema hits
+ *
+ *  ③ Spectral noise sculpting   (multi-stage cascaded filters)
+ *     → Organic air, breath, mechanism — not bandpass beeps
+ *
+ *  ④ Waveshaper saturation      (analog warmth curve)
+ *     → Rounds hard edges, adds presence and density
+ *
+ *  ⑤ Stereo field automation    (L/R micro-offset panning)
+ *     → Sounds move through space, not flat mono blobs
+ *
+ *  ⑥ Strategic silence          (restraint = confidence)
+ *     → Micro-interactions: nearly inaudible. Big moments: hit hard.
+ *
+ * NO MUSICAL NOTES. NO CHIMES. NO ARPEGGIOS. NO KARPLUS-STRONG.
+ *
+ * References: Zaza Sound (cinema FX), Boom Library, Apple HIG Audio,
+ *             Jon Hopkins production style, Hans Zimmer Interstellar SFX.
  * =======================================================================
  */
 
 (function (window, document) {
   'use strict';
 
-  // --- Audio Graph Nodes ---
-  let ctx = null;
-  let masterGain = null;
-  let masterComp = null;
-  let reverbNode = null;
-  let reverbSend = null;
+  // ── Audio graph ────────────────────────────────────────────────────────
+  var ctx          = null;
+  var masterGain   = null;
+  var masterComp   = null;
+  var convReverb   = null;
+  var dryBus       = null;
+  var wetBus       = null;
 
-  // --- Throttle Trackers ---
-  let lastTypingTime  = 0;
-  let lastTapTime     = 0;
+  // ── Throttle ───────────────────────────────────────────────────────────
+  var lastTypingMs = 0;
+  var lastTapMs    = 0;
+  var TYPING_GAP   = 55;
+  var TAP_GAP      = 38;
 
-  // --- Constants ---
-  const MASTER_VOL   = 0.30;
-  const REVERB_WET   = 0.18;
-  const TAP_THROTTLE = 40;
-  const KEY_THROTTLE = 60;
+  // ── Master volume (cinematic: quieter = more premium) ──────────────────
+  var MASTER = 0.26;
 
-  // --- Mobile Haptic Patterns (ms) ---
-  const HapticPattern = {
-    tap:              [5],
-    type:             [3],
-    success:          [12, 40, 12],
-    warn:             [25, 30, 25],
-    error:            [30, 40, 60],
-    cashRegister:     [18],
-    jackpot:          [20, 40, 20, 40, 40],
-    delete:           [15],
-    modal:            [8],
-    vip:              [10, 30, 10],
-    themeSwitch:      [6],
-    sync:             [8],
-    syncDone:         [12, 30, 12],
+  // ── Haptic patterns (Android vibration) ───────────────────────────────
+  var HX = {
+    micro:   [4],
+    type:    [3],
+    confirm: [10, 30, 10],
+    warn:    [20, 25, 20],
+    heavy:   [18],
+    release: [15, 40, 30, 40, 25],
+    lock:    [12],
+    delete:  [14],
+    modal:   [7],
   };
 
-  function haptic(pattern) {
-    try {
-      if (navigator.vibrate) navigator.vibrate(pattern);
-    } catch (_) {}
+  function vibe(p) {
+    try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) {}
   }
 
-  // --- AudioContext Bootstrap ---
-
-  function initAudioContext() {
+  // ── Init ───────────────────────────────────────────────────────────────
+  function boot() {
     if (ctx && ctx.state !== 'closed') {
-      if (ctx.state === 'suspended') ctx.resume().catch(function() {});
+      if (ctx.state === 'suspended') ctx.resume().catch(noop);
       return ctx;
     }
     try {
@@ -76,198 +85,181 @@
       if (!AC) return null;
       ctx = new AC();
 
+      // Compressor — cinematic "glue": gentle ratio, fast release
       masterComp = ctx.createDynamicsCompressor();
-      masterComp.threshold.setValueAtTime(-20, ctx.currentTime);
-      masterComp.knee.setValueAtTime(10, ctx.currentTime);
-      masterComp.ratio.setValueAtTime(5, ctx.currentTime);
-      masterComp.attack.setValueAtTime(0.002, ctx.currentTime);
-      masterComp.release.setValueAtTime(0.12, ctx.currentTime);
+      masterComp.threshold.setValueAtTime(-24, ctx.currentTime);
+      masterComp.knee.setValueAtTime(8, ctx.currentTime);
+      masterComp.ratio.setValueAtTime(4, ctx.currentTime);
+      masterComp.attack.setValueAtTime(0.001, ctx.currentTime);
+      masterComp.release.setValueAtTime(0.08, ctx.currentTime);
 
       masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(MASTER_VOL, ctx.currentTime);
+      masterGain.gain.setValueAtTime(MASTER, ctx.currentTime);
 
-      buildReverb();
+      // Dry bus (no reverb — most sounds go here)
+      dryBus = ctx.createGain();
+      dryBus.gain.setValueAtTime(1.0, ctx.currentTime);
+
+      // Wet bus — cinematic plate reverb, only for BIG moments
+      buildCinematicReverb();
 
       masterComp.connect(masterGain);
+      dryBus.connect(masterComp);
       masterGain.connect(ctx.destination);
 
       return ctx;
-    } catch (e) {
-      return null;
-    }
+    } catch (e) { return null; }
   }
 
+  function noop() {}
+
   /**
-   * Generate a synthetic plate reverb impulse response.
+   * Build a LONG cinematic reverb — 2.8 second plate.
+   * Used ONLY on climactic events: debtCleared, jackpot, etc.
+   * All other sounds are completely DRY (professional restraint).
    */
-  function buildReverb() {
-    if (!ctx) return;
+  function buildCinematicReverb() {
     var rate    = ctx.sampleRate;
-    var len     = Math.floor(rate * 1.4);
-    var impulse = ctx.createBuffer(2, len, rate);
+    var len     = Math.floor(rate * 2.8);
+    var buf     = ctx.createBuffer(2, len, rate);
 
     for (var ch = 0; ch < 2; ch++) {
-      var data = impulse.getChannelData(ch);
+      var d = buf.getChannelData(ch);
       for (var i = 0; i < len; i++) {
-        var decay = Math.pow(1 - i / len, 4.5);
-        data[i] = (Math.random() * 2 - 1) * decay;
-        data[i] += Math.sin(i * 0.02 + ch * 1.7) * 0.015 * decay;
+        var t = i / len;
+        // Sparse early reflections + dense late reverb
+        var early = (i < rate * 0.08) ? (Math.random() * 2 - 1) * (1 - t * 4) : 0;
+        var late  = (Math.random() * 2 - 1) * Math.pow(1 - t, 3.2) * 0.7;
+        // Metallic shimmer component
+        var shim  = Math.sin(i * 0.008 + ch * 2.3) * 0.025 * Math.pow(1 - t, 5);
+        d[i] = early + late + shim;
       }
     }
 
-    reverbNode = ctx.createConvolver();
-    reverbNode.buffer = impulse;
-
-    reverbSend = ctx.createGain();
-    reverbSend.gain.setValueAtTime(REVERB_WET, ctx.currentTime);
-
-    reverbNode.connect(reverbSend);
-    reverbSend.connect(masterGain);
+    convReverb = ctx.createConvolver();
+    convReverb.buffer = buf;
+    wetBus = ctx.createGain();
+    wetBus.gain.setValueAtTime(0.22, ctx.currentTime);
+    convReverb.connect(wetBus);
+    wetBus.connect(masterGain);
   }
 
-  function connectWithReverb(node, reverbAmount) {
-    if (reverbAmount === undefined) reverbAmount = 1.0;
-    node.connect(masterComp);
-    if (reverbNode && reverbAmount > 0) {
-      var send = ctx.createGain();
-      send.gain.setValueAtTime(reverbAmount, ctx.currentTime);
-      node.connect(send);
-      send.connect(reverbNode);
-    }
+  // Unlock audio on first gesture (iOS / Android requirement)
+  function unlock() {
+    if (!ctx) boot();
+    else if (ctx.state === 'suspended') ctx.resume().catch(noop);
   }
-
-  // --- Unlock on first gesture (iOS requirement) ---
-  function unlockAudio() {
-    if (!ctx) initAudioContext();
-    else if (ctx.state === 'suspended') ctx.resume().catch(function() {});
-  }
-  ['click','keydown','touchstart','pointerdown','input'].forEach(function(evt) {
-    window.addEventListener(evt, unlockAudio, { passive: true, once: true });
+  ['click','keydown','touchstart','pointerdown','input'].forEach(function(e) {
+    window.addEventListener(e, unlock, { passive: true, once: true });
   });
 
   function canPlay() {
     if (window.isMuted) return false;
-    try {
-      if (localStorage.getItem('ca_muted') === '1') return false;
-    } catch(_) {}
+    try { if (localStorage.getItem('ca_muted') === '1') return false; } catch (_) {}
     return true;
   }
 
-  // --- Core Synthesis Primitives ---
+  // ══════════════════════════════════════════════════════════════════════
+  // SYNTHESIS PRIMITIVES — All new, none musical
+  // ══════════════════════════════════════════════════════════════════════
 
   /**
-   * Karplus-Strong Physical String Model
-   * Produces realistic plucked-string / chime resonance.
+   * SUB THUD — Physical bass impact (felt in the chest).
+   * Sine oscillator with pitch drop envelope: starts ~60% higher,
+   * rapidly drops to target — this is what gives it "weight".
+   * Used in nearly every interaction as the foundation layer.
+   *
+   * @param {number} freqHz     — target frequency (40–120Hz ideal)
+   * @param {number} peakGain   — peak amplitude before compressor
+   * @param {number} decaySec   — how long it sustains
+   * @param {number} startAt    — offset from ctx.currentTime
    */
-  function pluckString(freq, duration, gainPeak, brightness) {
-    if (gainPeak === undefined) gainPeak = 0.5;
-    if (brightness === undefined) brightness = 1.0;
+  function subThud(freqHz, peakGain, decaySec, startAt) {
     if (!ctx) return null;
-    var now    = ctx.currentTime;
-    var sRate  = ctx.sampleRate;
-    var period = Math.floor(sRate / freq);
-
-    var buf  = ctx.createBuffer(1, period, sRate);
-    var data = buf.getChannelData(0);
-    for (var i = 0; i < period; i++) {
-      data[i] = (Math.random() * 2 - 1) * 0.9;
-    }
-
-    var src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-
-    var lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(freq * 18 * brightness, now);
-    lp.Q.setValueAtTime(0.5, now);
-
-    var gainNode = ctx.createGain();
-    gainNode.gain.setValueAtTime(gainPeak, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-    src.connect(lp);
-    lp.connect(gainNode);
-
-    src.start(now);
-    src.stop(now + duration);
-    return gainNode;
-  }
-
-  /**
-   * Noise-Excitation Mechanical Click
-   * Filtered white noise burst — the real way to make keyboard / switch sounds.
-   */
-  function mechanicalClick(freq, q, duration, gainPeak) {
-    if (freq === undefined) freq = 800;
-    if (q === undefined) q = 4;
-    if (duration === undefined) duration = 0.018;
-    if (gainPeak === undefined) gainPeak = 0.12;
-    if (!ctx) return null;
-    var now    = ctx.currentTime;
-    var bufLen = Math.ceil(ctx.sampleRate * duration);
-    var buf    = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-    var data   = buf.getChannelData(0);
-    for (var i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
-
-    var src = ctx.createBufferSource();
-    src.buffer = buf;
-
-    var bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.setValueAtTime(freq, now);
-    bp.Q.setValueAtTime(q, now);
-
-    var shelf = ctx.createBiquadFilter();
-    shelf.type = 'highshelf';
-    shelf.frequency.setValueAtTime(4000, now);
-    shelf.gain.setValueAtTime(6, now);
-
-    var gainNode = ctx.createGain();
-    gainNode.gain.setValueAtTime(gainPeak, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-    src.connect(bp);
-    bp.connect(shelf);
-    shelf.connect(gainNode);
-
-    src.start(now);
-    src.stop(now + duration);
-    return gainNode;
-  }
-
-  /**
-   * Sine tone with ADSR envelope
-   */
-  function tone(freq, startTime, duration, gainPeak, type) {
-    if (gainPeak === undefined) gainPeak = 0.3;
-    if (type === undefined) type = 'sine';
-    if (!ctx) return null;
+    var t   = ctx.currentTime + (startAt || 0);
     var osc = ctx.createOscillator();
+    var sat = waveshaper(3);       // analog warmth
     var gn  = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
 
-    gn.gain.setValueAtTime(0.001, startTime);
-    gn.gain.linearRampToValueAtTime(gainPeak, startTime + 0.008);
-    gn.gain.exponentialRampToValueAtTime(gainPeak * 0.6, startTime + duration * 0.4);
-    gn.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    osc.type = 'sine';
+    // Pitch drop: starts high, lands on freqHz — gives IMPACT not tone
+    osc.frequency.setValueAtTime(freqHz * 2.2, t);
+    osc.frequency.exponentialRampToValueAtTime(freqHz, t + 0.018);
+    osc.frequency.exponentialRampToValueAtTime(freqHz * 0.6, t + decaySec);
 
-    osc.connect(gn);
-    osc.start(startTime);
-    osc.stop(startTime + duration + 0.01);
+    gn.gain.setValueAtTime(0, t);
+    gn.gain.linearRampToValueAtTime(peakGain, t + 0.002);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + decaySec);
+
+    osc.connect(sat); sat.connect(gn);
+    osc.start(t); osc.stop(t + decaySec + 0.02);
     return gn;
   }
 
   /**
-   * Noise whoosh / sweep
+   * FM METALLIC PING — Frequency Modulation synthesis.
+   * Carrier × Modulator produces inharmonic partials that sound like
+   * struck metal, not a musical instrument.
+   * Used for: transaction confirms, lock sounds, scan hits.
+   *
+   * @param {number} carrHz     — carrier frequency
+   * @param {number} modRatio   — modulator = carrHz × modRatio
+   * @param {number} modIndex   — modulation depth (higher = more metallic)
+   * @param {number} decaySec
+   * @param {number} peakGain
+   * @param {number} startAt
    */
-  function noiseWhoosh(durationSec, gainPeak, filterSweepDown) {
-    if (durationSec === undefined) durationSec = 0.12;
-    if (gainPeak === undefined) gainPeak = 0.15;
-    if (filterSweepDown === undefined) filterSweepDown = true;
+  function fmMetal(carrHz, modRatio, modIndex, decaySec, peakGain, startAt) {
     if (!ctx) return null;
-    var now    = ctx.currentTime;
+    var t     = ctx.currentTime + (startAt || 0);
+    var modHz = carrHz * modRatio;
+
+    var mod    = ctx.createOscillator();
+    var modGn  = ctx.createGain();
+    var carrier= ctx.createOscillator();
+    var gn     = ctx.createGain();
+
+    mod.type = 'sine';
+    mod.frequency.setValueAtTime(modHz, t);
+
+    // Modulation index decays — shifts from metallic to cleaner over time
+    modGn.gain.setValueAtTime(carrHz * modIndex, t);
+    modGn.gain.exponentialRampToValueAtTime(carrHz * modIndex * 0.1, t + decaySec * 0.6);
+    modGn.gain.exponentialRampToValueAtTime(0.01, t + decaySec);
+
+    carrier.type = 'sine';
+    carrier.frequency.setValueAtTime(carrHz, t);
+
+    gn.gain.setValueAtTime(0, t);
+    gn.gain.linearRampToValueAtTime(peakGain, t + 0.004);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + decaySec);
+
+    mod.connect(modGn);
+    modGn.connect(carrier.frequency);
+    carrier.connect(gn);
+
+    mod.start(t); mod.stop(t + decaySec + 0.01);
+    carrier.start(t); carrier.stop(t + decaySec + 0.01);
+    return gn;
+  }
+
+  /**
+   * SPECTRAL NOISE SCULPT — Multi-stage filtered noise burst.
+   * This is how professional SFX houses create mechanical/air sounds.
+   * 3 cascaded filters shape white noise into something organic.
+   *
+   * @param {number} loHz     — low shelf cutoff
+   * @param {number} hiHz     — high cut
+   * @param {number} peakHz   — resonant peak
+   * @param {number} peakQ    — resonance sharpness
+   * @param {number} durationSec
+   * @param {number} peakGain
+   * @param {boolean} sweepUp — if true, filter sweeps up in freq
+   * @param {number} startAt
+   */
+  function sculptNoise(loHz, hiHz, peakHz, peakQ, durationSec, peakGain, sweepUp, startAt) {
+    if (!ctx) return null;
+    var t      = ctx.currentTime + (startAt || 0);
     var bufLen = Math.ceil(ctx.sampleRate * durationSec);
     var buf    = ctx.createBuffer(1, bufLen, ctx.sampleRate);
     var data   = buf.getChannelData(0);
@@ -276,602 +268,693 @@
     var src = ctx.createBufferSource();
     src.buffer = buf;
 
-    var bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.Q.setValueAtTime(1.8, now);
-    if (filterSweepDown) {
-      bp.frequency.setValueAtTime(3200, now);
-      bp.frequency.exponentialRampToValueAtTime(280, now + durationSec);
+    // Stage 1: Highpass (remove rumble below loHz)
+    var hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.setValueAtTime(loHz, t);
+    hp.Q.setValueAtTime(0.7, t);
+
+    // Stage 2: Lowpass (remove harshness above hiHz)
+    var lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(hiHz, t);
+    lp.Q.setValueAtTime(0.7, t);
+
+    // Stage 3: Peaking resonance (gives it a "voice")
+    var pk = ctx.createBiquadFilter();
+    pk.type = 'peaking';
+    pk.Q.setValueAtTime(peakQ, t);
+    pk.gain.setValueAtTime(12, t);
+    if (sweepUp) {
+      pk.frequency.setValueAtTime(peakHz * 0.3, t);
+      pk.frequency.exponentialRampToValueAtTime(peakHz, t + durationSec * 0.7);
     } else {
-      bp.frequency.setValueAtTime(280, now);
-      bp.frequency.exponentialRampToValueAtTime(3200, now + durationSec);
+      pk.frequency.setValueAtTime(peakHz, t);
+      pk.frequency.exponentialRampToValueAtTime(peakHz * 0.25, t + durationSec);
     }
 
-    var gainNode = ctx.createGain();
-    gainNode.gain.setValueAtTime(0.001, now);
-    gainNode.gain.linearRampToValueAtTime(gainPeak, now + durationSec * 0.2);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
+    var gn = ctx.createGain();
+    gn.gain.setValueAtTime(0.001, t);
+    gn.gain.linearRampToValueAtTime(peakGain, t + durationSec * 0.1);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + durationSec);
 
-    src.connect(bp);
-    bp.connect(gainNode);
-    src.start(now);
-    src.stop(now + durationSec);
-    return gainNode;
+    src.connect(hp); hp.connect(lp); lp.connect(pk); pk.connect(gn);
+    src.start(t); src.stop(t + durationSec);
+    return gn;
   }
 
-  // --- The Sound Library ---
+  /**
+   * WAVESHAPER — Analog saturation curve.
+   * Adds warmth, density, presence. Rounds sharp digital transients.
+   * @param {number} amount — saturation drive (1 = light, 5 = heavy)
+   */
+  function waveshaper(amount) {
+    var ws = ctx.createWaveShaper();
+    var k  = typeof amount === 'number' ? amount : 2;
+    var n  = 256;
+    var curve = new Float32Array(n);
+    for (var i = 0; i < n; i++) {
+      var x = (i * 2) / n - 1;
+      curve[i] = ((Math.PI + k) * x) / (Math.PI + k * Math.abs(x));
+    }
+    ws.curve = curve;
+    ws.oversample = '4x';
+    return ws;
+  }
 
-  var AssistantSounds = {
+  /**
+   * STEREO PANNER — Subtle stereo positioning.
+   * Use small values (±0.15) for width without hearing obvious panning.
+   */
+  function panner(panValue) {
+    if (ctx.createStereoPanner) {
+      var p = ctx.createStereoPanner();
+      p.pan.setValueAtTime(panValue, ctx.currentTime);
+      return p;
+    }
+    var p = ctx.createPanner();
+    p.setPosition(panValue, 0, 1 - Math.abs(panValue));
+    return p;
+  }
 
-    // 1. iOS-STYLE HAPTIC TAP
+  /** Route a node to the dry bus (most sounds) */
+  function toDry(node) { if (node) node.connect(dryBus); }
+
+  /** Route a node to BOTH dry and cinematic reverb (only for BIG moments) */
+  function toCinematic(node) {
+    if (!node) return;
+    node.connect(dryBus);
+    if (convReverb) node.connect(convReverb);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // THE SOUND LIBRARY — 30 Cinematic SFX Sounds, Zero Musical Notes
+  // ══════════════════════════════════════════════════════════════════════
+
+  var SFX = {
+
+    // ────────────────────────────────────────────────────────────────────
+    // 1. TAP — "Precision Mechanism"
+    //    Like a high-end DSLR shutter or a Swiss watch click.
+    //    Sub-thud (physical) + spectral snap (mechanical).
+    //    Ultra dry. The sound of something perfectly engineered.
+    // ────────────────────────────────────────────────────────────────────
     tap: function (intensity) {
-      if (intensity === undefined) intensity = 1.0;
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var jitter = 1 + (Math.random() - 0.5) * 0.06;
-      var click  = mechanicalClick(720 * jitter, 3.5, 0.016, 0.10 * intensity);
-      if (click) click.connect(masterComp);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var iv = (intensity !== undefined) ? intensity : 1.0;
+      var sub  = subThud(72, 0.55 * iv, 0.055, 0);
+      var snap = sculptNoise(800, 7000, 2800, 3, 0.014, 0.18 * iv, false, 0);
+      toDry(sub); toDry(snap);
     },
 
-    // 2. SOFT UI BUTTON CLICK
+    // ────────────────────────────────────────────────────────────────────
+    // 2. CLICK — "Deadbolt"
+    //    Heavier than tap. Like a heavy door latch engaging.
+    //    More sub + FM metallic body.
+    // ────────────────────────────────────────────────────────────────────
     click: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var body = mechanicalClick(380, 2, 0.022, 0.09);
-      var cri  = mechanicalClick(2800, 8, 0.008, 0.06);
-      if (body) body.connect(masterComp);
-      if (cri)  cri.connect(masterComp);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var sub  = subThud(58, 0.65, 0.085, 0);
+      var body = fmMetal(280, 3.5, 0.8, 0.060, 0.22, 0);
+      var snap = sculptNoise(1200, 9000, 3500, 4, 0.018, 0.14, false, 0);
+      toDry(sub); toDry(body); toDry(snap);
     },
 
-    // 3. KEYBOARD / TYPING TICK — iOS Keyboard Inspired
+    // ────────────────────────────────────────────────────────────────────
+    // 3. TYPING TICK — "Thock"
+    //    Three distinct key profiles — rotates to break monotony.
+    //    All sub-heavy, no high-pitched click sounds.
+    //    "Marble", "Cream", "Liquid" mechanical switch characters.
+    // ────────────────────────────────────────────────────────────────────
     typingTick: function () {
       var now = Date.now();
-      if (now - lastTypingTime < KEY_THROTTLE) return;
-      lastTypingTime = now;
+      if (now - lastTypingMs < TYPING_GAP) return;
+      lastTypingMs = now;
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.type);
+      var c = boot(); if (!c) return;
+      vibe(HX.type);
 
-      var profiles = [
-        { f: 520, q: 3.2, dur: 0.014, g: 0.085 },
-        { f: 440, q: 2.8, dur: 0.016, g: 0.095 },
-        { f: 380, q: 2.5, dur: 0.018, g: 0.100 },
-      ];
-      var p = profiles[Math.floor(Math.random() * profiles.length)];
-      var jitter = 1 + (Math.random() - 0.5) * 0.05;
-      var click = mechanicalClick(p.f * jitter, p.q, p.dur, p.g);
-      if (click) click.connect(masterComp);
+      var profile = Math.floor(Math.random() * 3);
+      var jit = 1 + (Math.random() - 0.5) * 0.08;
+
+      if (profile === 0) {
+        // MARBLE — Deep thock, clean top
+        var s = subThud(105 * jit, 0.50, 0.045, 0);
+        var n = sculptNoise(600, 5000, 1800, 2.5, 0.012, 0.10, false, 0);
+        toDry(s); toDry(n);
+      } else if (profile === 1) {
+        // CREAM — Softer, rounder, more hollow
+        var s = subThud(85 * jit, 0.44, 0.050, 0);
+        var n = sculptNoise(400, 3500, 1200, 2, 0.014, 0.08, false, 0);
+        toDry(s); toDry(n);
+      } else {
+        // LIQUID — Slightly poppier, bright snap
+        var s = subThud(95 * jit, 0.48, 0.042, 0);
+        var n = sculptNoise(700, 6500, 2200, 3.5, 0.011, 0.12, false, 0);
+        toDry(s); toDry(n);
+      }
     },
 
-    // 4. NAVIGATION TAB SWITCH
+    // ────────────────────────────────────────────────────────────────────
+    // 4. TAB SWITCH — "Air Shift"
+    //    Room pressure change. NOT a whoosh — more like displacement.
+    //    Two spectral noise bands moving in opposite directions.
+    // ────────────────────────────────────────────────────────────────────
     tabSwitch: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var w = noiseWhoosh(0.09, 0.10, true);
-      if (w) connectWithReverb(w, 0.5);
-      var t1 = tone(1480, c.currentTime + 0.015, 0.08, 0.06);
-      if (t1) connectWithReverb(t1, 0.6);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var lo = sculptNoise(60, 400, 180, 1.5, 0.120, 0.12, true, 0);
+      var hi = sculptNoise(2000, 12000, 5000, 2, 0.090, 0.09, false, 0);
+      var p1 = panner(-0.12);
+      var p2 = panner(0.12);
+      if (lo) { lo.connect(p1); p1.connect(dryBus); }
+      if (hi) { hi.connect(p2); p2.connect(dryBus); }
     },
 
-    // 5. NIGHT / DARK THEME — Descending Minor Pentatonic
+    // ────────────────────────────────────────────────────────────────────
+    // 5. THEME NIGHT — "Density"
+    //    The room gets heavier. Sub-low rumble fades in.
+    //    High frequencies die. Felt more than heard.
+    // ────────────────────────────────────────────────────────────────────
     themeNight: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.themeSwitch);
-      var notes = [
-        { freq: 659.25, delay: 0,    dur: 2.2, gain: 0.40 },
-        { freq: 493.88, delay: 0.10, dur: 2.0, gain: 0.32 },
-        { freq: 392.00, delay: 0.20, dur: 1.8, gain: 0.28 },
-        { freq: 261.63, delay: 0.30, dur: 2.5, gain: 0.22 },
-      ];
-      notes.forEach(function(n) {
-        var s = pluckString(n.freq, n.dur, n.gain, 0.8);
-        if (s) {
-          var delayed = ctx.createDelay(1.0);
-          delayed.delayTime.setValueAtTime(n.delay, c.currentTime);
-          s.connect(delayed);
-          connectWithReverb(delayed, 1.0);
-        }
-      });
-      var w = noiseWhoosh(0.18, 0.08, true);
-      if (w) connectWithReverb(w, 0.8);
+      var c = boot(); if (!c) return;
+      vibe(HX.modal);
+      // Deep sub rumble fade-in (barely audible)
+      var sub  = subThud(42, 0.35, 0.800, 0.2);
+      // Air pressure: noise that sweeps DOWN (heavy, descending)
+      var air  = sculptNoise(30, 1200, 600, 1.2, 0.700, 0.14, false, 0.1);
+      // FM "weight" — low inharmonic tone
+      var body = fmMetal(68, 2.1, 1.4, 0.500, 0.18, 0.05);
+      toDry(sub); toDry(air);
+      if (body) { body.connect(dryBus); }
     },
 
-    // 6. MORNING / LIGHT THEME — Ascending C Major Arpeggio
+    // ────────────────────────────────────────────────────────────────────
+    // 6. THEME MORNING — "Breath"
+    //    The room lightens. Sub rumble that RISES then releases.
+    //    Like pressure releasing from a sealed chamber.
+    // ────────────────────────────────────────────────────────────────────
     themeMorning: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.themeSwitch);
-      var notes = [
-        { freq: 523.25, delay: 0,    dur: 1.8, gain: 0.30 },
-        { freq: 659.25, delay: 0.10, dur: 1.6, gain: 0.28 },
-        { freq: 783.99, delay: 0.20, dur: 1.6, gain: 0.26 },
-        { freq: 1046.5, delay: 0.32, dur: 2.0, gain: 0.24 },
-      ];
-      notes.forEach(function(n) {
-        var s = pluckString(n.freq, n.dur, n.gain, 1.2);
-        if (s) {
-          var delayed = ctx.createDelay(1.0);
-          delayed.delayTime.setValueAtTime(n.delay, c.currentTime);
-          s.connect(delayed);
-          connectWithReverb(delayed, 0.9);
-        }
-      });
-      var w = noiseWhoosh(0.14, 0.08, false);
-      if (w) connectWithReverb(w, 0.6);
+      var c = boot(); if (!c) return;
+      vibe(HX.modal);
+      var sub  = subThud(55, 0.30, 0.600, 0.1);
+      var air  = sculptNoise(80, 3500, 800, 1.0, 0.600, 0.15, true, 0);
+      var crack= sculptNoise(2500, 14000, 6000, 2, 0.080, 0.10, true, 0.35);
+      toDry(sub); toDry(air); toDry(crack);
     },
 
-    // 7. LANGUAGE SWITCH
+    // ────────────────────────────────────────────────────────────────────
+    // 7. LANGUAGE SWITCH — "Pivot"
+    //    Two opposing transients — left → right. Quick, decisive.
+    // ────────────────────────────────────────────────────────────────────
     langSwitch: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var t1 = tone(880, c.currentTime,        0.22, 0.22);
-      var t2 = tone(660, c.currentTime + 0.10, 0.20, 0.18);
-      if (t1) connectWithReverb(t1, 0.7);
-      if (t2) connectWithReverb(t2, 0.7);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var a = subThud(68, 0.45, 0.060, 0);
+      var b = subThud(82, 0.40, 0.060, 0.08);
+      var pa = panner(-0.25);
+      var pb = panner(0.25);
+      if (a) { a.connect(pa); pa.connect(dryBus); }
+      if (b) { b.connect(pb); pb.connect(dryBus); }
     },
 
-    // 8. CLOUD SYNC START
+    // ────────────────────────────────────────────────────────────────────
+    // 8. CLOUD SYNC START — "Launch"
+    //    Rising air column — like a rocket pressurizing.
+    //    Sub builds, then releases into a sharp transient.
+    // ────────────────────────────────────────────────────────────────────
     cloudSyncStart: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.sync);
-      var w = noiseWhoosh(0.20, 0.12, false);
-      if (w) connectWithReverb(w, 0.5);
-      var t1 = tone(440, c.currentTime,        0.15, 0.14);
-      var t2 = tone(660, c.currentTime + 0.10, 0.15, 0.14);
-      if (t1) connectWithReverb(t1, 0.4);
-      if (t2) connectWithReverb(t2, 0.4);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var air = sculptNoise(60, 2000, 400, 1.4, 0.200, 0.18, true, 0);
+      var hit = sculptNoise(1500, 12000, 4000, 3.5, 0.035, 0.22, false, 0.195);
+      toDry(air); toDry(hit);
     },
 
-    // 9. CLOUD SYNC SUCCESS — Celestial Crystal Bells
+    // ────────────────────────────────────────────────────────────────────
+    // 9. CLOUD SYNC SUCCESS — "Lock Confirmed"
+    //    Clean double impact: low → high. Brief. Confident.
+    //    Sub thud then FM metallic confirm. No reverb. Pure authority.
+    // ────────────────────────────────────────────────────────────────────
     cloudSyncSuccess: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.syncDone);
-      var notes = [
-        { freq: 1318.5, delay: 0,    dur: 1.6, gain: 0.35, bright: 1.5 },
-        { freq: 1975.5, delay: 0.07, dur: 1.4, gain: 0.28, bright: 1.6 },
-        { freq: 2637.0, delay: 0.14, dur: 1.2, gain: 0.22, bright: 1.8 },
-      ];
-      notes.forEach(function(n) {
-        var s = pluckString(n.freq, n.dur, n.gain, n.bright);
-        if (s) {
-          var delayed = ctx.createDelay(0.5);
-          delayed.delayTime.setValueAtTime(n.delay, c.currentTime);
-          s.connect(delayed);
-          connectWithReverb(delayed, 1.0);
-        }
-      });
+      var c = boot(); if (!c) return;
+      vibe(HX.confirm);
+      var thud = subThud(65, 0.55, 0.100, 0);
+      var ping = fmMetal(420, 4.2, 1.8, 0.160, 0.32, 0.065);
+      var snap = sculptNoise(3000, 15000, 7000, 4, 0.025, 0.18, false, 0.07);
+      toDry(thud); toDry(ping); toDry(snap);
     },
 
-    // 10. CLOUD SYNC ERROR
+    // ────────────────────────────────────────────────────────────────────
+    // 10. CLOUD SYNC ERROR — "Dead Stop"
+    //     Single hard sub hit. Abrupt, low-frequency. NOT a "sad" tone.
+    //     The sound of something stopping that shouldn't have.
+    // ────────────────────────────────────────────────────────────────────
     cloudSyncError: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.error);
-      var t1 = tone(440, c.currentTime,        0.25, 0.20, 'triangle');
-      var t2 = tone(294, c.currentTime + 0.18, 0.28, 0.20, 'triangle');
-      if (t1) connectWithReverb(t1, 0.6);
-      if (t2) connectWithReverb(t2, 0.6);
+      var c = boot(); if (!c) return;
+      vibe(HX.warn);
+      var thud = subThud(58, 0.65, 0.150, 0);
+      var body = fmMetal(160, 2.8, 2.2, 0.180, 0.24, 0.02);
+      toDry(thud); toDry(body);
     },
 
-    // 11. BARCODE SCAN — Laser Zap
+    // ────────────────────────────────────────────────────────────────────
+    // 11. BARCODE / ATTENDANCE SCAN — "Sweep Strike"
+    //     FM metallic zap — precision scanner energy.
+    //     Tight, directional. Industrial, not musical.
+    // ────────────────────────────────────────────────────────────────────
     attendanceScan: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var now = c.currentTime;
-      var osc = c.createOscillator();
-      var gn  = c.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(2800, now);
-      osc.frequency.exponentialRampToValueAtTime(180, now + 0.055);
-      gn.gain.setValueAtTime(0.18, now);
-      gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
-      var hp = c.createBiquadFilter();
-      hp.type = 'highpass';
-      hp.frequency.setValueAtTime(900, now);
-      osc.connect(hp); hp.connect(gn);
-      gn.connect(masterComp);
-      osc.start(now); osc.stop(now + 0.06);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var zap  = fmMetal(880, 6.0, 3.5, 0.065, 0.28, 0);
+      var snap = sculptNoise(2000, 16000, 8000, 5, 0.020, 0.20, false, 0);
+      toDry(zap); toDry(snap);
     },
 
-    // 12. ATTENDANCE SUCCESS — Crystal Double Ding (Apple Pay Style)
-    //     C6 then G6 — rising perfect fifth. Signature sound.
+    // ────────────────────────────────────────────────────────────────────
+    // 12. ATTENDANCE SUCCESS — "Vault Lock"
+    //     THE signature sound. Deep satisfying LOCK — like a safe door.
+    //
+    //     Layer 1: Heavy sub thud (physical impact you feel)
+    //     Layer 2: FM metallic body (the mechanism engaging)
+    //     Layer 3: Spectral shimmer (resonance dying away)
+    //
+    //     This should feel FINAL. SECURE. LOCKED IN.
+    //     NOT a chime. NOT a bell. A MECHANISM.
+    // ────────────────────────────────────────────────────────────────────
     attendanceSuccess: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.success);
+      var c = boot(); if (!c) return;
+      vibe(HX.confirm);
 
-      var bell1 = pluckString(1046.5, 1.8, 0.55, 1.4);
-      if (bell1) {
-        var d1 = c.createDelay(0.2);
-        d1.delayTime.setValueAtTime(0, c.currentTime);
-        bell1.connect(d1);
-        connectWithReverb(d1, 1.0);
-      }
+      // Layer 1: The physical weight of the lock
+      var thud  = subThud(52, 0.80, 0.180, 0);
 
-      var bell2 = pluckString(1567.98, 1.6, 0.48, 1.5);
-      if (bell2) {
-        var d2 = c.createDelay(0.5);
-        d2.delayTime.setValueAtTime(0.14, c.currentTime);
-        bell2.connect(d2);
-        connectWithReverb(d2, 1.0);
-      }
+      // Layer 2: The metallic mechanism body
+      var body  = fmMetal(340, 3.8, 2.5, 0.250, 0.40, 0.008);
 
-      var w = noiseWhoosh(0.08, 0.05, false);
-      if (w) connectWithReverb(w, 0.4);
+      // Layer 3: High resonance decay — the room responding
+      var shim  = sculptNoise(2500, 14000, 6000, 4.5, 0.200, 0.22, false, 0.05);
+
+      // Stereo width: body left of center, shimmer right
+      var pl = panner(-0.18);
+      var pr = panner(0.18);
+
+      toDry(thud);
+      if (body) { body.connect(pl); pl.connect(dryBus); }
+      if (shim) { shim.connect(pr); pr.connect(dryBus); }
     },
 
-    // 13. ATTENDANCE WARNING — Warm Amber Marimba
+    // ────────────────────────────────────────────────────────────────────
+    // 13. ATTENDANCE WARNING — "Pulse"
+    //     Double low-frequency pulse. Subtle but clear.
+    //     Like a system heartbeat: "I noticed. But it's okay."
+    // ────────────────────────────────────────────────────────────────────
     attendanceWarning: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.warn);
-      var t1 = tone(587.33, c.currentTime,        0.28, 0.24, 'triangle');
-      var t2 = tone(440.00, c.currentTime + 0.18, 0.30, 0.22, 'triangle');
-      if (t1) connectWithReverb(t1, 0.5);
-      if (t2) connectWithReverb(t2, 0.5);
+      var c = boot(); if (!c) return;
+      vibe(HX.warn);
+      var p1 = subThud(72, 0.50, 0.100, 0);
+      var p2 = subThud(68, 0.38, 0.100, 0.160);
+      toDry(p1); toDry(p2);
     },
 
-    // 14. ATTENDANCE REMOVE / UNDO
+    // ────────────────────────────────────────────────────────────────────
+    // 14. ATTENDANCE REMOVE — "Release"
+    //     Air escape + downward sweep. Something unclamping.
+    // ────────────────────────────────────────────────────────────────────
     attendanceRemove: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.delete);
-      var t1 = tone(587.33, c.currentTime,        0.18, 0.18, 'sine');
-      var t2 = tone(349.23, c.currentTime + 0.12, 0.18, 0.15, 'sine');
-      var w  = noiseWhoosh(0.10, 0.07, true);
-      if (t1) t1.connect(masterComp);
-      if (t2) t2.connect(masterComp);
-      if (w)  connectWithReverb(w, 0.3);
+      var c = boot(); if (!c) return;
+      vibe(HX.delete);
+      var air  = sculptNoise(80, 3000, 1200, 2, 0.140, 0.14, false, 0);
+      var body = fmMetal(220, 2.5, 1.5, 0.120, 0.18, 0.01);
+      toDry(air); toDry(body);
     },
 
-    // 15. NEW STUDENT FORM OPEN
+    // ────────────────────────────────────────────────────────────────────
+    // 15. NEW STUDENT FORM OPEN — "Deploy"
+    //     System deploying a new surface. Sub + ascending air.
+    // ────────────────────────────────────────────────────────────────────
     newStudentForm: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.modal);
-      var w  = noiseWhoosh(0.14, 0.09, false);
-      var t1 = tone(783.99, c.currentTime + 0.06, 0.20, 0.15);
-      if (w)  connectWithReverb(w, 0.5);
-      if (t1) connectWithReverb(t1, 0.6);
+      var c = boot(); if (!c) return;
+      vibe(HX.modal);
+      var sub = subThud(60, 0.40, 0.100, 0);
+      var air = sculptNoise(100, 4000, 800, 1.8, 0.150, 0.15, true, 0.02);
+      toDry(sub); toDry(air);
     },
 
-    // 16. STUDENT CARD OPEN
+    // ────────────────────────────────────────────────────────────────────
+    // 16. STUDENT CARD OPEN — "Surface Slide"
+    //     Panel extending. Low-mid rumble with crisp edge.
+    // ────────────────────────────────────────────────────────────────────
     studentOpen: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var w  = noiseWhoosh(0.11, 0.08, false);
-      var t1 = tone(880, c.currentTime + 0.04, 0.18, 0.14);
-      if (w)  connectWithReverb(w, 0.4);
-      if (t1) connectWithReverb(t1, 0.5);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var slide = sculptNoise(80, 2500, 600, 1.5, 0.120, 0.14, true, 0);
+      var edge  = sculptNoise(3000, 16000, 8000, 3, 0.018, 0.12, false, 0.11);
+      toDry(slide); toDry(edge);
     },
 
-    // 17. STUDENT CARD CLOSE
+    // ────────────────────────────────────────────────────────────────────
+    // 17. STUDENT CARD CLOSE — "Retract"
+    //     Inverse of studentOpen — panel snapping back.
+    // ────────────────────────────────────────────────────────────────────
     studentClose: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var w = noiseWhoosh(0.10, 0.07, true);
-      if (w) connectWithReverb(w, 0.3);
-      var t1 = tone(587.33, c.currentTime + 0.03, 0.16, 0.12);
-      if (t1) t1.connect(masterComp);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var slide = sculptNoise(80, 2500, 1800, 1.8, 0.100, 0.12, false, 0);
+      var thud  = subThud(66, 0.30, 0.065, 0.09);
+      toDry(slide); toDry(thud);
     },
 
-    // 18. STUDENT SAVE — Stamp + Confirm Chime
+    // ────────────────────────────────────────────────────────────────────
+    // 18. STUDENT SAVE — "Stamp"
+    //     Heavy impaction — like a rubber stamp, or a data commit.
+    //     Sub hit + FM body + high snap. Immediate. No ambiguity.
+    // ────────────────────────────────────────────────────────────────────
     studentSave: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.success);
-      var body = mechanicalClick(180, 2.5, 0.040, 0.18);
-      if (body) body.connect(masterComp);
-      var bell = pluckString(1046.5, 1.0, 0.35, 1.3);
-      if (bell) {
-        var d = c.createDelay(0.2);
-        d.delayTime.setValueAtTime(0.04, c.currentTime);
-        bell.connect(d);
-        connectWithReverb(d, 0.8);
-      }
+      var c = boot(); if (!c) return;
+      vibe(HX.confirm);
+      var stamp = subThud(62, 0.70, 0.120, 0);
+      var body  = fmMetal(290, 4.0, 2.0, 0.120, 0.30, 0.005);
+      var snap  = sculptNoise(4000, 18000, 9000, 5, 0.016, 0.18, false, 0.008);
+      toDry(stamp); toDry(body); toDry(snap);
     },
 
-    // 19. RANK VIP — Royal Harp Glissando (Cmaj9)
+    // ────────────────────────────────────────────────────────────────────
+    // 19. RANK VIP — "Power Up"
+    //     Pressurized ascent — like a turbine spooling.
+    //     NO harp, NO chimes — sub swell + FM metallic shimmer.
+    // ────────────────────────────────────────────────────────────────────
     rankVIP: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.vip);
-      var freqs = [523.25, 659.25, 783.99, 987.77, 1174.66, 1567.98];
-      freqs.forEach(function(f, i) {
-        var s = pluckString(f, 1.6 - i * 0.1, 0.38 - i * 0.03, 1.3);
-        if (s) {
-          var d = c.createDelay(0.5);
-          d.delayTime.setValueAtTime(i * 0.06, c.currentTime);
-          s.connect(d);
-          connectWithReverb(d, 1.0);
-        }
-      });
+      var c = boot(); if (!c) return;
+      vibe(HX.confirm);
+      var swell = sculptNoise(40, 800, 200, 1, 0.500, 0.20, true, 0);
+      var fm1   = fmMetal(180, 5.0, 3.0, 0.400, 0.22, 0.1);
+      var fm2   = fmMetal(360, 4.5, 2.5, 0.350, 0.18, 0.22);
+      var spark = sculptNoise(5000, 20000, 10000, 4, 0.100, 0.18, true, 0.38);
+      toDry(swell); toDry(fm1); toDry(fm2); toDry(spark);
     },
 
-    // 20. RANK WARNING
+    // ────────────────────────────────────────────────────────────────────
+    // 20. RANK WARN — "Alert Pulse"
+    //     Three descending low pulses. Not alarming — just informing.
+    // ────────────────────────────────────────────────────────────────────
     rankWarn: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.warn);
-      var t1 = tone(440, c.currentTime,        0.30, 0.22, 'triangle');
-      var t2 = tone(330, c.currentTime + 0.22, 0.32, 0.20, 'triangle');
-      if (t1) connectWithReverb(t1, 0.5);
-      if (t2) connectWithReverb(t2, 0.5);
+      var c = boot(); if (!c) return;
+      vibe(HX.warn);
+      toDry(subThud(76, 0.48, 0.090, 0));
+      toDry(subThud(70, 0.38, 0.090, 0.130));
+      toDry(subThud(64, 0.28, 0.090, 0.260));
     },
 
-    // 21. REVENUE DRAWER OPEN — Mechanical Thunk + Coin Shimmer
+    // ────────────────────────────────────────────────────────────────────
+    // 21. REVENUE DRAWER OPEN — "Metal Slide"
+    //     Heavy drawer mechanism: low rumble + metallic slide + stop.
+    // ────────────────────────────────────────────────────────────────────
     revenueOpen: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.cashRegister);
-      var thud = mechanicalClick(90, 1.5, 0.045, 0.20);
-      if (thud) thud.connect(masterComp);
-      setTimeout(function() {
-        if (!canPlay()) return;
-        var now = c.currentTime;
-        [1046.5, 1318.5, 1567.98].forEach(function(f, i) {
-          var s = pluckString(f, 0.4, 0.12 - i * 0.03, 2.0);
-          if (s) {
-            var d = c.createDelay(0.2);
-            d.delayTime.setValueAtTime(i * 0.04, now);
-            s.connect(d);
-            connectWithReverb(d, 0.7);
-          }
-        });
-      }, 80);
+      var c = boot(); if (!c) return;
+      vibe(HX.heavy);
+      var rumble = sculptNoise(40, 600, 180, 1.2, 0.220, 0.18, true, 0);
+      var slide  = sculptNoise(200, 4000, 1200, 2, 0.160, 0.15, false, 0.15);
+      var stop   = subThud(58, 0.55, 0.080, 0.30);
+      toDry(rumble); toDry(slide); toDry(stop);
     },
 
-    // 22. CASH PAYMENT — Authentic "Cha-Ching" Register
-    //     Lever click → metallic DING → silver coin cascade
+    // ────────────────────────────────────────────────────────────────────
+    // 22. CASH PAYMENT — "Transaction"
+    //     NOT a cash register — this is a high-security system confirming.
+    //
+    //     Layer 1: Heavy impaction  (authority, weight, finality)
+    //     Layer 2: FM metallic body (system engaging, precision)
+    //     Layer 3: Sub decay        (physical mass, presence)
+    //
+    //     Should feel like: a bank vault, a confirmed wire transfer,
+    //     a Bloomberg terminal executing a trade.
+    // ────────────────────────────────────────────────────────────────────
     cashPayment: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.cashRegister);
+      var c = boot(); if (!c) return;
+      vibe(HX.heavy);
 
-      var now = c.currentTime;
+      var impact = subThud(58, 0.85, 0.200, 0);
+      var body   = fmMetal(380, 3.2, 2.8, 0.240, 0.45, 0.012);
+      var click  = sculptNoise(1500, 10000, 4500, 4, 0.022, 0.25, false, 0.005);
+      var sub2   = subThud(42, 0.35, 0.350, 0.020);   // sub tail
 
-      var click = mechanicalClick(320, 4, 0.025, 0.22);
-      if (click) click.connect(masterComp);
-
-      var ding = pluckString(1174.66, 0.9, 0.48, 2.0);
-      if (ding) {
-        var d1 = c.createDelay(0.2);
-        d1.delayTime.setValueAtTime(0.07, now);
-        ding.connect(d1);
-        connectWithReverb(d1, 0.8);
-      }
-
-      var coinFreqs = [2093.0, 2637.0, 3136.0];
-      coinFreqs.forEach(function(f, i) {
-        var coin = pluckString(f, 0.35, 0.22, 2.5);
-        if (coin) {
-          var d = c.createDelay(0.2);
-          d.delayTime.setValueAtTime(0.14 + i * 0.06, now);
-          coin.connect(d);
-          connectWithReverb(d, 0.6);
-        }
-      });
+      var pl = panner(-0.15);
+      toDry(impact);
+      if (body)  { body.connect(pl); pl.connect(dryBus); }
+      toDry(click);
+      toDry(sub2);
     },
 
-    // 23. DEBT CLEARED / JACKPOT — Grand Orchestral Celebration
-    //     Cmaj9 chord + coin waterfall + triumph shimmer wash
+    // ────────────────────────────────────────────────────────────────────
+    // 23. DEBT CLEARED — "RELEASE" (the biggest sound in the system)
+    //
+    //     This is a CINEMATIC STINGER. Like the final chord of a Hans
+    //     Zimmer cue. Or the moment the containment door opens in a
+    //     sci-fi film. This moment is EARNED.
+    //
+    //     Movement: TENSION → BUILD → EXPLOSIVE RELEASE → DECAY
+    //
+    //     Layer 1: Sub boom      (massive physical impact)
+    //     Layer 2: FM chaos      (complex metallic burst — inharmonic)
+    //     Layer 3: Noise swell   (the room responding, air pressure)
+    //     Layer 4: High sparkle  (the energy dissipating upward)
+    //     Layer 5: Reverb tail   (cinematic space — the ONLY place we use it)
+    // ────────────────────────────────────────────────────────────────────
     debtCleared: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.jackpot);
+      var c = boot(); if (!c) return;
+      vibe(HX.release);
 
-      var now = c.currentTime;
+      // Layer 1: The sub BOOM — like a cannon at distance
+      var boom = subThud(45, 1.0, 0.500, 0);
 
-      var chordFreqs = [523.25, 659.25, 783.99, 1046.5, 1318.5];
-      chordFreqs.forEach(function(f, i) {
-        var s = pluckString(f, 2.5 - i * 0.15, 0.42 - i * 0.05, 1.5);
-        if (s) {
-          var d = c.createDelay(0.3);
-          d.delayTime.setValueAtTime(i * 0.04, now);
-          s.connect(d);
-          connectWithReverb(d, 1.0);
-        }
-      });
+      // Layer 2a: Metallic crash — inharmonic, explosive
+      var crash1 = fmMetal(280, 6.5, 4.5, 0.400, 0.55, 0.005);
+      // Layer 2b: Higher metallic ring
+      var crash2 = fmMetal(520, 5.8, 3.8, 0.350, 0.40, 0.025);
 
-      var coins = [2093, 2349, 2637, 2794, 3136, 3520];
-      coins.forEach(function(f, i) {
-        var coin = pluckString(f, 0.5, 0.25 - i * 0.02, 2.8);
-        if (coin) {
-          var d = c.createDelay(0.5);
-          d.delayTime.setValueAtTime(0.12 + i * 0.08, now);
-          coin.connect(d);
-          connectWithReverb(d, 0.7);
-        }
-      });
+      // Layer 3: Room-filling air pressure swell
+      var swell  = sculptNoise(50, 5000, 800, 1.5, 0.550, 0.28, true, 0);
 
-      var w = noiseWhoosh(0.25, 0.10, false);
-      if (w) connectWithReverb(w, 0.9);
+      // Layer 4: High-frequency energy release (sparkle)
+      var spark  = sculptNoise(6000, 20000, 12000, 3, 0.220, 0.22, true, 0.08);
+
+      // Layer 5: Sub decay tail (lingering mass)
+      var tail   = subThud(38, 0.35, 0.800, 0.08);
+
+      // Route to CINEMATIC reverb — this is the only sound that gets it
+      toCinematic(boom);
+      toCinematic(crash1);
+      toCinematic(crash2);
+      toCinematic(swell);
+      toCinematic(spark);
+      toDry(tail);
     },
 
-    // 24. WHATSAPP MESSAGE SEND
+    // ────────────────────────────────────────────────────────────────────
+    // 24. MESSAGE SEND — "Dispatch"
+    //     Quick air burst — like pneumatic mail tube firing.
+    // ────────────────────────────────────────────────────────────────────
     messageSend: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var w  = noiseWhoosh(0.08, 0.09, false);
-      var t1 = tone(1046.5, c.currentTime + 0.03, 0.10, 0.14);
-      if (w)  connectWithReverb(w, 0.3);
-      if (t1) connectWithReverb(t1, 0.4);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var burst = sculptNoise(400, 8000, 2500, 3, 0.075, 0.16, true, 0);
+      var pr = panner(0.2);
+      if (burst) { burst.connect(pr); pr.connect(dryBus); }
     },
 
-    // 25. MARKETING TAB — Radar Pulse
+    // ────────────────────────────────────────────────────────────────────
+    // 25. MARKETING PULSE — "Signal"
+    //     FM sweep — radar/sonar energy. Forward, directional.
+    // ────────────────────────────────────────────────────────────────────
     marketingPulse: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var now = c.currentTime;
-      var osc = c.createOscillator();
-      var gn  = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.exponentialRampToValueAtTime(1760, now + 0.08);
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
-      gn.gain.setValueAtTime(0.001, now);
-      gn.gain.linearRampToValueAtTime(0.18, now + 0.02);
-      gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
-      osc.connect(gn);
-      connectWithReverb(gn, 0.7);
-      osc.start(now); osc.stop(now + 0.2);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var radar = fmMetal(220, 8.0, 4.0, 0.150, 0.28, 0);
+      var air   = sculptNoise(500, 6000, 2000, 2.5, 0.100, 0.14, true, 0.02);
+      toDry(radar); toDry(air);
     },
 
-    // 26. MODAL OPEN
+    // ────────────────────────────────────────────────────────────────────
+    // 26. MODAL OPEN — "Surface Emerge"
+    //     Sub + upward air sweep. Layer surfaces from depth.
+    // ────────────────────────────────────────────────────────────────────
     modalOpen: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.modal);
-      var w  = noiseWhoosh(0.12, 0.08, false);
-      var t1 = tone(783.99, c.currentTime + 0.05, 0.15, 0.12);
-      if (w)  connectWithReverb(w, 0.6);
-      if (t1) connectWithReverb(t1, 0.5);
+      var c = boot(); if (!c) return;
+      vibe(HX.modal);
+      var sub = subThud(58, 0.38, 0.100, 0);
+      var air = sculptNoise(100, 5000, 1000, 1.8, 0.160, 0.15, true, 0.01);
+      toDry(sub); toDry(air);
     },
 
-    // 27. MODAL CLOSE
+    // ────────────────────────────────────────────────────────────────────
+    // 27. MODAL CLOSE — "Retraction"
+    //     Snappy downward sweep. Rapid, precise.
+    // ────────────────────────────────────────────────────────────────────
     modalClose: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.tap);
-      var click = mechanicalClick(500, 3, 0.020, 0.10);
-      var w     = noiseWhoosh(0.09, 0.06, true);
-      if (click) click.connect(masterComp);
-      if (w)     connectWithReverb(w, 0.3);
+      var c = boot(); if (!c) return;
+      vibe(HX.micro);
+      var air  = sculptNoise(120, 5000, 2000, 2, 0.090, 0.12, false, 0);
+      var thud = subThud(64, 0.28, 0.055, 0.08);
+      toDry(air); toDry(thud);
     },
 
-    // 28. DELETE SWOOSH
+    // ────────────────────────────────────────────────────────────────────
+    // 28. DELETE SWOOSH — "Obliterate"
+    //     Hard left-to-right sweep. Violent air displacement.
+    // ────────────────────────────────────────────────────────────────────
     deleteSwoosh: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.delete);
-      var w  = noiseWhoosh(0.16, 0.14, true);
-      var t1 = tone(349.23, c.currentTime + 0.06, 0.16, 0.12, 'triangle');
-      if (w)  connectWithReverb(w, 0.5);
-      if (t1) t1.connect(masterComp);
+      var c = boot(); if (!c) return;
+      vibe(HX.delete);
+      var lo = sculptNoise(60, 1200, 400, 1.5, 0.160, 0.16, false, 0);
+      var hi = sculptNoise(3000, 18000, 8000, 2.5, 0.120, 0.14, false, 0.02);
+      var pl = panner(-0.3);
+      var pr = panner(0.3);
+      if (lo) { lo.connect(pl); pl.connect(dryBus); }
+      if (hi) { hi.connect(pr); pr.connect(dryBus); }
     },
 
-    // 29. MUTE ANNOUNCEMENT
+    // ────────────────────────────────────────────────────────────────────
+    // 29. MUTE / UNMUTE
+    //     Muting: Low sub thud that fades (system going to sleep).
+    //     Unmuting: Rising air + FM ping (system waking up).
+    // ────────────────────────────────────────────────────────────────────
     muteAnnouncement: function (isMuted) {
       if (isMuted) {
-        var c = initAudioContext(); if (!c) return;
-        var t1 = tone(880, c.currentTime,        0.20, 0.15);
-        var t2 = tone(440, c.currentTime + 0.14, 0.25, 0.12);
-        if (t1) connectWithReverb(t1, 0.5);
-        if (t2) connectWithReverb(t2, 0.5);
+        // Even while muting, play one farewell impact
+        var c = boot(); if (!c) return;
+        var thud = subThud(55, 0.40, 0.200, 0);
+        var body = fmMetal(200, 3.0, 1.5, 0.250, 0.18, 0.01);
+        toDry(thud); toDry(body);
       } else {
         if (!canPlay()) return;
-        var c = initAudioContext(); if (!c) return;
-        var t1 = tone(523.25, c.currentTime,        0.18, 0.16);
-        var t2 = tone(783.99, c.currentTime + 0.12, 0.18, 0.18);
-        if (t1) connectWithReverb(t1, 0.6);
-        if (t2) connectWithReverb(t2, 0.6);
+        var c = boot(); if (!c) return;
+        var air  = sculptNoise(80, 3000, 600, 1.5, 0.180, 0.16, true, 0);
+        var ping = fmMetal(350, 5.0, 2.0, 0.200, 0.26, 0.12);
+        toDry(air); toDry(ping);
       }
     },
 
-    // 30. GENERIC ERROR
+    // ────────────────────────────────────────────────────────────────────
+    // 30. ERROR — "Interrupt"
+    //     Two close low impacts — NOT a descending tone.
+    //     The sound of something stopping HARD.
+    // ────────────────────────────────────────────────────────────────────
     error: function () {
       if (!canPlay()) return;
-      var c = initAudioContext(); if (!c) return;
-      haptic(HapticPattern.error);
-      var t1 = tone(349.23, c.currentTime,        0.22, 0.22, 'triangle');
-      var t2 = tone(261.63, c.currentTime + 0.16, 0.25, 0.20, 'triangle');
-      if (t1) connectWithReverb(t1, 0.4);
-      if (t2) connectWithReverb(t2, 0.4);
+      var c = boot(); if (!c) return;
+      vibe(HX.warn);
+      var h1 = subThud(66, 0.60, 0.110, 0);
+      var h2 = subThud(62, 0.48, 0.110, 0.130);
+      var n  = sculptNoise(600, 5000, 2000, 4, 0.040, 0.18, false, 0.065);
+      toDry(h1); toDry(h2); toDry(n);
     },
 
   };
 
-  // --- DOM Event Delegation ---
+  // ── DOM Event Delegation ───────────────────────────────────────────────
 
-  function setupDOMDelegation() {
+  function setupDelegation() {
 
-    // Tap / Click on interactive elements
+    // Tap on interactive elements
     document.addEventListener('pointerdown', function (e) {
       if (!canPlay()) return;
       var now = Date.now();
-      if (now - lastTapTime < TAP_THROTTLE) return;
-      lastTapTime = now;
+      if (now - lastTapMs < TAP_GAP) return;
+      lastTapMs = now;
 
       var target = e.target;
       if (!target) return;
-
       var tag = target.tagName ? target.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea') return;
 
-      if (target.matches('input[type="checkbox"], input[type="radio"]') ||
-          target.closest('.toggle-switch, .switch, .toggle')) {
-        AssistantSounds.click();
-        return;
-      }
+      if (target.matches && (
+          target.matches('input[type="checkbox"],input[type="radio"]') ||
+          target.closest('.toggle-switch,.switch,.toggle')
+      )) { SFX.click(); return; }
 
-      if (
-        target.matches('button, a, [role="button"], .btn, .card, .tab, .nav-item, .sidebar-item, label, select') ||
-        target.closest('button, a, [role="button"], .btn, .card, .tab, .nav-item, .sidebar-item')
-      ) {
-        AssistantSounds.tap();
-        return;
-      }
+      if (target.matches && (
+          target.matches('button,a,[role="button"],.btn,.card,.tab,.nav-item,.sidebar-item,label,select') ||
+          target.closest('button,a,[role="button"],.btn,.card,.tab,.nav-item,.sidebar-item')
+      )) { SFX.tap(); }
 
     }, { capture: true, passive: true });
 
-    // Typing on physical keyboard
+    // Physical keyboard typing
     document.addEventListener('keydown', function (e) {
       if (!canPlay()) return;
-      var skip = ['Shift','Control','Alt','Meta','CapsLock','Tab','Escape','Enter','Backspace','Delete','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+      var skip = ['Shift','Control','Alt','Meta','CapsLock','Tab','Escape',
+                  'Enter','Backspace','Delete','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
       if (skip.indexOf(e.key) !== -1) return;
       var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) {
-        AssistantSounds.typingTick();
+        SFX.typingTick();
       }
     }, { passive: true });
 
-    // Typing on MOBILE virtual keyboard — 'input' catches what 'keydown' misses
+    // Virtual keyboard (iOS / Android) — fires on every character
     document.addEventListener('input', function (e) {
       if (!canPlay()) return;
       var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) {
         var now = Date.now();
-        if (now - lastTypingTime < KEY_THROTTLE) return;
-        AssistantSounds.typingTick();
+        if (now - lastTypingMs < TYPING_GAP) return;
+        SFX.typingTick();
       }
     }, { passive: true });
 
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupDOMDelegation);
+    document.addEventListener('DOMContentLoaded', setupDelegation);
   } else {
-    setupDOMDelegation();
+    setupDelegation();
   }
 
-  // --- Backward Compatibility Bridge ---
-  // Maps legacy playSound(type) calls in app.js to the studio engine.
+  // ── Legacy bridge: routes all old playSound(type) to SFX engine ────────
   window.playSound = function (type) {
     switch (type) {
-      case 'money':   AssistantSounds.cashPayment();       break;
-      case 'success': AssistantSounds.attendanceSuccess(); break;
-      case 'pop':     AssistantSounds.attendanceSuccess(); break;
-      case 'error':   AssistantSounds.error();             break;
-      case 'beep':    AssistantSounds.tap();               break;
-      case 'tap':     AssistantSounds.tap();               break;
-      case 'click':   AssistantSounds.click();             break;
-      default:        AssistantSounds.tap();               break;
+      case 'money':   SFX.cashPayment();       break;
+      case 'success': SFX.attendanceSuccess(); break;
+      case 'pop':     SFX.attendanceSuccess(); break;
+      case 'error':   SFX.error();             break;
+      case 'beep':    SFX.tap();               break;
+      case 'tap':     SFX.tap();               break;
+      case 'click':   SFX.click();             break;
+      default:        SFX.tap();               break;
     }
   };
 
-  // --- Public API ---
-  window.AssistantSounds = AssistantSounds;
+  // ── Public API ─────────────────────────────────────────────────────────
+  window.AssistantSounds = SFX;
 
 }(window, document));
