@@ -3,6 +3,16 @@
 // Standalone Manager Dashboard & High-Performance Control Logic
 // =========================================================
 
+// Admin portal is strictly silent - zero audio output
+window.playSound = function() {};
+window.AssistantSounds = {
+  isMuted: function() { return true; },
+  play: function() {},
+  preload: function() {},
+  attachNavInteractions: function() {}
+};
+window.SoundEngine = window.AssistantSounds;
+
 const SUPABASE_URL = "https://erwrrvafuxezszgbiswg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyd3JydmFmdXhlenN6Z2Jpc3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTI4NzMsImV4cCI6MjEwMjgyODg3M30.xNbyENlnwes4XPWFoc10tooQTIC49WYo2zurvugkf9g";
 
@@ -6279,7 +6289,6 @@ window.submitVaultTransfer = async function() {
   try {
     await saveCenterConfig({ vault_transfers: vaultTransfers });
     showToast(isAr ? `تم تحويل ${amt} ج بنجاح من ${vNames[fromV]} إلى ${vNames[toV]}` : `Transferred ${amt} EGP successfully`, "success");
-    playSound("success");
     window.closeVaultTransferModal();
     if (typeof window.renderTermTable === "function") window.renderTermTable();
   } catch(e) {

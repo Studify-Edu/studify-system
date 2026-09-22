@@ -27,6 +27,19 @@
 (function (window, document) {
   'use strict';
 
+  // Strict check: Disable audio completely in Admin portal (sound is for assistant portal only)
+  if (window.location.pathname.indexOf('/admin/') !== -1 || (window.location.href && window.location.href.indexOf('admin.html') !== -1)) {
+    window.playSound = function () {};
+    window.AssistantSounds = {
+      isMuted: function () { return true; },
+      play: function () {},
+      preload: function () {},
+      attachNavInteractions: function () {}
+    };
+    window.SoundEngine = window.AssistantSounds;
+    return;
+  }
+
   // Determine base path for audio assets dynamically
   var scriptSrc = (document.currentScript && document.currentScript.src) || '';
   var soundDir = '';
