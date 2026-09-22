@@ -1,1173 +1,853 @@
 /**
  * =======================================================================
- * STUDIFY ASSISTANT SOUND ENGINE (محرك الصوتيات السينمائي المتكامل)
+ * STUDIFY ASSISTANT SOUND ENGINE — STUDIO EDITION v3.0
  * =======================================================================
- * Standalone, zero-latency procedural audio engine for the Assistant Portal.
- * Uses Web Audio API synthesis: 100% offline, zero network requests,
- * no external audio asset dependencies, perfectly tuned cinematic tones.
- * 
- * Includes:
- *  - iOS-style haptic micro-interactions (clicks, taps, inputs, toggles)
- *  - Night / Morning theme transformation chords
- *  - Cloud sync ascent & celestial completion chimes
- *  - Cash drawer slide & iconic "Cha-Ching" coin registers
- *  - Verified attendance double-ding & warnings
- *  - Student profile cards, VIP regal chimes, debt clearance fanfares
- *  - Intelligent DOM event delegation with throttling
- *  - Full integration with mute controls (window.isMuted)
+ *
+ * Architecture: Physical Modelling + Procedural Synthesis
+ * Inspiration:  Apple iOS Taptic Engine · macOS Sound Design ·
+ *               Stripe · Linear · Cash App · Duolingo
+ *
+ * Key Technologies:
+ *  - Karplus-Strong physical string synthesis  → chimes, dings, bells
+ *  - Noise-excitation + resonant filters       → mechanical clicks, keys
+ *  - Convolution reverb (IR generated on-init) → depth & space
+ *  - Multi-oscillator beating chords           → harmonics & richness
+ *  - Dynamic gain shaping (ADSR)               → natural attack & decay
+ *  - DynamicsCompressor master bus             → glue & polish
+ *  - navigator.vibrate haptic integration      → mobile tactile feedback
+ *  - 'input' + 'keydown' listeners             → catches virtual keyboards
+ *  - 'touchstart' gesture unlock               → iOS audio context unlock
+ *
  * =======================================================================
  */
 
 (function (window, document) {
   'use strict';
 
-  // Private Audio Context & Nodes
+  // --- Audio Graph Nodes ---
   let ctx = null;
   let masterGain = null;
-  let masterCompressor = null;
-  let isInitialized = false;
+  let masterComp = null;
+  let reverbNode = null;
+  let reverbSend = null;
 
-  // Master Volume (comfortable ergonomic levels)
-  const MASTER_VOLUME = 0.28;
+  // --- Throttle Trackers ---
+  let lastTypingTime  = 0;
+  let lastTapTime     = 0;
 
-  // Throttling trackers to prevent cacophony
-  let lastTypingTime = 0;
-  let lastClickTime = 0;
+  // --- Constants ---
+  const MASTER_VOL   = 0.30;
+  const REVERB_WET   = 0.18;
+  const TAP_THROTTLE = 40;
+  const KEY_THROTTLE = 60;
 
-  /**
-   * Safe initialization on first user gesture
-   */
+  // --- Mobile Haptic Patterns (ms) ---
+  const HapticPattern = {
+    tap:              [5],
+    type:             [3],
+    success:          [12, 40, 12],
+    warn:             [25, 30, 25],
+    error:            [30, 40, 60],
+    cashRegister:     [18],
+    jackpot:          [20, 40, 20, 40, 40],
+    delete:           [15],
+    modal:            [8],
+    vip:              [10, 30, 10],
+    themeSwitch:      [6],
+    sync:             [8],
+    syncDone:         [12, 30, 12],
+  };
+
+  function haptic(pattern) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(pattern);
+    } catch (_) {}
+  }
+
+  // --- AudioContext Bootstrap ---
+
   function initAudioContext() {
     if (ctx && ctx.state !== 'closed') {
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
+      if (ctx.state === 'suspended') ctx.resume().catch(function() {});
       return ctx;
     }
-
     try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return null;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
 
-      ctx = new AudioContextClass();
+      masterComp = ctx.createDynamicsCompressor();
+      masterComp.threshold.setValueAtTime(-20, ctx.currentTime);
+      masterComp.knee.setValueAtTime(10, ctx.currentTime);
+      masterComp.ratio.setValueAtTime(5, ctx.currentTime);
+      masterComp.attack.setValueAtTime(0.002, ctx.currentTime);
+      masterComp.release.setValueAtTime(0.12, ctx.currentTime);
 
-      // Master Compressor to prevent clipping & ensure silky cinematic polish
-      masterCompressor = ctx.createDynamicsCompressor();
-      masterCompressor.threshold.setValueAtTime(-18, ctx.currentTime);
-      masterCompressor.knee.setValueAtTime(12, ctx.currentTime);
-      masterCompressor.ratio.setValueAtTime(6, ctx.currentTime);
-      masterCompressor.attack.setValueAtTime(0.003, ctx.currentTime);
-      masterCompressor.release.setValueAtTime(0.15, ctx.currentTime);
-
-      // Master Gain
       masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(MASTER_VOLUME, ctx.currentTime);
+      masterGain.gain.setValueAtTime(MASTER_VOL, ctx.currentTime);
 
-      masterCompressor.connect(masterGain);
+      buildReverb();
+
+      masterComp.connect(masterGain);
       masterGain.connect(ctx.destination);
 
-      isInitialized = true;
       return ctx;
     } catch (e) {
-      console.warn('[AssistantSounds] AudioContext initialization failed:', e);
       return null;
     }
   }
 
-  // Resume on any user interaction
-  const unlockEvents = ['click', 'keydown', 'touchstart', 'pointerdown'];
+  /**
+   * Generate a synthetic plate reverb impulse response.
+   */
+  function buildReverb() {
+    if (!ctx) return;
+    var rate    = ctx.sampleRate;
+    var len     = Math.floor(rate * 1.4);
+    var impulse = ctx.createBuffer(2, len, rate);
+
+    for (var ch = 0; ch < 2; ch++) {
+      var data = impulse.getChannelData(ch);
+      for (var i = 0; i < len; i++) {
+        var decay = Math.pow(1 - i / len, 4.5);
+        data[i] = (Math.random() * 2 - 1) * decay;
+        data[i] += Math.sin(i * 0.02 + ch * 1.7) * 0.015 * decay;
+      }
+    }
+
+    reverbNode = ctx.createConvolver();
+    reverbNode.buffer = impulse;
+
+    reverbSend = ctx.createGain();
+    reverbSend.gain.setValueAtTime(REVERB_WET, ctx.currentTime);
+
+    reverbNode.connect(reverbSend);
+    reverbSend.connect(masterGain);
+  }
+
+  function connectWithReverb(node, reverbAmount) {
+    if (reverbAmount === undefined) reverbAmount = 1.0;
+    node.connect(masterComp);
+    if (reverbNode && reverbAmount > 0) {
+      var send = ctx.createGain();
+      send.gain.setValueAtTime(reverbAmount, ctx.currentTime);
+      node.connect(send);
+      send.connect(reverbNode);
+    }
+  }
+
+  // --- Unlock on first gesture (iOS requirement) ---
   function unlockAudio() {
     if (!ctx) initAudioContext();
-    else if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    unlockEvents.forEach(evt => window.removeEventListener(evt, unlockAudio, { passive: true }));
+    else if (ctx.state === 'suspended') ctx.resume().catch(function() {});
   }
-  unlockEvents.forEach(evt => window.addEventListener(evt, unlockAudio, { passive: true, once: true }));
+  ['click','keydown','touchstart','pointerdown','input'].forEach(function(evt) {
+    window.addEventListener(evt, unlockAudio, { passive: true, once: true });
+  });
 
-  /**
-   * Helper: Check if sound should play
-   */
   function canPlay() {
     if (window.isMuted) return false;
-    const stored = localStorage.getItem('ca_muted');
-    if (stored === '1') return false;
+    try {
+      if (localStorage.getItem('ca_muted') === '1') return false;
+    } catch(_) {}
     return true;
   }
 
+  // --- Core Synthesis Primitives ---
+
   /**
-   * Helper: Create noise buffer for swooshes / mechanical clicks
+   * Karplus-Strong Physical String Model
+   * Produces realistic plucked-string / chime resonance.
    */
-  function createNoiseBuffer(duration = 0.2) {
+  function pluckString(freq, duration, gainPeak, brightness) {
+    if (gainPeak === undefined) gainPeak = 0.5;
+    if (brightness === undefined) brightness = 1.0;
     if (!ctx) return null;
-    const bufferSize = ctx.sampleRate * duration;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+    var now    = ctx.currentTime;
+    var sRate  = ctx.sampleRate;
+    var period = Math.floor(sRate / freq);
+
+    var buf  = ctx.createBuffer(1, period, sRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < period; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.9;
     }
-    return buffer;
+
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+
+    var lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(freq * 18 * brightness, now);
+    lp.Q.setValueAtTime(0.5, now);
+
+    var gainNode = ctx.createGain();
+    gainNode.gain.setValueAtTime(gainPeak, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    src.connect(lp);
+    lp.connect(gainNode);
+
+    src.start(now);
+    src.stop(now + duration);
+    return gainNode;
   }
 
-  // =======================================================================
-  // CORE SYNTHESIS ENGINE & SOUND BANK
-  // =======================================================================
-  const AssistantSounds = {
-    version: '1.0.0-cinematic',
+  /**
+   * Noise-Excitation Mechanical Click
+   * Filtered white noise burst — the real way to make keyboard / switch sounds.
+   */
+  function mechanicalClick(freq, q, duration, gainPeak) {
+    if (freq === undefined) freq = 800;
+    if (q === undefined) q = 4;
+    if (duration === undefined) duration = 0.018;
+    if (gainPeak === undefined) gainPeak = 0.12;
+    if (!ctx) return null;
+    var now    = ctx.currentTime;
+    var bufLen = Math.ceil(ctx.sampleRate * duration);
+    var buf    = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    var data   = buf.getChannelData(0);
+    for (var i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
 
-    isMuted: function () {
-      return !canPlay();
-    },
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
 
-    setVolume: function (vol) {
-      if (masterGain && ctx) {
-        const clamped = Math.max(0, Math.min(1, vol));
-        masterGain.gain.setTargetAtTime(clamped * MASTER_VOLUME, ctx.currentTime, 0.05);
-      }
-    },
+    var bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(freq, now);
+    bp.Q.setValueAtTime(q, now);
 
-    /**
-     * 1. Haptic Micro-Tap (Apple iOS style tactile tick)
-     */
-    tap: function (pitchMult = 1.0) {
+    var shelf = ctx.createBiquadFilter();
+    shelf.type = 'highshelf';
+    shelf.frequency.setValueAtTime(4000, now);
+    shelf.gain.setValueAtTime(6, now);
+
+    var gainNode = ctx.createGain();
+    gainNode.gain.setValueAtTime(gainPeak, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    src.connect(bp);
+    bp.connect(shelf);
+    shelf.connect(gainNode);
+
+    src.start(now);
+    src.stop(now + duration);
+    return gainNode;
+  }
+
+  /**
+   * Sine tone with ADSR envelope
+   */
+  function tone(freq, startTime, duration, gainPeak, type) {
+    if (gainPeak === undefined) gainPeak = 0.3;
+    if (type === undefined) type = 'sine';
+    if (!ctx) return null;
+    var osc = ctx.createOscillator();
+    var gn  = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
+
+    gn.gain.setValueAtTime(0.001, startTime);
+    gn.gain.linearRampToValueAtTime(gainPeak, startTime + 0.008);
+    gn.gain.exponentialRampToValueAtTime(gainPeak * 0.6, startTime + duration * 0.4);
+    gn.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+    osc.connect(gn);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.01);
+    return gn;
+  }
+
+  /**
+   * Noise whoosh / sweep
+   */
+  function noiseWhoosh(durationSec, gainPeak, filterSweepDown) {
+    if (durationSec === undefined) durationSec = 0.12;
+    if (gainPeak === undefined) gainPeak = 0.15;
+    if (filterSweepDown === undefined) filterSweepDown = true;
+    if (!ctx) return null;
+    var now    = ctx.currentTime;
+    var bufLen = Math.ceil(ctx.sampleRate * durationSec);
+    var buf    = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    var data   = buf.getChannelData(0);
+    for (var i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+
+    var bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.setValueAtTime(1.8, now);
+    if (filterSweepDown) {
+      bp.frequency.setValueAtTime(3200, now);
+      bp.frequency.exponentialRampToValueAtTime(280, now + durationSec);
+    } else {
+      bp.frequency.setValueAtTime(280, now);
+      bp.frequency.exponentialRampToValueAtTime(3200, now + durationSec);
+    }
+
+    var gainNode = ctx.createGain();
+    gainNode.gain.setValueAtTime(0.001, now);
+    gainNode.gain.linearRampToValueAtTime(gainPeak, now + durationSec * 0.2);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
+
+    src.connect(bp);
+    bp.connect(gainNode);
+    src.start(now);
+    src.stop(now + durationSec);
+    return gainNode;
+  }
+
+  // --- The Sound Library ---
+
+  var AssistantSounds = {
+
+    // 1. iOS-STYLE HAPTIC TAP
+    tap: function (intensity) {
+      if (intensity === undefined) intensity = 1.0;
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const jitter = (Math.random() - 0.5) * 0.04;
-      const freq = 160 * (pitchMult + jitter);
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-      osc.frequency.exponentialRampToValueAtTime(45, now + 0.018);
-
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-
-      const osc2 = c.createOscillator();
-      const gain2 = c.createGain();
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(1800 * (pitchMult + jitter), now);
-      osc2.frequency.exponentialRampToValueAtTime(200, now + 0.008);
-
-      gain2.gain.setValueAtTime(0.06, now);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.008);
-
-      osc2.connect(gain2);
-      gain2.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.02);
-      osc2.start(now);
-      osc2.stop(now + 0.01);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var jitter = 1 + (Math.random() - 0.5) * 0.06;
+      var click  = mechanicalClick(720 * jitter, 3.5, 0.016, 0.10 * intensity);
+      if (click) click.connect(masterComp);
     },
 
+    // 2. SOFT UI BUTTON CLICK
     click: function () {
-      this.tap(1.15);
-    },
-
-    /**
-     * 2. Soft Typing Tick (Typing tactile response on inputs)
-     */
-    typingTick: function () {
-      const nowMs = Date.now();
-      if (nowMs - lastTypingTime < 65) return;
-      lastTypingTime = nowMs;
-
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const jitter = (Math.random() - 0.5) * 0.08;
-
-      const osc = c.createOscillator();
-      const filter = c.createBiquadFilter();
-      const gain = c.createGain();
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(420 * (1 + jitter), now);
-      osc.frequency.exponentialRampToValueAtTime(110, now + 0.012);
-
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(950, now);
-      filter.Q.setValueAtTime(2.5, now);
-
-      gain.gain.setValueAtTime(0.08, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.014);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var body = mechanicalClick(380, 2, 0.022, 0.09);
+      var cri  = mechanicalClick(2800, 8, 0.008, 0.06);
+      if (body) body.connect(masterComp);
+      if (cri)  cri.connect(masterComp);
     },
 
-    /**
-     * 3. Navigation Tab Switch (Smooth airy dimensional glide)
-     */
+    // 3. KEYBOARD / TYPING TICK — iOS Keyboard Inspired
+    typingTick: function () {
+      var now = Date.now();
+      if (now - lastTypingTime < KEY_THROTTLE) return;
+      lastTypingTime = now;
+      if (!canPlay()) return;
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.type);
+
+      var profiles = [
+        { f: 520, q: 3.2, dur: 0.014, g: 0.085 },
+        { f: 440, q: 2.8, dur: 0.016, g: 0.095 },
+        { f: 380, q: 2.5, dur: 0.018, g: 0.100 },
+      ];
+      var p = profiles[Math.floor(Math.random() * profiles.length)];
+      var jitter = 1 + (Math.random() - 0.5) * 0.05;
+      var click = mechanicalClick(p.f * jitter, p.q, p.dur, p.g);
+      if (click) click.connect(masterComp);
+    },
+
+    // 4. NAVIGATION TAB SWITCH
     tabSwitch: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(540, now + 0.07);
-
-      gain.gain.setValueAtTime(0.09, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-
-      const osc2 = c.createOscillator();
-      const gain2 = c.createGain();
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(180, now);
-      osc2.frequency.exponentialRampToValueAtTime(280, now + 0.06);
-
-      gain2.gain.setValueAtTime(0.05, now);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-
-      osc2.connect(gain2);
-      gain2.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.13);
-      osc2.start(now);
-      osc2.stop(now + 0.09);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var w = noiseWhoosh(0.09, 0.10, true);
+      if (w) connectWithReverb(w, 0.5);
+      var t1 = tone(1480, c.currentTime + 0.015, 0.08, 0.06);
+      if (t1) connectWithReverb(t1, 0.6);
     },
 
-    /**
-     * 4. Theme: Night Mode (Deep celestial starry chime)
-     */
+    // 5. NIGHT / DARK THEME — Descending Minor Pentatonic
     themeNight: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const notes = [164.81, 246.94, 415.30, 622.25];
-
-      notes.forEach((freq, idx) => {
-        const osc = c.createOscillator();
-        const gain = c.createGain();
-        const filter = c.createBiquadFilter();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.04);
-
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1400, now);
-        filter.frequency.exponentialRampToValueAtTime(350, now + 0.7);
-
-        const startTime = now + idx * 0.04;
-        gain.gain.setValueAtTime(0.001, startTime);
-        gain.gain.linearRampToValueAtTime(0.11 / (idx + 1), startTime + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.65);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(masterCompressor);
-
-        osc.start(startTime);
-        osc.stop(startTime + 0.7);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.themeSwitch);
+      var notes = [
+        { freq: 659.25, delay: 0,    dur: 2.2, gain: 0.40 },
+        { freq: 493.88, delay: 0.10, dur: 2.0, gain: 0.32 },
+        { freq: 392.00, delay: 0.20, dur: 1.8, gain: 0.28 },
+        { freq: 261.63, delay: 0.30, dur: 2.5, gain: 0.22 },
+      ];
+      notes.forEach(function(n) {
+        var s = pluckString(n.freq, n.dur, n.gain, 0.8);
+        if (s) {
+          var delayed = ctx.createDelay(1.0);
+          delayed.delayTime.setValueAtTime(n.delay, c.currentTime);
+          s.connect(delayed);
+          connectWithReverb(delayed, 1.0);
+        }
       });
-
-      setTimeout(() => {
-        if (!canPlay() || !ctx) return;
-        const tNow = ctx.currentTime;
-        const tw = ctx.createOscillator();
-        const twGain = ctx.createGain();
-        tw.type = 'sine';
-        tw.frequency.setValueAtTime(1244.5, tNow);
-        twGain.gain.setValueAtTime(0.04, tNow);
-        twGain.gain.exponentialRampToValueAtTime(0.0001, tNow + 0.35);
-        tw.connect(twGain);
-        twGain.connect(masterCompressor);
-        tw.start(tNow);
-        tw.stop(tNow + 0.38);
-      }, 140);
+      var w = noiseWhoosh(0.18, 0.08, true);
+      if (w) connectWithReverb(w, 0.8);
     },
 
-    /**
-     * 5. Theme: Morning / Light Mode (Golden sunrise bright chime)
-     */
+    // 6. MORNING / LIGHT THEME — Ascending C Major Arpeggio
     themeMorning: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const notes = [523.25, 659.25, 783.99, 1046.50];
-
-      notes.forEach((freq, idx) => {
-        const osc = c.createOscillator();
-        const gain = c.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.045);
-
-        const startTime = now + idx * 0.045;
-        gain.gain.setValueAtTime(0.001, startTime);
-        gain.gain.linearRampToValueAtTime(0.12, startTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.45);
-
-        osc.connect(gain);
-        gain.connect(masterCompressor);
-
-        osc.start(startTime);
-        osc.stop(startTime + 0.5);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.themeSwitch);
+      var notes = [
+        { freq: 523.25, delay: 0,    dur: 1.8, gain: 0.30 },
+        { freq: 659.25, delay: 0.10, dur: 1.6, gain: 0.28 },
+        { freq: 783.99, delay: 0.20, dur: 1.6, gain: 0.26 },
+        { freq: 1046.5, delay: 0.32, dur: 2.0, gain: 0.24 },
+      ];
+      notes.forEach(function(n) {
+        var s = pluckString(n.freq, n.dur, n.gain, 1.2);
+        if (s) {
+          var delayed = ctx.createDelay(1.0);
+          delayed.delayTime.setValueAtTime(n.delay, c.currentTime);
+          s.connect(delayed);
+          connectWithReverb(delayed, 0.9);
+        }
       });
+      var w = noiseWhoosh(0.14, 0.08, false);
+      if (w) connectWithReverb(w, 0.6);
     },
 
-    /**
-     * 6. Language Switch (Bilingual harmonic morph)
-     */
+    // 7. LANGUAGE SWITCH
     langSwitch: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc1 = c.createOscillator();
-      const gain1 = c.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(440, now);
-      osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.08);
-
-      gain1.gain.setValueAtTime(0.12, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-
-      osc1.connect(gain1);
-      gain1.connect(masterCompressor);
-
-      const osc2 = c.createOscillator();
-      const gain2 = c.createGain();
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(880, now + 0.06);
-      osc2.frequency.exponentialRampToValueAtTime(1046.5, now + 0.16);
-
-      gain2.gain.setValueAtTime(0.001, now + 0.06);
-      gain2.gain.linearRampToValueAtTime(0.08, now + 0.08);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-      osc2.connect(gain2);
-      gain2.connect(masterCompressor);
-
-      osc1.start(now);
-      osc1.stop(now + 0.15);
-      osc2.start(now + 0.06);
-      osc2.stop(now + 0.24);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var t1 = tone(880, c.currentTime,        0.22, 0.22);
+      var t2 = tone(660, c.currentTime + 0.10, 0.20, 0.18);
+      if (t1) connectWithReverb(t1, 0.7);
+      if (t2) connectWithReverb(t2, 0.7);
     },
 
-    /**
-     * 7. Cloud Sync: Start Upload (Ascending futuristic cyber sweep)
-     */
+    // 8. CLOUD SYNC START
     cloudSyncStart: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const filter = c.createBiquadFilter();
-      const gain = c.createGain();
-
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(260, now);
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(400, now);
-      filter.frequency.exponentialRampToValueAtTime(1800, now + 0.18);
-
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.09, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.24);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.sync);
+      var w = noiseWhoosh(0.20, 0.12, false);
+      if (w) connectWithReverb(w, 0.5);
+      var t1 = tone(440, c.currentTime,        0.15, 0.14);
+      var t2 = tone(660, c.currentTime + 0.10, 0.15, 0.14);
+      if (t1) connectWithReverb(t1, 0.4);
+      if (t2) connectWithReverb(t2, 0.4);
     },
 
-    /**
-     * 8. Cloud Sync: Success (Celestial completion sparkle)
-     */
+    // 9. CLOUD SYNC SUCCESS — Celestial Crystal Bells
     cloudSyncSuccess: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const notes = [783.99, 1046.50, 1318.51, 1567.98];
-
-      notes.forEach((freq, idx) => {
-        const osc = c.createOscillator();
-        const gain = c.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
-
-        const startTime = now + idx * 0.05;
-        gain.gain.setValueAtTime(0.001, startTime);
-        gain.gain.linearRampToValueAtTime(0.11, startTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.5);
-
-        osc.connect(gain);
-        gain.connect(masterCompressor);
-
-        osc.start(startTime);
-        osc.stop(startTime + 0.55);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.syncDone);
+      var notes = [
+        { freq: 1318.5, delay: 0,    dur: 1.6, gain: 0.35, bright: 1.5 },
+        { freq: 1975.5, delay: 0.07, dur: 1.4, gain: 0.28, bright: 1.6 },
+        { freq: 2637.0, delay: 0.14, dur: 1.2, gain: 0.22, bright: 1.8 },
+      ];
+      notes.forEach(function(n) {
+        var s = pluckString(n.freq, n.dur, n.gain, n.bright);
+        if (s) {
+          var delayed = ctx.createDelay(0.5);
+          delayed.delayTime.setValueAtTime(n.delay, c.currentTime);
+          s.connect(delayed);
+          connectWithReverb(delayed, 1.0);
+        }
       });
     },
 
-    /**
-     * 9. Cloud Sync: Error (Muted descending drop)
-     */
+    // 10. CLOUD SYNC ERROR
     cloudSyncError: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(260, now);
-      osc.frequency.exponentialRampToValueAtTime(110, now + 0.2);
-
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.24);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.error);
+      var t1 = tone(440, c.currentTime,        0.25, 0.20, 'triangle');
+      var t2 = tone(294, c.currentTime + 0.18, 0.28, 0.20, 'triangle');
+      if (t1) connectWithReverb(t1, 0.6);
+      if (t2) connectWithReverb(t2, 0.6);
     },
 
-    /**
-     * 10. Attendance: Barcode / Quick ID Scan Chirp
-     */
+    // 11. BARCODE SCAN — Laser Zap
     attendanceScan: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1800, now);
-      osc.frequency.exponentialRampToValueAtTime(2400, now + 0.04);
-
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.06);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var now = c.currentTime;
+      var osc = c.createOscillator();
+      var gn  = c.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(2800, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + 0.055);
+      gn.gain.setValueAtTime(0.18, now);
+      gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+      var hp = c.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.setValueAtTime(900, now);
+      osc.connect(hp); hp.connect(gn);
+      gn.connect(masterComp);
+      osc.start(now); osc.stop(now + 0.06);
     },
 
-    /**
-     * 11. Attendance: Verified Success (Crystal-clear double ding)
-     */
+    // 12. ATTENDANCE SUCCESS — Crystal Double Ding (Apple Pay Style)
+    //     C6 then G6 — rising perfect fifth. Signature sound.
     attendanceSuccess: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.success);
 
-      const now = c.currentTime;
+      var bell1 = pluckString(1046.5, 1.8, 0.55, 1.4);
+      if (bell1) {
+        var d1 = c.createDelay(0.2);
+        d1.delayTime.setValueAtTime(0, c.currentTime);
+        bell1.connect(d1);
+        connectWithReverb(d1, 1.0);
+      }
 
-      // First Ding: A5 (880Hz)
-      const osc1 = c.createOscillator();
-      const gain1 = c.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(880, now);
-      gain1.gain.setValueAtTime(0.16, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-      osc1.connect(gain1);
-      gain1.connect(masterCompressor);
-      osc1.start(now);
-      osc1.stop(now + 0.28);
+      var bell2 = pluckString(1567.98, 1.6, 0.48, 1.5);
+      if (bell2) {
+        var d2 = c.createDelay(0.5);
+        d2.delayTime.setValueAtTime(0.14, c.currentTime);
+        bell2.connect(d2);
+        connectWithReverb(d2, 1.0);
+      }
 
-      // Second Ding: E6 (1318.5Hz) - 80ms delay
-      const osc2 = c.createOscillator();
-      const gain2 = c.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(1318.51, now + 0.08);
-      gain2.gain.setValueAtTime(0.001, now + 0.08);
-      gain2.gain.linearRampToValueAtTime(0.20, now + 0.09);
-      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
-      osc2.connect(gain2);
-      gain2.connect(masterCompressor);
-      osc2.start(now + 0.08);
-      osc2.stop(now + 0.48);
+      var w = noiseWhoosh(0.08, 0.05, false);
+      if (w) connectWithReverb(w, 0.4);
     },
 
-    /**
-     * 12. Attendance: Warning / Already Registered
-     */
+    // 13. ATTENDANCE WARNING — Warm Amber Marimba
     attendanceWarning: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const notes = [440, 370];
-      notes.forEach((freq, idx) => {
-        const osc = c.createOscillator();
-        const gain = c.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.1);
-
-        const st = now + idx * 0.1;
-        gain.gain.setValueAtTime(0.12, st);
-        gain.gain.exponentialRampToValueAtTime(0.001, st + 0.12);
-
-        osc.connect(gain);
-        gain.connect(masterCompressor);
-        osc.start(st);
-        osc.stop(st + 0.14);
-      });
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.warn);
+      var t1 = tone(587.33, c.currentTime,        0.28, 0.24, 'triangle');
+      var t2 = tone(440.00, c.currentTime + 0.18, 0.30, 0.22, 'triangle');
+      if (t1) connectWithReverb(t1, 0.5);
+      if (t2) connectWithReverb(t2, 0.5);
     },
 
-    /**
-     * 13. Attendance: Remove / Undo Attendance
-     */
+    // 14. ATTENDANCE REMOVE / UNDO
     attendanceRemove: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(700, now);
-      osc.frequency.exponentialRampToValueAtTime(280, now + 0.09);
-
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.12);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.delete);
+      var t1 = tone(587.33, c.currentTime,        0.18, 0.18, 'sine');
+      var t2 = tone(349.23, c.currentTime + 0.12, 0.18, 0.15, 'sine');
+      var w  = noiseWhoosh(0.10, 0.07, true);
+      if (t1) t1.connect(masterComp);
+      if (t2) t2.connect(masterComp);
+      if (w)  connectWithReverb(w, 0.3);
     },
 
-    /**
-     * 14. Student Card: Open Profile
-     */
-    studentOpen: function () {
-      if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(240, now);
-      osc.frequency.exponentialRampToValueAtTime(560, now + 0.08);
-
-      gain.gain.setValueAtTime(0.11, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.13);
-    },
-
-    /**
-     * 15. Student Card: Close Profile
-     */
-    studentClose: function () {
-      if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(480, now);
-      osc.frequency.exponentialRampToValueAtTime(180, now + 0.06);
-
-      gain.gain.setValueAtTime(0.09, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.09);
-    },
-
-    /**
-     * 16. Student Form: New Registration Form Unfold (Blueprint Chime)
-     */
+    // 15. NEW STUDENT FORM OPEN
     newStudentForm: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const notes = [493.88, 739.99]; // B4, F#5
-      notes.forEach((freq, idx) => {
-        const osc = c.createOscillator();
-        const gain = c.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
-
-        const st = now + idx * 0.06;
-        gain.gain.setValueAtTime(0.001, st);
-        gain.gain.linearRampToValueAtTime(0.14, st + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0001, st + 0.28);
-
-        osc.connect(gain);
-        gain.connect(masterCompressor);
-        osc.start(st);
-        osc.stop(st + 0.3);
-      });
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.modal);
+      var w  = noiseWhoosh(0.14, 0.09, false);
+      var t1 = tone(783.99, c.currentTime + 0.06, 0.20, 0.15);
+      if (w)  connectWithReverb(w, 0.5);
+      if (t1) connectWithReverb(t1, 0.6);
     },
 
-    /**
-     * 17. Student Saved: Success Lock + Chime
-     */
+    // 16. STUDENT CARD OPEN
+    studentOpen: function () {
+      if (!canPlay()) return;
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var w  = noiseWhoosh(0.11, 0.08, false);
+      var t1 = tone(880, c.currentTime + 0.04, 0.18, 0.14);
+      if (w)  connectWithReverb(w, 0.4);
+      if (t1) connectWithReverb(t1, 0.5);
+    },
+
+    // 17. STUDENT CARD CLOSE
+    studentClose: function () {
+      if (!canPlay()) return;
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var w = noiseWhoosh(0.10, 0.07, true);
+      if (w) connectWithReverb(w, 0.3);
+      var t1 = tone(587.33, c.currentTime + 0.03, 0.16, 0.12);
+      if (t1) t1.connect(masterComp);
+    },
+
+    // 18. STUDENT SAVE — Stamp + Confirm Chime
     studentSave: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      this.tap(0.85);
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, now + 0.03); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
-
-      const st = now + 0.03;
-      gain.gain.setValueAtTime(0.001, st);
-      gain.gain.linearRampToValueAtTime(0.14, st + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, st + 0.35);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(st);
-      osc.stop(st + 0.38);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.success);
+      var body = mechanicalClick(180, 2.5, 0.040, 0.18);
+      if (body) body.connect(masterComp);
+      var bell = pluckString(1046.5, 1.0, 0.35, 1.3);
+      if (bell) {
+        var d = c.createDelay(0.2);
+        d.delayTime.setValueAtTime(0.04, c.currentTime);
+        bell.connect(d);
+        connectWithReverb(d, 0.8);
+      }
     },
 
-    /**
-     * 18. Rank VIP: Luxury Regal Harp & Gold Chime
-     */
+    // 19. RANK VIP — Royal Harp Glissando (Cmaj9)
     rankVIP: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const notes = [739.99, 932.33, 1108.73, 1479.98];
-
-      notes.forEach((freq, idx) => {
-        const osc = c.createOscillator();
-        const gain = c.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
-
-        const st = now + idx * 0.05;
-        gain.gain.setValueAtTime(0.001, st);
-        gain.gain.linearRampToValueAtTime(0.13, st + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, st + 0.45);
-
-        osc.connect(gain);
-        gain.connect(masterCompressor);
-        osc.start(st);
-        osc.stop(st + 0.5);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.vip);
+      var freqs = [523.25, 659.25, 783.99, 987.77, 1174.66, 1567.98];
+      freqs.forEach(function(f, i) {
+        var s = pluckString(f, 1.6 - i * 0.1, 0.38 - i * 0.03, 1.3);
+        if (s) {
+          var d = c.createDelay(0.5);
+          d.delayTime.setValueAtTime(i * 0.06, c.currentTime);
+          s.connect(d);
+          connectWithReverb(d, 1.0);
+        }
       });
     },
 
-    /**
-     * 19. Rank Warn: Caution amber tone
-     */
+    // 20. RANK WARNING
     rankWarn: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(311.13, now); // D#4
-
-      gain.gain.setValueAtTime(0.13, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-      osc.start(now);
-      osc.stop(now + 0.25);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.warn);
+      var t1 = tone(440, c.currentTime,        0.30, 0.22, 'triangle');
+      var t2 = tone(330, c.currentTime + 0.22, 0.32, 0.20, 'triangle');
+      if (t1) connectWithReverb(t1, 0.5);
+      if (t2) connectWithReverb(t2, 0.5);
     },
 
-    /**
-     * 20. Revenue Drawer Open (Mechanical slide + coin clink)
-     */
+    // 21. REVENUE DRAWER OPEN — Mechanical Thunk + Coin Shimmer
     revenueOpen: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const noise = createNoiseBuffer(0.12);
-      if (noise) {
-        const src = c.createBufferSource();
-        src.buffer = noise;
-
-        const filter = c.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(320, now);
-        filter.Q.setValueAtTime(2.0, now);
-
-        const nGain = c.createGain();
-        nGain.gain.setValueAtTime(0.08, now);
-        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
-
-        src.connect(filter);
-        filter.connect(nGain);
-        nGain.connect(masterCompressor);
-        src.start(now);
-      }
-
-      const coins = [1900, 2400];
-      coins.forEach((f, idx) => {
-        const osc = c.createOscillator();
-        const g = c.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(f, now + 0.05 + idx * 0.03);
-
-        const st = now + 0.05 + idx * 0.03;
-        g.gain.setValueAtTime(0.07, st);
-        g.gain.exponentialRampToValueAtTime(0.0001, st + 0.16);
-
-        osc.connect(g);
-        g.connect(masterCompressor);
-        osc.start(st);
-        osc.stop(st + 0.18);
-      });
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.cashRegister);
+      var thud = mechanicalClick(90, 1.5, 0.045, 0.20);
+      if (thud) thud.connect(masterComp);
+      setTimeout(function() {
+        if (!canPlay()) return;
+        var now = c.currentTime;
+        [1046.5, 1318.5, 1567.98].forEach(function(f, i) {
+          var s = pluckString(f, 0.4, 0.12 - i * 0.03, 2.0);
+          if (s) {
+            var d = c.createDelay(0.2);
+            d.delayTime.setValueAtTime(i * 0.04, now);
+            s.connect(d);
+            connectWithReverb(d, 0.7);
+          }
+        });
+      }, 80);
     },
 
-    /**
-     * 21. Cash Payment / Money Added ("Cha-Ching" + Silver Coin Cascade)
-     */
+    // 22. CASH PAYMENT — Authentic "Cha-Ching" Register
+    //     Lever click → metallic DING → silver coin cascade
     cashPayment: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.cashRegister);
 
-      const now = c.currentTime;
+      var now = c.currentTime;
 
-      // "Cha"
-      const snap = c.createOscillator();
-      const snapGain = c.createGain();
-      snap.type = 'triangle';
-      snap.frequency.setValueAtTime(450, now);
-      snap.frequency.exponentialRampToValueAtTime(120, now + 0.03);
-      snapGain.gain.setValueAtTime(0.18, now);
-      snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-      snap.connect(snapGain);
-      snapGain.connect(masterCompressor);
-      snap.start(now);
-      snap.stop(now + 0.035);
+      var click = mechanicalClick(320, 4, 0.025, 0.22);
+      if (click) click.connect(masterComp);
 
-      // "Ching"
-      const ringNotes = [2093.0, 2637.02];
-      ringNotes.forEach(f => {
-        const osc = c.createOscillator();
-        const g = c.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(f, now + 0.035);
+      var ding = pluckString(1174.66, 0.9, 0.48, 2.0);
+      if (ding) {
+        var d1 = c.createDelay(0.2);
+        d1.delayTime.setValueAtTime(0.07, now);
+        ding.connect(d1);
+        connectWithReverb(d1, 0.8);
+      }
 
-        g.gain.setValueAtTime(0.15, now + 0.035);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.65);
-
-        osc.connect(g);
-        g.connect(masterCompressor);
-        osc.start(now + 0.035);
-        osc.stop(now + 0.7);
-      });
-
-      // Coin drops
-      const coinDrops = [1850, 2300, 2150];
-      coinDrops.forEach((freq, i) => {
-        const cOsc = c.createOscillator();
-        const cGain = c.createGain();
-        cOsc.type = 'sine';
-        const dropTime = now + 0.08 + i * 0.045;
-        cOsc.frequency.setValueAtTime(freq, dropTime);
-
-        cGain.gain.setValueAtTime(0.06, dropTime);
-        cGain.gain.exponentialRampToValueAtTime(0.0001, dropTime + 0.18);
-
-        cOsc.connect(cGain);
-        cGain.connect(masterCompressor);
-        cOsc.start(dropTime);
-        cOsc.stop(dropTime + 0.2);
+      var coinFreqs = [2093.0, 2637.0, 3136.0];
+      coinFreqs.forEach(function(f, i) {
+        var coin = pluckString(f, 0.35, 0.22, 2.5);
+        if (coin) {
+          var d = c.createDelay(0.2);
+          d.delayTime.setValueAtTime(0.14 + i * 0.06, now);
+          coin.connect(d);
+          connectWithReverb(d, 0.6);
+        }
       });
     },
 
-    /**
-     * 22. Debt Cleared / Full Package Paid (Triumphal Fanfare & Celebration)
-     */
+    // 23. DEBT CLEARED / JACKPOT — Grand Orchestral Celebration
+    //     Cmaj9 chord + coin waterfall + triumph shimmer wash
     debtCleared: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.jackpot);
 
-      const now = c.currentTime;
+      var now = c.currentTime;
 
-      const fanfare = [523.25, 783.99, 1046.50, 1318.51];
-      fanfare.forEach((freq, idx) => {
-        const osc = c.createOscillator();
-        const gain = c.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
-
-        const st = now + idx * 0.06;
-        gain.gain.setValueAtTime(0.001, st);
-        gain.gain.linearRampToValueAtTime(0.14, st + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, st + 0.45);
-
-        osc.connect(gain);
-        gain.connect(masterCompressor);
-        osc.start(st);
-        osc.stop(st + 0.5);
+      var chordFreqs = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+      chordFreqs.forEach(function(f, i) {
+        var s = pluckString(f, 2.5 - i * 0.15, 0.42 - i * 0.05, 1.5);
+        if (s) {
+          var d = c.createDelay(0.3);
+          d.delayTime.setValueAtTime(i * 0.04, now);
+          s.connect(d);
+          connectWithReverb(d, 1.0);
+        }
       });
 
-      setTimeout(() => {
-        this.cashPayment();
-      }, 180);
+      var coins = [2093, 2349, 2637, 2794, 3136, 3520];
+      coins.forEach(function(f, i) {
+        var coin = pluckString(f, 0.5, 0.25 - i * 0.02, 2.8);
+        if (coin) {
+          var d = c.createDelay(0.5);
+          d.delayTime.setValueAtTime(0.12 + i * 0.08, now);
+          coin.connect(d);
+          connectWithReverb(d, 0.7);
+        }
+      });
+
+      var w = noiseWhoosh(0.25, 0.10, false);
+      if (w) connectWithReverb(w, 0.9);
     },
 
-    /**
-     * 23. WhatsApp & Messaging: Ping / Whoosh
-     */
+    // 24. WHATSAPP MESSAGE SEND
     messageSend: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(480, now);
-      osc.frequency.exponentialRampToValueAtTime(1150, now + 0.08);
-
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-      osc.start(now);
-      osc.stop(now + 0.14);
-
-      const osc2 = c.createOscillator();
-      const gain2 = c.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(1350, now + 0.07);
-      gain2.gain.setValueAtTime(0.15, now + 0.07);
-      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-      osc2.connect(gain2);
-      gain2.connect(masterCompressor);
-      osc2.start(now + 0.07);
-      osc2.stop(now + 0.3);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var w  = noiseWhoosh(0.08, 0.09, false);
+      var t1 = tone(1046.5, c.currentTime + 0.03, 0.10, 0.14);
+      if (w)  connectWithReverb(w, 0.3);
+      if (t1) connectWithReverb(t1, 0.4);
     },
 
-    /**
-     * 24. Marketing Pulse / Digital Radar Broadcast
-     */
+    // 25. MARKETING TAB — Radar Pulse
     marketingPulse: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const filter = c.createBiquadFilter();
-      const gain = c.createGain();
-
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var now = c.currentTime;
+      var osc = c.createOscillator();
+      var gn  = c.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(1150, now);
-
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(1150, now);
-      filter.Q.setValueAtTime(8.0, now);
-
-      gain.gain.setValueAtTime(0.14, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterCompressor);
-
-      osc.start(now);
-      osc.stop(now + 0.38);
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(1760, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
+      gn.gain.setValueAtTime(0.001, now);
+      gn.gain.linearRampToValueAtTime(0.18, now + 0.02);
+      gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      osc.connect(gn);
+      connectWithReverb(gn, 0.7);
+      osc.start(now); osc.stop(now + 0.2);
     },
 
-    /**
-     * 25. Modal Open: Dimensional spatial zoom
-     */
+    // 26. MODAL OPEN
     modalOpen: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(180, now);
-      osc.frequency.exponentialRampToValueAtTime(480, now + 0.09);
-
-      gain.gain.setValueAtTime(0.08, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-      osc.start(now);
-      osc.stop(now + 0.14);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.modal);
+      var w  = noiseWhoosh(0.12, 0.08, false);
+      var t1 = tone(783.99, c.currentTime + 0.05, 0.15, 0.12);
+      if (w)  connectWithReverb(w, 0.6);
+      if (t1) connectWithReverb(t1, 0.5);
     },
 
-    /**
-     * 26. Modal Close: Soft suction dismiss pop
-     */
+    // 27. MODAL CLOSE
     modalClose: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(420, now);
-      osc.frequency.exponentialRampToValueAtTime(140, now + 0.05);
-
-      gain.gain.setValueAtTime(0.07, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-      osc.start(now);
-      osc.stop(now + 0.08);
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.tap);
+      var click = mechanicalClick(500, 3, 0.020, 0.10);
+      var w     = noiseWhoosh(0.09, 0.06, true);
+      if (click) click.connect(masterComp);
+      if (w)     connectWithReverb(w, 0.3);
     },
 
-    /**
-     * 27. Delete / Eraser Swoosh
-     */
+    // 28. DELETE SWOOSH
     deleteSwoosh: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.delete);
+      var w  = noiseWhoosh(0.16, 0.14, true);
+      var t1 = tone(349.23, c.currentTime + 0.06, 0.16, 0.12, 'triangle');
+      if (w)  connectWithReverb(w, 0.5);
+      if (t1) t1.connect(masterComp);
+    },
 
-      const now = c.currentTime;
-
-      const noise = createNoiseBuffer(0.09);
-      if (noise) {
-        const src = c.createBufferSource();
-        src.buffer = noise;
-
-        const filter = c.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(800, now);
-        filter.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-        filter.Q.setValueAtTime(1.5, now);
-
-        const g = c.createGain();
-        g.gain.setValueAtTime(0.12, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-
-        src.connect(filter);
-        filter.connect(g);
-        g.connect(masterCompressor);
-        src.start(now);
+    // 29. MUTE ANNOUNCEMENT
+    muteAnnouncement: function (isMuted) {
+      if (isMuted) {
+        var c = initAudioContext(); if (!c) return;
+        var t1 = tone(880, c.currentTime,        0.20, 0.15);
+        var t2 = tone(440, c.currentTime + 0.14, 0.25, 0.12);
+        if (t1) connectWithReverb(t1, 0.5);
+        if (t2) connectWithReverb(t2, 0.5);
+      } else {
+        if (!canPlay()) return;
+        var c = initAudioContext(); if (!c) return;
+        var t1 = tone(523.25, c.currentTime,        0.18, 0.16);
+        var t2 = tone(783.99, c.currentTime + 0.12, 0.18, 0.18);
+        if (t1) connectWithReverb(t1, 0.6);
+        if (t2) connectWithReverb(t2, 0.6);
       }
     },
 
-    /**
-     * 28. Mute Toggle Announcement
-     */
-    muteAnnouncement: function (isNowMuted) {
-      if (isNowMuted) return;
-      const c = initAudioContext();
-      if (!c) return;
-
-      const now = c.currentTime;
-      const notes = [659.25, 987.77]; // E5, B5
-      notes.forEach((freq, i) => {
-        const osc = c.createOscillator();
-        const g = c.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + i * 0.07);
-
-        const st = now + i * 0.07;
-        g.gain.setValueAtTime(0.12, st);
-        g.gain.exponentialRampToValueAtTime(0.0001, st + 0.28);
-
-        osc.connect(g);
-        g.connect(masterCompressor);
-        osc.start(st);
-        osc.stop(st + 0.3);
-      });
-    },
-
-    /**
-     * 29. Polite Error Drop
-     */
+    // 30. GENERIC ERROR
     error: function () {
       if (!canPlay()) return;
-      const c = initAudioContext();
-      if (!c) return;
+      var c = initAudioContext(); if (!c) return;
+      haptic(HapticPattern.error);
+      var t1 = tone(349.23, c.currentTime,        0.22, 0.22, 'triangle');
+      var t2 = tone(261.63, c.currentTime + 0.16, 0.25, 0.20, 'triangle');
+      if (t1) connectWithReverb(t1, 0.4);
+      if (t2) connectWithReverb(t2, 0.4);
+    },
 
-      const now = c.currentTime;
-
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(220, now);
-      osc.frequency.exponentialRampToValueAtTime(90, now + 0.16);
-
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-      osc.connect(gain);
-      gain.connect(masterCompressor);
-      osc.start(now);
-      osc.stop(now + 0.2);
-    }
   };
 
-  // =======================================================================
-  // BACKWARD COMPATIBILITY BRIDGE
-  // =======================================================================
-  window.playSound = function (type) {
-    if (!canPlay()) return;
-    switch (type) {
-      case 'money':
-      case 'cash':
-        AssistantSounds.cashPayment();
-        break;
-      case 'success':
-        AssistantSounds.attendanceSuccess();
-        break;
-      case 'pop':
-        AssistantSounds.tap(1.2);
-        break;
-      case 'error':
-        AssistantSounds.error();
-        break;
-      case 'beep':
-        AssistantSounds.attendanceScan();
-        break;
-      case 'tap':
-      case 'click':
-      default:
-        AssistantSounds.tap(1.0);
-        break;
-    }
-  };
+  // --- DOM Event Delegation ---
 
-  // =======================================================================
-  // INTELLIGENT DOM EVENT DELEGATION
-  // =======================================================================
   function setupDOMDelegation() {
-    document.addEventListener('click', function (e) {
+
+    // Tap / Click on interactive elements
+    document.addEventListener('pointerdown', function (e) {
       if (!canPlay()) return;
+      var now = Date.now();
+      if (now - lastTapTime < TAP_THROTTLE) return;
+      lastTapTime = now;
 
-      const now = Date.now();
-      if (now - lastClickTime < 45) return;
-      lastClickTime = now;
-
-      const target = e.target;
+      var target = e.target;
       if (!target) return;
 
-      // Close buttons / Dismiss
-      if (target.closest('.close-modal-btn, .closeModalBtn, [data-dismiss], .btn-close, .modal-close')) {
-        AssistantSounds.modalClose();
+      var tag = target.tagName ? target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea') return;
+
+      if (target.matches('input[type="checkbox"], input[type="radio"]') ||
+          target.closest('.toggle-switch, .switch, .toggle')) {
+        AssistantSounds.click();
         return;
       }
 
-      // Checkboxes & Toggles
-      if (target.matches('input[type="checkbox"], input[type="radio"]') || target.closest('.toggle-switch, .switch')) {
-        AssistantSounds.tap(1.3);
+      if (
+        target.matches('button, a, [role="button"], .btn, .card, .tab, .nav-item, .sidebar-item, label, select') ||
+        target.closest('button, a, [role="button"], .btn, .card, .tab, .nav-item, .sidebar-item')
+      ) {
+        AssistantSounds.tap();
         return;
       }
 
-      // Navigation tabs
-      if (target.closest('.nav-item, .tab-btn, .sidebar-link, [data-tab]')) {
-        AssistantSounds.tabSwitch();
-        return;
-      }
-
-      // Action Buttons, Chips, Icons
-      const btn = target.closest('button, .btn, .chip, .badge-btn, .icon-btn, .topbar-icon-btn, select');
-      if (btn) {
-        const id = btn.id || '';
-        if (id === 'topbarThemeToggle' || id === 'topbarLangToggle' || id === 'changeLangBtn' ||
-            id === 'cloudSyncIndicator' || id === 'openRevenueModalBtn' || id === 'toggleSoundsBtn') {
-          return;
-        }
-        AssistantSounds.tap(1.0);
-      }
     }, { capture: true, passive: true });
 
-    // Typing Keystroke Listener
+    // Typing on physical keyboard
     document.addEventListener('keydown', function (e) {
       if (!canPlay()) return;
-      if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Escape'].includes(e.key)) return;
-
-      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+      var skip = ['Shift','Control','Alt','Meta','CapsLock','Tab','Escape','Enter','Backspace','Delete','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+      if (skip.indexOf(e.key) !== -1) return;
+      var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) {
         AssistantSounds.typingTick();
       }
     }, { passive: true });
+
+    // Typing on MOBILE virtual keyboard — 'input' catches what 'keydown' misses
+    document.addEventListener('input', function (e) {
+      if (!canPlay()) return;
+      var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) {
+        var now = Date.now();
+        if (now - lastTypingTime < KEY_THROTTLE) return;
+        AssistantSounds.typingTick();
+      }
+    }, { passive: true });
+
   }
 
   if (document.readyState === 'loading') {
@@ -1176,6 +856,22 @@
     setupDOMDelegation();
   }
 
+  // --- Backward Compatibility Bridge ---
+  // Maps legacy playSound(type) calls in app.js to the studio engine.
+  window.playSound = function (type) {
+    switch (type) {
+      case 'money':   AssistantSounds.cashPayment();       break;
+      case 'success': AssistantSounds.attendanceSuccess(); break;
+      case 'pop':     AssistantSounds.attendanceSuccess(); break;
+      case 'error':   AssistantSounds.error();             break;
+      case 'beep':    AssistantSounds.tap();               break;
+      case 'tap':     AssistantSounds.tap();               break;
+      case 'click':   AssistantSounds.click();             break;
+      default:        AssistantSounds.tap();               break;
+    }
+  };
+
+  // --- Public API ---
   window.AssistantSounds = AssistantSounds;
 
-})(window, document);
+}(window, document));

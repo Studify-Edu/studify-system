@@ -3568,12 +3568,10 @@ const st = students[id];
  
  saveAttendanceOnly(); 
  updateLiveFeed(s);
- playSound("success");
  triggerEdgeFlash(); 
  showFullscreenFeedback(true, false);
  return { ok: true, msg: t("msg_att_ok") };
  }
- playSound("error");
  showFullscreenFeedback(false, true);
  return { ok: false, msg: t("msg_att_warn") };
  }
@@ -4903,7 +4901,7 @@ on("quickAttendBtn", "click", function() {
    if (window.isStudentRegistered(existing)) {
      triggerShake("newId");
      showToast(" هذا الكود محجوز ومسجل به بيانات بالفعل", "err");
-     playSound("error");
+     if (typeof AssistantSounds !== "undefined") AssistantSounds.error(); else playSound("error");
      window.extOpen(id);
      if ($("newId")) $("newId").value = "";
      return;
@@ -5199,10 +5197,10 @@ on("quickAttendBtn", "click", function() {
   if(req > 0 && pkgPaid >= req) {
     fireConfetti();
     if (typeof AssistantSounds !== "undefined") AssistantSounds.debtCleared();
-    else playSound("money");
+    else { if (typeof AssistantSounds !== "undefined") AssistantSounds.cashPayment(); else playSound("money"); }
   } else {
     if (typeof AssistantSounds !== "undefined") AssistantSounds.cashPayment();
-    else playSound("money");
+    else { if (typeof AssistantSounds !== "undefined") AssistantSounds.cashPayment(); else playSound("money"); }
   }
   showToast(t("msg_deposit"));
   
@@ -8651,7 +8649,7 @@ window.openSessionStudentModal = function(item) {
  if (typeof updateTopStats === "function") updateTopStats();
  if (typeof renderList === "function") renderList(false);
  showToast("تم تسجيل حضور الحصة وتحصيل المبلغ بنجاح", "success");
- playSound("success");
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncSuccess(); else playSound("pop");
 
  if($("sessStName")) $("sessStName").value = "";
  if($("sessStPhone")) $("sessStPhone").value = "";
@@ -8766,7 +8764,7 @@ window.openSessionStudentModal = function(item) {
  if (scannedId && students[String(scannedId)]) {
  window.switchTab('Home');
  let res = addAttendance(scannedId, nowDateStr());
- if (res.ok) playSound("pop"); else playSound("error");
+ if (res.ok) { if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncSuccess(); else playSound("pop"); } else { if (typeof AssistantSounds !== "undefined") AssistantSounds.error(); else playSound("error"); }
  showToast(res.msg, res.ok ? "success" : "warning");
  updateStudentUI(scannedId);
  updateTopStats();
@@ -8921,7 +8919,7 @@ window.openSessionStudentModal = function(item) {
  if($("bookletQtyInp")) $("bookletQtyInp").value = "";
  if($("bookletPriceInp")) $("bookletPriceInp").value = "";
  showToast("تم استلام وإضافة المذكرة للمخزون بنجاح ", "success");
- playSound("beep");
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceScan(); else playSound("beep");
  });
 
  window.sellBookletCopy = function(id) {
@@ -8929,7 +8927,7 @@ window.openSessionStudentModal = function(item) {
  let b = bookletsStock[id];
  if (b.sold >= b.qty) {
  showToast(" انتهى مخزون هذه المذكرة، يرجى تعديل العدد الكلي إذا قمت بطباعة نسخ إضافية.", "err");
- playSound("error");
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.error(); else playSound("error");
  return;
  }
  b.sold += 1;
@@ -8941,7 +8939,7 @@ window.openSessionStudentModal = function(item) {
  saveAll();
  renderBookletsStock();
  showToast(`تم بيع نسخة من ${b.name} وإضافة ${b.price} ج للخزينة كاش `, "success");
- playSound("beep");
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceScan(); else playSound("beep");
  };
 
  window.returnBookletCopy = function(id) {
@@ -9160,7 +9158,7 @@ window.openSessionStudentModal = function(item) {
     }
     navigator.clipboard.writeText(nb.value).then(() => {
       showToast(currentLang === 'ar' ? "تم نسخ محتوى المفكرة إلى الحافظة" : "Notebook copied to clipboard", "success");
-      playSound("beep");
+      if (typeof AssistantSounds !== "undefined") AssistantSounds.studentSave(); else playSound("beep");
     }).catch(() => {
       showToast(currentLang === 'ar' ? "تعذر النسخ، يرجى المحاولة يدوياً" : "Copy failed", "err");
     });
@@ -9566,7 +9564,7 @@ window.openSessionStudentModal = function(item) {
 
     if (!silent) {
       showToast("تم إنهاء البث التلقائي بنجاح وإلغاء الجلسة", "info");
-      playSound("tap");
+      if (typeof AssistantSounds !== "undefined") AssistantSounds.tap(); else playSound("tap");
     }
   }
 
@@ -9585,7 +9583,7 @@ window.openSessionStudentModal = function(item) {
         $("broadcastCurrentStudentInfo").innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981; margin-inline-end:6px;"></i> اكتملت عملية الإرسال لجميع الطلاب بنجاح';
       }
       showToast("اكتمل البث التلقائي الذكي لجميع الطلاب بنجاح", "success");
-      playSound("beep");
+      if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncSuccess(); else playSound("beep");
 
       // Auto close after 4 seconds
       setTimeout(() => {
@@ -9633,7 +9631,7 @@ window.openSessionStudentModal = function(item) {
     resetPauseButtonUI();
 
     showToast("بدء تشغيل البث التلقائي الآمن، يرجى السماح بالنوافذ المنبثقة (Pop-ups)", "success");
-    playSound("beep");
+    if (typeof AssistantSounds !== "undefined") AssistantSounds.marketingPulse(); else playSound("beep");
     
     // البدء بالنافذة الأولى فوراً
     startNextBroadcastWindow();
@@ -9650,14 +9648,14 @@ window.openSessionStudentModal = function(item) {
       if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = "البث التلقائي متوقف مؤقتاً...";
       if (pulseIcon) pulseIcon.classList.remove("mkt-pulse-active");
       showToast("تم إيقاف البث مؤقتاً", "warning");
-      playSound("tap");
+      if (typeof AssistantSounds !== "undefined") AssistantSounds.tap(); else playSound("tap");
     } else {
       this.className = "mkt-ctrl-btn mkt-ctrl-pause";
       this.innerHTML = '<i class="fa-solid fa-pause"></i> <span>إيقاف مؤقت</span>';
       if ($("broadcastStatusTitle")) $("broadcastStatusTitle").textContent = "جاري تشغيل البث التلقائي المضاد للحظر (Anti-Ban)...";
       if (pulseIcon) pulseIcon.classList.add("mkt-pulse-active");
       showToast("تم استئناف البث التلقائي", "success");
-      playSound("beep");
+      if (typeof AssistantSounds !== "undefined") AssistantSounds.marketingPulse(); else playSound("beep");
     }
   });
 
