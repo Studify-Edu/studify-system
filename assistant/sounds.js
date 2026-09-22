@@ -174,6 +174,60 @@
     });
   }
 
+  // Authentic Apple iPhone WhatsApp Tri-Tone Synthesizer Fallback (G#5, B5, E6 + sparkling shimmer)
+  function playSynthesizedTriTone(ctx, vol) {
+    if (!ctx) return;
+    try {
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(function () {});
+      }
+      var t = ctx.currentTime;
+      var master = ctx.createGain();
+      var gainVal = (typeof vol === 'number' ? vol : 1.0) * 0.45;
+      master.gain.setValueAtTime(gainVal, t);
+      master.connect(ctx.destination);
+
+      var notes = [
+        { f: 830.61, start: 0, dur: 0.085 },      // G#5
+        { f: 987.77, start: 0.095, dur: 0.085 },  // B5
+        { f: 1318.51, start: 0.19, dur: 0.35 }    // E6
+      ];
+
+      notes.forEach(function (n) {
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(n.f, t + n.start);
+
+        // Gentle harmonic sparkle
+        var oscH = ctx.createOscillator();
+        var gH = ctx.createGain();
+        oscH.type = 'triangle';
+        oscH.frequency.setValueAtTime(n.f * 2, t + n.start);
+
+        g.gain.setValueAtTime(0.0001, t + n.start);
+        g.gain.exponentialRampToValueAtTime(0.7, t + n.start + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + n.start + n.dur);
+
+        gH.gain.setValueAtTime(0.0001, t + n.start);
+        gH.gain.exponentialRampToValueAtTime(0.12, t + n.start + 0.006);
+        gH.gain.exponentialRampToValueAtTime(0.0001, t + n.start + (n.dur * 0.55));
+
+        osc.connect(g);
+        g.connect(master);
+        oscH.connect(gH);
+        gH.connect(master);
+
+        osc.start(t + n.start);
+        osc.stop(t + n.start + n.dur + 0.02);
+        oscH.start(t + n.start);
+        oscH.stop(t + n.start + (n.dur * 0.55) + 0.02);
+      });
+    } catch (e) {
+      console.warn('[SoundEngine] playSynthesizedTriTone error:', e);
+    }
+  }
+
   // Core sound playback primitive
   function play(name, customVolume) {
     if (isMuted()) return;
@@ -181,8 +235,12 @@
     var vol = (typeof customVolume === 'number') ? customVolume : MASTER_VOLUME;
     var ctx = getAudioContext();
 
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(function () {});
+    }
+
     // 1. Primary: Fast Web Audio Buffer playback (0ms latency)
-    if (ctx && buffers[name]) {
+    if (ctx && ctx.state === 'running' && buffers[name]) {
       try {
         var source = ctx.createBufferSource();
         source.buffer = buffers[name];
@@ -202,8 +260,24 @@
       try {
         var el = audioElements[name].cloneNode();
         el.volume = Math.min(Math.max(vol, 0), 1.0);
-        el.play().catch(function () {});
+        var p = el.play();
+        if (p && typeof p.then === 'function') {
+          p.catch(function (err) {
+            console.warn('[SoundEngine] HTML5 Audio play prevented:', err);
+            // If notification failed, attempt synthesized fallback
+            if ((name === 'notif' || name === 'notif_iphone') && ctx) {
+              playSynthesizedTriTone(ctx, vol);
+            }
+          });
+          return;
+        }
+        return;
       } catch (_) {}
+    }
+
+    // 3. Fallback for notification if neither buffer nor element played
+    if ((name === 'notif' || name === 'notif_iphone') && ctx) {
+      playSynthesizedTriTone(ctx, vol);
     }
   }
 
@@ -663,6 +737,11 @@
   // Legacy compatibility bridge
   window.playSound = function (type) {
     switch (type) {
+      case 'notification':
+      case 'notif':
+      case 'notif_iphone':
+        SFX.notification();
+        break;
       case 'money':
       case 'cash':
         SFX.cashPayment();
@@ -689,6 +768,7 @@
   // Expose Globally
   window.AssistantSounds = SFX;
   window.SoundEngine = SFX;
+  window.playNotification = SFX.notification;
 
   // Start preloading and attach DOM interactions
   function initEngine() {
