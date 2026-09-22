@@ -1,7 +1,7 @@
 // ============================================================================
 // Studify Service Worker - Offline-First Static Asset Caching
 // ============================================================================
-const CACHE_NAME = 'studify-cache-v107';
+const CACHE_NAME = 'studify-cache-v108';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -24,6 +24,12 @@ const STATIC_ASSETS = [
     './assets/sounds/error.mp3',
     './assets/sounds/send.mp3',
     './assets/sounds/lock.mp3',
+    './assets/sounds/menu.mp3',
+    './assets/sounds/theme_day.mp3',
+    './assets/sounds/theme_night.mp3',
+    './assets/sounds/lang.mp3',
+    './assets/sounds/key_type.mp3',
+    './assets/sounds/key_delete.mp3',
     './assets/sounds/delete.mp3',
     './assets/sounds/tap.mp3'
 ];
