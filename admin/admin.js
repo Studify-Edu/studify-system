@@ -5,12 +5,27 @@
 
 // Admin portal is strictly silent - zero audio output
 window.playSound = function() {};
-window.AssistantSounds = {
+const silentSoundTarget = {
   isMuted: function() { return true; },
   play: function() {},
   preload: function() {},
-  attachNavInteractions: function() {}
+  attachNavInteractions: function() {},
+  tabSwitch: function() {},
+  pageAttendance: function() {},
+  pageStudents: function() {},
+  pageSyllabus: function() {},
+  marketingPulse: function() {},
+  notification: function() {},
+  tap: function() {},
+  error: function() {},
+  cashPayment: function() {}
 };
+window.AssistantSounds = new Proxy(silentSoundTarget, {
+  get: function(target, prop) {
+    if (prop in target) return target[prop];
+    return function() {}; // Safe fallback for any sound method
+  }
+});
 window.SoundEngine = window.AssistantSounds;
 
 const SUPABASE_URL = "https://erwrrvafuxezszgbiswg.supabase.co";
@@ -1885,6 +1900,7 @@ async function loadAllAdminData() {
       if (typeof window.renderAdminSyllabus === 'function') window.renderAdminSyllabus();
       if (typeof fetchDecisionsCount === 'function') fetchDecisionsCount();
       if (typeof window.loadSubscriptionData === 'function') window.loadSubscriptionData();
+      if (typeof window.fetchAssistants === 'function') window.fetchAssistants();
     } catch(err) {
       console.warn('Initial admin render warning:', err);
     }
@@ -1921,25 +1937,6 @@ window.switchAdminTab = function(tabKey) {
   if (btnEl) btnEl.classList.add("active");
   if (titleEl) titleEl.textContent = c.title;
   if (iconEl) iconEl.className = `fa-solid ${c.icon}`;
-
-  // Contextual page audio feedback
-  if (typeof AssistantSounds !== "undefined") {
-    if (tabKey === "dailyReport") {
-      AssistantSounds.pageAttendance();
-    } else if (tabKey === "syllabus" || tabKey === "packages") {
-      AssistantSounds.pageSyllabus();
-    } else {
-      AssistantSounds.tabSwitch();
-    }
-  } else if (typeof window.AssistantSounds !== "undefined") {
-    if (tabKey === "dailyReport") {
-      window.AssistantSounds.pageAttendance();
-    } else if (tabKey === "syllabus" || tabKey === "packages") {
-      window.AssistantSounds.pageSyllabus();
-    } else {
-      window.AssistantSounds.tabSwitch();
-    }
-  }
 
   // Auto-close mobile sidebar drawer on tab selection
   if (typeof window.toggleAdminMobileSidebar === 'function') {
