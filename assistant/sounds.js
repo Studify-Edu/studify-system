@@ -5,17 +5,22 @@
  * Genuine, high-definition physical audio sound effects:
  * - Real POS Optical Barcode Scanner Beep
  * - Real Authentic Cash Register "Cha-Ching" (Drawer Open + Bell + Coins)
+ * - Real Digital Electronic POS Terminal Beep (Instapay / Vodafone Cash)
  * - Real Apple Pay Achievement & Debt Cleared Chime
+ * - Real Sparkling Gold Crown Chime (Student VIP Rank)
+ * - Real Status Toggles (Normal & Warning)
+ * - Real Cloud Sync Initiated & Cloud Sync Complete Chimes
+ * - Real Cosmic Globe Spin Chime (Language Switch)
  * - Real iPhone iOS Keyboard Typing Click & Delete Key
  * - Real Morning Sunrise & Nightfall Atmospheric Theme Chimes
- * - Real Language Switch Tink & Navigation / Menu Open Chime
- * - Real iMessage / WhatsApp Sent Swoosh & Heavy Safe Lock
+ * - Real Crystal Notification Tone (Messages & Alerts)
+ * - Real Tactile Navigation Tab Switch & Micro-Touch Ticks
  * 
  * Architecture:
  * - Preloaded in-memory Web Audio API AudioBuffers for 0ms latency.
  * - Automatic background listener for iOS keyboard typing sounds.
- * - Automatic offline support via Service Worker caching.
- * - 100% backward-compatible with all existing system calls.
+ * - Automatic touch/hover micro-ticks on navigation elements.
+ * - 100% offline support via Service Worker caching.
  * =======================================================================
  */
 
@@ -35,21 +40,31 @@
 
   // Audio files manifest (Authentic, Real Physical Audio Recordings)
   var SOUND_MANIFEST = {
-    scan:        'scan.mp3',        // Real Optical Supermarket Barcode Scanner Beep
-    cash:        'cash.mp3',        // Real Authentic Cash Register "Cha-Ching" & Drawer Bell
-    achievement: 'achievement.mp3', // Real Apple Pay Milestone / Debt Cleared Chime
-    warning:     'warning.mp3',     // Real Caution / Alert Sound
-    error:       'error.mp3',       // Real Error / Rejection Sound
-    send:        'send.mp3',        // Real iMessage / WhatsApp Sent Swoosh
-    lock:        'lock.mp3',        // Real Heavy Lock / Safe Bolt Click
-    menu:        'menu.mp3',        // Real Menu / Navigation Reveal Chime
-    theme_day:   'theme_day.mp3',   // Real Morning Theme Sunrise Chime
-    theme_night: 'theme_night.mp3', // Real Night Theme Twilight Chime
-    lang:        'lang.mp3',        // Real Language Switch Tink
-    key_type:    'key_type.mp3',    // Real iPhone iOS Keyboard Typing Click
-    key_delete:  'key_delete.mp3',  // Real iPhone iOS Keyboard Delete Key
-    delete:      'delete.mp3',      // Fast deletion swoop
-    tap:         'tap.mp3'          // Subtle micro-tap
+    scan:          'scan.mp3',          // Real Optical Retail Barcode Scanner Beep
+    cash:          'cash.mp3',          // Real Physical Cash Register "Cha-Ching" (Physical Cash Deposit)
+    digital_pay:   'digital_pay.mp3',   // Real Digital Terminal Beep (Instapay / Vodafone Cash Deposit)
+    achievement:   'achievement.mp3',   // Real Apple Pay Milestone / Debt Cleared Chime
+    vip:           'vip.mp3',           // Real Sparkling Gold Crown Chime (Student VIP Rank)
+    status_normal: 'status_normal.mp3', // Real Clean Status Toggle (Normal Student)
+    status_warn:   'status_warn.mp3',   // Real Amber Alert Sound (Warning Student)
+    sync_start:    'sync_start.mp3',    // Real Cloud Uplink / Sync Start Sound
+    sync_done:     'sync_done.mp3',     // Real Cloud Upload Complete Chime
+    globe:         'globe.mp3',         // Real Cosmic Globe Spin Chime (Language Switch)
+    notif:         'notif.mp3',         // Real Crystal Notification Chime (Messages & Alerts)
+    tab_switch:    'tab_switch.mp3',    // Real Mechanical Push Sound (Tab / Page Switch)
+    touch_tick:    'touch_tick.mp3',    // Real Subtle Micro-Tick (Touch / Hover on Nav)
+    warning:       'warning.mp3',       // Real Caution / Alert Sound
+    error:         'error.mp3',         // Real Error / Rejection Sound
+    send:          'send.mp3',          // Real iMessage / WhatsApp Sent Swoosh
+    lock:          'lock.mp3',          // Real Heavy Lock / Safe Bolt Click
+    menu:          'menu.mp3',          // Real Menu / Navigation Reveal Chime
+    theme_day:     'theme_day.mp3',     // Real Morning Theme Sunrise Chime
+    theme_night:   'theme_night.mp3',   // Real Night Theme Twilight Chime
+    lang:          'lang.mp3',          // Real Language Switch Tink
+    key_type:      'key_type.mp3',      // Real iPhone iOS Keyboard Typing Click
+    key_delete:    'key_delete.mp3',    // Real iPhone iOS Keyboard Delete Key
+    delete:        'delete.mp3',        // Fast deletion swoop
+    tap:           'tap.mp3'            // Subtle micro-tap
   };
 
   var audioCtx = null;
@@ -215,6 +230,46 @@
   }
 
   // =========================================================================
+  // AUTOMATIC NAVIGATION TOUCH & TAB SWITCH SOUNDS
+  // =========================================================================
+  var lastTouchTickTime = 0;
+  function attachNavInteractions() {
+    if (typeof document.querySelectorAll !== 'function') return;
+    var navItems = document.querySelectorAll('.nav-item, .nav-group-header, .topbar-icon-btn, .tab-btn');
+    navItems.forEach(function (el) {
+      if (el._sfxAttached) return;
+      el._sfxAttached = true;
+
+      // Micro-tick on hover / pointer enter
+      el.addEventListener('pointerenter', function (e) {
+        if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+          var now = Date.now();
+          if (now - lastTouchTickTime > 40) {
+            lastTouchTickTime = now;
+            SFX.touchTick();
+          }
+        }
+      }, { passive: true });
+
+      // Micro-tick on touchstart for touchscreens
+      el.addEventListener('touchstart', function () {
+        var now = Date.now();
+        if (now - lastTouchTickTime > 50) {
+          lastTouchTickTime = now;
+          SFX.touchTick();
+        }
+      }, { passive: true });
+
+      // Distinct mechanical push on clicking tabs
+      if (el.classList.contains('nav-item') || el.classList.contains('tab-btn')) {
+        el.addEventListener('click', function () {
+          SFX.tabSwitch();
+        }, { passive: true });
+      }
+    });
+  }
+
+  // =========================================================================
   // PUBLIC SOUND CONTROLLER
   // =========================================================================
   var SFX = {
@@ -236,17 +291,75 @@
       vibe([20]);
     },
 
-    // 2. Financial Transactions (Real Authentic Cash Register "Cha-Ching"!)
+    // 2. Financial Transactions (Physical Cash vs Digital Mobile/Card Deposit)
     cashPayment: function () {
+      // Authentic physical cash register "cha-ching" + drawer open!
       play('cash', 1.0);
       vibe([30, 50, 40]);
+    },
+    digitalPayment: function () {
+      // Official digital POS terminal / mobile transfer confirmation (Instapay & Vodafone Cash)!
+      play('digital_pay', 1.0);
+      vibe([20, 30, 20]);
     },
     debtCleared: function () {
       play('achievement', 1.0);
       vibe([20, 30, 20, 30, 40]);
     },
 
-    // 3. Alerts & Messaging (Real WhatsApp/iMessage swoosh & alert)
+    // 3. Student Rank & Status (VIP vs Normal vs Warning)
+    rankVIP: function () {
+      // Sparkling gold crown luxury chime (NOT the payment sound!)
+      play('vip', 1.0);
+      vibe([25, 35, 25]);
+    },
+    rankNormal: function () {
+      // Clean status state toggle
+      play('status_normal', 0.9);
+      vibe([15]);
+    },
+    rankWarn: function () {
+      // Distinct amber alert
+      play('status_warn', 1.0);
+      vibe([30, 40, 30]);
+    },
+
+    // 4. Cloud Sync (Dedicated Start and Done Chimes)
+    cloudSyncStart: function () {
+      play('sync_start', 1.0);
+      vibe([25]);
+    },
+    cloudSyncSuccess: function () {
+      // Beautiful iCloud / Cloud confirmation chime (NOT a barcode scan beep!)
+      play('sync_done', 1.0);
+      vibe([20, 30, 20]);
+    },
+    cloudSyncError: function () {
+      play('error', 1.0);
+      vibe([40, 50, 40]);
+    },
+
+    // 5. Language Switch (Cosmic Globe Spin Chime)
+    langSwitch: function () {
+      play('globe', 1.0);
+      vibe([20]);
+    },
+
+    // 6. Navigation, Tabs & Micro-Ticks
+    tabSwitch: function () {
+      play('tab_switch', 0.9);
+      vibe([12]);
+    },
+    touchTick: function () {
+      play('touch_tick', 0.6);
+      vibe([5]);
+    },
+
+    // 7. Notifications & Alerts
+    notification: function () {
+      play('notif', 0.95);
+      vibe([20]);
+    },
     error: function () {
       play('error', 0.95);
       vibe([40, 50, 40]);
@@ -260,17 +373,20 @@
       vibe([12]);
     },
 
-    // 4. System Operations (Real Lock & Safe click)
+    // 8. System Operations & Safe
     shiftLock: function () {
       play('lock', 1.0);
       vibe([30]);
+    },
+    revenueOpen: function () {
+      play('cash', 1.0);
     },
     deleteSwoosh: function () {
       play('delete', 0.85);
       vibe([20]);
     },
 
-    // 5. Themes, Menus & Languages (Real Morning, Night, Menu, Language chimes)
+    // 9. Themes
     themeMorning: function () {
       play('theme_day', 0.9);
       vibe([15]);
@@ -279,10 +395,8 @@
       play('theme_night', 0.9);
       vibe([15]);
     },
-    langSwitch: function () {
-      play('lang', 0.9);
-      vibe([15]);
-    },
+
+    // 10. Menus & Forms
     menuOpen: function () {
       play('menu', 0.85);
       vibe([10]);
@@ -300,26 +414,8 @@
     newStudentForm: function () {
       play('menu', 0.85);
     },
-    revenueOpen: function () {
-      play('cash', 1.0);
-    },
-    rankVIP: function () {
-      play('achievement', 1.0);
-    },
-    rankWarn: function () {
-      play('warning', 0.95);
-    },
-    cloudSyncStart: function () {
-      play('tap', 0.5);
-    },
-    cloudSyncSuccess: function () {
-      play('scan', 0.9);
-    },
-    cloudSyncError: function () {
-      play('error', 0.95);
-    },
 
-    // 6. Tactile UI Clicks & Keyboard
+    // 11. Tactile UI Clicks & Keyboard
     tap: function () {
       play('tap', 0.55);
       vibe([8]);
@@ -340,7 +436,8 @@
 
     // Direct manual play & preload
     play: play,
-    preload: preloadSounds
+    preload: preloadSounds,
+    attachNavInteractions: attachNavInteractions
   };
 
   // Legacy compatibility bridge
@@ -373,11 +470,23 @@
   window.AssistantSounds = SFX;
   window.SoundEngine = SFX;
 
-  // Start preloading immediately
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', preloadSounds);
-  } else {
+  // Start preloading and attach DOM interactions
+  function initEngine() {
     preloadSounds();
+    attachNavInteractions();
+    // Re-attach if DOM changes (e.g. dynamic tabs or menus)
+    if (typeof MutationObserver !== 'undefined' && document.body) {
+      var observer = new MutationObserver(function () {
+        attachNavInteractions();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEngine);
+  } else {
+    initEngine();
   }
 
 })(window, document);

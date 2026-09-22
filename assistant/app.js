@@ -1822,6 +1822,7 @@ function showToast(msg, type = "success") {
  document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
  const activeBtn = $("btnTab" + tabId); 
  if(activeBtn) {
+   if (typeof AssistantSounds !== "undefined") AssistantSounds.tabSwitch();
    activeBtn.classList.add('active');
    const activeGroup = activeBtn.closest('.nav-group');
    if (activeGroup) {
@@ -5036,6 +5037,7 @@ on("quickAttendBtn", "click", function() {
  on("rankNormalBtn", "click", function() {
  if(!currentId) return;
  students[currentId].rank = "normal";
+ if (typeof AssistantSounds !== "undefined") AssistantSounds.rankNormal();
  if (typeof window.updateStudentCardRankTheme === "function") window.updateStudentCardRankTheme("normal");
  saveAll(); updateStudentUI(currentId); showToast("تم التحديث لـ عادي ");
  });
@@ -5176,10 +5178,15 @@ on("quickAttendBtn", "click", function() {
   if(req > 0 && pkgPaid >= req) {
     fireConfetti();
     if (typeof AssistantSounds !== "undefined") AssistantSounds.debtCleared();
-    else { if (typeof AssistantSounds !== "undefined") AssistantSounds.cashPayment(); else playSound("money"); }
+    else playSound("money");
   } else {
-    if (typeof AssistantSounds !== "undefined") AssistantSounds.cashPayment();
-    else { if (typeof AssistantSounds !== "undefined") AssistantSounds.cashPayment(); else playSound("money"); }
+    if (typeof AssistantSounds !== "undefined") {
+      if (method === "instapay" || method === "wallet") {
+        AssistantSounds.digitalPayment();
+      } else {
+        AssistantSounds.cashPayment();
+      }
+    } else playSound("money");
   }
   showToast(t("msg_deposit"));
   
