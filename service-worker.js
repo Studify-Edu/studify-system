@@ -1,7 +1,7 @@
 // ============================================================================
 // Studify Service Worker - Offline-First Static Asset Caching
 // ============================================================================
-const CACHE_NAME = 'studify-cache-v113';
+const CACHE_NAME = 'studify-cache-v114';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -44,7 +44,9 @@ const STATIC_ASSETS = [
     './assets/sounds/globe.mp3',
     './assets/sounds/page_attendance.mp3',
     './assets/sounds/page_students.mp3',
-    './assets/sounds/page_syllabus.mp3'
+    './assets/sounds/page_syllabus.mp3',
+    './assets/sounds/sound_unmute.wav',
+    './assets/sounds/sound_mute.wav'
 ];
 
 // Install: Cache all core static assets

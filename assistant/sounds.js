@@ -82,7 +82,9 @@
     key_type:      'key_type.mp3',      // Real iPhone iOS Keyboard Typing Click
     key_delete:    'key_delete.mp3',    // Real iPhone iOS Keyboard Delete Key
     delete:        'delete.mp3',        // Fast deletion swoop
-    tap:           'tap.mp3'            // Subtle micro-tap
+    tap:           'tap.mp3',           // Subtle micro-tap
+    sound_unmute:  'sound_unmute.wav',  // Real Gradual Ascending Two-Step Chime (Sound Open)
+    sound_mute:    'sound_mute.wav'     // Real Gradual Descending Two-Step Chime (Sound Close)
   };
 
   var audioCtx = null;
@@ -254,6 +256,7 @@
     if (isMuted()) return;
     var target = e.target;
     if (!target) return;
+    if (target.id === 'muteSoundsToggle') return; // Handled specially by muteAnnouncement
     var tag = (target.tagName || '').toLowerCase();
     var type = (target.type || '').toLowerCase();
 
@@ -314,6 +317,130 @@
         }, { passive: true });
       }
     });
+  }
+
+  // =========================================================================
+  // BESPOKE TWO-STEP CHIMES FOR SOUND ENABLE / DISABLE (فتح وقفل الصوت)
+  // =========================================================================
+  // - فتح الصوت: سلمتين صاعدتين بالتدريج (C5 -> G5) بنغمات دافئة ورنين كريستالي
+  // - قفل الصوت: سلمتين هابطتين بالتدريج (G5 -> C5) بنغمات هادئة تتلاشى في صمت تام
+  function playToggleChime(opening) {
+    var ctx = getAudioContext();
+    if (ctx) {
+      try {
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(function () {});
+        }
+        var t = ctx.currentTime;
+        var masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0.32, t); // مستوى صوت هادئ ومريح جداً للأذن
+        masterGain.connect(ctx.destination);
+
+        if (opening) {
+          // ================================================================
+          // فتح الصوت: سلمتين صاعدتين بالتدريج (C5 -> G5)
+          // ================================================================
+          // سلمة 1: نغمة C5 (523.25 Hz)
+          var osc1 = ctx.createOscillator();
+          var g1 = ctx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(523.25, t);
+          g1.gain.setValueAtTime(0.0001, t);
+          g1.gain.exponentialRampToValueAtTime(0.26, t + 0.012);
+          g1.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+          osc1.connect(g1);
+          g1.connect(masterGain);
+          osc1.start(t);
+          osc1.stop(t + 0.14);
+
+          // توافقي خفيف للسلمة الأولى (C6 1046.5 Hz) لإعطاء رنين زجاجي فاخر
+          var osc1h = ctx.createOscillator();
+          var g1h = ctx.createGain();
+          osc1h.type = 'triangle';
+          osc1h.frequency.setValueAtTime(1046.5, t);
+          g1h.gain.setValueAtTime(0.0001, t);
+          g1h.gain.exponentialRampToValueAtTime(0.04, t + 0.012);
+          g1h.gain.exponentialRampToValueAtTime(0.0001, t + 0.10);
+          osc1h.connect(g1h);
+          g1h.connect(masterGain);
+          osc1h.start(t);
+          osc1h.stop(t + 0.11);
+
+          // سلمة 2 (صاعدة بالتدريج): نغمة G5 (783.99 Hz)
+          var t2 = t + 0.11;
+          var osc2 = ctx.createOscillator();
+          var g2 = ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(783.99, t2);
+          g2.gain.setValueAtTime(0.0001, t2);
+          g2.gain.exponentialRampToValueAtTime(0.30, t2 + 0.015);
+          g2.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.35);
+          osc2.connect(g2);
+          g2.connect(masterGain);
+          osc2.start(t2);
+          osc2.stop(t2 + 0.37);
+
+          // توافقي رنين للسلمة الثانية (D6 1174.66 Hz)
+          var osc2h = ctx.createOscillator();
+          var g2h = ctx.createGain();
+          osc2h.type = 'triangle';
+          osc2h.frequency.setValueAtTime(1174.66, t2);
+          g2h.gain.setValueAtTime(0.0001, t2);
+          g2h.gain.exponentialRampToValueAtTime(0.05, t2 + 0.015);
+          g2h.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.25);
+          osc2h.connect(g2h);
+          g2h.connect(masterGain);
+          osc2h.start(t2);
+          osc2h.stop(t2 + 0.27);
+
+          return;
+        } else {
+          // ================================================================
+          // قفل الصوت: سلمتين هابطتين بالتدريج (G5 -> C5)
+          // ================================================================
+          // سلمة 1: نغمة G5 (783.99 Hz)
+          var osc1m = ctx.createOscillator();
+          var g1m = ctx.createGain();
+          osc1m.type = 'sine';
+          osc1m.frequency.setValueAtTime(783.99, t);
+          g1m.gain.setValueAtTime(0.0001, t);
+          g1m.gain.exponentialRampToValueAtTime(0.24, t + 0.012);
+          g1m.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc1m.connect(g1m);
+          g1m.connect(masterGain);
+          osc1m.start(t);
+          osc1m.stop(t + 0.13);
+
+          // سلمة 2 (هابطة بالتدريج تتلاشى بهدوء تام): نغمة C5 (523.25 Hz)
+          var t2m = t + 0.10;
+          var osc2m = ctx.createOscillator();
+          var g2m = ctx.createGain();
+          osc2m.type = 'sine';
+          osc2m.frequency.setValueAtTime(523.25, t2m);
+          g2m.gain.setValueAtTime(0.0001, t2m);
+          g2m.gain.exponentialRampToValueAtTime(0.18, t2m + 0.015);
+          g2m.gain.exponentialRampToValueAtTime(0.0001, t2m + 0.28);
+          osc2m.connect(g2m);
+          g2m.connect(masterGain);
+          osc2m.start(t2m);
+          osc2m.stop(t2m + 0.30);
+
+          return;
+        }
+      } catch (e) {
+        console.warn('[SoundEngine] playToggleChime synthesis error:', e);
+      }
+    }
+
+    // Fallback if AudioContext is not initialized
+    try {
+      var sName = opening ? 'sound_unmute' : 'sound_mute';
+      if (audioElements[sName]) {
+        var el = audioElements[sName].cloneNode();
+        el.volume = 0.45;
+        el.play().catch(function () {});
+      }
+    } catch (_) {}
   }
 
   // =========================================================================
@@ -513,7 +640,18 @@
       }
     },
     muteAnnouncement: function (muted) {
-      if (!muted) play('scan', 0.8);
+      // muted === true  -> قفل الصوت (سلمتين هابطتين بالتدريج بهدوء تام)
+      // muted === false -> فتح الصوت (سلمتين صاعدتين بالتدريج برنين دافئ فاخر)
+      playToggleChime(!muted);
+      try {
+        if (navigator.vibrate) {
+          if (!muted) {
+            navigator.vibrate([10, 30, 15]);
+          } else {
+            navigator.vibrate([12]);
+          }
+        }
+      } catch (_) {}
     },
 
     // Direct manual play & preload
