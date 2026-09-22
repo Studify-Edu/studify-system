@@ -1629,17 +1629,39 @@ let vaultTransfers = [];
  let box = $("fullscreenFeedback");
  let icon = $("feedbackIcon");
  if(!box || !icon) return;
+ 
  box.classList.remove("hidden");
+ box.style.opacity = "1";
  void box.offsetWidth;
+ 
  if (isSuccess) {
- icon.innerHTML = "";
+     icon.innerHTML = `
+     <svg class="premium-svg success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+         <circle class="premium-circle" cx="26" cy="26" r="25" />
+         <path class="premium-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+     </svg>`;
  } else if (isAlreadyPresent) {
- icon.innerHTML = "";
+     icon.innerHTML = `
+     <svg class="premium-svg warning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+         <circle class="premium-circle" cx="26" cy="26" r="25" />
+         <path class="premium-exclam" fill="none" d="M26 12v18 M26 38v2" />
+     </svg>`;
  } else {
- icon.innerHTML = "";
+     icon.innerHTML = `
+     <svg class="premium-svg error" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+         <circle class="premium-circle" cx="26" cy="26" r="25" />
+         <path class="premium-cross" fill="none" d="M16 16 36 36 M36 16 16 36" />
+     </svg>`;
  }
- setTimeout(() => { box.classList.add("hidden"); }, 400);
- }
+ 
+ setTimeout(() => { 
+     box.style.opacity = "0";
+     setTimeout(() => {
+         box.classList.add("hidden");
+         icon.innerHTML = "";
+     }, 300);
+ }, 1200);
+}
 
 function showToast(msg, type = "success") {
    return window.showToast(msg, type);
