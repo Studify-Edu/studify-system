@@ -1736,7 +1736,7 @@ function showToast(msg, type = "success") {
  }
  window.isMuted = (localStorage.getItem("ca_muted") === "1");
 
- // Legacy playSound function removed. Using window.playSound bridge from assistant-sounds.js.
+ // Studify Studio Real MP3 Sound Engine: uses window.AssistantSounds and window.playSound from sounds.js.
 
  function makeEmptyStudent(id) {
  return { id: id, name: "", className: "", phone: "", paid: 0, notes: "", rank: "normal", joinedDate: nowDateStr(), attendanceDates: [] };
