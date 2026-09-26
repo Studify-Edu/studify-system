@@ -1482,7 +1482,7 @@ let vaultTransfers = [];
   "hint_click_revenue": { ar: "اضغط لتفاصيل الخزينة اليومية", en: "Tap for daily revenue log" },
   "shift_manager_title": { ar: "مسؤول الشيفت", en: "Shift Manager" },
   "status_online": { ar: "نشط", en: "Active" },
-  "quick_stats_badge": { ar: "إحصائيات", en: "Stats" },
+  "quick_stats_badge": { ar: "0 حضور", en: "0 Attend" },
   "btn_admin_portal": { ar: "لوحة الإدارة (Admin)", en: "Admin Dashboard" },
   "btn_mute_sounds": { ar: "كتم الأصوات", en: "Mute Sounds" },
   "btn_system_logout": { ar: "خروج من النظام", en: "Logout" },

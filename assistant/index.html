@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V107">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V108">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -104,7 +104,7 @@
   // Service Worker Registration
   if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_124')
+  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_125')
   .then(reg => {
     reg.update();
     console.log('[SW] Registered:', reg.scope);
@@ -415,7 +415,7 @@
     </div>
     <div class="session-pill-badge" id="mobileSessionSummaryBadge">
       <span class="live-dot"></span>
-      <span id="mobileSessionQuickStat" data-i18n="quick_stats_badge">إحصائيات</span>
+      <span id="mobileSessionQuickStat" data-i18n="quick_stats_badge">0 حضور</span>
       <i class="fa-solid fa-chevron-down top-subject-chevron"></i>
     </div>
    </div>
@@ -2068,7 +2068,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V7"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V166"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V167"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

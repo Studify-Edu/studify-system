@@ -7861,16 +7861,12 @@ body.system-hard-locked #appBox {
 
 
 /* =============================================================================
-   ASSISTANT — MOBILE PREMIUM UX v2
-   تحسينات الموبايل الشاملة — كل الأكواد هنا داخل 768px فقط
-   لا تأثير على الكمبيوتر اللابتوب إطلاقاً
+   ASSISTANT — MOBILE REFINED UX & BUG FIXES
+   جميع التعديلات هنا داخل 768px فقط — لا تؤثر على الكمبيوتر إطلاقاً
    ============================================================================= */
 @media (max-width: 768px) {
 
-  /* ── 1. SAFARI AUTO-ZOOM FIX ──────────────────────────────────────────────
-     Safari بيعمل auto-zoom على أي input أقل من 16px — هنمنعه تماماً
-     ─────────────────────────────────────────────────────────────────────── */
-  input,
+  /* ── 1. SAFARI AUTO-ZOOM PREVENTION ───────────────────────────────────────── */
   input[type="text"],
   input[type="number"],
   input[type="tel"],
@@ -7879,279 +7875,298 @@ body.system-hard-locked #appBox {
   input[type="date"],
   input[type="time"],
   select,
-  textarea,
-  .inp {
+  textarea {
     font-size: 16px !important;
-    -webkit-text-size-adjust: 100% !important;
   }
 
-  /* ── 2. UNIVERSAL TOUCH TARGETS (44px Apple HIG Minimum) ─────────────────
-     كل زر لازم يكون 44px على الأقل عشان يتضغط براحة باليد
-     ─────────────────────────────────────────────────────────────────────── */
-  .btn {
-    min-height: 44px !important;
+  /* ── 2. TOPBAR SESSION PILL & ATTENDANCE BADGE (المادة + الحضور معاً) ────────── */
+  /* نضمن ظهور اسم المادة وعدد الحضور دائماً وبشكل منسق وشيك */
+  .mobile-session-pill {
+    flex: 1 1 auto !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 10px !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(99, 102, 241, 0.1)) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    cursor: pointer !important;
+    overflow: hidden !important;
   }
 
-  .btn.iconOnly,
-  .row .btn.iconOnly {
-    min-width: 44px !important;
-    min-height: 44px !important;
-    width: 44px !important;
-    height: 44px !important;
+  .session-pill-main {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
   }
 
-  /* Nav items in sidebar */
-  .nav-item {
-    min-height: 48px !important;
-    padding: 13px 14px !important;
-  }
-
-  /* ── 3. REMOVE 300ms TAP DELAY ──────────────────────────────────────────── */
-  .btn,
-  button,
-  a,
-  .nav-item,
-  .stat-pill,
-  input[type="submit"],
-  input[type="button"],
-  label {
-    touch-action: manipulation !important;
-  }
-
-  /* ── 4. ANTI-TAP-HIGHLIGHT (أنظف تجربة على Android) ─────────────────────── */
-  * {
-    -webkit-tap-highlight-color: transparent !important;
-  }
-
-  /* ── 5. ACTIVE STATE FEEDBACK (ضغطة مرئية سريعة) ──────────────────────── */
-  .btn:active,
-  .nav-item:active,
-  .topbar-icon-btn:active,
-  .stat-pill:active {
-    transform: scale(0.96) !important;
-    opacity: 0.88 !important;
-    transition: transform 0.1s ease, opacity 0.1s ease !important;
-  }
-
-  /* ── 6. SMOOTH MOMENTUM SCROLLING ──────────────────────────────────────── */
-  .sidebar-menu,
-  #mainContent,
-  .modalContent,
-  .tableWrap {
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior: contain !important;
-  }
-
-  /* ── 7. SAFE AREA INSETS (iPhone Notch + Home Bar) ─────────────────────── */
-  .sidebar {
-    padding-bottom: env(safe-area-inset-bottom, 16px) !important;
-  }
-
-  /* Sidebar footer sticks above home bar */
-  .sidebar-footer {
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
-  }
-
-  /* ── 8. TABLE SCROLL VISUAL INDICATOR ──────────────────────────────────────
-     fade shadow على يسار الجدول يوضح للمستخدم إن فيه محتوى مخفي
-     ─────────────────────────────────────────────────────────────────────── */
-  .tableWrap {
-    position: relative !important;
-  }
-
-  .tableWrap::after {
-    content: '' !important;
-    position: absolute !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 36px !important;
-    background: linear-gradient(
-      to right,
-      var(--bg-surface, #151F32) 0%,
-      transparent 100%
-    ) !important;
-    pointer-events: none !important;
-    z-index: 3 !important;
-    border-radius: 12px 0 0 12px !important;
-  }
-
-  /* ── 9. MODALS → BOTTOM SHEET PATTERN ────────────────────────────────────
-     المودالز تطلع من الأسفل على الموبايل — أكثر طبيعية وعملية
-     ─────────────────────────────────────────────────────────────────────── */
-  .modal:not(.hidden) {
-    align-items: flex-end !important;
-    padding: 0 !important;
-  }
-
-  .modalContent {
-    width: 100% !important;
-    max-width: 100% !important;
-    border-radius: 24px 24px 0 0 !important;
-    max-height: 92vh !important;
-    padding: 28px 18px env(safe-area-inset-bottom, 20px) 18px !important;
-    animation: mobileSheetSlideUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) both !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  @keyframes mobileSheetSlideUp {
-    from { transform: translateY(100%); opacity: 0.7; }
-    to   { transform: translateY(0);    opacity: 1; }
-  }
-
-  /* Drag handle visual indicator على كل مودال */
-  .modalContent::before {
-    content: '' !important;
-    display: block !important;
-    width: 44px !important;
-    height: 4px !important;
-    border-radius: 2px !important;
-    background: var(--border, rgba(255,255,255,0.15)) !important;
-    margin: -12px auto 20px auto !important;
-    flex-shrink: 0 !important;
-    opacity: 0.7 !important;
-  }
-
-  /* ── 10. MOBILE STATS BOTTOM SHEET — Drag Handle ─────────────────────── */
-  .mobile-stats-sheet-container {
-    padding-bottom: env(safe-area-inset-bottom, 16px) !important;
-    border-radius: 24px 24px 0 0 !important;
-  }
-
-  .mobile-stats-sheet-container::before {
-    content: '' !important;
-    display: block !important;
-    width: 44px !important;
-    height: 4px !important;
-    border-radius: 2px !important;
-    background: var(--border, rgba(255,255,255,0.2)) !important;
-    margin: 0 auto 18px auto !important;
-    opacity: 0.6 !important;
+  .session-pill-icon {
+    color: var(--primary, #38bdf8) !important;
+    font-size: 0.95em !important;
     flex-shrink: 0 !important;
   }
 
-  /* ── 11. HOME CARDS (BENTO-SM) — Compact Mobile Layout ───────────────── */
-  .card.bento-sm {
-    min-height: 100px !important;
-    padding: 18px 16px !important;
-  }
-
-  /* ── 12. STUDENT HEAD PILLS — No Overflow ──────────────────────────────── */
-  .studentHead .pill {
-    max-width: 180px !important;
+  .session-pill-val {
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+    color: var(--text-primary, #f1f5f9) !important;
+    white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    font-family: 'Cairo', sans-serif !important;
+    max-width: 120px !important;
+  }
+
+  /* بادج الحضور: يظهر دائماً على الموبايل ولا يختفي أبداً */
+  .session-pill-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 3px 8px !important;
+    border-radius: 8px !important;
+    background: rgba(56, 189, 248, 0.16) !important;
+    color: var(--primary, #38bdf8) !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    flex-shrink: 0 !important;
+    margin-inline-start: 4px !important;
+    border: 1px solid rgba(56, 189, 248, 0.25) !important;
     white-space: nowrap !important;
   }
 
-  /* ── 13. RANKING BUTTONS — Proper Touch Target ─────────────────────────── */
-  .st-rank-btn {
+  .session-pill-badge .live-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    background: #10b981 !important;
+    box-shadow: 0 0 6px #10b981 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ── 3. QUICK ACTIONS DROPDOWN & NOTIFICATIONS (قائمة التحكم السريعة والإشعارات) ── */
+  /* تحويل القوائم لتفتح في منتصف الشاشة بدون أي قص أو ترحيل */
+  #userProfileDropdown,
+  #notificationsDropdown {
+    position: fixed !important;
+    top: 60px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45) !important;
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border) !important;
+    z-index: 99999 !important;
+    padding: 14px !important;
+    margin: 0 !important;
+  }
+
+  #userProfileDropdown button,
+  #userProfileDropdown .btn {
+    min-height: 46px !important;
+    font-size: 0.92rem !important;
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+  }
+
+  /* ── 4. PACKAGES & PRICES (الباقات والأسعار) ─────────────────────────────── */
+  /* منع أي overflow أو ترحيل لليمين وجعل الكروت ملائمة للشاشة 100% */
+  #secPackages {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #secPackages .content-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  #btnDecisionRequestInPackages {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 12px 16px !important;
+    font-size: 0.92rem !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #d97706, #f59e0b) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.28) !important;
+    border: none !important;
+    box-sizing: border-box !important;
+  }
+
+  #groupFeesList {
+    width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #groupFeesList > div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-pkg-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 16px 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .admin-pkg-card-top {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .admin-pkg-price-pill {
+    padding: 5px 12px !important;
+  }
+
+  .admin-pkg-metrics-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+
+  .admin-pkg-metric-cell {
+    padding: 7px 8px !important;
+  }
+
+  .admin-pkg-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-pkg-actions .btn-pkg-edit {
+    flex: 1 1 auto !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+  }
+
+  .admin-pkg-actions .btn-pkg-delete {
+    width: 44px !important;
     min-width: 44px !important;
     min-height: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
   }
 
-  /* ── 14. PAYMENT ROWS — Full Width Touch Targets ──────────────────────── */
-  .payRow .btn {
-    min-height: 48px !important;
-    padding: 0 18px !important;
+  .pkg-builder-card {
+    padding: 14px !important;
+    box-sizing: border-box !important;
   }
 
-  /* ── 15. DROPDOWNS — Never Overflow Screen Edge ─────────────────────────── */
-  .notificationsDropdown,
-  #notificationsDropdown,
-  #userProfileDropdown {
-    max-width: calc(100vw - 16px) !important;
-    left: 8px !important;
-    right: 8px !important;
-    inset-inline-start: 8px !important;
-    inset-inline-end: 8px !important;
-    width: calc(100vw - 16px) !important;
+  /* ── 5. MARKETING & RETARGETING CAMPAIGNS (حملات التسويق وإعادة الاستهداف) ─── */
+  #secMarketing {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
-  /* ── 16. QUICK ACTION DROPDOWN ────────────────────────────────────────── */
-  #userProfileDropdown {
-    max-height: 80vh !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+  .mkt-command-hero {
+    flex-direction: column !important;
+    padding: 18px 16px !important;
+    gap: 14px !important;
+    text-align: start !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
   }
 
-  /* ── 17. TOAST NOTIFICATIONS — Bottom Safe Area ──────────────────────── */
+  .mkt-hero-gears-cluster {
+    display: none !important;
+  }
+
+  .mkt-hero-title {
+    font-size: 1.25rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .mkt-hero-desc {
+    font-size: 0.85rem !important;
+    line-height: 1.5 !important;
+  }
+
+  #secMarketing .card {
+    padding: 16px 14px !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #btnStartAutoBroadcast {
+    width: 100% !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 13px 16px !important;
+    font-size: 0.95rem !important;
+    line-height: 1.35 !important;
+    box-sizing: border-box !important;
+    border-radius: 12px !important;
+  }
+
+  #secMarketing .flexBetween {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  #secMarketing .flexBetween > h3 {
+    font-size: 1rem !important;
+    width: 100% !important;
+  }
+
+  #secMarketing .flexBetween > .badge {
+    width: 100% !important;
+    text-align: center !important;
+    white-space: normal !important;
+    box-sizing: border-box !important;
+    padding: 6px 10px !important;
+  }
+
+  /* ── 6. TOUCH TARGETS & INTERACTION POLISH ───────────────────────────────── */
+  .btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  .btn:active,
+  .nav-item:active,
+  .topbar-icon-btn:active {
+    transform: scale(0.97) !important;
+    opacity: 0.9 !important;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safe area for bottom toast notifications */
   #toastContainer {
     bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
     left: 12px !important;
     right: 12px !important;
     width: auto !important;
     max-width: calc(100vw - 24px) !important;
-  }
-
-  /* ── 18. SWEETALERT DIALOGS — Bottom Sheet on Mobile ─────────────────── */
-  .swal2-popup {
-    width: 92% !important;
-    max-width: 92vw !important;
-    padding: 24px 20px !important;
-    border-radius: 20px !important;
-    font-size: 0.95em !important;
-  }
-
-  .swal2-title {
-    font-size: 1.2em !important;
-  }
-
-  .swal2-confirm,
-  .swal2-cancel,
-  .swal2-deny {
-    min-height: 44px !important;
-    font-size: 0.95em !important;
-    padding: 10px 24px !important;
-  }
-
-  /* ── 19. CARD ACTION BUTTONS ROW — Full Width Comfortable ────────────── */
-  .card .row.wrap .btn {
-    flex: 1 1 auto !important;
-    min-height: 46px !important;
-    font-size: 0.9em !important;
-  }
-
-  /* ── 20. PRINT & EXPORT BUTTONS — Hidden on Mobile (Useless) ─────────── */
-  .print-only-btn {
-    display: none !important;
-  }
-}
-
-
-/* =============================================================================
-   ASSISTANT — EXTRA SMALL PHONES (≤ 390px)
-   ============================================================================= */
-@media (max-width: 390px) {
-  /* Topbar pill text truncates gracefully */
-  .session-pill-val {
-    font-size: 0.78rem !important;
-    max-width: 100px !important;
-  }
-
-  /* Stat pill badge: hide on very small screens */
-  .session-pill-badge {
-    display: none !important;
-  }
-
-  /* Cards reduce padding slightly */
-  .card {
-    padding: 16px 12px !important;
-  }
-
-  /* Tables font slightly smaller */
-  table th,
-  table td {
-    font-size: 0.8em !important;
-    padding: 8px 10px !important;
-    white-space: nowrap !important;
-  }
-
-  /* Modals: almost full viewport on tiny screens */
-  .modalContent {
-    max-height: 94vh !important;
-    padding: 22px 14px env(safe-area-inset-bottom, 16px) 14px !important;
   }
 }
 
