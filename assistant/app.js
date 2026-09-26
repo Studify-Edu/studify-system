@@ -322,6 +322,22 @@ const GLOBAL_NOTIF_DICT = {
 
 const DYNAMIC_NOTIF_RULES = [
   {
+    pattern: /^الطالب غير مشترك في باقة تخص مادة \((.*?)\)$/i,
+    replace: (m, p1) => `Student is not subscribed to a package for subject (${p1})`
+  },
+  {
+    pattern: /^الطالب لم يسدد ثمن باقة \((.*?)\) بالكامل$/i,
+    replace: (m, p1) => `Student has not fully paid for package (${p1})`
+  },
+  {
+    pattern: /^باقة \((.*?)\) لم تبدأ بعد$/i,
+    replace: (m, p1) => `Package (${p1}) has not started yet`
+  },
+  {
+    pattern: /^باقة \((.*?)\) منتهية الصلاحية$/i,
+    replace: (m, p1) => `Package (${p1}) is expired`
+  },
+  {
     pattern: /^تم الوصول للحد الأقصى للطلاب( \((.*?)\))?/i,
     replace: (m, p1, p2) => p2 ? `Maximum student limit reached (${p2})` : `Maximum student limit reached`
   },
@@ -997,6 +1013,19 @@ let vaultTransfers = [];
  // 3. THE COMPREHENSIVE DICTIONARY
  // ==========================================
  const dict = {
+  "asst_exp_title": { ar: "تسجيل ومتابعة مصروفات السنتر", en: "Record & Track Center Expenses" },
+  "asst_exp_reason_lbl": { ar: "بند المصروف / السبب", en: "Expense Item / Reason" },
+  "asst_exp_amt_lbl": { ar: "المبلغ (ج)", en: "Amount (EGP)" },
+  "asst_exp_method_lbl": { ar: "الخزينة المصروف منها", en: "Payment Method / Treasury" },
+  "asst_exp_date_lbl": { ar: "التاريخ", en: "Date" },
+  "asst_btn_save_exp": { ar: "تسجيل المصروف", en: "Record Expense" },
+  "asst_exp_history_title": { ar: "سجل المصروفات المسجلة", en: "Recorded Expenses History" },
+  "th_date": { ar: "التاريخ", en: "Date" },
+  "th_expense_item": { ar: "بند المصروف", en: "Expense Item" },
+  "th_treasury": { ar: "الخزينة", en: "Treasury" },
+  "th_amount": { ar: "المبلغ", en: "Amount" },
+  "th_action": { ar: "الإجراء", en: "Action" },
+  "no_exp_yet": { ar: "لا توجد مصروفات مسجلة بعد", en: "No expenses recorded yet" },
   "set_status_secured": { ar: "النظام متزامن ومحمي", en: "System Synced & Secured" },
   "note_subtitle": { ar: "ملاحظات ومهام إدارة السنتر المشتركة ومزامنة فورية مع السحابة", en: "Shared center tasks and notes with real-time cloud sync" },
   "nb_status_synced": { ar: "محفوظ بالسحابة", en: "Saved to Cloud" },

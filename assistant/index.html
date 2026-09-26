@@ -1512,21 +1512,20 @@
         </button>
      </div>
 
-     <!-- جدول أحدث المصروفات -->
-     <h4 style="color:var(--text-primary); font-size:0.95em; margin:0 0 10px 0; font-weight:700;"><i class="fa-solid fa-list-check"></i> سجل المصروفات المسجلة</h4>
+     <h4 style="color:var(--text-primary); font-size:0.95em; margin:0 0 10px 0; font-weight:700;"><i class="fa-solid fa-list-check"></i> <span data-i18n="asst_exp_history_title">سجل المصروفات المسجلة</span></h4>
      <div class="tableWrap">
         <table id="asstExpensesTable">
            <thead>
               <tr>
-                 <th>التاريخ</th>
-                 <th>بند المصروف</th>
-                 <th>الخزينة</th>
-                 <th>المبلغ</th>
-                 <th>الإجراء</th>
+                 <th data-i18n="th_date">التاريخ</th>
+                 <th data-i18n="th_expense_item">بند المصروف</th>
+                 <th data-i18n="th_treasury">الخزينة</th>
+                 <th data-i18n="th_amount">المبلغ</th>
+                 <th data-i18n="th_action">الإجراء</th>
               </tr>
            </thead>
            <tbody id="asstExpensesTableBody">
-              <tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-secondary);">لا توجد مصروفات مسجلة بعد</td></tr>
+              <tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-secondary);" data-i18n="no_exp_yet">لا توجد مصروفات مسجلة بعد</td></tr>
            </tbody>
         </table>
      </div>
@@ -1884,7 +1883,7 @@
       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:14px;">
         <h3 style="margin:0; display:flex; align-items:center; gap:10px; font-size:1.25em; color:var(--text-primary);">
           <i class="fa-solid fa-hand-holding-dollar" style="color:var(--warning);"></i>
-          <span>تقديم طلب قرار للمدير (خصم / إعفاء مخصص)</span>
+          <span data-i18n="modal_dec_req_title">تقديم طلب قرار للمدير (خصم / إعفاء مخصص)</span>
         </h3>
         <button type="button" class="iconBtn" onclick="document.getElementById('discountRequestModal').classList.add('hidden')" style="font-size:1.3em; color:var(--text-secondary); cursor:pointer; background:none; border:none;"><i class="fa-solid fa-xmark"></i></button>
       </div>
