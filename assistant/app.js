@@ -1116,6 +1116,7 @@ let vaultTransfers = [];
  "print_receipt_unlock": { ar: "طباعة إيصال سداد الباقة (مكتمل)", en: "Print Package Receipt (Completed)" },
  "correct_pay_btn": { ar: "إيداع", en: "Deposit" },
  "shift_manager": { ar: "مسئول الشيفت:", en: "Shift Manager:" },
+ "shift_manager_short": { ar: "الشيفت:", en: "Shift:" },
  "modal_shift_title": { ar: "اختيار مسئول الشيفت", en: "Select Shift Manager" },
  "plc_new_manager": { ar: "اسم المسئول الجديد...", en: "New manager name..." },
  "btn_add_manager": { ar: "إضافة", en: "Add" },

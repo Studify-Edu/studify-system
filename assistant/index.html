@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V101">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V102">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -384,32 +384,17 @@
  <main class="main-content">
 
  <!-- TOPBAR -->
- <header class="topbar">
- <div class="topbar-start">
- <button id="mobileSidebarToggle" class="mobile-menu-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+  <header class="topbar">
+ <div class="topbar-row-main">
+  <div class="topbar-start">
+   <button id="mobileSidebarToggle" class="mobile-menu-btn" title="القائمة الرئيسية"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+   <span class="stat-pill clickable top-subject-pill" id="openSubjectModalBtn" title="تحديد مادة الحضور">
+    <i class="fa-solid fa-book" style="color:var(--primary); font-size:1.05em;"></i>
+    <span data-i18n="top_subject_lbl">المادة:</span> <b id="globalSubjectText" style="font-family:'Cairo';" data-i18n="top_subject_val">مادة الحضور</b>
+    <i class="fa-solid fa-chevron-down top-subject-chevron"></i>
+   </span>
   </div>
- <div class="topbar-stats">
-  <span class="stat-pill clickable" id="openSubjectModalBtn" title="تحديد مادة الحضور">
-  <i class="fa-solid fa-book" style="color:var(--primary); font-size:1.05em;"></i>
-  <span data-i18n="top_subject_lbl">المادة:</span> <b id="globalSubjectText" style="font-family:'Cairo';" data-i18n="top_subject_val">مادة الحضور</b>
-  </span>
-  <span class="stat-pill clickable" id="openAllStudentsBtn">
-  <span data-i18n="stat_students">مسجلين:</span> <b id="totalStudentsCount">0</b>
-  </span>
-  <span class="stat-pill clickable" id="todayCountTopCard">
-  <span data-i18n="stat_attend">حضور:</span> <b id="todayCountTop">0</b>
-  </span>
-  <span class="stat-pill adminOnly clickable" id="openRevenueModalBtn">
-  <span data-i18n="stat_revenue">إيراد:</span> 
-  <b id="todayRevenue" class="blurTarget">0 ج</b>
-  <span id="toggleRevBtn" style="cursor:pointer; font-size:1.1em; margin-inline-start:5px;"></span>
-  </span>
-  <span class="stat-pill" id="openShiftManagerBtn" style="cursor: default;">
-  <i class="fa-solid fa-user-tie" style="color:var(--primary); font-size:0.95em;"></i>
-  <span data-i18n="shift_manager">مسؤول الشيفت:</span> <b id="currentShiftManagerName">..</b>
-  </span>
-  </div>
- <div class="topbar-end" style="position: relative;">
+<div class="topbar-end" style="position: relative;">
  <!-- Cloud Sync Indicator (Consistent square button matching other controls) -->
  <button id="cloudSyncIndicator" class="topbar-icon-btn cloud-sync-btn online" type="button" title="متصل بالسحابة — اضغط للمزامنة اليدوية" aria-label="مزامنة السحابة">
     <div class="cloud-icon-container">
@@ -490,6 +475,29 @@
  <span></span> <span data-i18n="btn_system_logout">خروج من النظام</span>
  </button>
  </div>
+ </div>
+  </div>
+
+ <!-- LIVE STATS SUB-BAR (ROW 2 ON MOBILE, INLINE ON DESKTOP) -->
+ <div class="topbar-stats" id="topbarStatsBar">
+  <span class="stat-pill clickable" id="openAllStudentsBtn" title="عرض كافة الطلاب المسجلين">
+   <i class="fa-solid fa-users stat-pill-icon" style="color:#3b82f6;"></i>
+   <span data-i18n="stat_students">مسجلين:</span> <b id="totalStudentsCount">0</b>
+  </span>
+  <span class="stat-pill clickable" id="todayCountTopCard" title="عرض حضور اليوم">
+   <i class="fa-solid fa-user-check stat-pill-icon" style="color:#10b981;"></i>
+   <span data-i18n="stat_attend">حضور:</span> <b id="todayCountTop">0</b>
+  </span>
+  <span class="stat-pill adminOnly clickable" id="openRevenueModalBtn" title="إجمالي إيراد اليوم">
+   <i class="fa-solid fa-wallet stat-pill-icon" style="color:#f59e0b;"></i>
+   <span data-i18n="stat_revenue">إيراد:</span> 
+   <b id="todayRevenue" class="blurTarget">0 ج</b>
+   <span id="toggleRevBtn" style="cursor:pointer; font-size:1.05em; margin-inline-start:3px;"></span>
+  </span>
+  <span class="stat-pill" id="openShiftManagerBtn" style="cursor: default;" title="مسؤول الشيفت الحالي">
+   <i class="fa-solid fa-user-tie stat-pill-icon" style="color:#8b5cf6;"></i>
+   <span data-i18n="shift_manager_short">الشيفت:</span> <b id="currentShiftManagerName">..</b>
+  </span>
  </div>
  </header>
 
@@ -2012,7 +2020,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V7"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V159"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V160"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
