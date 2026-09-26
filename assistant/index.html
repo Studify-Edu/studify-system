@@ -104,7 +104,7 @@
   // Service Worker Registration
   if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_120')
+  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_122')
   .then(reg => {
     reg.update();
     console.log('[SW] Registered:', reg.scope);
@@ -791,7 +791,12 @@
  <button id="saveStudentBtn" class="btn primary" data-i18n="btn_save_st">حفظ البيانات </button>
  <button id="markTodayBtn" class="btn success" data-i18n="btn_mark_present"> حضور</button>
  <button id="unmarkTodayBtn" class="btn warning" data-i18n="btn_mark_absent"> غياب</button>
+ </div>
  
+ <div id="promoteStudentBox" style="margin-top:12px; display:none;">
+   <button id="btnPromoteSessionStudent" type="button" class="btn primary w100" style="padding:12px; font-weight:800; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow:0 4px 14px rgba(37,99,235,0.3); color:#fff; border:none; cursor:pointer;">
+     <i class="fa-solid fa-id-card"></i> <span data-i18n="btn_promote_student">ترقية إلى طالب رسمي (إصدار كارت ID دائم)</span>
+   </button>
  </div>
 
  <!-- إيصال الدفع النهائي (مغلق بقفل في حال عدم سداد الباقة بالكامل) -->
@@ -923,9 +928,26 @@
  <div class="card">
  <h2 style="color: var(--success); margin-bottom: 15px;" data-i18n="sess_add_title"> تسجيل حضور ودفع فوري</h2>
  <label class="lbl" data-i18n="sess_name_lbl">اسم الطالب *</label>
- <input id="sessStName" class="inp" placeholder="مثال: أحمد محمود عثمان" data-i18n-placeholder="sess_name_plc">
+ <input id="sessStName" list="sessStudentsDatalist" class="inp" placeholder="مثال: أحمد محمود عثمان" data-i18n-placeholder="sess_name_plc" autocomplete="off">
+ <datalist id="sessStudentsDatalist"></datalist>
 
- <label class="lbl" data-i18n="sess_phone_lbl">رقم الموبايل (اختياري)</label>
+ <div class="grid2" style="gap:10px; margin-top:10px;">
+   <div>
+     <label class="lbl"><i class="fa-solid fa-id-badge" style="color:var(--primary); margin-inline-end:5px;"></i> كود الحصة (ID)</label>
+     <input id="sessStId" class="inp" readonly value="ST-00001" style="font-weight:bold; background:var(--bg-inset); color:var(--primary); letter-spacing:1px;" title="كود الحصة التلقائي للطالب">
+   </div>
+   <div>
+     <label class="lbl"><i class="fa-solid fa-ticket" style="color:var(--primary); margin-inline-end:5px;"></i> عدد الحصص المدفوعة</label>
+     <input id="sessStCount" type="number" class="inp" value="1" min="1" placeholder="1" style="font-weight:bold;">
+   </div>
+ </div>
+
+ <div id="sessBalanceBanner" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(37,99,235,0.08); border:1.5px dashed var(--primary); border-radius:10px; align-items:center; justify-content:space-between; gap:10px;">
+   <div style="font-size:0.86rem; font-weight:700; color:var(--primary);"><i class="fa-solid fa-circle-check"></i> <span id="sessBalanceBannerText">طالب مسجل سابقاً - رصيد متاح: 0 حصة</span></div>
+   <button type="button" id="btnUseSessBalance" class="btn primary smallBtn" style="padding:4px 10px; font-size:0.8rem; white-space:nowrap; border-radius:6px;"><i class="fa-solid fa-ticket"></i> خصم من الرصيد</button>
+ </div>
+
+ <label class="lbl" style="margin-top:10px;" data-i18n="sess_phone_lbl">رقم الموبايل (اختياري)</label>
  <input id="sessStPhone" class="inp" inputmode="tel" placeholder="مثال: 01012345678" data-i18n-placeholder="sess_phone_plc">
 
  <label class="lbl" data-i18n="sess_class_lbl">المادة / الصف / الباقة</label>
@@ -2046,7 +2068,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V7"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V163"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V164"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

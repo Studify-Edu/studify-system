@@ -759,11 +759,21 @@ let sessionStudentsByDate = {};
 window.getAdminUniqueSessionStudents = function() {
   const list = [];
   const seen = new Set();
+  const existingStudentKeys = new Set(Object.keys(students || {}));
+  const existingNamesPhones = new Set();
+  Object.values(students || {}).forEach(s => {
+    if (s && s.name) {
+      existingNamesPhones.add((s.name || '').trim().toLowerCase() + '___' + (s.phone || '').trim());
+    }
+  });
+
   const dates = Object.keys(sessionStudentsByDate || {}).sort().reverse();
   dates.forEach(d => {
     const arr = sessionStudentsByDate[d] || [];
     arr.forEach((it, idx) => {
+      if (it.id && existingStudentKeys.has(String(it.id))) return;
       const key = (it.name || '').trim().toLowerCase() + '___' + (it.phone || '').trim();
+      if (existingNamesPhones.has(key)) return;
       if (!seen.has(key)) {
         seen.add(key);
         let attCount = 0;
