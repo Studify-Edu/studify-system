@@ -147,7 +147,9 @@ body {
   filter: drop-shadow(0 12px 20px rgba(59, 130, 246, 0.5));
 }
 .portal-type-badge {
-  display: inline-flex;
+  display: flex;
+  width: max-content;
+  margin: 0 auto 14px auto;
   align-items: center;
   justify-content: center;
   gap: 7px;
@@ -155,7 +157,6 @@ body {
   border-radius: 20px;
   font-size: 0.82em;
   font-weight: 700;
-  margin-bottom: 14px;
   letter-spacing: 0.3px;
   user-select: none;
 }
