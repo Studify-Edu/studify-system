@@ -4405,6 +4405,9 @@ const st = students[id];
     if (typeof renderList === 'function') renderList(true);
   }
   if (typeof updateTopbarRevenue === 'function') updateTopbarRevenue();
+  
+  // Remove the anti-FOUC loading class once translation is complete
+  document.documentElement.classList.remove("lang-en-loading");
  }
  // ==========================================
  // 13. SYLLABUS MODULE

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="dark" class="login-active">
 <head>
  <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -33,6 +33,10 @@
  var savedLang = localStorage.getItem("ca_lang") || "ar";
  document.documentElement.lang = savedLang;
  document.documentElement.dir = (savedLang === "en") ? "ltr" : "rtl";
+ if (savedLang === "en") {
+   document.documentElement.classList.add("lang-en-loading");
+   document.write('<style id="anti-fouc">.lang-en-loading body { visibility: hidden !important; opacity: 0 !important; }</style>');
+ }
  })();
  </script>
  
