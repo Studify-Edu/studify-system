@@ -73,7 +73,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V23">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V24">
 </head>
 <body>
 
@@ -2138,7 +2138,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V48"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V49"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->
@@ -2146,31 +2146,6 @@
   <div id="adminLangSwitchOverlay" class="admin-lang-switch-overlay">
     <div class="admin-lang-spinner"></div>
     <div class="admin-lang-switch-text" id="adminLangSwitchText">Switching Language...</div>
-  </div>
-
-  <!-- Mobile Bottom Navigation -->
-  <div class="mobile-bottom-nav">
-    <div class="mob-nav-item active" id="mobNavDaily" onclick="window.switchAdminTab('dailyReport')">
-      <i class="fa-solid fa-chart-pie"></i>
-      <span data-i18n="nav_daily">الرئيسية</span>
-    </div>
-    <div class="mob-nav-item" id="mobNavTerm" onclick="window.switchAdminTab('termReport')">
-      <i class="fa-solid fa-chart-line"></i>
-      <span data-i18n="nav_term">الترم</span>
-    </div>
-    <div class="mob-nav-fab" onclick="window.openVaultTransferModal()">
-      <div class="mob-nav-fab-inner">
-        <i class="fa-solid fa-money-bill-transfer"></i>
-      </div>
-    </div>
-    <div class="mob-nav-item" id="mobNavAssistants" onclick="window.switchAdminTab('assistants')">
-      <i class="fa-solid fa-user-tie"></i>
-      <span data-i18n="nav_assistants">السكرتارية</span>
-    </div>
-    <div class="mob-nav-item" onclick="window.toggleAdminMobileSidebar(true)">
-      <i class="fa-solid fa-bars"></i>
-      <span data-i18n="nav_more">المزيد</span>
-    </div>
   </div>
 
 </body>

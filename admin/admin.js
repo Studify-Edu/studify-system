@@ -2000,17 +2000,6 @@ window.switchAdminTab = function(tabKey) {
 
   if (viewEl) viewEl.classList.remove("hidden");
   if (btnEl) btnEl.classList.add("active");
-  
-  // Update mobile bottom nav
-  document.querySelectorAll(".mob-nav-item").forEach(btn => btn.classList.remove("active"));
-  let mobBtnId = null;
-  if (tabKey === 'dailyReport') mobBtnId = 'mobNavDaily';
-  if (tabKey === 'termReport') mobBtnId = 'mobNavTerm';
-  if (tabKey === 'assistants') mobBtnId = 'mobNavAssistants';
-  if (mobBtnId) {
-    const mBtn = document.getElementById(mobBtnId);
-    if (mBtn) mBtn.classList.add("active");
-  }
   if (titleEl) titleEl.textContent = c.title;
   if (iconEl) iconEl.className = `fa-solid ${c.icon}`;
 
