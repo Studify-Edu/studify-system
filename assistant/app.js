@@ -283,6 +283,11 @@ const GLOBAL_NOTIF_DICT = {
   "نعم، صفر": "Yes, reset",
   "تأكيد ضبط المصنع": "Confirm Factory Reset",
   "نعم، امسح كل شيء": "Yes, erase everything",
+  "عذراً، الشيفت واليومية مغلقة حالياً من قِبل المدير العام.": "Sorry, shift and daily register are currently closed by the general manager.",
+  "يرجى اختيار الباقة المستهدفة بالقرار": "Please select the target package for the decision",
+  "جاري المزامنة مع السحابة وتحديث البيانات...": "Syncing with cloud and updating data...",
+  "تمت المزامنة وتحديث كافة البيانات والباقات سحابياً بنجاح": "Successfully synced and updated all data and packages to the cloud",
+  "خطأ في المزامنة، تحقق من الاتصال بالإنترنت": "Sync error, check your internet connection",
   "تحذير شديد": "Severe Warning",
   "نعم، استرجع البيانات": "Yes, restore data",
   "نعم، احذف": "Yes, delete",
@@ -321,6 +326,10 @@ const GLOBAL_NOTIF_DICT = {
 };
 
 const DYNAMIC_NOTIF_RULES = [
+  {
+    pattern: /^خطأ: (.*)/i,
+    replace: (m, p1) => `Error: ${p1}`
+  },
   {
     pattern: /^الطالب غير مشترك في باقة تخص مادة \((.*?)\)$/i,
     replace: (m, p1) => `Student is not subscribed to a package for subject (${p1})`
