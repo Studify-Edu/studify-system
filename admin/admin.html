@@ -1307,7 +1307,7 @@
         <!-- 2. Visual Distribution Bar -->
         <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.82em; color: var(--text-secondary); margin-bottom: 8px;">
-            <span style="font-weight: 700; color: var(--text-primary);"><i class="fa-solid fa-chart-simple"></i> نسب التوزيع حسب القنوات:</span>
+            <span style="font-weight: 700; color: var(--text-primary);"><i class="fa-solid fa-chart-simple"></i> <span data-i18n="rev_dist_ratio">نسب التوزيع حسب القنوات:</span></span>
             <div style="display: flex; gap: 14px; flex-wrap: wrap;">
               <span><i class="fa-solid fa-square" style="color: #10b981;"></i> <span data-i18n="rev_src_regular">طلاب منتظمين</span>: <b id="revBarRegPct">0%</b></span>
               <span><i class="fa-solid fa-square" style="color: #0284c7;"></i> <span data-i18n="rev_src_session">طلاب حصة</span>: <b id="revBarSessPct">0%</b></span>
@@ -1641,15 +1641,15 @@
             <div id="expModalTotal" style="font-size: 1.6em; font-weight: 800; color: #ef4444;">0 ج</div>
           </div>
           <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
-            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_cash">المنصرف كاش:</div>
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="exp_cash">المنصرف كاش:</div>
             <div id="expModalCash" style="font-size: 1.3em; font-weight: 800; color: #10b981;">0 ج</div>
           </div>
           <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
-            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_instapay">المنصرف إنستاباي:</div>
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="exp_insta">المنصرف إنستاباي:</div>
             <div id="expModalInstapay" style="font-size: 1.3em; font-weight: 800; color: #7c3aed;">0 ج</div>
           </div>
           <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
-            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="opt_wallet">المنصرف فودافون:</div>
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;" data-i18n="exp_voda">المنصرف فودافون:</div>
             <div id="expModalWallet" style="font-size: 1.3em; font-weight: 800; color: #ef4444;">0 ج</div>
           </div>
         </div>
@@ -1809,7 +1809,7 @@
           <table class="fin-modal-table">
             <thead>
               <tr>
-                <th>#ID</th>
+                <th data-i18n="tbl_th_id">#ID</th>
                 <th data-i18n="tbl_th_student">اسم الطالب</th>
                 <th data-i18n="tbl_th_class">الباقة / الصف</th>
                 <th data-i18n="tbl_th_disc_amt">قيمة الخصم</th>
@@ -1888,7 +1888,7 @@
           <table class="fin-modal-table">
             <thead>
               <tr>
-                <th style="width: 10%;">#ID</th>
+                <th style="width: 10%;" data-i18n="tbl_th_id">#ID</th>
                 <th style="width: 26%;" data-i18n="tbl_th_student">اسم الطالب</th>
                 <th style="width: 18%;" data-i18n="tbl_th_class">الباقة / الصف</th>
                 <th style="width: 13%;" data-i18n="tbl_th_required">المطلوب</th>
@@ -1974,7 +1974,7 @@
                 <b id="vaultsModalCashIn" style="color: #10b981;">0 ج</b>
               </div>
               <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-secondary);">المنصرف كاش:</span>
+                <span style="color: var(--text-secondary);" data-i18n="exp_cash">المنصرف كاش:</span>
                 <b id="vaultsModalCashOut" style="color: #ef4444;">0 ج</b>
               </div>
             </div>
@@ -2077,15 +2077,15 @@
         <!-- KPI Badges -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
           <div style="background: rgba(59, 130, 246, 0.08); border: 1.5px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 12px;">
-            <div style="font-size: 0.8em; color: #3b82f6; font-weight: 700;">إجمالي الطلاب المسجلين:</div>
+            <div style="font-size: 0.8em; color: #3b82f6; font-weight: 700;"><span data-i18n="lbl_total_registered">إجمالي الطلاب المسجلين:</span></div>
             <div id="studentsModalTotal" style="font-size: 1.6em; font-weight: 800; color: #3b82f6;">0</div>
           </div>
           <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
-            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;">طلاب باقات / عام:</div>
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;"><span data-i18n="lbl_pkg_students">طلاب باقات / عام:</span></div>
             <div id="studentsModalPackages" style="font-size: 1.3em; font-weight: 800; color: #10b981;">0</div>
           </div>
           <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
-            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;">طلاب حصص فردية:</div>
+            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: 700;"><span data-i18n="lbl_session_students">طلاب حصص فردية:</span></div>
             <div id="studentsModalSingle" style="font-size: 1.3em; font-weight: 800; color: #7c3aed;">0</div>
           </div>
         </div>
@@ -2094,10 +2094,10 @@
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
           <div style="position: relative; flex: 2; min-width: 200px;">
             <i class="fa-solid fa-magnifying-glass" style="position: absolute; top: 50%; right: 14px; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.9em;"></i>
-            <input type="text" id="studentsSearchInp" class="inp" placeholder="بحث بالاسم أو الكود أو رقم الهاتف..." oninput="window.studentsModalCurrentPage=1; window.renderStudentsListModal();" style="padding-inline-start: 38px; font-weight: 600;">
+            <input type="text" id="studentsSearchInp" class="inp" placeholder="بحث بالاسم أو الكود أو رقم الهاتف..." data-i18n-placeholder="students_search_ph" oninput="window.studentsModalCurrentPage=1; window.renderStudentsListModal();" style="padding-inline-start: 38px; font-weight: 600;">
           </div>
           <select id="studentsClassFilter" class="inp" onchange="window.studentsModalCurrentPage=1; window.renderStudentsListModal();" style="flex: 1; min-width: 160px; font-weight: 700;">
-            <option value="">جميع المجموعات والصفوف</option>
+            <option value="" data-i18n="opt_all_classes">جميع المجموعات والصفوف</option>
           </select>
         </div>
 
@@ -2109,9 +2109,9 @@
                 <th style="width: 10%;">#ID</th>
                 <th style="width: 24%;" data-i18n="tbl_th_student">اسم الطالب</th>
                 <th style="width: 20%;" data-i18n="tbl_th_class">الصف / المجموعة</th>
-                <th style="width: 16%;">هاتف الطالب</th>
-                <th style="width: 16%;">هاتف ولي الأمر</th>
-                <th style="width: 14%;">حالة السداد</th>
+                <th style="width: 16%;" data-i18n="tbl_th_st_phone">هاتف الطالب</th>
+                <th style="width: 16%;" data-i18n="tbl_th_parent_phone">هاتف ولي الأمر</th>
+                <th style="width: 14%;" data-i18n="tbl_th_pay_status">حالة السداد</th>
               </tr>
             </thead>
             <tbody id="studentsListModalTbody">
