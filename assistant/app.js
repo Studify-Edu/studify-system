@@ -2056,28 +2056,40 @@ function showToast(msg, type = "success") {
       });
 
       // 4. Map student packages to persist in settings.config
-      const studentPackagesMap = {};
-      Object.values(students || {}).forEach(st => {
-        if (st && st.id && Array.isArray(st.packages) && st.packages.length > 0) {
-          studentPackagesMap[String(st.id)] = st.packages;
-        }
-      });
+      const getMergedPackages = () => {
+        const m = Object.assign({}, existingConfig.student_packages || {});
+        Object.values(students || {}).forEach(st => {
+          if (st && st.id) {
+            if (Array.isArray(st.packages) && st.packages.length > 0) m[String(st.id)] = st.packages;
+            else delete m[String(st.id)];
+          }
+        });
+        return m;
+      };
 
-      // 5. Map student ranks (VIP / Warn / Normal) to persist in settings.config
-      const studentRanksMap = {};
-      Object.values(students || {}).forEach(st => {
-        if (st && st.id) {
-          studentRanksMap[String(st.id)] = st.rank || 'normal';
-        }
-      });
+      // 5. Map student ranks
+      const getMergedRanks = () => {
+        const m = Object.assign({}, existingConfig.student_ranks || {});
+        Object.values(students || {}).forEach(st => {
+          if (st && st.id) {
+            if (st.rank && st.rank !== 'normal') m[String(st.id)] = st.rank;
+            else delete m[String(st.id)];
+          }
+        });
+        return m;
+      };
 
-      // 6. Map student package discounts to persist in settings.config
-      const studentPkgDiscountsMap = {};
-      Object.values(students || {}).forEach(st => {
-        if (st && st.id && st.packageDiscounts && Object.keys(st.packageDiscounts).length > 0) {
-          studentPkgDiscountsMap[String(st.id)] = st.packageDiscounts;
-        }
-      });
+      // 6. Map student package discounts
+      const getMergedDiscounts = () => {
+        const m = Object.assign({}, existingConfig.student_package_discounts || {});
+        Object.values(students || {}).forEach(st => {
+          if (st && st.id) {
+            if (st.packageDiscounts && Object.keys(st.packageDiscounts).length > 0) m[String(st.id)] = st.packageDiscounts;
+            else delete m[String(st.id)];
+          }
+        });
+        return m;
+      };
 
       // Fetch latest settings config to merge safely without overwriting other keys (like daily_approval_map)
       let existingConfig = {};
@@ -2113,9 +2125,9 @@ function showToast(msg, type = "success") {
           date: s.date || s.updated_at || nowDateStr(),
           updated_at: s.updated_at || new Date().toISOString()
         })),
-        student_packages: Object.assign({}, existingConfig.student_packages || {}, studentPackagesMap),
-        student_ranks: Object.assign({}, existingConfig.student_ranks || {}, studentRanksMap),
-        student_package_discounts: Object.assign({}, existingConfig.student_package_discounts || {}, studentPkgDiscountsMap),
+        student_packages: getMergedPackages(),
+        student_ranks: getMergedRanks(),
+        student_package_discounts: getMergedDiscounts(),
         group_fees: groupFees || {},
         center_notebook: currentNbVal
       });
@@ -10402,13 +10414,16 @@ window.openSubjectSelectionModal = function() {
     list.innerHTML = html;
     
     // Clear/Reset selection button in footer
+    const footer = document.getElementById("subjectSelectionFooter");
     if (clearWrap) {
         if (window.currentGlobalSubject) {
-            clearWrap.innerHTML = `<button class="subject-clear-btn" onclick="selectGlobalSubject('')">
-                <i class="fa-solid fa-rotate-left"></i> إلغاء تحديد المادة
+            clearWrap.innerHTML = `<button class="subject-clear-btn" onclick="selectGlobalSubject('')" style="width: 100%;">
+                <i class="fa-solid fa-rotate-left"></i> ${currentLang === 'ar' ? 'إلغاء تحديد المادة' : 'Clear Subject Selection'}
             </button>`;
+            if (footer) footer.style.display = 'flex';
         } else {
             clearWrap.innerHTML = "";
+            if (footer) footer.style.display = 'none';
         }
     }
     

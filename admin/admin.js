@@ -555,7 +555,6 @@ const ADMIN_DICT = {
   "exp_cash": { ar: "ط§ظ„ظ…ظ†طµط±ظپ ظƒط§ط´:", en: "Cash Spent:" },
   "exp_insta": { ar: "ط§ظ„ظ…ظ†طµط±ظپ ط¥ظ†ط³طھط§ط¨ط§ظٹ:", en: "InstaPay Spent:" },
   "exp_voda": { ar: "ط§ظ„ظ…ظ†طµط±ظپ ظپظˆط¯ط§ظپظˆظ†:", en: "Vodafone Spent:" },
-,
   "exp_cash_vault": { ar: "إجمالي كاش (الخزينة):", en: "Total Cash (Vault):" },
   "exp_main_vault": { ar: "خزينة الكاش الرئيسي", en: "Main Cash Vault" },
 };
