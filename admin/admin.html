@@ -30,7 +30,7 @@
   // Service Worker Registration for Admin
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_118')
+      navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_124')
         .then(reg => {
           reg.update();
           console.log('[SW Admin] Registered with scope:', reg.scope);
@@ -76,7 +76,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Admin Styles -->
-  <link rel="stylesheet" href="admin.css?v=STUDIFY_V25">
+  <link rel="stylesheet" href="admin.css?v=STUDIFY_V26">
 </head>
 <body>
 
@@ -2141,7 +2141,7 @@
   </div>
 
   <!-- Main Admin Logic -->
-  <script type="module" src="admin.js?v=STUDIFY_V50"></script>
+  <script type="module" src="admin.js?v=STUDIFY_V51"></script>
 
   <!-- ======================================================== -->
   <!-- LUXURY LANGUAGE TRANSITION OVERLAY -->
