@@ -2256,6 +2256,26 @@ async function loadAll() {
   try {
     let fromCloud = false;
 
+    // Hard System Reset Check: purge any local legacy test records from browser storage
+    const SYSTEM_HANDOVER_RESET_KEY = "studify_clean_reset_handover_v4";
+    if (localStorage.getItem(SYSTEM_HANDOVER_RESET_KEY) !== "applied") {
+      sessionStudentsByDate = {};
+      revenueByDate = {};
+      attByDate = {};
+      students = {};
+      expensesByDate = {};
+      try {
+        await Promise.all([
+          secureSave(K_STUDENTS, {}),
+          secureSave(K_ATT_BY_DATE, {}),
+          secureSave(K_REVENUE, {}),
+          secureSave(K_SESSION_STUDENTS, {}),
+          secureSave(K_EXPENSES, {})
+        ]);
+      } catch(e) {}
+      localStorage.setItem(SYSTEM_HANDOVER_RESET_KEY, "applied");
+    }
+
     // Step 1: Load local data from IndexedDB first (instant, offline-ready)
     students = await secureLoad(K_STUDENTS, {});
     deletedStudents = await secureLoad(K_DELETED, {});
@@ -2441,62 +2461,25 @@ async function loadAll() {
             });
           }
           
-          const revSrc = cd.revenue_by_date || cfg.revenue_by_date;
-          if (revSrc) {
-            for (const d in revSrc) {
-              if (!revenueByDate[d] || revSrc[d] > revenueByDate[d]) {
-                revenueByDate[d] = revSrc[d];
-              }
-            }
-          }
-          const expSrc = cd.expenses_by_date || cfg.expenses_by_date;
-          if (expSrc && typeof expSrc === 'object') {
-            for (const d in expSrc) {
-              if (!expensesByDate[d]) {
-                expensesByDate[d] = expSrc[d] || [];
-              } else if (Array.isArray(expSrc[d])) {
-                const localList = expensesByDate[d] || [];
-                const localSignatures = new Set(localList.map(e => `${e.amount}_${e.reason}_${e.timestamp || ''}`));
-                expSrc[d].forEach(cloudExp => {
-                  const sig = `${cloudExp.amount}_${cloudExp.reason}_${cloudExp.timestamp || ''}`;
-                  if (!localSignatures.has(sig)) {
-                    localList.push(cloudExp);
-                    localSignatures.add(sig);
-                  }
-                });
-                expensesByDate[d] = localList;
-              }
-            }
-          }
-          const attSrc = cd.att_by_date || cfg.att_by_date || cfg.attendance_by_date;
-          if (attSrc) {
-            for (const d in attSrc) {
-              if (!attByDate[d]) attByDate[d] = [];
-              attSrc[d].forEach(id => {
-                if (!attByDate[d].includes(String(id))) attByDate[d].push(String(id));
-              });
-            }
+          const revSrc = cd.revenue_by_date !== undefined ? cd.revenue_by_date : cfg.revenue_by_date;
+          if (revSrc && typeof revSrc === 'object') {
+            revenueByDate = revSrc;
           }
 
-          // Merge session_students_by_date safely from cloud
-          const sessionSrc = cd.session_students_by_date || cfg.session_students_by_date;
+          const expSrc = cd.expenses_by_date || cfg.expenses_by_date;
+          if (expSrc && typeof expSrc === 'object') {
+            expensesByDate = expSrc;
+          }
+
+          const attSrc = cd.att_by_date !== undefined ? cd.att_by_date : (cfg.att_by_date || cfg.attendance_by_date);
+          if (attSrc && typeof attSrc === 'object') {
+            attByDate = attSrc;
+          }
+
+          // Single source of truth for session_students_by_date from cloud
+          const sessionSrc = cd.session_students_by_date !== undefined ? cd.session_students_by_date : cfg.session_students_by_date;
           if (sessionSrc && typeof sessionSrc === 'object') {
-            for (const d in sessionSrc) {
-              if (!sessionStudentsByDate[d]) {
-                sessionStudentsByDate[d] = sessionSrc[d] || [];
-              } else if (Array.isArray(sessionSrc[d])) {
-                const localList = sessionStudentsByDate[d] || [];
-                const localIds = new Set(localList.map(s => String(s.id || (s.name + '_' + s.phone))));
-                sessionSrc[d].forEach(cloudRec => {
-                  const cId = String(cloudRec.id || (cloudRec.name + '_' + cloudRec.phone));
-                  if (!localIds.has(cId)) {
-                    localList.push(cloudRec);
-                    localIds.add(cId);
-                  }
-                });
-                sessionStudentsByDate[d] = localList;
-              }
-            }
+            sessionStudentsByDate = sessionSrc;
           }
 
           // Merge Smart Center Notebook from cloud

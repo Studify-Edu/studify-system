@@ -609,31 +609,36 @@ a { color: var(--primary); text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 16px;
   height: var(--topbar-h);
   min-height: var(--topbar-h);
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
-  gap: 8px;
+  gap: 12px;
   flex-wrap: nowrap !important;
   box-sizing: border-box;
+}
+
 .topbar-row-main {
   display: contents;
 }
+
 .top-subject-chevron {
   font-size: 0.7em;
   opacity: 0.6;
   margin-inline-start: 4px;
 }
+
 .stat-pill-icon {
   font-size: 0.85em;
   flex-shrink: 0;
   margin-inline-end: 2px;
 }
+
 .topbar-start {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
   order: 1;
 }
@@ -650,7 +655,7 @@ a { color: var(--primary); text-decoration: none; }
 
 .topbar-stats {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: nowrap !important;
   align-items: center;
   flex: 1 1 auto;
@@ -659,17 +664,11 @@ a { color: var(--primary); text-decoration: none; }
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 8px 4px !important;
+  padding: 4px 0 !important;
   height: 100%;
   order: 2;
 }
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding: 8px 4px !important;
-  height: 100%;
-  box-sizing: border-box;
-}
+
 .topbar-stats::-webkit-scrollbar {
   display: none;
 }
@@ -4504,28 +4503,12 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
 .card.bento-sm {
   display: flex !important;
   flex-direction: column !important;
-  justify-content: space-between !important;
+  justify-content: flex-start !important;
+  gap: 14px !important;
   padding: 22px 24px !important;
-  min-height: 250px !important;
+  min-height: auto !important;
   box-sizing: border-box !important;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
-}
-
-.topbar-stats {
-  display: flex;
-  gap: 8px;
-  flex-wrap: nowrap !important;
-  align-items: center;
-  justify-content: flex-start;
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding: 8px 4px !important;
-  height: 100%;
-  box-sizing: border-box;
 }
 
 [data-theme="light"] .card.bento-sm {
@@ -7466,16 +7449,23 @@ body.system-hard-locked #appBox {
 }
 
 /* =============================================================================
-   SIDEBAR SHIFT MANAGER CARD
+   SIDEBAR SHIFT MANAGER CARD (MOBILE ONLY)
    ============================================================================= */
 .sidebar-shift-card {
-  margin: 10px 14px 14px 14px;
-  padding: 10px 12px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  border-radius: 14px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-  transition: all 0.25s ease;
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .sidebar-shift-card {
+    display: block !important;
+    margin: 10px 14px 14px 14px;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s ease;
+  }
 }
 
 [data-theme="light"] .sidebar-shift-card {
