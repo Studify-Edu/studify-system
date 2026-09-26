@@ -1799,13 +1799,13 @@ async function loadAllAdminData() {
       students = {};
       stRes.data.forEach(s => {
         let cName = s.class_name || s.className || '';
-        if (cName === 'ط¹ط§ظ…' || cName === 'General' || cName === 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' || cName === 'No Package') cName = '';
+        if (cName === 'ط¹ط§ظ…' || cName === 'General' || cName === 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' || cName === 'General') cName = '';
         let pList = (Array.isArray(s.packages) && s.packages.length > 0) 
-          ? s.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'No Package') 
+          ? s.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'General') 
           : (stPkgsMap[s.id] || (cName ? [cName] : []));
         if (typeof pList === 'string') pList = [pList];
         if (!Array.isArray(pList)) pList = [];
-        pList = pList.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'No Package');
+        pList = pList.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'General');
 
         const restoredDiscounts = (stPkgDiscountsMap && stPkgDiscountsMap[s.id]) || s.package_discounts || s.packageDiscounts || (Number(s.discount) > 0 && pList.length === 1 ? { [pList[0]]: Number(s.discount) } : {});
 
@@ -2438,7 +2438,7 @@ export function loadDailyReport(dateStr) {
       let groups = {};
       ids.forEach(id => {
         const st = (students && students[id]) ? students[id] : null;
-        const cls = (st && st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className.trim() : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "No Package");
+        const cls = (st && st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className.trim() : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General");
         if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
         groups[cls].count++;
         if (st && st.paid !== undefined) {
@@ -2580,7 +2580,7 @@ window.renderTermTable = function() {
   if (clsSel) {
     const existing = [...clsSel.options].map(o => o.value);
     const sessClasses = (typeof window.getAdminUniqueSessionStudents === 'function') ? window.getAdminUniqueSessionStudents().map(s => s.className || (isAr ? "ط­طµط© ظپط±ط¯ظٹط©" : "Single Session")) : [];
-    const classes = [...new Set([...Object.values(students).map(s => (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'General') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "No Package")), ...sessClasses])];
+    const classes = [...new Set([...Object.values(students).map(s => (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'General') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General")), ...sessClasses])];
     classes.forEach(c => {
       if (!existing.includes(c)) {
         const opt = document.createElement("option");
@@ -2621,7 +2621,7 @@ window.renderTermTable = function() {
     }
 
     if (search && !st.name.toLowerCase().includes(search) && !String(st.id).includes(search)) return;
-    const cls = (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className.trim() : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "No Package");
+    const cls = (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className.trim() : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General");
     if (clsFilter && cls !== clsFilter) return;
 
     matchCount++;
@@ -2647,8 +2647,8 @@ window.renderTermTable = function() {
     };
 
     const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) 
-      ? st.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'No Package') 
-      : (cls && cls !== 'ط¹ط§ظ…' && cls !== 'General' && cls !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && cls !== 'No Package' ? [cls] : []);
+      ? st.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'General') 
+      : (cls && cls !== 'ط¹ط§ظ…' && cls !== 'General' && cls !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && cls !== 'General' ? [cls] : []);
     const checked = new Set();
     stPkgs.forEach(pName => {
       const clean = normName(pName);
@@ -3900,7 +3900,7 @@ window.renderAdminPackages = function() {
 
   const keys = Object.keys(packages || {});
   if (keys.length === 0) {
-    container.innerHTML = `<div style="color:var(--text-secondary); padding:20px; text-align:center;">${isAr ? "ظ„ط§ طھظˆط¬ط¯ ط¨ط§ظ‚ط§طھ ظ…ط¶ط§ظپط© ط¨ط¹ط¯." : "No packages added yet."}</div>`;
+    container.innerHTML = `<div style="color:var(--text-secondary); padding:20px; text-align:center;">${isAr ? "ظ„ط§ طھظˆط¬ط¯ ط¨ط§ظ‚ط§طھ ظ…ط¶ط§ظپط© ط¨ط¹ط¯." : "Generals added yet."}</div>`;
     return;
   }
 
@@ -6684,7 +6684,7 @@ window.renderDiscountsModalTable = function() {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "ظ„ط§ ظٹظˆط¬ط¯ ط·ظ„ط§ط¨ ط­ط§طµظ„ظٹظ† ط¹ظ„ظ‰ ط®طµظˆظ…ط§طھ طھط·ط§ط¨ظ‚ ط§ظ„ط¨ط­ط«" : "No discounted students found"}</td></tr>`;
   } else {
     tbody.innerHTML = pageItems.map(s => {
-      const cls = (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'General') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "No Package");
+      const cls = (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'General') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General");
       const paid = Number(s.paid) || 0;
       const disc = Number(s.discount) || 0;
       const debt = Math.max(0, (Number(s.totalReq) || 0) - paid - disc);
@@ -6916,8 +6916,8 @@ window.getStudentFinancialStatus = function(st) {
 
   const cls = st.className;
   const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) 
-    ? st.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'No Package') 
-    : (cls && cls !== 'ط¹ط§ظ…' && cls !== 'General' && cls !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && cls !== 'No Package' ? [cls] : []);
+    ? st.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'General') 
+    : (cls && cls !== 'ط¹ط§ظ…' && cls !== 'General' && cls !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && cls !== 'General' ? [cls] : []);
   const checked = new Set();
   stPkgs.forEach(pName => {
     const clean = normName(pName);
@@ -6985,7 +6985,7 @@ window.renderDebtsModalTable = function() {
       debtors.push({
         id: st.id,
         name: st.name,
-        className: (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "No Package"),
+        className: (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General"),
         phone: st.phone || "â€”",
         parentPhone: st.parentPhone || "â€”",
         req: fin.req,
@@ -7183,7 +7183,7 @@ window.renderStudentsListModal = function() {
 
   const filtered = [];
   allStudents.forEach(st => {
-    const cls = (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "No Package");
+    const cls = (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General");
     if (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General' && st.className !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©') {
       pkgCount++;
     }
