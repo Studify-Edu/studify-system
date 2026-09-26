@@ -1474,6 +1474,15 @@ let vaultTransfers = [];
   "notif_mark_read": { ar: "تحديد كمقروء", en: "Mark as Read" },
   "notif_clear_read": { ar: "مسح المقروء", en: "Clear Read" },
   "notif_no_messages": { ar: "لا توجد رسائل", en: "No messages" },
+  "sheet_stats_title": { ar: "مركز الجلسة والمؤشرات", en: "Session & Live Stats" },
+  "sheet_stats_desc": { ar: "المادة النشطة والمؤشرات الحية للحصة", en: "Active subject & live session counters" },
+  "btn_change_subject": { ar: "تغيير المادة", en: "Change Subject" },
+  "hint_click_students": { ar: "اضغط لعرض قائمة الطلاب", en: "Tap to view students list" },
+  "hint_click_attend": { ar: "اضغط لعرض سجل الحاضرين", en: "Tap to view attendance log" },
+  "hint_click_revenue": { ar: "اضغط لتفاصيل الخزينة اليومية", en: "Tap for daily revenue log" },
+  "shift_manager_title": { ar: "مسؤول الشيفت", en: "Shift Manager" },
+  "status_online": { ar: "نشط", en: "Active" },
+  "quick_stats_badge": { ar: "إحصائيات", en: "Stats" },
   "btn_admin_portal": { ar: "لوحة الإدارة (Admin)", en: "Admin Dashboard" },
   "btn_mute_sounds": { ar: "كتم الأصوات", en: "Mute Sounds" },
   "btn_system_logout": { ar: "خروج من النظام", en: "Logout" },
@@ -2682,10 +2691,15 @@ async function loadAll() {
   if (typeof loadPermissions === "function" && currentUserRole !== "admin") loadPermissions();
  if($("reportDate")) $("reportDate").value = nowDateStr();
  
- // Fix for Shift Manager Display Name
- if ($("currentShiftManagerName")) {
- $("currentShiftManagerName").innerText = localStorage.getItem("ca_current_username") || (currentUserRole === "admin" ? "المدير" : "مساعد");
- }
+ // Fix for Shift Manager Display Name (Both Topbar & Sidebar)
+ window.updateShiftManagerUI = function(name) {
+   const finalName = name || localStorage.getItem("ca_current_username") || (currentUserRole === "admin" ? (currentLang === "ar" ? "المدير" : "Admin") : (currentLang === "ar" ? "مساعد" : "Assistant"));
+   const topEl = document.getElementById("currentShiftManagerName");
+   if (topEl) topEl.innerText = finalName;
+   const sideEl = document.getElementById("sidebarShiftManagerName");
+   if (sideEl) sideEl.innerText = finalName;
+ };
+ window.updateShiftManagerUI();
  
  renderReport(nowDateStr());
  updateTopStats();
@@ -2987,7 +3001,10 @@ function applyPermissions() {
    }
  }
 
+ if (typeof window.updateMobileSheetData === "function") {
+   window.updateMobileSheetData();
  }
+}
 
  function updateLiveFeed(st) {
  let sName = st.name || "بدون اسم";
@@ -4734,8 +4751,8 @@ if($("assistantLoginBtn")) {
       localStorage.setItem("ca_asst_email", asstRow.email || fullEmail);
       window.CURRENT_ROLE = "assistant";
       
-      if ($("currentShiftManagerName")) {
-        $("currentShiftManagerName").innerText = displayUsername;
+      if (typeof window.updateShiftManagerUI === "function") {
+        window.updateShiftManagerUI(displayUsername);
       }
       
       // Load settings to get permissions
@@ -6996,7 +7013,7 @@ function updateDriveUI() {
  // ==========================================
  let currentManager = localStorage.getItem("ca_current_username") || "المدير";
 
- if($("currentShiftManagerName")) $("currentShiftManagerName").innerText = currentManager;
+ if (typeof window.updateShiftManagerUI === "function") window.updateShiftManagerUI(currentManager);
 
  if ($("addNewAsstBtn")) {
   on("addNewAsstBtn", "click", async function() {
@@ -10438,12 +10455,121 @@ window.openSubjectSelectionModal = function() {
      }
      window.currentGlobalSubject = sub;
      const txt = document.getElementById("globalSubjectText");
-     if (txt) txt.textContent = sub || "-- مادة الحضور --";
+     if (txt) txt.textContent = sub || (typeof currentLang !== "undefined" && currentLang === "ar" ? "مادة الحضور" : "Attendance Subject");
      if (document.getElementById("subjectSelectionModal")) document.getElementById("subjectSelectionModal").classList.add("hidden");
      if (window.updateAttendanceUIState) window.updateAttendanceUIState();
+     if (typeof window.updateMobileSheetData === 'function') window.updateMobileSheetData();
  };
- 
- on("openSubjectModalBtn", "click", openSubjectSelectionModal);
+
+ // ==========================================
+ // MOBILE LIVE SESSION & STATS HUB (BOTTOM SHEET)
+ // ==========================================
+ window.openMobileSessionStatsSheet = function() {
+   if (typeof AssistantSounds !== "undefined") AssistantSounds.menuOpen();
+   const sheet = document.getElementById("mobileSessionStatsSheet");
+   if (!sheet) return;
+   if (typeof window.updateMobileSheetData === "function") window.updateMobileSheetData();
+   sheet.classList.remove("hidden");
+ };
+
+ window.closeMobileSessionStatsSheet = function(e) {
+   if (e && e.target && e.target.closest('.mobile-stats-sheet-container')) return;
+   if (typeof AssistantSounds !== "undefined") AssistantSounds.touchTick();
+   const sheet = document.getElementById("mobileSessionStatsSheet");
+   if (sheet) sheet.classList.add("hidden");
+ };
+
+ window.openSubjectSelectionModalFromSheet = function() {
+   window.closeMobileSessionStatsSheet();
+   setTimeout(() => {
+     if (typeof window.openSubjectSelectionModal === 'function') {
+       window.openSubjectSelectionModal();
+     }
+   }, 120);
+ };
+
+ window.openRegisteredStudentsFromSheet = function() {
+   window.closeMobileSessionStatsSheet();
+   setTimeout(() => {
+     const btn = document.getElementById("openAllStudentsBtn");
+     if (btn) btn.click();
+   }, 120);
+ };
+
+ window.openTodayAttendanceFromSheet = function() {
+   window.closeMobileSessionStatsSheet();
+   setTimeout(() => {
+     const btn = document.getElementById("todayCountTopCard");
+     if (btn) btn.click();
+   }, 120);
+ };
+
+ window.openTodayRevenueFromSheet = function() {
+   window.closeMobileSessionStatsSheet();
+   setTimeout(() => {
+     const btn = document.getElementById("openRevenueModalBtn");
+     if (btn) btn.click();
+   }, 120);
+ };
+
+ window.toggleSheetRevenueBlur = function(e) {
+   if (e) e.stopPropagation();
+   const toggleBtn = document.getElementById("toggleRevBtn");
+   if (toggleBtn) toggleBtn.click();
+   if (typeof window.updateMobileSheetData === "function") window.updateMobileSheetData();
+ };
+
+ window.updateMobileSheetData = function() {
+   const isAr = (typeof currentLang !== "undefined" && currentLang === "ar");
+   // Subject name
+   const subName = window.currentGlobalSubject || (isAr ? "مادة الحضور" : "Attendance Subject");
+   const sheetSub = document.getElementById("sheetSubjectName");
+   if (sheetSub) sheetSub.textContent = subName;
+
+   // Total registered students
+   const totalSt = document.getElementById("totalStudentsCount");
+   const sheetTotal = document.getElementById("sheetTotalStudents");
+   if (sheetTotal && totalSt) sheetTotal.textContent = totalSt.textContent;
+
+   // Today attendance count
+   const todayTop = document.getElementById("todayCountTop");
+   const sheetToday = document.getElementById("sheetTodayCount");
+   if (sheetToday && todayTop) sheetToday.textContent = todayTop.textContent;
+
+   // Today revenue
+   const revTop = document.getElementById("todayRevenue");
+   const sheetRev = document.getElementById("sheetTodayRevenue");
+   if (sheetRev && revTop) sheetRev.textContent = revTop.textContent;
+
+   // Revenue eye icon state in sheet
+   const sheetEye = document.getElementById("sheetRevEyeIcon");
+   if (sheetEye) {
+     if (typeof isRevHidden !== "undefined" && isRevHidden) {
+       sheetEye.className = "fa-solid fa-eye-slash";
+     } else {
+       sheetEye.className = "fa-solid fa-eye";
+     }
+   }
+
+   // Quick stats badge in topbar button
+   const quickStatEl = document.getElementById("mobileSessionQuickStat");
+   if (quickStatEl && todayTop) {
+     const count = todayTop.textContent.trim();
+     quickStatEl.textContent = `${count} ${isAr ? 'حضور' : 'Attend'}`;
+   }
+ };
+
+ on("openSubjectModalBtn", "click", function(e) {
+   if (window.innerWidth <= 768) {
+     if (typeof window.openMobileSessionStatsSheet === "function") {
+       window.openMobileSessionStatsSheet();
+     } else {
+       openSubjectSelectionModal();
+     }
+   } else {
+     openSubjectSelectionModal();
+   }
+ });
 
 
   // ==========================================

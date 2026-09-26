@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V102">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V103">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -104,8 +104,11 @@
   // Service Worker Registration
   if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-  navigator.serviceWorker.register('./service-worker.js')
-  .then(reg => console.log('[SW] Registered:', reg.scope))
+  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_119')
+  .then(reg => {
+    reg.update();
+    console.log('[SW] Registered:', reg.scope);
+  })
   .catch(err => console.warn('[SW] Registration failed:', err));
   });
   }
@@ -291,6 +294,22 @@
  <span class="sidebar-brand">Studify</span>
  </div>
 
+ <!-- SIDEBAR SHIFT MANAGER CARD (Mobile & Desktop) -->
+ <div class="sidebar-shift-card" id="sidebarShiftCard">
+   <div class="sidebar-shift-card-inner">
+     <div class="sidebar-shift-avatar">
+       <i class="fa-solid fa-user-clock"></i>
+     </div>
+     <div class="sidebar-shift-info">
+       <div class="sidebar-shift-header">
+         <span class="sidebar-shift-title" data-i18n="shift_manager_title">مسؤول الشيفت</span>
+         <span class="sidebar-shift-pill"><span class="shift-live-dot"></span> <span data-i18n="status_online">نشط</span></span>
+       </div>
+       <div class="sidebar-shift-name" id="sidebarShiftManagerName">..</div>
+     </div>
+   </div>
+ </div>
+
  <nav class="sidebar-menu">
   <!-- 1. DAILY OPERATIONS -->
   <div class="nav-group">
@@ -388,11 +407,18 @@
  <div class="topbar-row-main">
   <div class="topbar-start">
    <button id="mobileSidebarToggle" class="mobile-menu-btn" title="القائمة الرئيسية"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-   <span class="stat-pill clickable top-subject-pill" id="openSubjectModalBtn" title="تحديد مادة الحضور">
-    <i class="fa-solid fa-book" style="color:var(--primary); font-size:1.05em;"></i>
-    <span data-i18n="top_subject_lbl">المادة:</span> <b id="globalSubjectText" style="font-family:'Cairo';" data-i18n="top_subject_val">مادة الحضور</b>
-    <i class="fa-solid fa-chevron-down top-subject-chevron"></i>
-   </span>
+   <div class="stat-pill clickable top-subject-pill mobile-session-pill" id="openSubjectModalBtn" title="مركز الجلسة والإحصائيات">
+    <div class="session-pill-main">
+      <i class="fa-solid fa-book-bookmark session-pill-icon"></i>
+      <span class="session-pill-label" data-i18n="top_subject_lbl">المادة:</span>
+      <b id="globalSubjectText" class="session-pill-val" data-i18n="top_subject_val">مادة الحضور</b>
+    </div>
+    <div class="session-pill-badge" id="mobileSessionSummaryBadge">
+      <span class="live-dot"></span>
+      <span id="mobileSessionQuickStat" data-i18n="quick_stats_badge">إحصائيات</span>
+      <i class="fa-solid fa-chevron-down top-subject-chevron"></i>
+    </div>
+   </div>
   </div>
 <div class="topbar-end" style="position: relative;">
  <!-- Cloud Sync Indicator (Consistent square button matching other controls) -->
@@ -2020,7 +2046,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V7"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V160"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V161"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
@@ -2072,6 +2098,85 @@
       </div>
     </div>
   </div>
+
+    <!-- MOBILE LIVE SESSION & STATS HUB (BOTTOM SHEET) -->
+    <div id="mobileSessionStatsSheet" class="mobile-stats-sheet-overlay hidden" onclick="window.closeMobileSessionStatsSheet(event)">
+      <div class="mobile-stats-sheet-container" onclick="event.stopPropagation()">
+        <!-- Drag Handle -->
+        <div class="sheet-drag-handle"></div>
+
+        <!-- Sheet Header -->
+        <div class="sheet-header">
+          <div class="sheet-title-group">
+            <div class="sheet-icon-badge">
+              <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div>
+              <h3 class="sheet-title" data-i18n="sheet_stats_title">مركز الجلسة والمؤشرات</h3>
+              <p class="sheet-subtitle" data-i18n="sheet_stats_desc">المادة النشطة والمؤشرات الحية للحصة</p>
+            </div>
+          </div>
+          <button type="button" class="sheet-close-btn" onclick="window.closeMobileSessionStatsSheet()" title="إغلاق">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- 1. Active Subject Banner -->
+        <div class="sheet-subject-card">
+          <div class="sheet-subject-info">
+            <span class="sheet-subject-tag" data-i18n="top_subject_lbl">مادة الحضور الحالية</span>
+            <h4 class="sheet-subject-name" id="sheetSubjectName">مادة الحضور</h4>
+          </div>
+          <button type="button" class="btn primary sheet-change-sub-btn" onclick="window.openSubjectSelectionModalFromSheet()">
+            <i class="fa-solid fa-arrows-rotate"></i> <span data-i18n="btn_change_subject">تغيير المادة</span>
+          </button>
+        </div>
+
+        <!-- 2. Interactive Stats Grid (3 Cards) -->
+        <div class="sheet-stats-grid">
+          <!-- Card 1: المسجلين -->
+          <div class="sheet-stat-card card-students" onclick="window.openRegisteredStudentsFromSheet()">
+            <div class="sheet-stat-top">
+              <div class="sheet-stat-icon icon-students">
+                <i class="fa-solid fa-users"></i>
+              </div>
+              <span class="sheet-stat-arrow"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+            </div>
+            <div class="sheet-stat-number" id="sheetTotalStudents">0</div>
+            <div class="sheet-stat-label" data-i18n="stat_students">الطلاب المسجلين</div>
+            <div class="sheet-stat-hint" data-i18n="hint_click_students">اضغط لعرض القائمة بالكامل</div>
+          </div>
+
+          <!-- Card 2: الحضور -->
+          <div class="sheet-stat-card card-attend" onclick="window.openTodayAttendanceFromSheet()">
+            <div class="sheet-stat-top">
+              <div class="sheet-stat-icon icon-attend">
+                <i class="fa-solid fa-user-check"></i>
+              </div>
+              <span class="sheet-stat-badge-pulse"><span class="pulse-dot"></span> مباشر</span>
+            </div>
+            <div class="sheet-stat-number" id="sheetTodayCount">0</div>
+            <div class="sheet-stat-label" data-i18n="stat_attend">حضور اليوم</div>
+            <div class="sheet-stat-hint" data-i18n="hint_click_attend">اضغط لعرض سجل الحاضرين</div>
+          </div>
+
+          <!-- Card 3: الإيراد (adminOnly) -->
+          <div class="sheet-stat-card card-revenue adminOnly" onclick="window.openTodayRevenueFromSheet()">
+            <div class="sheet-stat-top">
+              <div class="sheet-stat-icon icon-revenue">
+                <i class="fa-solid fa-wallet"></i>
+              </div>
+              <button type="button" class="sheet-eye-btn" onclick="event.stopPropagation(); window.toggleSheetRevenueBlur(event)" title="إخفاء/إظهار الإيراد">
+                <i class="fa-solid fa-eye" id="sheetRevEyeIcon"></i>
+              </button>
+            </div>
+            <div class="sheet-stat-number blurTarget" id="sheetTodayRevenue">0 ج</div>
+            <div class="sheet-stat-label" data-i18n="stat_revenue">إيراد اليوم المحصل</div>
+            <div class="sheet-stat-hint" data-i18n="hint_click_revenue">اضغط لتفاصيل الخزينة اليومية</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
    <!-- مودال اختيار مادة الحضور الحديث بالعرض -->
     <div id="subjectSelectionModal" class="modal hidden" style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(0,0,0,0.65); z-index: 10001; align-items:center; justify-content:center;">
