@@ -673,6 +673,17 @@
       play('menu', 0.85);
       vibe([10]);
     },
+    modalOpen: function () {
+      play('menu', 0.85);
+      vibe([10]);
+    },
+    modalClose: function () {
+      play('tap', 0.5);
+    },
+    cardClick: function () {
+      play('tap', 0.6);
+      vibe([8]);
+    },
     studentOpen: function () {
       play('menu', 0.85);
       vibe([10]);

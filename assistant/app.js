@@ -1,4 +1,4 @@
-﻿
+
 window.addEventListener('error', function(event) {
   if (!document.body) return;
   const errDiv = document.createElement('div');
@@ -1072,7 +1072,7 @@ let vaultTransfers = [];
   "filter_all_pay": { ar: "كل الدفعات", en: "All Payments" },
   "st_notes_title": { ar: "ملاحظات الطالب (منفصلة وقابلة للتعديل)", en: "Student Notes (Separated & Editable)" },
   "st_att_history_title": { ar: "سجل حضور الطالب (التواريخ السابقة):", en: "Student Attendance History:" },
-  "sess_class_opt": { ar: "حصة فردية", en: "Single Session" },
+  "sess_class_opt": { ar: "اختر المادة / الباقة", en: "Select Subject / Package" },
   "booklets_main_title": { ar: "إدارة مخزون المذكرات والورق", en: "Booklets & Paper Inventory" },
   "booklets_main_desc": { ar: "متابعة حركة طباعة واستلام المذكرات، المباع منها، المخزون المتبقي، وإجمالي العائد المالي بدقة تامة دون هدر.", en: "Track printing, booklet receipts, sales, stock, and total revenue with zero waste." },
 
@@ -1311,7 +1311,7 @@ let vaultTransfers = [];
  "sess_phone_lbl": { ar: "رقم الموبايل (اختياري)", en: "Mobile Number (Optional)" },
  "sess_phone_plc": { ar: "مثال: 01012345678", en: "Ex: 01012345678" },
  "sess_class_lbl": { ar: "المادة / الصف / الباقة", en: "Subject / Class / Package" },
- "sess_class_opt": { ar: "حصة فردية", en: "Single Session" },
+ "sess_class_opt": { ar: "اختر المادة / الباقة", en: "Select Subject / Package" },
  "sess_amount_lbl": { ar: "مبلغ الحصة *", en: "Session Amount *" },
  "sess_amount_plc": { ar: "المبلغ (ج)", en: "Amount (EGP)" },
  "sess_method_lbl": { ar: "طريقة الدفع *", en: "Payment Method *" },
@@ -1402,7 +1402,7 @@ let vaultTransfers = [];
   "trans_switching_theme": { ar: "جاري تبديل المظهر..", en: "Switching Theme..." },
   "trans_switching_lang": { ar: "جاري تغيير اللغة..", en: "Switching Language..." },
   "sess_no_students": { ar: "لا يوجد طلاب مسجلين بالحصة لهذا اليوم", en: "No students registered for this session today" },
-  "sess_class_opt": { ar: "حصة فردية", en: "Single Session" },
+  "sess_class_opt": { ar: "اختر المادة / الباقة", en: "Select Subject / Package" },
   "login_title_assistant": { ar: "بوابة العمليات والمساعدين", en: "Operations & Assistant Portal" },
   "login_desc_assistant": { ar: "تسجيل الحضور اليومي والمهام الميدانية", en: "Daily attendance & operational management" },
   "top_subject_lbl": { ar: "المادة:", en: "Subject:" },
@@ -3032,7 +3032,7 @@ function applyPermissions() {
  let currentVal = select.value; 
  const isAr = (currentLang === "ar");
  let html = `<option value="">${isAr ? "-- اختر الباقة / المجموعة --" : "-- Select Package / Group --"}</option>`;
- let sHtml = `<option value="حصة فردية">${isAr ? "حصة فردية" : "Single Session"}</option>`;
+ let sHtml = `<option value="" disabled selected>${isAr ? "اختر المادة / الباقة" : "Select Subject / Package"}</option>`;
  
  let hasGroups = false;
  for (let g in groupFees) {
@@ -3846,7 +3846,7 @@ const st = students[id];
        name: item.name,
        phone: item.phone || '',
        parentPhone: '',
-       className: item.className || (currentLang === 'ar' ? 'حصة فردية' : 'Single Session'),
+       className: item.className || "",
        packages: ['حصة'],
        paid: Number(item.amount) || 0,
        discount: 0,
@@ -4108,7 +4108,7 @@ const st = students[id];
         isSessionStudent: true,
         name: item.name,
         phone: item.phone || '',
-        className: item.className || (currentLang === 'ar' ? 'حصة فردية' : 'Single Session'),
+        className: item.className || "",
         packages: ['حصة'],
         paid: Number(item.amount) || 0,
         sessionRecord: item
@@ -4130,7 +4130,7 @@ const st = students[id];
     const isAr = (currentLang === 'ar');
     let pkgDisplay = isAr ? 'عام' : 'General';
     if (s.isSessionStudent) {
-      pkgDisplay = s.className || (isAr ? 'حصة فردية' : 'Single Session');
+      pkgDisplay = s.className || "";
     } else if (s.packages && Array.isArray(s.packages) && s.packages.length > 0) {
       const validPkgs = s.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'عام' && p !== 'General');
       if (validPkgs.length > 0) pkgDisplay = validPkgs.join(' + ');
@@ -4702,6 +4702,17 @@ window.logout = async function() {
   if (window.supabaseClient) {
     try { await window.supabaseClient.auth.signOut(); } catch(e) {}
   }
+
+  // FORCE A SYNC BEFORE LOGOUT IF CHANGES EXIST
+  if (hasUnsavedChanges) {
+     try {
+       if (typeof saveAll === "function") await saveAll();
+     } catch(e) { console.error("Sync on logout failed:", e); }
+  } else {
+     // Even if hasUnsavedChanges is false, wait briefly for any pending promises
+     await new Promise(r => setTimeout(r, 600));
+  }
+
   // Clear IndexedDB (localForage)
   try { await localforage.clear(); } catch(e) { console.error("localForage clear error:", e); }
   
@@ -8483,7 +8494,7 @@ window.openSessionStudentModal = function(item) {
 
   if (document.getElementById('modalSessStName')) document.getElementById('modalSessStName').textContent = item.name || '—';
   if (document.getElementById('modalSessStPhone')) document.getElementById('modalSessStPhone').textContent = item.phone || (isAr ? 'غير مسجل' : 'Not registered');
-  if (document.getElementById('modalSessStClass')) document.getElementById('modalSessStClass').textContent = item.className || (isAr ? 'حصة فردية' : 'Single Session');
+  if (document.getElementById('modalSessStClass')) document.getElementById('modalSessStClass').textContent = item.className || "";
   if (document.getElementById('modalSessStAmount')) document.getElementById('modalSessStAmount').textContent = (item.amount || 0) + currSuffix;
 
   // Method Badge
@@ -8535,7 +8546,7 @@ window.openSessionStudentModal = function(item) {
         setTimeout(() => {
           if (document.getElementById('stName')) document.getElementById('stName').value = item.name || '';
           if (document.getElementById('stPhone')) document.getElementById('stPhone').value = item.phone || '';
-          if (document.getElementById('stClass') && item.className && item.className !== 'حصة فردية') {
+          if (document.getElementById('stClass') && item.className && item.className !== "") {
             document.getElementById('stClass').value = item.className;
           }
           if (typeof showToast === 'function') {
@@ -8627,7 +8638,7 @@ window.openSessionStudentModal = function(item) {
  on("saveSessionStudentBtn", "click", async function() {
  let name = $("sessStName") ? $("sessStName").value.trim() : "";
  let phone = $("sessStPhone") ? $("sessStPhone").value.trim() : "";
- let className = $("sessStClass") ? $("sessStClass").value : "حصة فردية";
+ let className = $("sessStClass") ? $("sessStClass").value : "";
  let amount = $("sessStAmount") ? toInt($("sessStAmount").value) : 0;
  let method = $("sessStMethod") ? $("sessStMethod").value : "cash";
 
@@ -11599,9 +11610,7 @@ window.openStudentContractModal = function() {
           </tr>
           <tr>
             <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; color: #0b192c;">رقم هاتف الطالب:</td>
-            <td style="padding: 4px 8px; border: 1px solid #cbd5e1; direction: ltr; text-align: right; font-family: monospace; font-size: 0.98em; font-weight: 700;">${st.phone || "—"}</td>
-            <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; color: #0b192c;">رقم ولي الأمر المعتمد:</td>
-            <td style="padding: 4px 8px; border: 1px solid #cbd5e1; direction: ltr; text-align: right; font-family: monospace; font-size: 0.98em; font-weight: 700;">${st.parentPhone || "—"}</td>
+            <td colspan="3" style="padding: 4px 8px; border: 1px solid #cbd5e1; direction: ltr; text-align: right; font-family: monospace; font-size: 0.98em; font-weight: 700;">${st.phone || "—"}</td>
           </tr>
           <tr>
             <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; color: #0b192c;">المواد / الباقات المسجلة:</td>
@@ -11740,9 +11749,7 @@ window.openBlankContractModal = function() {
           </tr>
           <tr>
             <td style="padding: 5px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; color: #0b192c;">رقم هاتف الطالب:</td>
-            <td style="padding: 5px 8px; border: 1px solid #cbd5e1;">...................................................</td>
-            <td style="padding: 5px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; color: #0b192c;">رقم ولي الأمر المعتمد:</td>
-            <td style="padding: 5px 8px; border: 1px solid #cbd5e1;">...................................................</td>
+            <td colspan="3" style="padding: 5px 8px; border: 1px solid #cbd5e1;">......................................................................................................</td>
           </tr>
           <tr>
             <td style="padding: 5px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; color: #0b192c;">المواد / الباقات المسجل بها:</td>

@@ -2450,7 +2450,7 @@ export function loadDailyReport(dateStr) {
 
       // Add session students to groups breakdown
       sessList.forEach(sSt => {
-        const defaultSessLabel = isAr ? "ط­طµط© ظپط±ط¯ظٹط©" : "Single Session";
+        const defaultSessLabel = "";
         const rawCls = (sSt && sSt.className) ? sSt.className.trim() : defaultSessLabel;
         const grpKey = rawCls.includes("ط­طµط©") || rawCls.includes("Session") ? rawCls : `${rawCls} (${defaultSessLabel})`;
         if (!groups[grpKey]) groups[grpKey] = { count: 0, revenue: 0 };
@@ -2579,7 +2579,7 @@ window.renderTermTable = function() {
   // Populate classes
   if (clsSel) {
     const existing = [...clsSel.options].map(o => o.value);
-    const sessClasses = (typeof window.getAdminUniqueSessionStudents === 'function') ? window.getAdminUniqueSessionStudents().map(s => s.className || (isAr ? "ط­طµط© ظپط±ط¯ظٹط©" : "Single Session")) : [];
+    const sessClasses = (typeof window.getAdminUniqueSessionStudents === 'function') ? window.getAdminUniqueSessionStudents().map(s => s.className || "") : [];
     const classes = [...new Set([...Object.values(students).map(s => (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'General') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General")), ...sessClasses])];
     classes.forEach(c => {
       if (!existing.includes(c)) {
@@ -2702,7 +2702,7 @@ window.renderTermTable = function() {
   if (typeof window.getAdminUniqueSessionStudents === 'function') {
     const sessList = window.getAdminUniqueSessionStudents();
     sessList.forEach(sSt => {
-      const sCls = sSt.className || (isAr ? "ط­طµط© ظپط±ط¯ظٹط©" : "Single Session");
+      const sCls = sSt.className || "";
       if (search && !sSt.name.toLowerCase().includes(search) && !(isAr ? "ط·ط§ظ„ط¨ ط­طµط©" : "session").toLowerCase().includes(search)) return;
       if (clsFilter && sCls !== clsFilter) return;
 
