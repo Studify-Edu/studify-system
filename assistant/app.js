@@ -8716,6 +8716,8 @@ window.openSessionStudentModal = function(item) {
  let arr = sessionStudentsByDate[d] || [];
  let count = arr.length;
  let totalRev = 0;
+ const isArSess = (currentLang === "ar");
+ const currencySuffix = isArSess ? " ج" : " EGP";
  let h = "";
  for(let i=0; i<arr.length; i++) {
  let item = arr[i];
@@ -8732,8 +8734,6 @@ window.openSessionStudentModal = function(item) {
  <div style="font-size:0.8em; color:var(--text-secondary); margin-top:4px;"> ${item.timestamp || ""} ${item.phone ? `| ${item.phone}` : ""}</div>
  </div>
  <div class="row" style="width:auto; gap:10px;">
- const isAr = (currentLang === "ar");
- const currencySuffix = isAr ? " ج" : " EGP";
  <span style="color:var(--success); font-weight:bold; font-size:1.1em;">+ ${item.amount} ${currencySuffix}</span>
  ${item.phone ? `<button class="btn success smallBtn iconOnly" title="مراسلة واتساب" onclick="window.open('https://wa.me/20${item.phone}', '_blank')"><i class="fa-brands fa-whatsapp"></i></button>` : ""}
  <button class="btn danger smallBtn iconOnly delete-sess-btn" data-date="${d}" data-index="${i}" title="حذف وإلغاء الدفعة"><i class="fa-solid fa-trash-can"></i></button>
@@ -8741,7 +8741,6 @@ window.openSessionStudentModal = function(item) {
  </div>`;
  }
 
- const isArSess = (currentLang === "ar");
  if(count === 0) h = `<div class="mutedCenter" data-i18n="sess_no_students">${isArSess ? "لا يوجد طلاب مسجلين بالحصة لهذا اليوم" : "No students registered for this session today"}</div>`;
  slist.innerHTML = h;
 
