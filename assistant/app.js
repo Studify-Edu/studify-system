@@ -2762,10 +2762,14 @@ function applyPermissionsToAssistantUI() {
   // Revenue
   const revPill = document.getElementById('openRevenueModalBtn');
   const revToggle = document.getElementById('toggleRevBtn');
+  const sheetRevCard = document.getElementById('sheetRevenueCard');
   if (p.show_revenue !== false) {
     if (revPill) {
       revPill.style.display = "";
       revPill.classList.remove('locked-feature');
+    }
+    if (sheetRevCard) {
+      sheetRevCard.classList.remove('locked-feature');
     }
     if (revToggle) {
       revToggle.style.display = "";
@@ -2776,11 +2780,15 @@ function applyPermissionsToAssistantUI() {
       revPill.style.display = "";
       revPill.classList.add('locked-feature');
     }
+    if (sheetRevCard) {
+      sheetRevCard.classList.add('locked-feature');
+    }
     if (revToggle) {
       revToggle.style.display = "none";
       revToggle.classList.remove('locked-feature');
     }
     if (document.getElementById('todayRevenue')) document.getElementById('todayRevenue').textContent = (currentLang === "ar" ? " مقفول" : " Locked");
+    if (document.getElementById('sheetTodayRevenue')) document.getElementById('sheetTodayRevenue').textContent = (currentLang === "ar" ? " مقفول" : " Locked");
   }
 
   // Add student
@@ -2976,18 +2984,26 @@ function applyPermissions() {
  
  const revPill = $("openRevenueModalBtn");
  const revToggle = $("toggleRevBtn");
+ const sheetRevCard = $("sheetRevenueCard");
  const canShowRev = (currentUserRole === 'admin' || !currentPermissions || currentPermissions.show_revenue !== false);
  if (!canShowRev) {
    if (revPill) {
      revPill.classList.add('locked-feature');
      revPill.style.display = "";
    }
+   if (sheetRevCard) {
+     sheetRevCard.classList.add('locked-feature');
+   }
    if (revToggle) { revToggle.style.display = "none"; revToggle.classList.remove('locked-feature'); }
    if ($("todayRevenue")) $("todayRevenue").textContent = (currentLang === "ar" ? " مقفول" : " Locked");
+   if ($("sheetTodayRevenue")) $("sheetTodayRevenue").textContent = (currentLang === "ar" ? " مقفول" : " Locked");
  } else {
    if (revPill) {
      revPill.classList.remove('locked-feature');
      revPill.style.display = "";
+   }
+   if (sheetRevCard) {
+     sheetRevCard.classList.remove('locked-feature');
    }
    if (revToggle) {
      revToggle.classList.remove('locked-feature');
@@ -2996,8 +3012,13 @@ function applyPermissions() {
    }
    if ($("todayRevenue")) {
      const isAr = (currentLang === "ar");
-   const currencySuffix = isAr ? " ج" : " EGP";
-   $("todayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (revenue + currencySuffix);
+     const currencySuffix = isAr ? " ج" : " EGP";
+     $("todayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (revenue + currencySuffix);
+   }
+   if ($("sheetTodayRevenue")) {
+     const isAr = (currentLang === "ar");
+     const currencySuffix = isAr ? " ج" : " EGP";
+     $("sheetTodayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (revenue + currencySuffix);
    }
  }
 
@@ -10556,6 +10577,17 @@ window.openSubjectSelectionModal = function() {
    if (quickStatEl && todayTop) {
      const count = todayTop.textContent.trim();
      quickStatEl.textContent = `${count} ${isAr ? 'حضور' : 'Attend'}`;
+   }
+
+   // Sync lock state with revenue permission
+   const canShowRev = (currentUserRole === 'admin' || !currentPermissions || currentPermissions.show_revenue !== false);
+   const sheetRevCard = document.getElementById("sheetRevenueCard");
+   if (sheetRevCard) {
+     if (!canShowRev) {
+       sheetRevCard.classList.add("locked-feature");
+     } else {
+       sheetRevCard.classList.remove("locked-feature");
+     }
    }
  };
 
