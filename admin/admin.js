@@ -495,11 +495,6 @@ const ADMIN_DICT = {
   "sub_vip_f2": { ar: "مشغل حصص وفيديوهات مشفر ومحمي بالكامل ضد تسجيل وتصوير الشاشة", en: "Encrypted lesson video player fully protected against screen capture and recording" },
   "sub_vip_f3": { ar: "بنك أسئلة ذكي واختبارات إلكترونية بتصحيح فوري وتحليل أداء بالذكاء الاصطناعي", en: "Smart question bank and online tests with automated grading and AI performance insights" },
   "sub_vip_f4": { ar: "استيعاب غير محدود للطلاب والمساعدين مع سيرفر مخصص ودعم VIP", en: "Unlimited capacity for students and assistants with dedicated high-speed server & VIP support" },
-  // Mobile bottom nav
-  "nav_daily": { ar: "الرئيسية", en: "Home" },
-  "nav_term": { ar: "الترم", en: "Term" },
-  "nav_assistants": { ar: "السكرتارية", en: "Assistants" },
-  "nav_more": { ar: "المزيد", en: "More" },
 
   // Financial modals and new filters
   "lbl_from_date": { ar: "من تاريخ:", en: "From Date:" },
