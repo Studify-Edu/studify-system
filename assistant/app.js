@@ -1535,7 +1535,7 @@ let vaultTransfers = [];
 
  window.getPkgDetails = function(pkgName) {
     if (!pkgName || !groupFees || !groupFees[pkgName]) {
-      return { name: pkgName || (currentLang === "ar" ? "عام" : "General"), price: 0, expiryType: "time", durationDays: 0, sessionLimit: 0, startDate: "", endDate: "", subject: "" };
+      return { name: pkgName || (currentLang === "ar" ? "بدون باقة" : "Without Package"), price: 0, expiryType: "time", durationDays: 0, sessionLimit: 0, startDate: "", endDate: "", subject: "" };
     }
     const val = groupFees[pkgName];
     if (typeof val === "object" && val !== null) {
@@ -2094,6 +2094,7 @@ function showToast(msg, type = "success") {
         revenue_by_date: revenueByDate || {},
         expenses_by_date: expensesByDate || {},
         session_students_by_date: sessionStudentsByDate || {},
+        student_sessions: Object.fromEntries(Object.values(students || {}).filter(s => s.isSessionStudent).map(s => [s.id, s.sessionBalance || 0])),
         vault_transfers: vaultTransfers || [],
         att_by_date: attByDate || {},
         syllabus: (syllabusData || []).map(s => ({
@@ -2199,7 +2200,8 @@ async function saveAttendanceOnly() {
         settings: { lastModified: Date.now() },
         revenue_by_date: revenueByDate || {},
         att_by_date: attByDate || {},
-        session_students_by_date: sessionStudentsByDate || {}
+        session_students_by_date: sessionStudentsByDate || {},
+        student_sessions: Object.fromEntries(Object.values(students || {}).filter(s => s.isSessionStudent).map(s => [s.id, s.sessionBalance || 0]))
       });
 
       const attendancePromises = [
@@ -2246,12 +2248,12 @@ async function loadAll() {
     bookletsStock = await secureLoad(K_BOOKLETS, {});
     centerNotebookContent = await secureLoad(K_NOTEBOOK, localStorage.getItem(K_NOTEBOOK) || "");
 
-    // Normalize any legacy 'عام' / 'General' in local students
+    // Normalize any legacy 'بدون باقة' / 'Without Package' in local students
     Object.values(students || {}).forEach(s => {
       if (s) {
-        if (s.className === 'عام' || s.className === 'General' || s.className === 'عام' || s.className === 'General') s.className = '';
+        if (s.className === 'بدون باقة' || s.className === 'Without Package' || s.className === 'بدون باقة' || s.className === 'Without Package') s.className = '';
         if (Array.isArray(s.packages)) {
-          s.packages = s.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'عام' && p !== 'General');
+          s.packages = s.packages.filter(p => p && p !== 'بدون باقة' && p !== 'Without Package' && p !== 'بدون باقة' && p !== 'Without Package');
         }
       }
     });
@@ -2290,16 +2292,17 @@ async function loadAll() {
             if (isCloudEmpty) return;
 
             let cName = row.class_name || row.className || '';
-            if (cName === 'عام' || cName === 'General' || cName === 'عام' || cName === 'General') cName = '';
+            if (cName === 'بدون باقة' || cName === 'Without Package' || cName === 'بدون باقة' || cName === 'Without Package') cName = '';
 
             let restoredPackages = (studentPackagesMap && studentPackagesMap[row.id]) || row.packages || [];
             if (typeof restoredPackages === 'string') restoredPackages = [restoredPackages];
             if (!Array.isArray(restoredPackages)) restoredPackages = [];
-            restoredPackages = restoredPackages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'عام' && p !== 'General');
+            restoredPackages = restoredPackages.filter(p => p && p !== 'بدون باقة' && p !== 'Without Package' && p !== 'بدون باقة' && p !== 'Without Package');
 
             const restoredRank = (studentRanksMap && studentRanksMap[row.id]) || row.rank || 'normal';
 
             const restoredDiscounts = (studentPackageDiscountsMap && studentPackageDiscountsMap[row.id]) || row.packageDiscounts || {};
+            const stSessionData = (cfg.student_sessions && cfg.student_sessions[row.id]) !== undefined ? cfg.student_sessions[row.id] : null;
             const stObj = {
               id: row.id,
               name: row.name || '',
@@ -2317,6 +2320,8 @@ async function loadAll() {
               installments: row.installments || [],
               payments: row.payments || [],
               attendanceDates: Array.from(new Set(row.attendance_dates || [])),
+              isSessionStudent: stSessionData !== null,
+              sessionBalance: stSessionData !== null ? stSessionData : 0,
               lastModified: row.last_modified || Date.now()
             };
 
@@ -2973,7 +2978,7 @@ function applyPermissions() {
 
  function updateLiveFeed(st) {
  let sName = st.name || "بدون اسم";
- let sClass = (st.className && st.className !== "عام" && st.className !== "General") ? st.className : (currentLang === "ar" ? "عام" : "General");
+ let sClass = (st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className : (currentLang === "ar" ? "بدون باقة" : "Without Package");
  const timeStr = new Date().toLocaleTimeString(currentLang==='ar'?'ar-EG':'en-US', {hour:'2-digit', minute:'2-digit'});
  
  recentScans.unshift({ name: sName, id: st.id, cls: sClass, time: timeStr });
@@ -3002,7 +3007,7 @@ function applyPermissions() {
  // ==========================================
  function calculateSmartStreak(st) {
  if(!st.attendanceDates || st.attendanceDates.length === 0) return 0;
- let c = (st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : "";
+ let c = (st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : "";
  
  let classDates = new Set();
  for(let dateKey in attByDate) {
@@ -3040,7 +3045,7 @@ function applyPermissions() {
  sHtml += `<option value="${g}">${g}</option>`;
  hasGroups = true;
  }
- if(!hasGroups) html += `<option value="">${isAr ? "عام" : "General"}</option>`;
+ if(!hasGroups) html += `<option value="">${isAr ? "بدون باقة" : "Without Package"}</option>`;
  select.innerHTML = html;
  
  if(currentVal && groupFees[currentVal] !== undefined) {
@@ -3328,6 +3333,20 @@ const st = students[id];
  } 
  
   let pkgsHtml = '';
+   if (st.isSessionStudent) {
+       pkgsHtml = `<div class="pkg-summary-tag paid-full" style="background:#fce7f3; color:#db2777; border-color:#fbcfe8; font-size: 1.1em; padding: 6px 12px;">
+           <i class="fa-solid fa-ticket"></i> الرصيد المتبقي: ${st.sessionBalance || 0} حصة
+       </div>`;
+       pkgsHtml += `<div class="pkg-summary-tag paid-full" style="background:#e0e7ff; color:#4338ca; border-color:#c7d2fe; font-size: 1.1em; padding: 6px 12px;">
+           <i class="fa-solid fa-sack-dollar"></i> إجمالي المدفوعات: ${st.paid || 0} ج
+       </div>`;
+       if ($("newStudentType")) $("newStudentType").value = "session";
+       if (typeof window.toggleNewStudentType === "function") window.toggleNewStudentType();
+   } else {
+       if ($("newStudentType")) $("newStudentType").value = "package";
+       if (typeof window.toggleNewStudentType === "function") window.toggleNewStudentType();
+   }
+
    const allPkgs = Object.keys(groupFees || {});
    let totalReq = 0;
    let totalPaid = 0;
@@ -3336,9 +3355,9 @@ const st = students[id];
 
    if (!st.packages) st.packages = [];
    
-   if (allPkgs.length === 0) {
+   if (!st.isSessionStudent && allPkgs.length === 0) {
        pkgsHtml = '<div class="mutedCenter">لا توجد باقات معرفة بالنظام</div>';
-   } else {
+   } else if (!st.isSessionStudent) {
        allPkgs.forEach(pkgName => {
            const isSubscribed = st.packages.includes(pkgName);
            const pkgDetails = window.getPkgDetails(pkgName);
@@ -3400,11 +3419,14 @@ const st = students[id];
 
  
  let remain = totalRemain;
- 
+
  const card = document.querySelector(".studentCard");
  if(card) {
  card.classList.remove("status-border-green", "status-border-yellow", "status-border-red");
- if(totalReq > 0) {
+ if (st.isSessionStudent) {
+    if ((st.sessionBalance || 0) > 0) card.classList.add("status-border-green");
+    else card.classList.add("status-border-red");
+ } else if(totalReq > 0) {
  if(totalPaid >= totalReq) card.classList.add("status-border-green");
  else if(totalPaid > 0) card.classList.add("status-border-yellow");
  else card.classList.add("status-border-red");
@@ -3413,7 +3435,21 @@ const st = students[id];
 
  let remBox = $("remainingBox");
  if (remBox) {
- if(totalReq === 0) {
+ if (st.isSessionStudent) {
+      if ((st.sessionBalance || 0) > 0) {
+          remBox.className = "remain-box remain-green";
+          remBox.style.background = "rgba(252, 231, 243, 0.4)";
+          remBox.style.color = "#db2777";
+          remBox.style.border = "1px solid #fbcfe8";
+          remBox.innerHTML = `<i class="fa-solid fa-ticket"></i> الرصيد المتاح: ${st.sessionBalance || 0} حصص`;
+      } else {
+          remBox.className = "remain-box remain-red";
+          remBox.style.background = "";
+          remBox.style.color = "";
+          remBox.style.border = "";
+          remBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> الرصيد 0 - يرجى شحن حصص`;
+      }
+ } else if(totalReq === 0) {
  remBox.className = "remain-box remain-green";
  remBox.style.background = "";
  remBox.style.color = "";
@@ -3549,48 +3585,55 @@ const st = students[id];
  
 
  if (selectedSubject) {
-     let validPkgName = null;
-     let pkgError = `الطالب غير مشترك في باقة تخص مادة (${selectedSubject})`;
-     
-     if (s.packages && s.packages.length > 0) {
-         for (let i = 0; i < s.packages.length; i++) {
-             const pName = s.packages[i];
-             const pkgDetails = groupFees[pName];
-             if (pkgDetails && pkgDetails.subject === selectedSubject) {
-                 let pPaid = 0;
-                 if (s.payments) {
-                     s.payments.forEach(p => { if (p.pkgName === pName) pPaid += toInt(p.amount); });
-                 }
-                 const pPrice = toInt(pkgDetails.price);
-                 if (pPrice > 0 && pPaid < pPrice) {
-                     pkgError = `الطالب لم يسدد ثمن باقة (${pName}) بالكامل`;
-                     continue;
-                 }
-                 
-                 if (pkgDetails.expiryType === 'time') {
-                     const todayDate = new Date().setHours(0,0,0,0);
-                     const start = pkgDetails.startDate ? new Date(pkgDetails.startDate).setHours(0,0,0,0) : null;
-                     const end = pkgDetails.endDate ? new Date(pkgDetails.endDate).setHours(0,0,0,0) : null;
+     if (s.isSessionStudent) {
+         if ((s.sessionBalance || 0) <= 0) {
+             if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+             return { ok: false, msg: "الطالب استنفذ رصيد الحصص الخاص به! يرجى شحن الرصيد أولاً." };
+         }
+     } else {
+         let validPkgName = null;
+         let pkgError = `الطالب غير مشترك في باقة تخص مادة (${selectedSubject})`;
+         
+         if (s.packages && s.packages.length > 0) {
+             for (let i = 0; i < s.packages.length; i++) {
+                 const pName = s.packages[i];
+                 const pkgDetails = groupFees[pName];
+                 if (pkgDetails && pkgDetails.subject === selectedSubject) {
+                     let pPaid = 0;
+                     if (s.payments) {
+                         s.payments.forEach(p => { if (p.pkgName === pName) pPaid += toInt(p.amount); });
+                     }
+                     const pPrice = toInt(pkgDetails.price);
+                     if (pPrice > 0 && pPaid < pPrice) {
+                         pkgError = `الطالب لم يسدد ثمن باقة (${pName}) بالكامل`;
+                         continue;
+                     }
                      
-                     if (start && todayDate < start) {
-                         pkgError = `باقة (${pName}) لم تبدأ بعد`;
-                         continue;
+                     if (pkgDetails.expiryType === 'time') {
+                         const todayDate = new Date().setHours(0,0,0,0);
+                         const start = pkgDetails.startDate ? new Date(pkgDetails.startDate).setHours(0,0,0,0) : null;
+                         const end = pkgDetails.endDate ? new Date(pkgDetails.endDate).setHours(0,0,0,0) : null;
+                         
+                         if (start && todayDate < start) {
+                             pkgError = `باقة (${pName}) لم تبدأ بعد`;
+                             continue;
+                         }
+                         if (end && todayDate > end) {
+                             pkgError = `باقة (${pName}) منتهية الصلاحية`;
+                             continue;
+                         }
                      }
-                     if (end && todayDate > end) {
-                         pkgError = `باقة (${pName}) منتهية الصلاحية`;
-                         continue;
-                     }
+                     
+                     validPkgName = pName;
+                     break;
                  }
-                 
-                 validPkgName = pName;
-                 break;
              }
          }
-     }
-     
-     if (!validPkgName) {
-         showFullscreenFeedback(false, false);
-         return { ok: false, msg: pkgError };
+         
+         if (!validPkgName) {
+             if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+             return { ok: false, msg: pkgError };
+         }
      }
  }
  
@@ -3600,6 +3643,10 @@ const st = students[id];
  s.attendanceDates.push(d); 
  if(!attByDate[d]) attByDate[d] = []; 
  attByDate[d].push(String(id)); 
+ 
+ if (s.isSessionStudent) {
+     s.sessionBalance = (s.sessionBalance || 0) - 1;
+ }
  
  saveAttendanceOnly(); 
  updateLiveFeed(s);
@@ -3613,6 +3660,9 @@ const st = students[id];
 
  function removeAttendance(id, d) {
  const s = students[String(id)]; if(!s) return;
+ if (s.attendanceDates.includes(d) && s.isSessionStudent) {
+     s.sessionBalance = (s.sessionBalance || 0) + 1;
+ }
  s.attendanceDates = s.attendanceDates.filter(date => date !== d);
  if(attByDate[d]) attByDate[d] = attByDate[d].filter(x => x !== String(id));
  saveAttendanceOnly();
@@ -4028,7 +4078,7 @@ const st = students[id];
         ? `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check"></i> ${isAr ? "حاضر" : "Present"}</span>` 
         : `<span style="color:var(--text-secondary); font-size:0.85em;">—</span>`;
      let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
-     let gColor = getTagColor(sClass || (isAr ? "عام" : "General"));
+     let gColor = getTagColor(sClass || (isAr ? "بدون باقة" : "Without Package"));
      let classBadge = sClass 
         ? `<span class="badge" style="background:${gColor}; border-color:${gColor}; color:#fff; font-weight:600; font-size:0.82em;">${sClass}</span>` 
         : `<span style="color:var(--text-secondary); font-size:0.82em;">—</span>`;
@@ -4128,19 +4178,19 @@ const st = students[id];
     let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
     
     const isAr = (currentLang === 'ar');
-    let pkgDisplay = isAr ? 'عام' : 'General';
+    let pkgDisplay = isAr ? 'بدون باقة' : 'Without Package';
     if (s.isSessionStudent) {
       pkgDisplay = s.className || "";
     } else if (s.packages && Array.isArray(s.packages) && s.packages.length > 0) {
-      const validPkgs = s.packages.filter(p => p && p !== 'عام' && p !== 'General' && p !== 'عام' && p !== 'General');
+      const validPkgs = s.packages.filter(p => p && p !== 'بدون باقة' && p !== 'Without Package' && p !== 'بدون باقة' && p !== 'Without Package');
       if (validPkgs.length > 0) pkgDisplay = validPkgs.join(' + ');
-    } else if (s.className && s.className !== 'عام' && s.className !== 'General' && s.className !== 'عام' && s.className !== 'General') {
+    } else if (s.className && s.className !== 'بدون باقة' && s.className !== 'Without Package' && s.className !== 'بدون باقة' && s.className !== 'Without Package') {
       pkgDisplay = s.className;
     }
 
     const badgeStyle = s.isSessionStudent
       ? 'background:rgba(59,130,246,0.12); color:#2563eb; font-weight:700; border:1px solid rgba(59,130,246,0.3);'
-      : ((pkgDisplay === 'عام' || pkgDisplay === 'General') 
+      : ((pkgDisplay === 'بدون باقة' || pkgDisplay === 'Without Package') 
         ? 'background:rgba(100,116,139,0.1); color:#64748b; font-weight:600; border:1px solid rgba(100,116,139,0.2);' 
         : 'background:#e0f2fe; color:#0369a1; font-weight:bold; border:1px solid #bae6fd;');
 
@@ -4206,7 +4256,7 @@ const st = students[id];
  for (let i = 0; i < ids.length; i++) {
  let id = ids[i];
  const st = students[id]; 
- let c = (st && st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : (currentLang === "ar" ? "عام" : "General");
+ let c = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
  if(!groups[c]) groups[c] = { count: 0 }; 
  groups[c].count++;
  }
@@ -4245,7 +4295,7 @@ const st = students[id];
  let mBadge = item.method === "instapay" ? " إنستاباي" : (item.method === "wallet" ? " فودافون كاش" : " كاش");
  html += `
  <div class="item flexBetween" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--border);">
- <div><b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "عام" && item.className !== "General") ? item.className : (currentLang === "ar" ? "عام" : "General")}</span> <span class="badge" style="background:#e3f2fd; color:#0288d1;">${mBadge}</span></div>
+ <div><b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "بدون باقة" && item.className !== "Without Package") ? item.className : (currentLang === "ar" ? "بدون باقة" : "Without Package")}</span> <span class="badge" style="background:#e3f2fd; color:#0288d1;">${mBadge}</span></div>
  <div style="color:var(--success); font-weight:bold;">+ ${item.amount} ج</div>
  </div>`;
  }
@@ -5030,7 +5080,7 @@ on("quickAttendBtn", "click", function() {
  if ($("receiptStudentName")) $("receiptStudentName").textContent = st.name || "طالب بدون اسم";
  if ($("receiptStudentID")) $("receiptStudentID").textContent = `#${st.id}`;
  if ($("receiptStudentClass")) {
-   const pkgsStr = (st.packages && st.packages.length > 0) ? st.packages.filter(p => p && p !== "عام" && p !== "General").join(" + ") : ((st.className && st.className !== "عام" && st.className !== "General") ? st.className : (currentLang === "ar" ? "عام" : "General"));
+   const pkgsStr = (st.packages && st.packages.length > 0) ? st.packages.filter(p => p && p !== "بدون باقة" && p !== "Without Package").join(" + ") : ((st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className : (currentLang === "ar" ? "بدون باقة" : "Without Package"));
    $("receiptStudentClass").textContent = pkgsStr;
  }
  
@@ -5045,7 +5095,7 @@ on("quickAttendBtn", "click", function() {
  const recTbody = $("receiptPackagesTbody");
  if (recTbody) {
    let rRows = "";
-   const enrolledPkgs = (st.packages && st.packages.length > 0) ? st.packages.filter(p => p && p !== "عام" && p !== "General") : [(st.className && st.className !== "عام" && st.className !== "General" ? st.className : (currentLang === "ar" ? "عام" : "General"))];
+   const enrolledPkgs = (st.packages && st.packages.length > 0) ? st.packages.filter(p => p && p !== "بدون باقة" && p !== "Without Package") : [(st.className && st.className !== "بدون باقة" && st.className !== "Without Package" ? st.className : (currentLang === "ar" ? "بدون باقة" : "Without Package"))];
    enrolledPkgs.forEach(pName => {
      const pDet = (typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pName) : null;
      const reqPrice = pDet && pDet.price ? toInt(pDet.price) : 0;
@@ -5200,6 +5250,19 @@ on("quickAttendBtn", "click", function() {
       });
   }
 
+  window.toggleNewStudentType = function() {
+    const type = $("newStudentType") ? $("newStudentType").value : "package";
+    if (type === "session") {
+      if ($("newPackageContainer")) $("newPackageContainer").style.display = "none";
+      if ($("newSessionBalanceBox")) $("newSessionBalanceBox").style.display = "flex";
+      if ($("pkgFinanceCard")) $("pkgFinanceCard").style.display = "none";
+    } else {
+      if ($("newPackageContainer")) $("newPackageContainer").style.display = "flex";
+      if ($("newSessionBalanceBox")) $("newSessionBalanceBox").style.display = "none";
+      if ($("pkgFinanceCard")) $("pkgFinanceCard").style.display = "block";
+    }
+  };
+
   on("addPaymentBtn", "click", function() {
   if(!currentId) return;
   const payInp = $("newPaymentInput"); if (!payInp) return;
@@ -5211,16 +5274,37 @@ on("quickAttendBtn", "click", function() {
   if (method === "instapay") methodName = "إنستاباي";
   if (method === "wallet") methodName = "فودافون كاش";
   
-  const pkgSelector = $("newPaymentPackage");
-  const pkgName = pkgSelector ? pkgSelector.value : "";
-  
-  if (!pkgName) {
-      showToast("يرجى اختيار الباقة المراد الدفع لها", "err");
-      triggerShake("newPaymentPackage");
-      return;
+  const stType = $("newStudentType") ? $("newStudentType").value : "package";
+  const st = students[currentId];
+  let pkgName = "";
+  let req = 0;
+  let pkgPaid = 0;
+
+  if (stType === "session") {
+      const addedSessions = toInt($("newSessionBalanceInp") ? $("newSessionBalanceInp").value : 0);
+      if (addedSessions <= 0) {
+          showToast("يرجى إدخال عدد حصص صحيح لشحنه", "err");
+          triggerShake("newSessionBalanceInp");
+          return;
+      }
+      st.isSessionStudent = true;
+      st.sessionBalance = (st.sessionBalance || 0) + addedSessions;
+      pkgName = "شحن رصيد حصص";
+      if ($("newSessionBalanceInp")) $("newSessionBalanceInp").value = "";
+  } else {
+      st.isSessionStudent = false;
+      const pkgSelector = $("newPaymentPackage");
+      pkgName = pkgSelector ? pkgSelector.value : "";
+      
+      if (!pkgName) {
+          showToast("يرجى اختيار الباقة المراد الدفع لها", "err");
+          triggerShake("newPaymentPackage");
+          return;
+      }
+      const pDetails = window.getPkgDetails(pkgName);
+      req = toInt(pDetails.price);
   }
 
-  const st = students[currentId];
   if ($("stName")) st.name = $("stName").value; 
   if ($("stPhone")) st.phone = $("stPhone").value;
   
@@ -5231,14 +5315,12 @@ on("quickAttendBtn", "click", function() {
   if (!revenueByDate[today]) revenueByDate[today] = 0;
   revenueByDate[today] += v;
   
-  const pDetails = window.getPkgDetails(pkgName);
-  const req = toInt(pDetails.price);
-  let pkgPaid = 0;
-  st.payments.forEach(p => {
-      const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
-      if (pPkg === pkgName) pkgPaid += toInt(p.amount);
-  });
-  const pkgRemain = Math.max(0, req - pkgPaid);
+  if (stType !== "session") {
+      st.payments.forEach(p => {
+          const pPkg = p.pkgName || (st.packages && st.packages.length > 0 ? st.packages[0] : "");
+          if (pPkg === pkgName) pkgPaid += toInt(p.amount);
+      });
+  }
 
   saveAll();
   updateStudentUI(currentId);
@@ -5738,7 +5820,7 @@ on("quickAttendBtn", "click", function() {
     const counts = {};
     Object.values(students || {}).forEach(st => {
       if(!st) return;
-      const pList = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages.filter(p => p && p !== "عام" && p !== "General") : (st.className && st.className !== "عام" && st.className !== "General" ? [st.className] : []);
+      const pList = (Array.isArray(st.packages) && st.packages.length > 0) ? st.packages.filter(p => p && p !== "بدون باقة" && p !== "Without Package") : (st.className && st.className !== "بدون باقة" && st.className !== "Without Package" ? [st.className] : []);
       pList.forEach(pName => {
         counts[pName] = (counts[pName] || 0) + 1;
       });
@@ -6236,7 +6318,7 @@ Deleting it will automatically unlink it from these students. Do you want to pro
  for (let i = 0; i < ids.length; i++) {
  let id = ids[i];
  const st = students[id];
- let c = (st && st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : (currentLang === "ar" ? "عام" : "General");
+ let c = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
  if(!groups[c]) groups[c] = 0; 
  groups[c]++; 
  }
@@ -6281,7 +6363,7 @@ Deleting it will automatically unlink it from these students. Do you want to pro
  let rankAr = s.rank === 'vip' ? 'VIP ' : (s.rank === 'warn' ? 'إنذار ' : 'عادي ');
  let cleanNotes = s.notes ? s.notes.replace(/\r\n/g, " - ") : ""; 
  
- const pName = (s.packages && s.packages.length > 0) ? s.packages.filter(p => p && p !== "عام" && p !== "General").join(" + ") : ((s.className && s.className !== "عام" && s.className !== "General") ? s.className : "عام"); stData.push([s.id, s.name, pName, s.phone, s.paid, rankAr, history, cleanNotes]);
+ const pName = (s.packages && s.packages.length > 0) ? s.packages.filter(p => p && p !== "بدون باقة" && p !== "Without Package").join(" + ") : ((s.className && s.className !== "بدون باقة" && s.className !== "Without Package") ? s.className : "بدون باقة"); stData.push([s.id, s.name, pName, s.phone, s.paid, rankAr, history, cleanNotes]);
  }
  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(stData), "بيانات الطلاب");
 
@@ -6554,7 +6636,7 @@ on("importExcelInput", "change", async function(e) {
  for (let i = 0; i < ids.length; i++) {
    let id = ids[i]; const st = students[id]; 
    if(st) { 
-     let c = (st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : ""; 
+     let c = (st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : ""; 
      if(!groups[c]) groups[c] = []; 
      groups[c].push(st); 
    } 
@@ -7208,7 +7290,7 @@ window.deleteAssistant = async function(asstKey) {
  let groups = {};
  ids.forEach(id => {
  const st = students[id];
- const cls = (st && st.className && st.className !== "عام" && st.className !== "General") ? st.className.trim() : (currentLang === "ar" ? "عام" : "General");
+ const cls = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
  if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
  groups[cls].count++;
  if (st && st.paid !== undefined) {
@@ -7263,7 +7345,7 @@ window.deleteAssistant = async function(asstKey) {
  // populate class filter
  if (clsSel) {
  const existing = [...clsSel.options].map(o => o.value);
- const classes = [...new Set(Object.values(students).filter(s => s && s.className && s.className !== "عام" && s.className !== "General").map(s => s.className))];
+ const classes = [...new Set(Object.values(students).filter(s => s && s.className && s.className !== "بدون باقة" && s.className !== "Without Package").map(s => s.className))];
  classes.forEach(c => {
  if (!existing.includes(c)) {
  const opt = document.createElement("option");
@@ -7277,7 +7359,7 @@ window.deleteAssistant = async function(asstKey) {
  Object.values(students).forEach(st => {
  if (!st || !st.name) return;
  if (search && !st.name.toLowerCase().includes(search)) return;
- const cls = ((st.className && st.className !== "عام" && st.className !== "General") ? st.className : (currentLang === "ar" ? "عام" : "General")).trim();
+ const cls = ((st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className : (currentLang === "ar" ? "بدون باقة" : "Without Package")).trim();
  if (clsFilter && cls !== clsFilter) return;
  
     let req = 0;
@@ -7469,6 +7551,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 updateStudentUI(currentId);
               }
               if (typeof renderTable === 'function') renderTable();
+            }
+          }
+          if (cfg.student_sessions) {
+            const sMap = cfg.student_sessions;
+            let changedSs = false;
+            Object.keys(sMap).forEach(stId => {
+              if (students[stId]) {
+                students[stId].isSessionStudent = true;
+                students[stId].sessionBalance = sMap[stId];
+                changedSs = true;
+              }
+            });
+            if (changedSs) {
+              secureSave(K_STUDENTS, students);
+              if (typeof currentId !== 'undefined' && currentId && students[currentId] && typeof updateStudentUI === 'function') {
+                updateStudentUI(currentId);
+              }
             }
           }
           if (cfg.group_fees) {
@@ -8208,7 +8307,7 @@ document.addEventListener("DOMContentLoaded", () => {
  totalRemaining += remain;
 
  if (remain > 0) {
- debtors.push({ id: s.id, name: s.name || "بدون اسم", className: (sClass && sClass !== "عام" && sClass !== "General") ? sClass : (currentLang === "ar" ? "عام" : "General"), remain: remain });
+ debtors.push({ id: s.id, name: s.name || "بدون اسم", className: (sClass && sClass !== "بدون باقة" && sClass !== "Without Package") ? sClass : (currentLang === "ar" ? "بدون باقة" : "Without Package"), remain: remain });
  }
  }
  }
@@ -8301,7 +8400,7 @@ document.addEventListener("DOMContentLoaded", () => {
  totalRemaining += remain;
 
  if (remain > 0) {
- debtors.push({ id: s.id, name: s.name || "بدون اسم", className: (sClass && sClass !== "عام" && sClass !== "General") ? sClass : (currentLang === "ar" ? "عام" : "General"), remain: remain });
+ debtors.push({ id: s.id, name: s.name || "بدون اسم", className: (sClass && sClass !== "بدون باقة" && sClass !== "Without Package") ? sClass : (currentLang === "ar" ? "بدون باقة" : "Without Package"), remain: remain });
  }
  }
  }
@@ -8577,7 +8676,7 @@ window.openSessionStudentModal = function(item) {
  h += `
  <div class="item flexBetween" style="margin-bottom:10px; padding:12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px;">
  <div>
- <b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "عام" && item.className !== "General") ? item.className : (currentLang === "ar" ? "عام" : "General")}</span>
+ <b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "بدون باقة" && item.className !== "Without Package") ? item.className : (currentLang === "ar" ? "بدون باقة" : "Without Package")}</span>
  <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:5px;">${mBadge}</span>
  <div style="font-size:0.8em; color:var(--text-secondary); margin-top:4px;"> ${item.timestamp || ""} ${item.phone ? `| ${item.phone}` : ""}</div>
  </div>
@@ -8736,7 +8835,7 @@ window.openSessionStudentModal = function(item) {
  if(s.payments && s.payments.length > 0) {
  for(let j=0; j<s.payments.length; j++) {
  if(s.payments[j].date === today) {
- let sClass = (s.className && s.className !== "عام" && s.className !== "General") ? s.className.trim() : (currentLang === "ar" ? "عام" : "General");
+ let sClass = (s.className && s.className !== "بدون باقة" && s.className !== "Without Package") ? s.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
  
     let req = 0;
     if (sClass && groupFees[sClass] !== undefined) {
@@ -8784,7 +8883,7 @@ window.openSessionStudentModal = function(item) {
  html += `
  <div class="item flexBetween" style="margin-bottom:8px; cursor:pointer;" onclick="document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('SessionStudents'); if($('sessFilterDate')) $('sessFilterDate').value='${today}'; renderSessionStudentsList('${today}');">
  <div>
- <b>${item.name}</b> <span class="badge" style="background:#fff3e0; color:#e65100;">طالب حصة </span> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "عام" && item.className !== "General") ? item.className : (currentLang === "ar" ? "عام" : "General")}</span>
+ <b>${item.name}</b> <span class="badge" style="background:#fff3e0; color:#e65100;">طالب حصة </span> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "بدون باقة" && item.className !== "Without Package") ? item.className : (currentLang === "ar" ? "بدون باقة" : "Without Package")}</span>
  <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:5px;">${mBadge}</span>
  </div>
  <div style="text-align:left;">
@@ -9369,14 +9468,14 @@ window.openSessionStudentModal = function(item) {
         let paid = toInt(st.paid) || 0;
         let discount = toInt(st.discount) || 0;
         let remain = Math.max(0, req - paid - discount);
-        let descText = stClassName ? (isAr ? ("باقة: " + stClassName) : ("Pkg: " + stClassName)) : (isAr ? "عام" : "General");
+        let descText = stClassName ? (isAr ? ("باقة: " + stClassName) : ("Pkg: " + stClassName)) : (isAr ? "بدون باقة" : "Without Package");
         let bClass = "badge-normal";
 
         if (st.rank === "vip") {
-          descText = isAr ? ("VIP (" + (stClassName || "عام") + ")") : ("VIP (" + (stClassName || "General") + ")");
+          descText = isAr ? ("VIP (" + (stClassName || "بدون باقة") + ")") : ("VIP (" + (stClassName || "Without Package") + ")");
           bClass = "badge-vip";
         } else if (st.rank === "warning") {
-          descText = isAr ? ("إنذار (" + (stClassName || "عام") + ")") : ("Warned (" + (stClassName || "General") + ")");
+          descText = isAr ? ("إنذار (" + (stClassName || "بدون باقة") + ")") : ("Warned (" + (stClassName || "Without Package") + ")");
           bClass = "badge-warning";
         }
 
@@ -9407,13 +9506,13 @@ window.openSessionStudentModal = function(item) {
         } else if (filter === "present_today") {
           if (hasAttendedToday) {
             matches = true;
-            descText = isAr ? ("حضر اليوم (" + (stClassName || "عام") + ")") : ("Attended Today (" + (stClassName || "General") + ")");
+            descText = isAr ? ("حضر اليوم (" + (stClassName || "بدون باقة") + ")") : ("Attended Today (" + (stClassName || "Without Package") + ")");
             bClass = "badge-present";
           }
         } else if (filter === "absent_today") {
           if (!hasAttendedToday) {
             matches = true;
-            descText = isAr ? ("غائب اليوم (" + (stClassName || "عام") + ")") : ("Absent Today (" + (stClassName || "General") + ")");
+            descText = isAr ? ("غائب اليوم (" + (stClassName || "بدون باقة") + ")") : ("Absent Today (" + (stClassName || "Without Package") + ")");
             bClass = "badge-absent";
           }
         }
@@ -11606,7 +11705,7 @@ window.openStudentContractModal = function() {
             <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; width: 17%; color: #0b192c;">اسم الطالب (المُقرّ):</td>
             <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 900; font-size: 1em; color: #0b192c; width: 33%;">${st.name || "—"}</td>
             <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; width: 18%; color: #0b192c;">المرحلة / الصف الدراسي:</td>
-            <td style="padding: 4px 8px; border: 1px solid #cbd5e1; width: 32%; font-weight: 800;">${(st.className && st.className !== "عام" && st.className !== "General") ? st.className : "عام"}</td>
+            <td style="padding: 4px 8px; border: 1px solid #cbd5e1; width: 32%; font-weight: 800;">${(st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className : "بدون باقة"}</td>
           </tr>
           <tr>
             <td style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; font-weight: bold; color: #0b192c;">رقم هاتف الطالب:</td>

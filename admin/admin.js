@@ -101,6 +101,10 @@ const ADMIN_DICT = {
   "btn_login_admin": { ar: "ط¯ط®ظˆظ„ ظ…ط¯ظٹط± ط§ظ„ظ†ط¸ط§ظ…", en: "Login as Administrator" },
   "prompt_switch_to_asst": { ar: "ظ‡ظ„ ط£ظ†طھ ظ…ط³ط§ط¹ط¯طں", en: "Are you an assistant?" },
   "action_switch_to_asst": { ar: "ط§ظ„ط§ظ†طھظ‚ط§ظ„ ظ„ط¨ظˆط§ط¨ط© ط§ظ„ظ…ط³ط§ط¹ط¯ ظˆط§ظ„ط¹ظ…ظ„ظٹط§طھ", en: "Go to Assistant Portal & Operations" },
+  "nav_daily": { ar: "الرئيسية", en: "Home" },
+  "nav_term": { ar: "الترم", en: "Term" },
+  "nav_assistants": { ar: "السكرتارية", en: "Assistants" },
+  "nav_more": { ar: "المزيد", en: "More" },
 
   "dec_val_ph": { ar: "ظ…ط«ط§ظ„: 100", en: "e.g. 100" },
   "dec_reason_ph": { ar: "ظ…ط«ط§ظ„: ظ‚ط±ط§ط± ظ…ط¯ظٹط± - ط¸ط±ظپ ط®ط§طµ / طھظپظˆظ‚ ط¯ط±ط§ط³ظٹ", en: "e.g. Manager Decision - Special case / Academic excellence" },
@@ -1799,13 +1803,13 @@ async function loadAllAdminData() {
       students = {};
       stRes.data.forEach(s => {
         let cName = s.class_name || s.className || '';
-        if (cName === 'ط¹ط§ظ…' || cName === 'General' || cName === 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' || cName === 'General') cName = '';
+        if (cName === 'ط¹ط§ظ…' || cName === 'Without Package' || cName === 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' || cName === 'Without Package') cName = '';
         let pList = (Array.isArray(s.packages) && s.packages.length > 0) 
-          ? s.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'General') 
+          ? s.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'Without Package' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'Without Package') 
           : (stPkgsMap[s.id] || (cName ? [cName] : []));
         if (typeof pList === 'string') pList = [pList];
         if (!Array.isArray(pList)) pList = [];
-        pList = pList.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'General');
+        pList = pList.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'Without Package' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'Without Package');
 
         const restoredDiscounts = (stPkgDiscountsMap && stPkgDiscountsMap[s.id]) || s.package_discounts || s.packageDiscounts || (Number(s.discount) > 0 && pList.length === 1 ? { [pList[0]]: Number(s.discount) } : {});
 
@@ -1994,6 +1998,17 @@ window.switchAdminTab = function(tabKey) {
 
   if (viewEl) viewEl.classList.remove("hidden");
   if (btnEl) btnEl.classList.add("active");
+  
+  // Update mobile bottom nav
+  document.querySelectorAll(".mob-nav-item").forEach(btn => btn.classList.remove("active"));
+  let mobBtnId = null;
+  if (tabKey === 'dailyReport') mobBtnId = 'mobNavDaily';
+  if (tabKey === 'termReport') mobBtnId = 'mobNavTerm';
+  if (tabKey === 'assistants') mobBtnId = 'mobNavAssistants';
+  if (mobBtnId) {
+    const mBtn = document.getElementById(mobBtnId);
+    if (mBtn) mBtn.classList.add("active");
+  }
   if (titleEl) titleEl.textContent = c.title;
   if (iconEl) iconEl.className = `fa-solid ${c.icon}`;
 
@@ -2438,7 +2453,7 @@ export function loadDailyReport(dateStr) {
       let groups = {};
       ids.forEach(id => {
         const st = (students && students[id]) ? students[id] : null;
-        const cls = (st && st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className.trim() : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General");
+        const cls = (st && st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'Without Package') ? st.className.trim() : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "Without Package");
         if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
         groups[cls].count++;
         if (st && st.paid !== undefined) {
@@ -2580,7 +2595,7 @@ window.renderTermTable = function() {
   if (clsSel) {
     const existing = [...clsSel.options].map(o => o.value);
     const sessClasses = (typeof window.getAdminUniqueSessionStudents === 'function') ? window.getAdminUniqueSessionStudents().map(s => s.className || "") : [];
-    const classes = [...new Set([...Object.values(students).map(s => (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'General') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General")), ...sessClasses])];
+    const classes = [...new Set([...Object.values(students).map(s => (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'Without Package') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "Without Package")), ...sessClasses])];
     classes.forEach(c => {
       if (!existing.includes(c)) {
         const opt = document.createElement("option");
@@ -2621,7 +2636,7 @@ window.renderTermTable = function() {
     }
 
     if (search && !st.name.toLowerCase().includes(search) && !String(st.id).includes(search)) return;
-    const cls = (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className.trim() : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General");
+    const cls = (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'Without Package') ? st.className.trim() : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "Without Package");
     if (clsFilter && cls !== clsFilter) return;
 
     matchCount++;
@@ -2647,8 +2662,8 @@ window.renderTermTable = function() {
     };
 
     const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) 
-      ? st.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'General') 
-      : (cls && cls !== 'ط¹ط§ظ…' && cls !== 'General' && cls !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && cls !== 'General' ? [cls] : []);
+      ? st.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'Without Package' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'Without Package') 
+      : (cls && cls !== 'ط¹ط§ظ…' && cls !== 'Without Package' && cls !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && cls !== 'Without Package' ? [cls] : []);
     const checked = new Set();
     stPkgs.forEach(pName => {
       const clean = normName(pName);
@@ -6684,7 +6699,7 @@ window.renderDiscountsModalTable = function() {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-secondary);">${isAr ? "ظ„ط§ ظٹظˆط¬ط¯ ط·ظ„ط§ط¨ ط­ط§طµظ„ظٹظ† ط¹ظ„ظ‰ ط®طµظˆظ…ط§طھ طھط·ط§ط¨ظ‚ ط§ظ„ط¨ط­ط«" : "No discounted students found"}</td></tr>`;
   } else {
     tbody.innerHTML = pageItems.map(s => {
-      const cls = (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'General') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General");
+      const cls = (s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'Without Package') ? s.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "Without Package");
       const paid = Number(s.paid) || 0;
       const disc = Number(s.discount) || 0;
       const debt = Math.max(0, (Number(s.totalReq) || 0) - paid - disc);
@@ -6916,8 +6931,8 @@ window.getStudentFinancialStatus = function(st) {
 
   const cls = st.className;
   const stPkgs = (Array.isArray(st.packages) && st.packages.length > 0) 
-    ? st.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'General' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'General') 
-    : (cls && cls !== 'ط¹ط§ظ…' && cls !== 'General' && cls !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && cls !== 'General' ? [cls] : []);
+    ? st.packages.filter(p => p && p !== 'ط¹ط§ظ…' && p !== 'Without Package' && p !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && p !== 'Without Package') 
+    : (cls && cls !== 'ط¹ط§ظ…' && cls !== 'Without Package' && cls !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©' && cls !== 'Without Package' ? [cls] : []);
   const checked = new Set();
   stPkgs.forEach(pName => {
     const clean = normName(pName);
@@ -6985,7 +7000,7 @@ window.renderDebtsModalTable = function() {
       debtors.push({
         id: st.id,
         name: st.name,
-        className: (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General"),
+        className: (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'Without Package') ? st.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "Without Package"),
         phone: st.phone || "â€”",
         parentPhone: st.parentPhone || "â€”",
         req: fin.req,
@@ -7141,7 +7156,7 @@ window.openStudentsListModal = function() {
     const isAr = (currentLang === "ar");
     const classSet = new Set();
     Object.values(students || {}).forEach(s => {
-      if (s && s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'General') {
+      if (s && s.className && s.className !== 'ط¹ط§ظ…' && s.className !== 'Without Package') {
         classSet.add(s.className);
       }
     });
@@ -7183,8 +7198,8 @@ window.renderStudentsListModal = function() {
 
   const filtered = [];
   allStudents.forEach(st => {
-    const cls = (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General') ? st.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "General");
-    if (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'General' && st.className !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©') {
+    const cls = (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'Without Package') ? st.className : (isAr ? "ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©" : "Without Package");
+    if (st.className && st.className !== 'ط¹ط§ظ…' && st.className !== 'Without Package' && st.className !== 'ط¨ط¯ظˆظ† ط¨ط§ظ‚ط©') {
       pkgCount++;
     }
 

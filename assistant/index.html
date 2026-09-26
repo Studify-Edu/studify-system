@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="dark" class="login-active">
 <head>
  <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -646,8 +646,21 @@
 
   <label class="lbl" style="margin-top:20px; border-top:1px dashed var(--border); padding-top:10px;" data-i18n="lbl_finance"><i class="fa-solid fa-wallet" style="margin-inline-end:6px;"></i> نظام المصاريف والباقات</label>
   <div class="paymentBox">
-  
+
     <div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+      <span class="payLabel" style="white-space:nowrap; font-weight:bold;"><i class="fa-solid fa-user-tag" style="color:var(--primary);"></i> نظام الطالب:</span>
+      <select id="newStudentType" class="inp" style="flex:1; font-weight:bold;" onchange="window.toggleNewStudentType()">
+        <option value="package">طالب باقة (Package Plan)</option>
+        <option value="session">طالب بالحصة (Session Plan)</option>
+      </select>
+    </div>
+
+    <div id="newSessionBalanceBox" style="display:none; margin-bottom:12px; align-items:center; gap:8px;">
+      <span class="payLabel" style="white-space:nowrap; font-weight:bold;"><i class="fa-solid fa-ticket" style="color:var(--primary);"></i> رصيد الحصص:</span>
+      <input id="newSessionBalanceInp" type="number" class="inp" placeholder="مثال: 4" style="flex:1;">
+    </div>
+  
+    <div id="newPackageContainer" style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
       <span class="payLabel" style="white-space:nowrap; font-weight:bold;"><i class="fa-solid fa-cube" style="color:var(--primary);"></i> <span data-i18n="lbl_payment_package">باقة الدفع:</span></span>
       <select id="newPaymentPackage" class="inp" style="flex:1; font-weight:bold;">
         <option value="" data-i18n="opt_select_package">-- اختر الباقة --</option>
