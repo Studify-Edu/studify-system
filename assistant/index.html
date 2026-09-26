@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="dark" class="login-active">
 <head>
  <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1480,13 +1480,13 @@
   <div class="card" style="margin-bottom:25px; background:var(--bg-surface); border:1px solid var(--border);">
      <div class="flexBetween" style="margin-bottom:15px; flex-wrap:wrap; gap:10px;">
         <h3 style="color:var(--danger); margin:0;"><i class="fa-solid fa-receipt"></i> <span data-i18n="asst_exp_title">تسجيل ومتابعة مصروفات السنتر</span></h3>
-        <span class="badge" style="background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.25); font-weight:700;">مصاريف تشغيلية</span>
+        <span class="badge" data-i18n="asst_exp_tag" style="background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.25); font-weight:700;">مصاريف تشغيلية</span>
      </div>
 
      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;">
         <div>
            <label class="lbl" data-i18n="asst_exp_reason_lbl">بند المصروف / السبب</label>
-           <input type="text" id="asstExpenseReasonInp" class="inp" placeholder="مثال: طباعة ورق / فواتير / مستلزمات">
+           <input type="text" id="asstExpenseReasonInp" class="inp" placeholder="مثال: طباعة ورق / فواتير / مستلزمات" data-i18n-placeholder="asst_exp_reason_plc">
         </div>
         <div>
            <label class="lbl" data-i18n="asst_exp_amt_lbl">المبلغ (ج)</label>
@@ -1495,9 +1495,9 @@
         <div>
            <label class="lbl" data-i18n="asst_exp_method_lbl">الخزينة المصروف منها</label>
            <select id="asstExpenseMethodInp" class="inp">
-              <option value="cash">درج الكاش (الخزينة النقدية)</option>
-              <option value="wallet">محفظة فودافون كاش</option>
-              <option value="instapay">حساب إنستاباي (InstaPay)</option>
+              <option value="cash" data-i18n="asst_exp_opt_cash">درج الكاش (الخزينة النقدية)</option>
+              <option value="wallet" data-i18n="asst_exp_opt_wallet">محفظة فودافون كاش</option>
+              <option value="instapay" data-i18n="asst_exp_opt_insta">حساب إنستاباي (InstaPay)</option>
            </select>
         </div>
         <div>

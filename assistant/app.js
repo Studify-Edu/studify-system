@@ -1013,6 +1013,13 @@ let vaultTransfers = [];
  // 3. THE COMPREHENSIVE DICTIONARY
  // ==========================================
  const dict = {
+  "mkt_badge_system": { ar: "منظومة الاستهداف الرقمي والتسويق الذكي", en: "Digital Targeting & Smart Marketing System" },
+  "mkt_badge_safe": { ar: "درع حماية ضد الحظر (Anti-Ban Shield)", en: "Anti-Ban Shield" },
+  "asst_exp_tag": { ar: "مصاريف تشغيلية", en: "Operational Expenses" },
+  "asst_exp_reason_plc": { ar: "مثال: طباعة ورق / فواتير / مستلزمات", en: "e.g., Printing / Invoices / Supplies" },
+  "asst_exp_opt_cash": { ar: "درج الكاش (الخزينة النقدية)", en: "Cash Drawer" },
+  "asst_exp_opt_wallet": { ar: "محفظة فودافون كاش", en: "Vodafone Cash Wallet" },
+  "asst_exp_opt_insta": { ar: "حساب إنستاباي (InstaPay)", en: "InstaPay Account" },
   "asst_exp_title": { ar: "تسجيل ومتابعة مصروفات السنتر", en: "Record & Track Center Expenses" },
   "asst_exp_reason_lbl": { ar: "بند المصروف / السبب", en: "Expense Item / Reason" },
   "asst_exp_amt_lbl": { ar: "المبلغ (ج)", en: "Amount (EGP)" },
