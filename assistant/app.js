@@ -2056,11 +2056,15 @@ function showToast(msg, type = "success") {
       // 3. Prepare Booklets array
       const bookletRows = Object.keys(bookletsStock || {}).map(bId => {
         const b = bookletsStock[bId];
+        const qtyVal = toInt(b.qty !== undefined ? b.qty : (b.stock || 0));
+        const soldVal = toInt(b.sold || 0);
         return {
           id: String(bId),
           name: b.name || '',
           price: toInt(b.price) || 0,
-          stock: parseInt(b.stock) || 0,
+          qty: qtyVal,
+          sold: soldVal,
+          stock: Math.max(0, qtyVal - soldVal),
           sales: b.sales || []
         };
       });
@@ -3657,10 +3661,12 @@ const st = students[id];
                          s.payments.forEach(p => { if (p.pkgName === pName) pPaid += toInt(p.amount); });
                      }
                      const pPrice = toInt(pkgDetails.price);
-                     if (pPrice > 0 && pPaid < pPrice) {
-                         pkgError = `الطالب لم يسدد ثمن باقة (${pName}) بالكامل`;
-                         continue;
-                     }
+                      const pkgDisc = (s.packageDiscounts && s.packageDiscounts[pName]) ? toInt(s.packageDiscounts[pName]) : (toInt(s.discount) || 0);
+                      const netPrice = Math.max(0, pPrice - pkgDisc);
+                      if (netPrice > 0 && pPaid < netPrice) {
+                          pkgError = `الطالب لم يسدد ثمن باقة (${pName}) بالكامل`;
+                          continue;
+                      }
                      
                      if (pkgDetails.expiryType === 'time') {
                          const todayDate = new Date().setHours(0,0,0,0);
@@ -5426,6 +5432,15 @@ on("quickAttendBtn", "click", function() {
       const dateFormatted = dNow.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
       const timeFormatted = dNow.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
 
+      let pkgRemain = 0;
+      if (stType === "session") {
+        pkgRemain = 0;
+      } else {
+        const pkgDisc = (st.packageDiscounts && st.packageDiscounts[pkgName]) ? toInt(st.packageDiscounts[pkgName]) : 0;
+        const netReq = Math.max(0, req - pkgDisc);
+        pkgRemain = Math.max(0, netReq - pkgPaid);
+      }
+
       let pkgStatusLine = (pkgRemain === 0) 
           ? "حالة الباقة: تم سداد قيمة باقة (" + pkgName + ") بالكامل" 
           : " المتبقي لباقة (" + pkgName + "): " + pkgRemain + " ج.";
@@ -5465,7 +5480,11 @@ on("quickAttendBtn", "click", function() {
               + "نظام ستوديفاي التعليمي — Studify Edu System";
 
       setTimeout(function() { 
-          window.open("https://wa.me/20" + st.phone + "?text=" + encodeURIComponent(msg), '_blank'); 
+          let cleanPhone = String(st.phone).replace(/[^\d]/g, '').trim();
+          if (cleanPhone.startsWith('20')) cleanPhone = cleanPhone;
+          else if (cleanPhone.startsWith('0')) cleanPhone = '2' + cleanPhone;
+          else cleanPhone = '20' + cleanPhone;
+          window.open("https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(msg), '_blank'); 
       }, 1000);
   }
   payInp.value = "";
@@ -6209,16 +6228,30 @@ on("quickAttendBtn", "click", function() {
 
        // If editing and name changed, clean old package from Supabase and update enrolled students
        if (oldName && oldName !== n) {
-         if (window.supabaseClient) {
-           try { await window.supabaseClient.from('packages').delete().eq('name', oldName); } catch(e) {}
-         }
-         delete groupFees[oldName];
-         Object.values(students || {}).forEach(st => {
-           if (st && Array.isArray(st.packages) && st.packages.includes(oldName)) {
-             st.packages = st.packages.map(pName => pName === oldName ? n : pName);
-           }
-         });
-       }
+          if (window.supabaseClient) {
+            try { await window.supabaseClient.from('packages').delete().eq('name', oldName); } catch(e) {}
+          }
+          delete groupFees[oldName];
+          Object.values(students || {}).forEach(st => {
+            if (st) {
+              if (Array.isArray(st.packages) && st.packages.includes(oldName)) {
+                st.packages = st.packages.map(pName => pName === oldName ? n : pName);
+              }
+              if (st.className === oldName) {
+                st.className = n;
+              }
+              if (Array.isArray(st.payments)) {
+                st.payments.forEach(pm => {
+                  if (pm.pkgName === oldName) pm.pkgName = n;
+                });
+              }
+              if (st.packageDiscounts && st.packageDiscounts[oldName] !== undefined) {
+                st.packageDiscounts[n] = st.packageDiscounts[oldName];
+                delete st.packageDiscounts[oldName];
+              }
+            }
+          });
+        }
 
        groupFees[n] = {
          name: n,
@@ -6624,14 +6657,21 @@ on("importExcelInput", "change", async function(e) {
             <p style="color: var(--text-secondary); margin-bottom: 12px;">
               ${isAr ? "سيتم مسح كافة بيانات الطالب، سجلات الحضور، المدفوعات والاشتراكات نهائياً من قاعدة البيانات السحابية (Supabase) والجهاز المحلي." : "All student data, attendance logs, payments, and subscriptions will be permanently erased from Supabase and local device."}
             </p>
-            ${st.paid > 0 ? `
-              <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px; border-radius: 8px; margin-top: 10px;">
-                <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; color: #f59e0b;">
-                  <input type="checkbox" id="swalDeductTodayRevenue" checked style="width: 18px; height: 18px; accent-color: #f59e0b;">
-                  <span>${isAr ? ("خصم المدفوعات المسجلة (" + st.paid + " ج) من إيراد اليوم؟") : ("Deduct registered payments (" + st.paid + " EGP) from today's revenue?")}</span>
-                </label>
-              </div>
-            ` : ''}
+            ${(() => {
+              const todayStr = nowDateStr();
+              let todayPaid = 0;
+              if (st.payments && Array.isArray(st.payments)) {
+                st.payments.forEach(p => { if (p && p.date === todayStr) todayPaid += toInt(p.amount); });
+              }
+              return (todayPaid > 0) ? `
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px; border-radius: 8px; margin-top: 10px;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; color: #f59e0b;">
+                    <input type="checkbox" id="swalDeductTodayRevenue" checked style="width: 18px; height: 18px; accent-color: #f59e0b;">
+                    <span>${isAr ? ("خصم مدفوعات اليوم (" + todayPaid + " ج) من إيراد الخزينة الحالي؟") : ("Deduct today's payments (" + todayPaid + " EGP) from current treasury revenue?")}</span>
+                  </label>
+                </div>
+              ` : '';
+            })()}
           </div>
         `,
         icon: 'warning',
@@ -6656,10 +6696,14 @@ on("importExcelInput", "change", async function(e) {
             }
           }
 
-          // 2. Adjust today's revenue if requested
-          if (shouldDeduct && st.paid > 0) {
+          // 2. Adjust today's revenue if requested (ONLY for payments collected today)
+          if (shouldDeduct && st.payments && Array.isArray(st.payments)) {
             const today = nowDateStr();
-            revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - Number(st.paid));
+            let todayPaid = 0;
+            st.payments.forEach(p => { if (p && p.date === today) todayPaid += toInt(p.amount); });
+            if (todayPaid > 0) {
+              revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - todayPaid);
+            }
           }
 
           // 3. Clear from local state
@@ -7867,13 +7911,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const pkg = groupFees[cls];
         req = toInt(pkg.price || pkg) || 0;
       }
-      if (r.sub_type === "exemption") {
-        students[stId].paid = req;
-      } else if (r.sub_type === "discount") {
-        const discounted = Math.max(0, req - toInt(r.amount));
-        students[stId].paid = Math.max(students[stId].paid || 0, discounted > 0 ? req - toInt(r.amount) : 0);
+      const targetPkg = r.target_package || cls || ((students[stId].packages && students[stId].packages.length > 0) ? students[stId].packages[0] : "");
+      students[stId].packageDiscounts = students[stId].packageDiscounts || {};
+      if (targetPkg) {
+        if (r.sub_type === "exemption") {
+          students[stId].packageDiscounts[targetPkg] = req || 0;
+        } else {
+          students[stId].packageDiscounts[targetPkg] = (toInt(students[stId].packageDiscounts[targetPkg]) || 0) + toInt(r.amount || 0);
+        }
       }
+      students[stId].discount = toInt(r.amount || req || 0);
+      students[stId].lastModified = Date.now();
       saveAll();
+      if ('BroadcastChannel' in window) {
+        try {
+          const bc = new BroadcastChannel('studify_permissions_sync');
+          bc.postMessage({ type: 'DECISION_APPROVED', reqId, student_id: stId, packageDiscounts: students[stId].packageDiscounts });
+        } catch(e) {}
+      }
     }
 
     // Mark request approved
@@ -9599,17 +9654,21 @@ window.openSessionStudentModal = function(item) {
  };
 
  window.returnBookletCopy = function(id) {
- if (!bookletsStock[id]) return;
- let b = bookletsStock[id];
- if (b.sold <= 0) {
- showToast("لم يتم بيع أي نسخة من هذه المذكرة لإرجاعها", "err");
- return;
- }
- b.sold -= 1;
- saveAll();
- renderBookletsStock();
- showToast(`تم إرجاع نسخة من ${b.name} بنجاح `, "warning");
- };
+  if (!bookletsStock[id]) return;
+  let b = bookletsStock[id];
+  if (b.sold <= 0) {
+    showToast("لم يتم بيع أي نسخة من هذه المذكرة لإرجاعها", "err");
+    return;
+  }
+  b.sold -= 1;
+  const today = nowDateStr();
+  if (revenueByDate[today]) {
+    revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - toInt(b.price));
+  }
+  saveAll();
+  renderBookletsStock();
+  showToast(`تم إرجاع نسخة من ${b.name} وخصم ${b.price} ج من الخزينة `, "warning");
+};
 
  window.editBookletQty = function(id) {
    if (!bookletsStock[id]) return;
@@ -9631,14 +9690,18 @@ window.openSessionStudentModal = function(item) {
        }
      }).then(res => {
        if (res.isConfirmed && res.value !== undefined && res.value !== "") {
-         let q = toInt(res.value);
-         if (q >= 0) {
-           b.qty = q;
-           saveAll();
-           renderBookletsStock();
-           showToast("تم تحديث العدد الكلي بنجاح", "success");
-         }
-       }
+          let q = toInt(res.value);
+          if (q < (b.sold || 0)) {
+            showToast(`العدد الكلي (${q}) لا يمكن أن يكون أقل من النسخ المباعة بالفعل (${b.sold})`, "err");
+            return;
+          }
+          if (q >= 0) {
+            b.qty = q;
+            saveAll();
+            renderBookletsStock();
+            showToast("تم تحديث العدد الكلي بنجاح", "success");
+          }
+        }
      });
    }
  };
@@ -10060,7 +10123,11 @@ window.openSessionStudentModal = function(item) {
     let cardsHtml = '<div class="mkt-cards-grid">';
     for(let i = 0; i < pageSlice.length; i++) {
       const item = pageSlice[i];
-      let cleanPhone = item.phone.startsWith("0") ? "+2" + item.phone : (item.phone.startsWith("+") ? item.phone : "+20" + item.phone);
+      let pNum = String(item.phone || '').replace(/[^\d]/g, '').trim();
+      if (pNum.startsWith('20')) pNum = pNum;
+      else if (pNum.startsWith('0')) pNum = '2' + pNum;
+      else pNum = '20' + pNum;
+      let cleanPhone = pNum;
       
       let customMsg = msgBody;
       if (customMsg) {
@@ -10149,7 +10216,11 @@ window.openSessionStudentModal = function(item) {
  customMsg = `مرحباً بك أ/ ${item.name}،\r\nيرجى التواصل مع إدارة السنتر.`;
  }
 
- let cleanPhone = item.phone.startsWith("0") ? "+2" + item.phone : "+20" + item.phone;
+ let pNum = String(item.phone || '').replace(/[^\d]/g, '').trim();
+  if (pNum.startsWith('20')) pNum = pNum;
+  else if (pNum.startsWith('0')) pNum = '2' + pNum;
+  else pNum = '20' + pNum;
+  let cleanPhone = pNum;
  let waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(customMsg)}`;
 
  // فتح نافذة المحادثة
@@ -11827,6 +11898,12 @@ window.CLOUD_MONITOR_SECTIONS = [
     cloudTable: "settings (config.expenses_by_date)"
   },
   {
+    id: "student_package_discounts",
+    label: "خصومات وإعفاءات الباقات",
+    localCount: () => Object.values(students || {}).filter(s => s && s.packageDiscounts && Object.keys(s.packageDiscounts).length > 0).length,
+    cloudTable: "settings (config.student_package_discounts)"
+  },
+  {
     id: "student_ranks",
     label: "تصنيفات الطلاب (VIP / إنذار)",
     localCount: () => Object.values(students || {}).filter(s => s && s.rank && s.rank !== 'normal').length,
@@ -12297,8 +12374,11 @@ window.openStudentContractModal = function() {
     totalRequiredPrice = parseNum(pDet.price) || 0;
   }
 
-  const downPayment = Math.round(totalRequiredPrice * 0.5);
-  const remainPayment = totalRequiredPrice - downPayment;
+  const actualPaid = parseNum(st.paid) || 0;
+  const actualRemain = Math.max(0, totalRequiredPrice - actualPaid);
+  const isFullyPaid = (totalRequiredPrice > 0 && actualPaid >= totalRequiredPrice);
+  const downPayment = actualPaid;
+  const remainPayment = actualRemain;
   const packagesListText = enrolledPkgs.length > 0 ? enrolledPkgs.join(" + ") : (st.className || "حصة عامة");
 
   const contractHtml = `

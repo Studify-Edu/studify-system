@@ -4398,15 +4398,36 @@ window.openEditPackageModal = async function(encodedName) {
         // Update enrolled students locally and in Supabase
         const studentsToUpdate = [];
         Object.values(students || {}).forEach(st => {
-          if (st && Array.isArray(st.packages) && st.packages.includes(name)) {
-            st.packages = st.packages.map(pName => pName === name ? newName : pName);
-            studentsToUpdate.push(st);
+          if (st) {
+            let changed = false;
+            if (Array.isArray(st.packages) && st.packages.includes(name)) {
+              st.packages = st.packages.map(pName => pName === name ? newName : pName);
+              changed = true;
+            }
+            if (st.className === name) {
+              st.className = newName;
+              changed = true;
+            }
+            if (Array.isArray(st.payments)) {
+              st.payments.forEach(pm => {
+                if (pm && pm.pkgName === name) {
+                  pm.pkgName = newName;
+                  changed = true;
+                }
+              });
+            }
+            if (st.packageDiscounts && st.packageDiscounts[name] !== undefined) {
+              st.packageDiscounts[newName] = st.packageDiscounts[name];
+              delete st.packageDiscounts[name];
+              changed = true;
+            }
+            if (changed) studentsToUpdate.push(st);
           }
         });
 
         for (const st of studentsToUpdate) {
           try {
-            await supabase.from('students').update({ packages: st.packages }).eq('id', st.id);
+            await supabase.from('students').update({ packages: st.packages, payments: st.payments, class_name: st.className }).eq('id', st.id);
           } catch(err) {
             console.warn('Failed to update student packages in cloud:', err);
           }
@@ -6338,6 +6359,12 @@ window.submitVaultTransfer = async function() {
     instapay: isAr ? "حساب إنستاباي" : "InstaPay",
     wallet: isAr ? "محفظة فودافون كاش" : "Vodafone Cash"
   };
+
+  const curLiveBal = window.vaultLiveBalances ? (Number(window.vaultLiveBalances[fromV]) || 0) : null;
+  if (curLiveBal !== null && amt > curLiveBal) {
+    showToast(isAr ? `رصيد ${vNames[fromV]} الحالي (${curLiveBal.toLocaleString()} ج) غير كافٍ لإتمام التحويل` : `Insufficient balance in ${vNames[fromV]} (Available: ${curLiveBal})`, "warning");
+    return;
+  }
 
   const newTransfer = {
     id: 'vt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
