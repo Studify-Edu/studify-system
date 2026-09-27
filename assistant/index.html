@@ -814,15 +814,14 @@
  </button>
  </div>
   <!-- زر الحذف النهائي من السحابة -->
-  <div class="student-danger-zone" style="margin-top:16px; padding-top:14px; border-top:1px dashed rgba(239, 68, 68, 0.35);">
-    <button id="deleteStudentBtn" class="btn danger hold-delete-btn" type="button" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; font-weight:bold; font-size:0.95em; border-radius:10px; background:linear-gradient(135deg, #dc2626, #991b1b); color:#fff; border:none; box-shadow:0 4px 14px rgba(220, 38, 38, 0.25); cursor:pointer; position:relative; overflow:hidden; transition:all 0.3s ease;">
+  <div id="studentDangerZone" class="student-danger-zone hidden" style="margin-top:16px; padding-top:14px; border-top:1px dashed rgba(239, 68, 68, 0.35);">
+    <button id="deleteStudentBtn" class="btn danger" type="button" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px; font-weight:bold; font-size:0.92em; border-radius:8px; background:linear-gradient(135deg, #dc2626, #b91c1c); color:#fff; border:none; box-shadow:0 3px 10px rgba(220, 38, 38, 0.25); cursor:pointer; transition:all 0.2s ease;">
       <i class="fa-solid fa-trash-can"></i>
-      <span class="btn-text" data-i18n="btn_delete_student">حذف الطالب وسجلاته نهائياً (اضغط مطولاً)</span>
-      <span class="hold-progress-fill"></span>
+      <span class="btn-text" data-i18n="btn_delete_student">حذف هذا الطالب وسجلاته نهائياً</span>
     </button>
-    <div style="font-size:0.8em; color:var(--text-secondary); text-align:center; margin-top:6px; display:flex; align-items:center; justify-content:center; gap:5px;" data-i18n="txt_delete_warning">
+    <div style="font-size:0.78em; color:var(--text-secondary); text-align:center; margin-top:6px; display:flex; align-items:center; justify-content:center; gap:5px;" data-i18n="txt_delete_warning">
       <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i>
-      <span>سيتم مسح بيانات الطالب وسجلاته من السحابة تماماً ولا يمكن التراجع.</span>
+      <span data-i18n="txt_delete_warning_desc">سيتم مسح بيانات الطالب وسجلاته من السحابة تماماً ولا يمكن التراجع.</span>
     </div>
   </div>
  
@@ -2068,7 +2067,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V7"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V168"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V169"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

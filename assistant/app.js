@@ -1114,6 +1114,8 @@ let vaultTransfers = [];
  "txt_no_notes": { ar: "لا توجد ملاحظات مسجلة لهذا الطالب", en: "No notes recorded for this student" },
  "print_receipt_lock": { ar: "إصدار إيصال سداد الباقة (مغلق لحين إكمال الدفع)", en: "Issue Package Receipt (Locked until full payment)" },
  "print_receipt_unlock": { ar: "طباعة إيصال سداد الباقة (مكتمل)", en: "Print Package Receipt (Completed)" },
+ "btn_delete_student": { ar: "حذف هذا الطالب وسجلاته نهائياً", en: "Permanently Delete Student" },
+ "txt_delete_warning_desc": { ar: "سيتم مسح بيانات الطالب وسجلاته من السحابة تماماً ولا يمكن التراجع.", en: "Student data and records will be permanently erased from cloud." },
  "correct_pay_btn": { ar: "إيداع", en: "Deposit" },
  "shift_manager": { ar: "مسئول الشيفت:", en: "Shift Manager:" },
  "shift_manager_short": { ar: "الشيفت:", en: "Shift:" },
@@ -2737,12 +2739,15 @@ function applyPermissionsToAssistantUI() {
   });
   
   // 2. Student deletion permission
+  const dangerZone = document.getElementById('studentDangerZone');
   const delBtn = document.getElementById('deleteStudentBtn');
-  if (delBtn) {
+  if (dangerZone) {
     if (p.can_delete_student === true) {
-      delBtn.classList.remove('hidden', 'locked-feature');
+      dangerZone.classList.remove('hidden');
+      if (delBtn) delBtn.classList.remove('hidden', 'locked-feature');
     } else {
-      delBtn.classList.add('hidden');
+      dangerZone.classList.add('hidden');
+      if (delBtn) delBtn.classList.add('hidden');
     }
   }
 
@@ -2931,7 +2936,14 @@ function applyPermissions() {
  el.classList.remove("hidden"); 
  }
  });
- if($("deleteStudentBtn")) $("deleteStudentBtn").classList.remove("hidden");
+ const dangerZone = $("studentDangerZone");
+ if (isAdmin) {
+   if (dangerZone) dangerZone.classList.remove("hidden");
+   if ($("deleteStudentBtn")) $("deleteStudentBtn").classList.remove("hidden");
+ } else {
+   if (dangerZone) dangerZone.classList.add("hidden");
+   if ($("deleteStudentBtn")) $("deleteStudentBtn").classList.add("hidden");
+ }
  if($("correctPayBtn")) $("correctPayBtn").classList.remove("hidden");
  
  // For assistants: apply granular Supabase-based permissions
@@ -6642,12 +6654,9 @@ on("importExcelInput", "change", async function(e) {
 
  // ==========================================
  // ==========================================
-  // 17. PERMANENT HOLD-TO-DELETE FROM SUPABASE & LOCAL
+  // 17. PERMANENT DELETE FROM SUPABASE & LOCAL
   // ==========================================
-  let deleteTimer = null;
-  const delBtn = $("deleteStudentBtn");
-
-  function startDeleteHold(e) {
+  on("deleteStudentBtn", "click", function() {
     if (!currentId) return;
     const targetId = currentId;
     const st = students[targetId];
@@ -6656,107 +6665,87 @@ on("importExcelInput", "change", async function(e) {
       return;
     }
 
-    if (delBtn) delBtn.classList.add("holding");
+    const isAr = (currentLang === 'ar');
+    const studentName = st.name || ("#" + targetId);
 
-    deleteTimer = setTimeout(() => {
-      if (delBtn) delBtn.classList.remove("holding");
-
-      const isAr = (currentLang === 'ar');
-      const studentName = st.name || ("#" + targetId);
-
-      Swal.fire({
-        title: isAr ? ("حذف الطالب نهائياً (" + studentName + ")") : ("Delete Student (" + studentName + ")"),
-        html: `
-          <div style="text-align: ${isAr ? 'right' : 'left'}; font-size: 0.95em; line-height: 1.6;">
-            <p style="color: #ef4444; font-weight: 700; margin-bottom: 8px;">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              ${isAr ? "تحذير أمني: هذا إجراء نهائي لا يمكن التراجع عنه!" : "Security Warning: This action is permanent and cannot be undone!"}
-            </p>
-            <p style="color: var(--text-secondary); margin-bottom: 12px;">
-              ${isAr ? "سيتم مسح كافة بيانات الطالب، سجلات الحضور، المدفوعات والاشتراكات نهائياً من قاعدة البيانات السحابية (Supabase) والجهاز المحلي." : "All student data, attendance logs, payments, and subscriptions will be permanently erased from Supabase and local device."}
-            </p>
-            ${(() => {
-              const todayStr = nowDateStr();
-              let todayPaid = 0;
-              if (st.payments && Array.isArray(st.payments)) {
-                st.payments.forEach(p => { if (p && p.date === todayStr) todayPaid += toInt(p.amount); });
-              }
-              return (todayPaid > 0) ? `
-                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px; border-radius: 8px; margin-top: 10px;">
-                  <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; color: #f59e0b;">
-                    <input type="checkbox" id="swalDeductTodayRevenue" checked style="width: 18px; height: 18px; accent-color: #f59e0b;">
-                    <span>${isAr ? ("خصم مدفوعات اليوم (" + todayPaid + " ج) من إيراد الخزينة الحالي؟") : ("Deduct today's payments (" + todayPaid + " EGP) from current treasury revenue?")}</span>
-                  </label>
-                </div>
-              ` : '';
-            })()}
-          </div>
-        `,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: isAr ? 'نعم، حذف نهائي من السحابة' : 'Yes, Delete Permanently',
-        cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          const deductEl = document.getElementById('swalDeductTodayRevenue');
-          const shouldDeduct = deductEl ? deductEl.checked : false;
-
-          showToast(isAr ? "جاري حذف الطالب من السحابة..." : "Deleting student from cloud...", "info");
-
-          // 1. Delete from Supabase cloud table
-          if (window.supabaseClient) {
-            try {
-              await window.supabaseClient.from('students').delete().eq('id', String(targetId));
-            } catch (err) {
-              console.warn("[deleteStudent] Supabase delete warning:", err);
-            }
-          }
-
-          // 2. Adjust today's revenue if requested (ONLY for payments collected today)
-          if (shouldDeduct && st.payments && Array.isArray(st.payments)) {
-            const today = nowDateStr();
+    Swal.fire({
+      title: isAr ? ("تأكيد حذف الطالب (" + studentName + ")؟") : ("Confirm Delete (" + studentName + ")?"),
+      html: `
+        <div style="text-align: ${isAr ? 'right' : 'left'}; font-size: 0.92em; line-height: 1.6;">
+          <p style="color: #ef4444; font-weight: 700; margin-bottom: 8px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            ${isAr ? "تحذير: هذا إجراء نهائي سيقوم بمسح الطالب وسجلاته بالكامل!" : "Warning: This action will permanently erase student and records!"}
+          </p>
+          <p style="color: var(--text-secondary); margin-bottom: 10px;">
+            ${isAr ? "سيتم مسح بيانات الطالب وسجل الحضور والمدفوعات نهائياً من قاعدة البيانات السحابية والجهاز المحلي." : "Student profile, attendance logs, and payments will be erased from cloud database and device."}
+          </p>
+          ${(() => {
+            const todayStr = nowDateStr();
             let todayPaid = 0;
-            st.payments.forEach(p => { if (p && p.date === today) todayPaid += toInt(p.amount); });
-            if (todayPaid > 0) {
-              revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - todayPaid);
+            if (st.payments && Array.isArray(st.payments)) {
+              st.payments.forEach(p => { if (p && p.date === todayStr) todayPaid += toInt(p.amount); });
             }
-          }
+            return (todayPaid > 0) ? `
+              <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 10px; border-radius: 8px; margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; color: #f59e0b; font-size:0.88em;">
+                  <input type="checkbox" id="swalDeductTodayRevenue" checked style="width: 16px; height: 16px; accent-color: #f59e0b;">
+                  <span>${isAr ? ("خصم مدفوعات اليوم (" + todayPaid + " ج) من إيراد الخزينة الحالي؟") : ("Deduct today's payments (" + todayPaid + " EGP) from treasury?")}</span>
+                </label>
+              </div>
+            ` : '';
+          })()}
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: isAr ? 'نعم، حذف نهائي' : 'Yes, Delete Permanently',
+      cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
+    }).then(async (result) => {
+      if (!result.isConfirmed) return;
 
-          // 3. Clear from local state
-          delete deletedStudents[targetId];
-          if (targetId > BASE_MAX_ID) {
-            delete students[targetId];
-            extraIds = extraIds.filter(id => id !== targetId);
-          } else {
-            students[targetId] = makeEmptyStudent(targetId);
-          }
+      const deductEl = document.getElementById('swalDeductTodayRevenue');
+      const shouldDeduct = deductEl ? deductEl.checked : false;
 
-          // 4. Save and sync
-          await saveAll();
-          updateStudentUI(null);
-          window.switchTab('Home');
-          if (typeof AssistantSounds !== "undefined") AssistantSounds.deleteSwoosh();
-          showToast(isAr ? "تم حذف الطالب وسجلاته بالكامل من السحابة بنجاح" : "Student permanently deleted from cloud successfully", "success");
+      showToast(isAr ? "جاري حذف الطالب من السحابة..." : "Deleting student from cloud...", "info");
+
+      // 1. Delete from Supabase cloud table
+      if (window.supabaseClient) {
+        try {
+          await window.supabaseClient.from('students').delete().eq('id', String(targetId));
+        } catch (err) {
+          console.warn("[deleteStudent] Supabase delete warning:", err);
         }
-      });
-    }, 1200);
-  }
+      }
 
-  function cancelDeleteHold() {
-    if (deleteTimer) clearTimeout(deleteTimer);
-    if (delBtn) delBtn.classList.remove("holding");
-  }
+      // 2. Adjust today's revenue if requested (ONLY for payments collected today)
+      if (shouldDeduct && st.payments && Array.isArray(st.payments)) {
+        const today = nowDateStr();
+        let todayPaid = 0;
+        st.payments.forEach(p => { if (p && p.date === today) todayPaid += toInt(p.amount); });
+        if (todayPaid > 0) {
+          revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - todayPaid);
+        }
+      }
 
-  if (delBtn) {
-    delBtn.addEventListener("mousedown", startDeleteHold);
-    delBtn.addEventListener("mouseup", cancelDeleteHold);
-    delBtn.addEventListener("mouseleave", cancelDeleteHold);
-    delBtn.addEventListener("touchstart", startDeleteHold, { passive: true });
-    delBtn.addEventListener("touchend", cancelDeleteHold);
-    delBtn.addEventListener("touchcancel", cancelDeleteHold);
-  }
+      // 3. Clear from local state
+      delete deletedStudents[targetId];
+      if (targetId > BASE_MAX_ID) {
+        delete students[targetId];
+        extraIds = extraIds.filter(id => id !== targetId);
+      } else {
+        students[targetId] = makeEmptyStudent(targetId);
+      }
+
+      // 4. Save and sync
+      await saveAll();
+      updateStudentUI(null);
+      window.switchTab('Home');
+      if (typeof AssistantSounds !== "undefined") AssistantSounds.deleteSwoosh();
+      showToast(isAr ? "تم حذف الطالب وسجلاته بالكامل من السحابة بنجاح" : "Student permanently deleted from cloud successfully", "success");
+    });
+  });
 
   on("openAllStudentsBtn", "click", function() { if (typeof AssistantSounds !== "undefined") AssistantSounds.modalOpen(); renderSimpleTable(); if ($("allStudentsModal")) $("allStudentsModal").classList.remove("hidden"); });
   on("closeModalBtn", "click", function() { if (typeof AssistantSounds !== "undefined") AssistantSounds.modalClose(); if ($("allStudentsModal")) $("allStudentsModal").classList.add("hidden"); });
