@@ -6544,6 +6544,24 @@ on("importExcelInput", "change", async function(e) {
  if(wb.SheetNames.includes("بيانات الطلاب") || wb.SheetNames[0]) {
  const sheetName = wb.SheetNames.includes("بيانات الطلاب") ? "بيانات الطلاب" : wb.SheetNames[0];
  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+
+  // SaaS Limit Enforcement: max_students
+  const maxSt = window.SUBSCRIPTION?.maxStudents;
+  const validRows = rows.filter(r => toInt(r["كود الطالب"] || r["ID"] || r["كود"]));
+  if (maxSt && validRows.length > maxSt) {
+    if (typeof Swal !== "undefined") {
+      await Swal.fire({
+        icon: "error",
+        title: "تجاوز الحد الأقصى للطلاب",
+        html: `<p style="color:var(--text-secondary);margin-bottom:12px">الملف يحتوي على <b>${validRows.length} طالب</b>، بينما باقتك الحالية تسمح بحد أقصى <b>${maxSt} طالب</b>.</p><p style="font-size:.88em;color:#EF4444;font-weight:700">تم إلغاء الاستيراد لحماية سعة الباقة المحددة.</p>`,
+        confirmButtonText: "موافق",
+        confirmButtonColor: "#2563EB"
+      });
+    } else {
+      showToast(`الملف يتجاوز الحد الأقصى للطلاب (${maxSt})`, "err");
+    }
+    return;
+  }
  for (let i = 0; i < rows.length; i++) {
  let row = rows[i];
  const id = toInt(row["كود الطالب"] || row["ID"] || row["كود"]);
@@ -7123,6 +7141,30 @@ function updateDriveUI() {
     
     const role = localStorage.getItem("ca_role") || window.CURRENT_ROLE;
     if (role !== "admin") return showToast("يجب أن تكون مديراً لإضافة مساعدين.", "err");
+
+    // SaaS Limit Enforcement: max_assistants
+    const maxAsst = window.SUBSCRIPTION?.maxAssistants || 2;
+    try {
+      if (window.supabaseClient) {
+        const { count: curAsstCount } = await window.supabaseClient.from('assistants').select('*', { count: 'exact', head: true });
+        if ((curAsstCount || 0) >= maxAsst) {
+          if (typeof Swal !== "undefined") {
+            Swal.fire({
+              icon: "warning",
+              title: "تم الوصول للحد الأقصى للمساعدين",
+              html: `<p style="color:var(--text-secondary);margin-bottom:12px">باقتك الحالية تسمح بحد أقصى <b>${maxAsst} مساعد</b>.<br>لديك حالياً <b>${curAsstCount} مساعد</b> مسجل.</p><p style="font-size:.88em;color:#F59E0B"><i class="fa-solid fa-crown"></i> يرجى ترقية باقة الاشتراك لإضافة المزيد من حسابات المساعدين.</p>`,
+              confirmButtonText: "إغلاق",
+              confirmButtonColor: "#2563EB"
+            });
+          } else {
+            showToast(`تم الوصول للحد الأقصى للمساعدين (${maxAsst})`, "err");
+          }
+          return;
+        }
+      }
+    } catch (limErr) {
+      console.warn('[Limit] Assistant count check failed, proceeding:', limErr);
+    }
     
     try {
       showToast("جاري إنشاء حساب المساعد... الرجاء الانتظار", "info");
