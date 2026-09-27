@@ -2741,15 +2741,8 @@ function applyPermissionsToAssistantUI() {
   // 2. Student deletion permission
   const dangerZone = document.getElementById('studentDangerZone');
   const delBtn = document.getElementById('deleteStudentBtn');
-  if (dangerZone) {
-    if (p.can_delete_student === true) {
-      dangerZone.classList.remove('hidden');
-      if (delBtn) delBtn.classList.remove('hidden', 'locked-feature');
-    } else {
-      dangerZone.classList.add('hidden');
-      if (delBtn) delBtn.classList.add('hidden');
-    }
-  }
+  if (dangerZone) dangerZone.classList.remove('hidden');
+  if (delBtn) delBtn.classList.remove('hidden', 'locked-feature');
 
   // 3. Unlock logic based on permissions
   
@@ -2937,13 +2930,8 @@ function applyPermissions() {
  }
  });
  const dangerZone = $("studentDangerZone");
- if (isAdmin) {
-   if (dangerZone) dangerZone.classList.remove("hidden");
-   if ($("deleteStudentBtn")) $("deleteStudentBtn").classList.remove("hidden");
- } else {
-   if (dangerZone) dangerZone.classList.add("hidden");
-   if ($("deleteStudentBtn")) $("deleteStudentBtn").classList.add("hidden");
- }
+ if (dangerZone) dangerZone.classList.remove("hidden");
+ if ($("deleteStudentBtn")) $("deleteStudentBtn").classList.remove("hidden");
  if($("correctPayBtn")) $("correctPayBtn").classList.remove("hidden");
  
  // For assistants: apply granular Supabase-based permissions
