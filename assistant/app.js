@@ -1880,15 +1880,7 @@ function showToast(msg, type = "success") {
  const activeBtn = $("btnTab" + tabId); 
  if(activeBtn) {
    if (typeof AssistantSounds !== "undefined") {
-     if (tabId === "Home") {
-       AssistantSounds.pageAttendance();
-     } else if (tabId === "Students") {
-       AssistantSounds.pageStudents();
-     } else if (tabId === "Syllabus" || tabId === "Packages") {
-       AssistantSounds.pageSyllabus();
-     } else {
-       AssistantSounds.tabSwitch();
-     }
+     AssistantSounds.tabSwitch();
    }
    activeBtn.classList.add('active');
    const activeGroup = activeBtn.closest('.nav-group');
@@ -8661,7 +8653,6 @@ document.addEventListener("DOMContentLoaded", () => {
  on("btnTabSyllabus", "click", function() { window.switchTab('Syllabus'); renderSyllabus(); });
  on("btnTabBooklets", "click", function() { window.switchTab('Booklets'); renderBookletsStock(); });
  on("btnTabMarketing", "click", function() {
-   if (typeof AssistantSounds !== "undefined") AssistantSounds.marketingPulse();
    window.switchTab('Marketing');
    populateMarketingGroups();
    filterCampaignTarget();

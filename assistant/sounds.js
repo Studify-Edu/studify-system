@@ -357,6 +357,7 @@
   // AUTOMATIC NAVIGATION TOUCH & TAB SWITCH SOUNDS
   // =========================================================================
   var lastTouchTickTime = 0;
+  var lastTabSwitchTime = 0;
   function attachNavInteractions() {
     if (typeof document.querySelectorAll !== 'function') return;
     var navItems = document.querySelectorAll('.nav-item, .nav-group-header, .topbar-icon-btn, .tab-btn');
@@ -595,19 +596,13 @@
 
     // 6. Navigation, Tabs & Contextual Pages
     pageAttendance: function () {
-      // Real electronic attendance clock-in stamp + arrival confirmation chime (اليومية / تسجيل الحضور)
-      play('page_attendance', 1.0);
-      vibe([18, 30]);
+      SFX.tabSwitch();
     },
     pageStudents: function () {
-      // Real index card ledger / registered student roster flip (الطلاب المسجلين)
-      play('page_students', 0.95);
-      vibe([15]);
+      SFX.tabSwitch();
     },
     pageSyllabus: function () {
-      // Real academic coursebook opening & study lecture chime (المادة / المنهج)
-      play('page_syllabus', 1.0);
-      vibe([20]);
+      SFX.tabSwitch();
     },
     paperSheet: function () {
       // Real crisp registration paper form rustle and desk slide (كارت / استمارة طالب جديد)
@@ -615,6 +610,9 @@
       vibe([16]);
     },
     tabSwitch: function () {
+      var now = Date.now();
+      if (now - lastTabSwitchTime < 50) return;
+      lastTabSwitchTime = now;
       play('tab_switch', 0.9);
       vibe([12]);
     },
