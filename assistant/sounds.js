@@ -65,9 +65,9 @@
     globe:         'globe.mp3',         // Real Cosmic Globe Spin Chime (Language Switch)
     notif:         'notif.mp3',         // Authentic Apple iOS Note / WhatsApp Tri-Tone Message Chime
     notif_iphone:  'notif_iphone.mp3',  // Direct alias for iPhone notification chime
-    page_attendance: 'page_attendance.mp3', // Real Attendance Clock-in Stamp + Arrival Chime (اليومية / الحضور)
-    page_students:   'page_students.mp3',   // Real Index Card Ledger / Roster Flip (المسجلين)
-    page_syllabus:   'page_syllabus.mp3',   // Real Academic Coursebook / Lecture Chime (المادة / المنهج)
+    page_attendance: 'tab_switch.mp3', // Unified to tab_switch.mp3
+    page_students:   'tab_switch.mp3', // Unified to tab_switch.mp3
+    page_syllabus:   'tab_switch.mp3', // Unified to tab_switch.mp3
     paper_sheet:     'paper_sheet.mp3',     // Real Crisp Paper Sheet Registration Form (طالب جديد)
     tab_switch:    'tab_switch.mp3',    // Real Mechanical Push Sound (Tab / Page Switch)
     touch_tick:    'touch_tick.mp3',    // Real Subtle Micro-Tick (Touch / Hover on Nav)
