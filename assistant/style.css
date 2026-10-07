@@ -4673,9 +4673,9 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
    SUBJECT SELECTION MODAL - WIDE & HORIZONTAL (DARK & LIGHT)
    ======================================================= */
 .subject-modal-wide {
-  max-width: 680px !important;
-  width: 92% !important;
-  max-height: 85vh !important;
+  max-width: 880px !important;
+  width: 95% !important;
+  max-height: 88vh !important;
   border-radius: 20px !important;
   padding: 24px 28px !important;
   background: var(--bg-surface) !important;
@@ -4784,11 +4784,11 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
 /* Horizontal Grid of Subjects */
 .subject-grid-container {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
-  gap: 14px !important;
-  max-height: 52vh !important;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
+  gap: 12px !important;
+  max-height: 58vh !important;
   overflow-y: auto !important;
-  padding: 4px 2px 14px 2px !important;
+  padding: 6px 4px 16px 4px !important;
 }
 
 .subject-tile-card {
@@ -4796,13 +4796,15 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 16px 18px !important;
+  padding: 12px 16px !important;
   border-radius: 14px !important;
   background: var(--bg-inset) !important;
   border: 1.5px solid var(--border) !important;
   cursor: pointer !important;
   transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
   user-select: none !important;
+  min-height: 60px !important;
+  gap: 12px !important;
 }
 
 [data-theme="light"] .subject-tile-card {
@@ -4838,8 +4840,9 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
 .subject-tile-content {
   display: flex !important;
   align-items: center !important;
-  gap: 12px !important;
+  gap: 10px !important;
   min-width: 0 !important;
+  flex: 1 !important;
 }
 
 .subject-tile-icon {
@@ -4871,11 +4874,16 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
 
 .subject-tile-name {
   font-weight: 700 !important;
-  font-size: 1.02em !important;
+  font-size: 0.96em !important;
+  line-height: 1.4 !important;
   color: var(--text-primary) !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  display: block !important;
+  flex: 1 !important;
 }
 
 [data-theme="light"] .subject-tile-name {
@@ -4896,6 +4904,29 @@ th[style*="font-weight:700"]::before { content: "\f0c2"; font-family: "Font Awes
 
 [data-theme="light"] .subject-tile-card.selected .subject-tile-indicator {
   color: #1d4ed8 !important;
+}
+
+@media (max-width: 640px) {
+  .subject-modal-wide {
+    width: 96% !important;
+    max-width: 96% !important;
+    padding: 18px 14px !important;
+    max-height: 90vh !important;
+    border-radius: 16px !important;
+  }
+  .subject-grid-container {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    max-height: 64vh !important;
+  }
+  .subject-tile-card {
+    padding: 12px 14px !important;
+    min-height: 56px !important;
+  }
+  .subject-tile-name {
+    font-size: 0.94em !important;
+    line-height: 1.35 !important;
+  }
 }
 
 /* Empty State */
