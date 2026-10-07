@@ -3626,88 +3626,100 @@ const st = students[id];
         return { ok: false, msg: "الطالب غير مسجل" };
     }
   if(!s.name || s.name.trim() === "") {
-      showFullscreenFeedback(false, false);
+      if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
       return { ok: false, msg: "هذا الطالب ليس له اسم مسجل ولا يمكن تحضيره" };
   }
 
- 
- 
+  let unpaidDebtOnAttendedPkg = 0;
 
- if (selectedSubject) {
-     if (s.isSessionStudent) {
-         if ((s.sessionBalance || 0) <= 0) {
-             if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
-             return { ok: false, msg: "الطالب استنفذ رصيد الحصص الخاص به! يرجى شحن الرصيد أولاً." };
-         }
-     } else {
-         let validPkgName = null;
-         let pkgError = `الطالب غير مشترك في باقة تخص مادة (${selectedSubject})`;
-         
-         if (s.packages && s.packages.length > 0) {
-             for (let i = 0; i < s.packages.length; i++) {
-                 const pName = s.packages[i];
-                 const pkgDetails = groupFees[pName];
-                 if (pkgDetails && pkgDetails.subject === selectedSubject) {
-                     let pPaid = 0;
-                     if (s.payments) {
-                         s.payments.forEach(p => { if (p.pkgName === pName) pPaid += toInt(p.amount); });
-                     }
-                     const pPrice = toInt(pkgDetails.price);
+  if (selectedSubject) {
+      if (s.isSessionStudent) {
+          if ((s.sessionBalance || 0) <= 0) {
+              if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+              return { ok: false, msg: "الطالب استنفذ رصيد الحصص الخاص به، يرجى شحن الرصيد أولاً" };
+          }
+      } else {
+          let validPkgName = null;
+          let pkgError = `الطالب غير مشترك في باقة تخص مادة (${selectedSubject})`;
+          
+          const candidatePkgs = (Array.isArray(s.packages) && s.packages.length > 0)
+              ? s.packages.filter(p => p && p !== 'بدون باقة' && p !== 'Without Package')
+              : (s.className && s.className !== 'بدون باقة' && s.className !== 'Without Package' ? [s.className] : []);
+
+          if (candidatePkgs.length > 0) {
+              for (let i = 0; i < candidatePkgs.length; i++) {
+                  const pName = candidatePkgs[i];
+                  const pkgDetails = (typeof groupFees !== 'undefined' && groupFees && groupFees[pName]) ? groupFees[pName] : ((typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pName) : null);
+                  const pkgSubj = (pkgDetails && pkgDetails.subject && String(pkgDetails.subject).trim()) ? String(pkgDetails.subject).trim() : pName;
+                  const matchesSubject = (pkgSubj === selectedSubject || pName === selectedSubject);
+
+                  if (matchesSubject) {
+                      if (pkgDetails && pkgDetails.expiryType === 'time') {
+                          const todayDate = new Date().setHours(0,0,0,0);
+                          const start = pkgDetails.startDate ? new Date(pkgDetails.startDate).setHours(0,0,0,0) : null;
+                          const end = pkgDetails.endDate ? new Date(pkgDetails.endDate).setHours(0,0,0,0) : null;
+                          
+                          if (start && todayDate < start) {
+                              pkgError = `باقة (${pName}) لم تبدأ بعد`;
+                              continue;
+                          }
+                          if (end && todayDate > end) {
+                              pkgError = `باقة (${pName}) منتهية الصلاحية`;
+                              continue;
+                          }
+                      }
+
+                      // Calculate debt for informational notice only (does not block attendance)
+                      let pPaid = 0;
+                      if (Array.isArray(s.payments)) {
+                          s.payments.forEach(p => { if (p && p.pkgName === pName) pPaid += toInt(p.amount); });
+                      }
+                      const pPrice = pkgDetails ? toInt(pkgDetails.price) : 0;
                       const pkgDisc = (s.packageDiscounts && s.packageDiscounts[pName]) ? toInt(s.packageDiscounts[pName]) : (toInt(s.discount) || 0);
                       const netPrice = Math.max(0, pPrice - pkgDisc);
                       if (netPrice > 0 && pPaid < netPrice) {
-                          pkgError = `الطالب لم يسدد ثمن باقة (${pName}) بالكامل`;
-                          continue;
+                          unpaidDebtOnAttendedPkg = netPrice - pPaid;
                       }
-                     
-                     if (pkgDetails.expiryType === 'time') {
-                         const todayDate = new Date().setHours(0,0,0,0);
-                         const start = pkgDetails.startDate ? new Date(pkgDetails.startDate).setHours(0,0,0,0) : null;
-                         const end = pkgDetails.endDate ? new Date(pkgDetails.endDate).setHours(0,0,0,0) : null;
-                         
-                         if (start && todayDate < start) {
-                             pkgError = `باقة (${pName}) لم تبدأ بعد`;
-                             continue;
-                         }
-                         if (end && todayDate > end) {
-                             pkgError = `باقة (${pName}) منتهية الصلاحية`;
-                             continue;
-                         }
-                     }
-                     
-                     validPkgName = pName;
-                     break;
-                 }
-             }
-         }
-         
-         if (!validPkgName) {
-             if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
-             return { ok: false, msg: pkgError };
-         }
-     }
- }
- 
- if (!s.attendanceDates) s.attendanceDates = [];
- s.attendanceDates = Array.from(new Set(s.attendanceDates));
- if(!s.attendanceDates.includes(d)) {
- s.attendanceDates.push(d); 
- if(!attByDate[d]) attByDate[d] = []; 
- attByDate[d].push(String(id)); 
- 
- if (s.isSessionStudent) {
-     s.sessionBalance = (s.sessionBalance || 0) - 1;
- }
- 
- saveAttendanceOnly(); 
- updateLiveFeed(s);
- triggerEdgeFlash(); 
- showFullscreenFeedback(true, false);
- return { ok: true, msg: t("msg_att_ok") };
- }
- showFullscreenFeedback(false, true);
- return { ok: false, msg: t("msg_att_warn") };
- }
+
+                      validPkgName = pName;
+                      break;
+                  }
+              }
+          }
+
+          if (!validPkgName) {
+              if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
+              return { ok: false, msg: pkgError };
+          }
+      }
+  }
+  
+  if (!s.attendanceDates) s.attendanceDates = [];
+  s.attendanceDates = Array.from(new Set(s.attendanceDates));
+  if(!s.attendanceDates.includes(d)) {
+  s.attendanceDates.push(d); 
+  if(!attByDate[d]) attByDate[d] = []; 
+  attByDate[d].push(String(id)); 
+  
+  if (s.isSessionStudent) {
+      s.sessionBalance = (s.sessionBalance || 0) - 1;
+  }
+  
+  saveAttendanceOnly(); 
+  updateLiveFeed(s);
+  triggerEdgeFlash(); 
+  showFullscreenFeedback(true, false);
+  
+  let successMsg = t("msg_att_ok");
+  if (unpaidDebtOnAttendedPkg > 0) {
+      const isAr = (typeof currentLang === "undefined" || currentLang === "ar");
+      successMsg += isAr ? ` (متبقي رسوم: ${unpaidDebtOnAttendedPkg} ج)` : ` (Unpaid: ${unpaidDebtOnAttendedPkg} EGP)`;
+  }
+  return { ok: true, msg: successMsg };
+  }
+  showFullscreenFeedback(false, true);
+  return { ok: false, msg: t("msg_att_warn") };
+  }
 
  function removeAttendance(id, d) {
  const s = students[String(id)]; if(!s) return;
