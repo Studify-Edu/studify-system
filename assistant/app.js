@@ -1604,9 +1604,9 @@ let vaultTransfers = [];
      else sheetCard.classList.remove("past-date-active");
    }
 
-   if (typeof updateTopStats === "function") updateTopStats();
-   if (typeof updateStudentUI === "function" && currentId) updateStudentUI(currentId);
-   if (typeof renderList === "function") renderList(true);
+   try { if (typeof updateTopStats === "function") updateTopStats(); } catch (e) {}
+   try { if (typeof updateStudentUI === "function" && currentId) updateStudentUI(currentId); } catch (e) {}
+   try { if (typeof renderList === "function") renderList(true); } catch (e) {}
 
    if (!skipToast) {
      if (isPast) {
@@ -1621,68 +1621,51 @@ let vaultTransfers = [];
 
  window.initAttendanceDatePicker = function() {
    const today = typeof nowDateStr === "function" ? nowDateStr() : new Date().toISOString().split('T')[0];
-   window.setAttendanceActiveDate(today, true);
+   window.currentAttendanceActiveDate = today;
 
+   const inp = document.getElementById("quickAttendanceDateInp");
    const triggerBtn = document.getElementById("toggleQuickDateBtn");
-   const popover = document.getElementById("quickDateDropdown");
+   const resetBtn = document.getElementById("quickResetDateBtn");
 
-   if (triggerBtn && popover) {
-     triggerBtn.onclick = function(e) {
-       e.stopPropagation();
-       const isHidden = popover.classList.contains("hidden");
-       if (isHidden) {
-         popover.classList.remove("hidden");
-         triggerBtn.classList.add("open");
-       } else {
-         popover.classList.add("hidden");
-         triggerBtn.classList.remove("open");
+   if (inp) {
+     inp.value = today;
+     inp.onchange = function(e) {
+       if (e.target.value) {
+         window.setAttendanceActiveDate(e.target.value);
        }
      };
-
-     document.addEventListener("click", function(e) {
-       if (!popover.contains(e.target) && !triggerBtn.contains(e.target)) {
-         popover.classList.add("hidden");
-         triggerBtn.classList.remove("open");
-       }
-     });
    }
 
-   const onDateChange = function(e) {
-     const val = e.target.value;
-     if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
-       window.setAttendanceActiveDate(val);
-       if (popover) {
-         popover.classList.add("hidden");
-         if (triggerBtn) triggerBtn.classList.remove("open");
+   if (triggerBtn && inp) {
+     triggerBtn.onclick = function(e) {
+       if (e.target !== inp && typeof inp.showPicker === "function") {
+         try { inp.showPicker(); } catch (err) { inp.focus(); inp.click(); }
        }
-     }
-   };
+     };
+   }
 
-   ["quickAttendanceDateInp", "sheetAttendanceDateInp"].forEach(id => {
-     const inp = document.getElementById(id);
-     if (inp) {
-       inp.value = today;
-       inp.removeEventListener("change", onDateChange);
-       inp.addEventListener("change", onDateChange);
-     }
-   });
+   if (resetBtn) {
+     resetBtn.onclick = function(e) {
+       if (e) e.stopPropagation();
+       window.setAttendanceActiveDate(typeof nowDateStr === "function" ? nowDateStr() : new Date().toISOString().split('T')[0]);
+     };
+   }
 
-   const onResetClick = function(e) {
-     if (e) e.stopPropagation();
-     window.setAttendanceActiveDate(typeof nowDateStr === "function" ? nowDateStr() : new Date().toISOString().split('T')[0]);
-     if (popover) {
-       popover.classList.add("hidden");
-       if (triggerBtn) triggerBtn.classList.remove("open");
-     }
-   };
+   const sheetInp = document.getElementById("sheetAttendanceDateInp");
+   if (sheetInp) {
+     sheetInp.value = today;
+     sheetInp.onchange = function(e) {
+       if (e.target.value) window.setAttendanceActiveDate(e.target.value);
+     };
+   }
 
-   ["quickResetDateBtn", "sheetResetDateBtn"].forEach(btnId => {
-     const btn = document.getElementById(btnId);
-     if (btn) {
-       btn.removeEventListener("click", onResetClick);
-       btn.addEventListener("click", onResetClick);
-     }
-   });
+   const sheetResetBtn = document.getElementById("sheetResetDateBtn");
+   if (sheetResetBtn) {
+     sheetResetBtn.onclick = function(e) {
+       if (e) e.stopPropagation();
+       window.setAttendanceActiveDate(typeof nowDateStr === "function" ? nowDateStr() : new Date().toISOString().split('T')[0]);
+     };
+   }
  };
  try { window.initAttendanceDatePicker(); } catch (e) {}
  function prettyDate(d) { return d ? d.split("-").reverse().join("-") : "—"; }

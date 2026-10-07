@@ -8301,9 +8301,11 @@ body.system-hard-locked #appBox {
   position: relative;
   display: inline-flex;
   align-items: center;
+  gap: 6px;
 }
 
 .quick-date-subtle-trigger {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -8311,11 +8313,13 @@ body.system-hard-locked #appBox {
   border: 1px solid var(--border);
   color: var(--text-secondary);
   border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 0.78em;
-  font-weight: 600;
+  padding: 4px 11px;
+  font-size: 0.8em;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
+  overflow: hidden;
 }
 
 .quick-date-subtle-trigger:hover {
@@ -8325,9 +8329,10 @@ body.system-hard-locked #appBox {
 }
 
 .quick-date-subtle-trigger.past-date-active {
-  background: rgba(245, 158, 11, 0.12) !important;
+  background: rgba(245, 158, 11, 0.15) !important;
   border-color: #f59e0b !important;
   color: #f59e0b !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2) !important;
 }
 
 .quick-date-subtle-trigger .date-chevron {
@@ -8335,76 +8340,62 @@ body.system-hard-locked #appBox {
   transition: transform 0.2s ease;
 }
 
-.quick-date-subtle-trigger.open .date-chevron {
-  transform: rotate(180deg);
-}
-
-.quick-date-popover {
+/* Native Date Input Overlay - Covers 100% of the badge */
+.quick-date-native-overlay {
   position: absolute;
-  top: calc(100% + 6px);
-  inset-inline-end: 0;
-  z-index: 1000;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 200px;
-}
-
-.quick-date-popover.hidden {
-  display: none !important;
-}
-
-.quick-date-popover-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78em;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.quick-popover-date-inp {
-  background: var(--bg-inset);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 5px 8px;
-  font-family: inherit;
-  font-weight: 700;
-  font-size: 0.88em;
-  color: var(--text-primary);
-  outline: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
   cursor: pointer;
-  color-scheme: dark;
+  z-index: 10;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: none;
 }
 
-[data-theme="light"] .quick-popover-date-inp {
-  color-scheme: light;
-  color: #0f172a;
+.quick-date-native-overlay::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
-.quick-popover-reset-btn {
+/* Inline Reset Pill Button */
+.quick-date-inline-reset {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
+  gap: 4px;
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #ffffff;
   border: none;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 0.8em;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.76em;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+  z-index: 11;
 }
 
-.quick-popover-reset-btn:hover {
-  transform: scale(1.02);
+.quick-date-inline-reset:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.45);
+}
+
+.quick-date-inline-reset.hidden {
+  display: none !important;
 }
 
 /* Mobile Sheet Date Card */
