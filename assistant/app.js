@@ -1546,6 +1546,145 @@ let vaultTransfers = [];
  function t(key) { return (dict[key] && dict[key][currentLang]) ? dict[key][currentLang] : key; }
  function nowDateStr() { return new Date().toISOString().split('T')[0]; }
   window.nowDateStr = nowDateStr;
+
+ window.currentAttendanceActiveDate = null;
+ window.getAttendanceActiveDate = function() {
+   if (window.currentAttendanceActiveDate && /^\d{4}-\d{2}-\d{2}$/.test(window.currentAttendanceActiveDate)) {
+     return window.currentAttendanceActiveDate;
+   }
+   const inp = document.getElementById("quickAttendanceDateInp") || document.getElementById("sheetAttendanceDateInp");
+   if (inp && inp.value && /^\d{4}-\d{2}-\d{2}$/.test(inp.value)) {
+     return inp.value;
+   }
+   return typeof nowDateStr === "function" ? nowDateStr() : new Date().toISOString().split('T')[0];
+ };
+
+ window.setAttendanceActiveDate = function(newDate, skipToast = false) {
+   const today = typeof nowDateStr === "function" ? nowDateStr() : new Date().toISOString().split('T')[0];
+   const targetDate = (newDate && /^\d{4}-\d{2}-\d{2}$/.test(newDate)) ? newDate : today;
+   window.currentAttendanceActiveDate = targetDate;
+
+   const dateInputs = [
+     document.getElementById("quickAttendanceDateInp"),
+     document.getElementById("sheetAttendanceDateInp")
+   ];
+   dateInputs.forEach(inp => {
+     if (inp && inp.value !== targetDate) {
+       inp.value = targetDate;
+     }
+   });
+
+   const isPast = (targetDate !== today);
+   const triggerBtn = document.getElementById("toggleQuickDateBtn");
+   const triggerLabel = document.getElementById("quickDateTriggerLabel");
+   const resetBtn = document.getElementById("quickResetDateBtn");
+   const sheetResetBtn = document.getElementById("sheetResetDateBtn");
+   const sheetCard = document.getElementById("sheetDateCard");
+
+   if (triggerBtn) {
+     if (isPast) {
+       triggerBtn.classList.add("past-date-active");
+     } else {
+       triggerBtn.classList.remove("past-date-active");
+     }
+   }
+   if (triggerLabel) {
+     triggerLabel.textContent = isPast ? targetDate : "اليوم";
+   }
+   if (resetBtn) {
+     if (isPast) resetBtn.classList.remove("hidden");
+     else resetBtn.classList.add("hidden");
+   }
+   if (sheetResetBtn) {
+     if (isPast) sheetResetBtn.classList.remove("hidden");
+     else sheetResetBtn.classList.add("hidden");
+   }
+   if (sheetCard) {
+     if (isPast) sheetCard.classList.add("past-date-active");
+     else sheetCard.classList.remove("past-date-active");
+   }
+
+   if (typeof updateTopStats === "function") updateTopStats();
+   if (typeof updateStudentUI === "function" && currentId) updateStudentUI(currentId);
+   if (typeof renderList === "function") renderList(true);
+
+   if (!skipToast) {
+     if (isPast) {
+       showToast(currentLang === 'en' ? `Attendance date set to: ${targetDate} (Past Date)` : `تم تفعيل تسجيل الحضور لتاريخ: ${targetDate} (تاريخ سابق)`, "warning");
+       if (typeof AssistantSounds !== "undefined") AssistantSounds.notification();
+     } else {
+       showToast(currentLang === 'en' ? `Reset attendance date to today (${targetDate})` : `تمت العودة لتسجيل الحضور لتاريخ اليوم (${targetDate})`, "success");
+       if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceSuccess();
+     }
+   }
+ };
+
+ window.initAttendanceDatePicker = function() {
+   const today = typeof nowDateStr === "function" ? nowDateStr() : new Date().toISOString().split('T')[0];
+   window.setAttendanceActiveDate(today, true);
+
+   const triggerBtn = document.getElementById("toggleQuickDateBtn");
+   const popover = document.getElementById("quickDateDropdown");
+
+   if (triggerBtn && popover) {
+     triggerBtn.onclick = function(e) {
+       e.stopPropagation();
+       const isHidden = popover.classList.contains("hidden");
+       if (isHidden) {
+         popover.classList.remove("hidden");
+         triggerBtn.classList.add("open");
+       } else {
+         popover.classList.add("hidden");
+         triggerBtn.classList.remove("open");
+       }
+     };
+
+     document.addEventListener("click", function(e) {
+       if (!popover.contains(e.target) && !triggerBtn.contains(e.target)) {
+         popover.classList.add("hidden");
+         triggerBtn.classList.remove("open");
+       }
+     });
+   }
+
+   const onDateChange = function(e) {
+     const val = e.target.value;
+     if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+       window.setAttendanceActiveDate(val);
+       if (popover) {
+         popover.classList.add("hidden");
+         if (triggerBtn) triggerBtn.classList.remove("open");
+       }
+     }
+   };
+
+   ["quickAttendanceDateInp", "sheetAttendanceDateInp"].forEach(id => {
+     const inp = document.getElementById(id);
+     if (inp) {
+       inp.value = today;
+       inp.removeEventListener("change", onDateChange);
+       inp.addEventListener("change", onDateChange);
+     }
+   });
+
+   const onResetClick = function(e) {
+     if (e) e.stopPropagation();
+     window.setAttendanceActiveDate(typeof nowDateStr === "function" ? nowDateStr() : new Date().toISOString().split('T')[0]);
+     if (popover) {
+       popover.classList.add("hidden");
+       if (triggerBtn) triggerBtn.classList.remove("open");
+     }
+   };
+
+   ["quickResetDateBtn", "sheetResetDateBtn"].forEach(btnId => {
+     const btn = document.getElementById(btnId);
+     if (btn) {
+       btn.removeEventListener("click", onResetClick);
+       btn.addEventListener("click", onResetClick);
+     }
+   });
+ };
+ try { window.initAttendanceDatePicker(); } catch (e) {}
  function prettyDate(d) { return d ? d.split("-").reverse().join("-") : "—"; }
  function toInt(v) { if (typeof v === 'object' && v !== null) return toInt(v.price || 0); const n = parseInt(v); return isNaN(n) ? 0 : n; }
   window.toInt = toInt;
@@ -3627,65 +3766,168 @@ const st = students[id];
 }
 
 // ==========================================
-// SMART SUBJECT & COMBO PACKAGE MATCHER
+// SMART SUBJECT & COMBO PACKAGE MATCHER (DEEP FUZZY & MULTI-STRATEGY)
 // ==========================================
 function splitSubjectNames(raw) {
   if (!raw || typeof raw !== 'string') return [];
-  const parts = raw.split(/[\/,\*\n]|(?<=\s)\+(?=\s)/).map(s => s.trim()).filter(Boolean);
-  return parts.length > 0 ? parts : [raw.trim()];
+  return raw.split(/[\/,*\n]|(?<=\s)\+(?=\s)|(?<=\s)&(?=\s)|(?<=\s)و(?=\s)/)
+    .map(s => s.trim())
+    .filter(Boolean);
 }
 
 function normalizeSubjectName(str) {
   if (!str) return "";
-  return String(str)
+  let s = String(str)
     .trim()
     .toLowerCase()
     .replace(/[أإآ]/g, 'ا')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
-    .replace(/[\s\-_]+/g, ' ');
+    // Strip parentheses, brackets, quotes, dashes, dots, commas, slashes, etc.
+    .replace(/[()[\]{}"'’`\-–—._,;:*+&/\\|]/g, ' ')
+    // Normalize Roman numerals to numbers
+    .replace(/\bviii\b/g, '8')
+    .replace(/\bvii\b/g, '7')
+    .replace(/\bvi\b/g, '6')
+    .replace(/\biv\b/g, '4')
+    .replace(/\bv\b/g, '5')
+    .replace(/\biii\b/g, '3')
+    .replace(/\bii\b/g, '2')
+    .replace(/\bi\b/g, '1')
+    // Common spelling typos
+    .replace(/\bsurgecal\b/g, 'surgical')
+    .replace(/\bsemestar\b/g, 'semester')
+    .replace(/\bpediatric\b/g, 'pediatrics')
+    .replace(/\bgynaecology\b/g, 'gynecology')
+    .replace(/\bobstetric\b/g, 'obstetrics')
+    .replace(/\bmanagment\b/g, 'management')
+    // Abbreviations & Acronyms
+    .replace(/\bmsn\s*1\b|\bmsn1\b/g, 'medical surgical nursing 1')
+    .replace(/\bmsn\s*2\b|\bmsn2\b/g, 'medical surgical nursing 2')
+    .replace(/\bmsn\b/g, 'medical surgical nursing')
+    .replace(/\bc\s*c\b/g, 'critical care 1')
+    .replace(/\bc\s*m\b/g, 'critical medicine')
+    .replace(/\bp\s*m\b/g, 'principles of management')
+    .replace(/\bobs\b/g, 'obstetrics gynecology')
+    .replace(/\bint\s*med\b/g, 'internal medicine')
+    .replace(/\bmicro\b/g, 'microbiology')
+    .replace(/\banat\b/g, 'anatomy')
+    .replace(/\bpharm\b/g, 'pharmacology')
+    .replace(/\bpath\b/g, 'pathology')
+    .replace(/\bfund\b/g, 'fundamental')
+    .replace(/\badmin\b/g, 'administration')
+    // Clean spaces
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return s;
+}
+
+function _calcLevenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const m = [];
+  for (let i = 0; i <= b.length; i++) m[i] = [i];
+  for (let j = 0; j <= a.length; j++) m[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        m[i][j] = m[i - 1][j - 1];
+      } else {
+        m[i][j] = Math.min(m[i - 1][j - 1] + 1, Math.min(m[i][j - 1] + 1, m[i - 1][j] + 1));
+      }
+    }
+  }
+  return m[b.length][a.length];
+}
+
+function areSubjectsMatching(subA, subB) {
+  if (!subA || !subB) return false;
+  const normA = normalizeSubjectName(subA);
+  const normB = normalizeSubjectName(subB);
+  if (!normA || !normB) return false;
+  if (normA === normB) return true;
+
+  // Number agreement check: if both contain numbers, numbers MUST match exactly
+  const numsA = normA.match(/\b\d+\b/g);
+  const numsB = normB.match(/\b\d+\b/g);
+  if (numsA && numsB && numsA.join() !== numsB.join()) {
+    return false;
+  }
+
+  // Substring containment
+  if (normA.includes(normB) || normB.includes(normA)) {
+    return true;
+  }
+
+  // Word token overlap with typo tolerance
+  const stopWords = ['and', 'of', 'the', 'in', 'for', '&', 'و'];
+  const wordsA = normA.split(' ').filter(w => w.length > 1 && !stopWords.includes(w));
+  const wordsB = normB.split(' ').filter(w => w.length > 1 && !stopWords.includes(w));
+
+  if (wordsA.length === 0 || wordsB.length === 0) return false;
+
+  let matchedA = 0;
+  for (const wa of wordsA) {
+    if (wordsB.some(wb => wa === wb || _calcLevenshtein(wa, wb) <= 1)) {
+      matchedA++;
+    }
+  }
+
+  let matchedB = 0;
+  for (const wb of wordsB) {
+    if (wordsA.some(wa => wa === wb || _calcLevenshtein(wa, wb) <= 1)) {
+      matchedB++;
+    }
+  }
+
+  const minLen = Math.min(wordsA.length, wordsB.length);
+  if (matchedA >= minLen || matchedB >= minLen) {
+    return true;
+  }
+
+  return false;
 }
 
 function isPackageMatchingSubject(pkgDetails, pName, selectedSubject) {
   if (!selectedSubject) return false;
-  const targetNorm = normalizeSubjectName(selectedSubject);
-  if (!targetNorm) return false;
 
-  const pkgNameNorm = normalizeSubjectName(pName);
-  if (pkgNameNorm === targetNorm) return true;
+  // 1. Direct package name match
+  if (areSubjectsMatching(pName, selectedSubject)) return true;
 
-  const rawSubj = (pkgDetails && pkgDetails.subject) ? String(pkgDetails.subject).trim() : "";
-  const pkgSubjNorm = normalizeSubjectName(rawSubj);
-  if (pkgSubjNorm === targetNorm) return true;
+  const rawSubj = (pkgDetails && pkgDetails.subject) ? String(pkgDetails.subject).trim() : '';
+  if (rawSubj && areSubjectsMatching(rawSubj, selectedSubject)) return true;
 
-  // Check constituent subjects inside package subject (e.g. "MEDICAL SURGICAL NURSING (1) / PHARMACOLOGY / ...")
+  // 2. Check constituent subjects inside package subject
   if (rawSubj) {
-    const subs = splitSubjectNames(rawSubj);
-    if (subs.some(s => normalizeSubjectName(s) === targetNorm)) return true;
+    const parts = splitSubjectNames(rawSubj);
+    for (const part of parts) {
+      if (areSubjectsMatching(part, selectedSubject)) return true;
+    }
   }
 
-  // Check constituent subjects inside package name if separated
+  // 3. Check constituent subjects inside package name
   if (pName) {
-    const pSubs = splitSubjectNames(pName);
-    if (pSubs.some(s => normalizeSubjectName(s) === targetNorm)) return true;
+    const pParts = splitSubjectNames(pName);
+    for (const pPart of pParts) {
+      if (areSubjectsMatching(pPart, selectedSubject)) return true;
+    }
   }
 
-  // Universal / All-subjects keywords
-  if (pkgSubjNorm.includes("شامل") || pkgSubjNorm.includes("جميع المواد") || pkgSubjNorm.includes("كل المواد") ||
-      pkgNameNorm.includes("شامل") || pkgNameNorm.includes("جميع المواد") || pkgNameNorm.includes("كل المواد")) {
+  // 4. Universal / All-subjects keywords
+  const normSubj = normalizeSubjectName(rawSubj);
+  const normPkg = normalizeSubjectName(pName);
+  if (normSubj.includes("شامل") || normSubj.includes("جميع المواد") || normSubj.includes("كل المواد") || normSubj.includes("all subjects") || normSubj.includes("general") ||
+      normPkg.includes("شامل") || normPkg.includes("جميع المواد") || normPkg.includes("كل المواد") || normPkg.includes("all subjects") || normPkg.includes("general")) {
     return true;
   }
 
-  // If selectedSubject itself is a combo string (like when full text is selected):
-  const selectedSubs = splitSubjectNames(selectedSubject);
-  if (selectedSubs.length > 1) {
-    for (let i = 0; i < selectedSubs.length; i++) {
-      const sNorm = normalizeSubjectName(selectedSubs[i]);
-      if (sNorm && (pkgNameNorm === sNorm || pkgSubjNorm === sNorm)) return true;
-      if (rawSubj) {
-        const subs = splitSubjectNames(rawSubj);
-        if (subs.some(ps => normalizeSubjectName(ps) === sNorm)) return true;
-      }
+  // 5. If selectedSubject itself is a combo string
+  const selSubs = splitSubjectNames(selectedSubject);
+  if (selSubs.length > 1) {
+    for (let i = 0; i < selSubs.length; i++) {
+      if (areSubjectsMatching(selSubs[i], rawSubj) || areSubjectsMatching(selSubs[i], pName)) return true;
     }
   }
 
@@ -3724,9 +3966,17 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
           let validPkgName = null;
           let pkgError = `الطالب غير مشترك في باقة تخص مادة (${selectedSubject})`;
           
-          const candidatePkgs = (Array.isArray(s.packages) && s.packages.length > 0)
-              ? s.packages.filter(p => p && p !== 'بدون باقة' && p !== 'Without Package')
-              : (s.className && s.className !== 'بدون باقة' && s.className !== 'Without Package' ? [s.className] : []);
+          const candidatePkgs = [];
+          if (Array.isArray(s.packages)) {
+              s.packages.forEach(p => {
+                  if (p && p !== 'بدون باقة' && p !== 'Without Package' && !candidatePkgs.includes(p)) {
+                      candidatePkgs.push(p);
+                  }
+              });
+          }
+          if (s.className && s.className !== 'بدون باقة' && s.className !== 'Without Package' && !candidatePkgs.includes(s.className)) {
+              candidatePkgs.push(s.className);
+          }
 
           if (candidatePkgs.length > 0) {
               for (let i = 0; i < candidatePkgs.length; i++) {

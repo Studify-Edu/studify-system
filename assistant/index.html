@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V113">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V114">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -104,7 +104,7 @@
   // Service Worker Registration
   if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_128')
+  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_135')
   .then(reg => {
     reg.update();
     console.log('[SW] Registered:', reg.scope);
@@ -419,19 +419,7 @@
       <i class="fa-solid fa-chevron-down top-subject-chevron"></i>
     </div>
    </div>
-    <!-- شريط تاريخ تسجيل الحضور بالأعلى -->
-    <div class="stat-pill top-date-pill" id="attendanceDatePill" title="تاريخ تسجيل الحضور">
-      <div class="date-pill-main">
-        <i class="fa-regular fa-calendar-days date-pill-icon"></i>
-        <span class="date-pill-label" data-i18n="top_date_lbl">التاريخ:</span>
-        <input type="date" id="globalAttendanceDateInp" class="topbar-date-input" title="تاريخ تسجيل الحضور">
-      </div>
-      <button type="button" id="resetAttendanceDateBtn" class="date-reset-btn hidden" title="العودة لتاريخ اليوم">
-        <i class="fa-solid fa-rotate-left"></i>
-        <span data-i18n="btn_return_today">اليوم</span>
-      </button>
-    </div>
-  </div>
+   </div>
 <div class="topbar-end" style="position: relative;">
  <!-- Cloud Sync Indicator (Consistent square button matching other controls) -->
  <button id="cloudSyncIndicator" class="topbar-icon-btn cloud-sync-btn online" type="button" title="متصل بالسحابة — اضغط للمزامنة اليدوية" aria-label="مزامنة السحابة">
@@ -549,22 +537,29 @@
  <!-- بطاقة سريع (QR) -->
  <div class="card bento-sm">
    <div>
-     <h2 class="bento-card-title"><span data-i18n="quick_title">سريع (QR)</span></h2>
-     <span class="bento-card-subtitle" data-i18n="quick_subtitle">تسجيل الحضور الفوري بالـ ID أو الباركود</span>
-     
-     
-      <!-- شريط تحديد تاريخ الحضور المعتمد للعمليات السريعة -->
-      <div class="att-quick-date-bar" id="quickAttendDateRow">
-        <div class="att-quick-date-info">
-          <i class="fa-regular fa-calendar-check att-quick-date-icon"></i>
-          <span class="att-quick-date-title" data-i18n="att_date_target">تاريخ الحضور:</span>
-          <input type="date" id="quickAttendanceDateInp" class="quick-att-date-input" title="تغيير تاريخ تسجيل الحضور">
+      <div class="quick-bento-header" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <h2 class="bento-card-title" style="margin: 0;"><span data-i18n="quick_title">سريع (QR)</span></h2>
+        <!-- Subtle Collapsible Attendance Date Trigger -->
+        <div class="quick-date-wrapper" style="position: relative;">
+          <button type="button" id="toggleQuickDateBtn" class="quick-date-subtle-trigger" title="تخصيص تاريخ الحضور">
+            <i class="fa-regular fa-calendar-days"></i>
+            <span id="quickDateTriggerLabel">اليوم</span>
+            <i class="fa-solid fa-chevron-down date-chevron"></i>
+          </button>
+          <div id="quickDateDropdown" class="quick-date-popover hidden">
+            <div class="quick-date-popover-header">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>تحديد تاريخ الحضور</span>
+            </div>
+            <input type="date" id="quickAttendanceDateInp" class="quick-popover-date-inp">
+            <button type="button" id="quickResetDateBtn" class="quick-popover-reset-btn hidden">
+              <i class="fa-solid fa-rotate-left"></i> العودة لليوم
+            </button>
+          </div>
         </div>
-        <button type="button" id="quickResetDateBtn" class="quick-date-reset-btn hidden" title="العودة لتاريخ اليوم">
-          <i class="fa-solid fa-rotate-left"></i>
-          <span data-i18n="btn_return_today">العودة لليوم</span>
-        </button>
       </div>
+      <span class="bento-card-subtitle" data-i18n="quick_subtitle">تسجيل الحضور الفوري بالـ ID أو الباركود</span>
+
       <div class="bento-field-group">
        <label class="bento-input-lbl"><i class="fa-solid fa-id-card"></i> <span data-i18n="lbl_student_id">معرّف الطالب (ID)</span></label>
        <div class="bento-input-action-row">
@@ -2092,7 +2087,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V8"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V174"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V175"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

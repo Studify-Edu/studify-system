@@ -8294,169 +8294,117 @@ body.system-hard-locked #appBox {
 }
 
 /* =======================================================
-   ATTENDANCE ACTIVE DATE PICKER (TOPBAR, QUICK CARD, SHEET)
+   ATTENDANCE ACTIVE DATE (SUBTLE TRIGGER & SHEET)
    ======================================================= */
-.top-date-pill {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  padding: 4px 10px !important;
-  border-radius: 12px !important;
-  background: var(--bg-inset) !important;
-  border: 1px solid var(--border) !important;
-  height: 38px !important;
-  box-sizing: border-box !important;
-  transition: all 0.25s ease !important;
+/* Discreet Subtle Attendance Date Trigger in Quick Card */
+.quick-date-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
-.date-pill-main {
+.quick-date-subtle-trigger {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.date-pill-icon {
-  color: #38bdf8;
-  font-size: 0.92em;
-}
-
-.date-pill-label {
-  font-size: 0.82em;
-  font-weight: 700;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
   color: var(--text-secondary);
-}
-
-.topbar-date-input {
-  background: transparent;
-  border: none;
-  outline: none;
-  font-family: inherit;
-  font-weight: 700;
-  font-size: 0.88em;
-  color: var(--text-primary);
-  cursor: pointer;
-  padding: 0;
-  color-scheme: dark;
-}
-
-[data-theme="light"] .topbar-date-input {
-  color-scheme: light;
-  color: #0f172a;
-}
-
-.date-reset-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 3px 8px;
+  border-radius: 20px;
+  padding: 4px 10px;
   font-size: 0.78em;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
 }
 
-.date-reset-btn:hover {
-  transform: scale(1.04);
-  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
+.quick-date-subtle-trigger:hover {
+  background: var(--gradient-subtle);
+  border-color: var(--primary);
+  color: var(--text-primary);
 }
 
-/* Past Date Active State */
-.top-date-pill.past-date-active {
-  border-color: #f59e0b !important;
+.quick-date-subtle-trigger.past-date-active {
   background: rgba(245, 158, 11, 0.12) !important;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.22) !important;
-}
-
-.top-date-pill.past-date-active .date-pill-icon,
-.top-date-pill.past-date-active .topbar-date-input {
+  border-color: #f59e0b !important;
   color: #f59e0b !important;
 }
 
-/* Quick Bento Card Date Bar */
-.att-quick-date-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: var(--bg-inset);
+.quick-date-subtle-trigger .date-chevron {
+  font-size: 0.72em;
+  transition: transform 0.2s ease;
+}
+
+.quick-date-subtle-trigger.open .date-chevron {
+  transform: rotate(180deg);
+}
+
+.quick-date-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: 1000;
+  background: var(--bg-surface);
   border: 1px solid var(--border);
-  margin-bottom: 12px;
-  transition: all 0.25s ease;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
 }
 
-.att-quick-date-info {
+.quick-date-popover.hidden {
+  display: none !important;
+}
+
+.quick-date-popover-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.att-quick-date-icon {
-  color: #38bdf8;
-  font-size: 0.95em;
-}
-
-.att-quick-date-title {
-  font-size: 0.85em;
+  gap: 6px;
+  font-size: 0.78em;
   font-weight: 700;
   color: var(--text-secondary);
 }
 
-.quick-att-date-input {
-  background: transparent;
+.quick-popover-date-inp {
+  background: var(--bg-inset);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 3px 8px;
+  border-radius: 8px;
+  padding: 5px 8px;
   font-family: inherit;
   font-weight: 700;
   font-size: 0.88em;
   color: var(--text-primary);
-  cursor: pointer;
   outline: none;
+  cursor: pointer;
   color-scheme: dark;
 }
 
-[data-theme="light"] .quick-att-date-input {
+[data-theme="light"] .quick-popover-date-inp {
   color-scheme: light;
   color: #0f172a;
 }
 
-.quick-date-reset-btn {
+.quick-popover-reset-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #ffffff;
   border: none;
   border-radius: 8px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   font-size: 0.8em;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
 }
 
-.quick-date-reset-btn:hover {
-  transform: scale(1.03);
-}
-
-.att-quick-date-bar.past-date-active {
-  border-color: #f59e0b !important;
-  background: rgba(245, 158, 11, 0.1) !important;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.18) !important;
-}
-
-.att-quick-date-bar.past-date-active .att-quick-date-icon,
-.att-quick-date-bar.past-date-active .quick-att-date-input {
-  color: #f59e0b !important;
-  border-color: rgba(245, 158, 11, 0.4) !important;
+.quick-popover-reset-btn:hover {
+  transform: scale(1.02);
 }
 
 /* Mobile Sheet Date Card */
@@ -8526,12 +8474,6 @@ body.system-hard-locked #appBox {
 .sheet-date-card.past-date-active {
   border-color: #f59e0b !important;
   background: rgba(245, 158, 11, 0.1) !important;
-}
-
-@media (max-width: 768px) {
-  .top-date-pill {
-    display: none !important;
-  }
 }
 
 
