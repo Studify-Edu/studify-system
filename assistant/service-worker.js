@@ -1,2 +1,2 @@
-// Studify Assistant Service Worker v133
-importScripts('../service-worker.js?v=133');
+// Studify Assistant Service Worker v134
+importScripts('../service-worker.js?v=134');

@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V112">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V113">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -419,6 +419,18 @@
       <i class="fa-solid fa-chevron-down top-subject-chevron"></i>
     </div>
    </div>
+    <!-- شريط تاريخ تسجيل الحضور بالأعلى -->
+    <div class="stat-pill top-date-pill" id="attendanceDatePill" title="تاريخ تسجيل الحضور">
+      <div class="date-pill-main">
+        <i class="fa-regular fa-calendar-days date-pill-icon"></i>
+        <span class="date-pill-label" data-i18n="top_date_lbl">التاريخ:</span>
+        <input type="date" id="globalAttendanceDateInp" class="topbar-date-input" title="تاريخ تسجيل الحضور">
+      </div>
+      <button type="button" id="resetAttendanceDateBtn" class="date-reset-btn hidden" title="العودة لتاريخ اليوم">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span data-i18n="btn_return_today">اليوم</span>
+      </button>
+    </div>
   </div>
 <div class="topbar-end" style="position: relative;">
  <!-- Cloud Sync Indicator (Consistent square button matching other controls) -->
@@ -540,7 +552,20 @@
      <h2 class="bento-card-title"><span data-i18n="quick_title">سريع (QR)</span></h2>
      <span class="bento-card-subtitle" data-i18n="quick_subtitle">تسجيل الحضور الفوري بالـ ID أو الباركود</span>
      
-     <div class="bento-field-group">
+     
+      <!-- شريط تحديد تاريخ الحضور المعتمد للعمليات السريعة -->
+      <div class="att-quick-date-bar" id="quickAttendDateRow">
+        <div class="att-quick-date-info">
+          <i class="fa-regular fa-calendar-check att-quick-date-icon"></i>
+          <span class="att-quick-date-title" data-i18n="att_date_target">تاريخ الحضور:</span>
+          <input type="date" id="quickAttendanceDateInp" class="quick-att-date-input" title="تغيير تاريخ تسجيل الحضور">
+        </div>
+        <button type="button" id="quickResetDateBtn" class="quick-date-reset-btn hidden" title="العودة لتاريخ اليوم">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span data-i18n="btn_return_today">العودة لليوم</span>
+        </button>
+      </div>
+      <div class="bento-field-group">
        <label class="bento-input-lbl"><i class="fa-solid fa-id-card"></i> <span data-i18n="lbl_student_id">معرّف الطالب (ID)</span></label>
        <div class="bento-input-action-row">
          <input id="quickAttendId" class="inp" inputmode="numeric" placeholder="ID (ex: 601)" autocomplete="off">
@@ -1703,7 +1728,7 @@
  <div id="todayModal" class="modal hidden">
  <div class="modalContent" style="max-width: 600px;">
  <div class="flexBetween" style="border-bottom: 2px solid var(--border); padding-bottom: 10px;">
- <h3 style="color: var(--primary);" data-i18n="modal_today_att"> حضور اليوم مفصل</h3>
+ <h3 style="color: var(--primary);" id="todayModalTitle" data-i18n="modal_today_att"> حضور اليوم مفصل</h3>
  <button class="btn danger smallBtn" id="closeTodayModal" data-i18n="btn_close">إغلاق </button>
  </div>
  <div id="todayModalBody" style="max-height: 60vh; overflow-y: auto; padding: 15px 0;"></div>
@@ -2067,7 +2092,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V8"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V173"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V174"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
@@ -2150,6 +2175,20 @@
           </div>
           <button type="button" class="btn primary sheet-change-sub-btn" onclick="window.openSubjectSelectionModalFromSheet()">
             <i class="fa-solid fa-arrows-rotate"></i> <span data-i18n="btn_change_subject">تغيير المادة</span>
+          </button>
+        </div>
+
+        <!-- بطاقة تاريخ تسجيل الحضور في الشيت المتنقل -->
+        <div class="sheet-date-card" id="sheetDateCard">
+          <div class="sheet-date-info">
+            <span class="sheet-date-tag" data-i18n="top_date_lbl">تاريخ تسجيل الحضور</span>
+            <div class="sheet-date-input-wrap">
+              <i class="fa-regular fa-calendar-days" style="color: #38bdf8;"></i>
+              <input type="date" id="sheetAttendanceDateInp" class="sheet-date-input" title="تغيير تاريخ الحضور">
+            </div>
+          </div>
+          <button type="button" class="btn secondary sheet-reset-date-btn hidden" id="sheetResetDateBtn" title="العودة لتاريخ اليوم">
+            <i class="fa-solid fa-rotate-left"></i> <span data-i18n="btn_return_today">اليوم</span>
           </button>
         </div>
 

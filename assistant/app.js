@@ -655,6 +655,9 @@ setupConnectionTracker();
 
 
 document.addEventListener('DOMContentLoaded', function() {
+  if (typeof window.initAttendanceDatePicker === 'function') {
+    window.initAttendanceDatePicker();
+  }
   // Direct Enter key listeners on Bento inputs
   ["openId", "newId", "quickAttendId", "searchAny"].forEach(inputId => {
     const el = document.getElementById(inputId);
@@ -1523,6 +1526,10 @@ let vaultTransfers = [];
   "lock_shift_desc": { ar: "تم إيقاف اليومية من قِبل المدير العام. تم تجميد كافة العمليات لحين فتح الشيفت مجدداً.", en: "The daily shift has been closed by the manager. Operations are paused until unlocked." },
   "lock_shift_sync": { ar: "المزامنة حية ولحظية: سيفتح النظام تلقائياً على شاشتك فور تفعيل المدير لليومية بدون الحاجة لإعادة تشغيل التطبيق.", en: "Live real-time sync: The system will automatically unlock once the manager enables the shift." },
   "lock_shift_check_btn": { ar: "التحقق من حالة الشيفت الآن", en: "Check Shift Status Now" },
+  "top_date_lbl": { ar: "التاريخ:", en: "Date:" },
+  "att_date_target": { ar: "تاريخ الحضور:", en: "Attendance Date:" },
+  "btn_return_today": { ar: "اليوم", en: "Today" },
+  "btn_return_today_full": { ar: "العودة لليوم", en: "Reset to Today" },
 
 };
 
@@ -2950,8 +2957,9 @@ function applyPermissions() {
  }
  
  const todayStr = nowDateStr();
-  const regularToday = (attByDate[todayStr] && Array.isArray(attByDate[todayStr])) ? attByDate[todayStr].length : 0;
-  const sessionToday = (sessionStudentsByDate[todayStr] && Array.isArray(sessionStudentsByDate[todayStr])) ? sessionStudentsByDate[todayStr].length : 0;
+  const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : todayStr;
+  const regularToday = (attByDate[activeAttDate] && Array.isArray(attByDate[activeAttDate])) ? attByDate[activeAttDate].length : 0;
+  const sessionToday = (sessionStudentsByDate[activeAttDate] && Array.isArray(sessionStudentsByDate[activeAttDate])) ? sessionStudentsByDate[activeAttDate].length : 0;
   const todayCount = regularToday + sessionToday;
 
   const revenue = revenueByDate[todayStr] || 0;
@@ -2962,6 +2970,11 @@ function applyPermissions() {
     $("totalStudentsCount").textContent = maxSt ? `${combinedCount} / ${maxSt}` : combinedCount;
   }
   if($("todayCountTop")) $("todayCountTop").textContent = todayCount;
+  if($("mobileSessionQuickStat")) $("mobileSessionQuickStat").textContent = `${todayCount} حضور`;
+  if($("todayCountTopCard")) {
+    const isPast = (activeAttDate !== todayStr);
+    $("todayCountTopCard").title = isPast ? `عرض حضور تاريخ ${activeAttDate}` : "عرض حضور اليوم";
+  }
  
  const revPill = $("openRevenueModalBtn");
  const revToggle = $("toggleRevBtn");
@@ -3570,7 +3583,7 @@ const st = students[id];
  if (typeof window.updateStudentCardRankTheme === "function") window.updateStudentCardRankTheme(r);
  if (typeof window.updatePaymentMethodTheme === "function") window.updatePaymentMethodTheme();
 
- const today = nowDateStr();
+ const today = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
  const dates = st.attendanceDates || [];
  const isPresent = dates.includes(today);
  
@@ -3723,15 +3736,15 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
 
                   if (matchesSubject) {
                       if (pkgDetails && pkgDetails.expiryType === 'time') {
-                          const todayDate = new Date().setHours(0,0,0,0);
+                          const checkDate = d ? new Date(d).setHours(0,0,0,0) : new Date().setHours(0,0,0,0);
                           const start = pkgDetails.startDate ? new Date(pkgDetails.startDate).setHours(0,0,0,0) : null;
                           const end = pkgDetails.endDate ? new Date(pkgDetails.endDate).setHours(0,0,0,0) : null;
                           
-                          if (start && todayDate < start) {
+                          if (start && checkDate < start) {
                               pkgError = `باقة (${pName}) لم تبدأ بعد`;
                               continue;
                           }
-                          if (end && todayDate > end) {
+                          if (end && checkDate > end) {
                               pkgError = `باقة (${pName}) منتهية الصلاحية`;
                               continue;
                           }
@@ -4040,7 +4053,7 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
    });
  }
  
- const today = nowDateStr(); 
+ const today = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
  currentFilteredList = [];
  
  for (let i = 0; i < filled.length; i++) {
@@ -4178,8 +4191,7 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  
  const start = (currentPage - 1) * ITEMS_PER_PAGE;
  const end = start + ITEMS_PER_PAGE;
- const today = nowDateStr();
-
+ const today = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
  for (let i = start; i < end && i < currentFilteredList.length; i++) {
  let s = currentFilteredList[i];
  const tr = document.createElement("tr");
@@ -5029,7 +5041,8 @@ on("quickAttendBtn", "click", function() {
  }
  
  // 3. addAttendance handles student name, package, payments
- const res = addAttendance(id, nowDateStr());
+ const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+ const res = addAttendance(id, activeAttDate);
  if (res.ok) { if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceSuccess(); else playSound("pop"); } else { if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceWarning(); else playSound("error"); }
  showToast(res.msg, res.ok ? "success" : "warning");
  updateStudentUI(id); updateTopStats(); 
@@ -5346,7 +5359,8 @@ on("quickAttendBtn", "click", function() {
     return;
   }
   if(currentId) {
-    const res = addAttendance(currentId, nowDateStr());
+    const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+    const res = addAttendance(currentId, activeAttDate);
     if (res && !res.ok) {
       showToast(res.msg, "warning");
       if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceWarning();
@@ -5355,13 +5369,18 @@ on("quickAttendBtn", "click", function() {
     if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceSuccess();
     showToast(t("msg_att_ok"), "success");
     updateStudentUI(currentId);
-    renderReport(nowDateStr());
+    renderReport(activeAttDate);
   }
 });
 
  on("unmarkTodayBtn", "click", function() { 
  if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceRemove();
- if(currentId) { removeAttendance(currentId, nowDateStr()); updateStudentUI(currentId); renderReport(nowDateStr()); }
+ if(currentId) {
+    const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+    removeAttendance(currentId, activeAttDate);
+    updateStudentUI(currentId);
+    renderReport(activeAttDate);
+  }
  });
 
  // payDebtBtn removed per user request
@@ -6814,7 +6833,7 @@ on("importExcelInput", "change", async function(e) {
 
   on("todayCountTopCard", "click", function() {
   if (typeof AssistantSounds !== "undefined") AssistantSounds.cardClick();
-  const today = nowDateStr(); 
+  const today = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr(); 
  const ids = attByDate[today] || [];
  const sessList = sessionStudentsByDate[today] || [];
  if(ids.length === 0 && sessList.length === 0) { 
@@ -6942,7 +6961,8 @@ on("importExcelInput", "change", async function(e) {
   let lastError = "";
   const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
   for (let i = 0; i < checkedBoxes.length; i++) {
-    let res = addAttendance(checkedBoxes[i].getAttribute("data-id"), nowDateStr());
+    const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+    let res = addAttendance(checkedBoxes[i].getAttribute("data-id"), activeAttDate);
     if (res && res.ok) count++;
     else if (res && res.msg) lastError = res.msg;
   }
@@ -6957,7 +6977,8 @@ on("importExcelInput", "change", async function(e) {
 
  on("bulkAbsentBtn", "click", function() { 
  const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
- for (let i = 0; i < checkedBoxes.length; i++) { removeAttendance(checkedBoxes[i].getAttribute("data-id"), nowDateStr()); }
+ const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+  for (let i = 0; i < checkedBoxes.length; i++) { removeAttendance(checkedBoxes[i].getAttribute("data-id"), activeAttDate); }
  showToast(t("msg_att_warn"), "warning"); renderList(true); handleBulk();
  });
 
@@ -8494,8 +8515,9 @@ document.addEventListener("DOMContentLoaded", () => {
    return;
  }
  const qrId = toInt(urlParams.get("id"));
- if (qrId && students[String(qrId)]) { 
- addAttendance(qrId, nowDateStr()); 
+ if (qrId && students[String(qrId)]) {
+ const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+ addAttendance(qrId, activeAttDate); 
  window.extOpen(qrId); 
  window.history.replaceState(null, null, window.location.pathname); 
  }
@@ -9317,7 +9339,7 @@ window.openSessionStudentModal = function(item) {
     }
   }
 
-  const today = nowDateStr();
+  const today = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
   if(!sessionStudentsByDate[today]) sessionStudentsByDate[today] = [];
 
   // Calculate new session balance
@@ -9564,7 +9586,8 @@ window.openSessionStudentModal = function(item) {
  clearTimeout(barcodeTimer);
  if (scannedId && students[String(scannedId)]) {
  window.switchTab('Home');
- let res = addAttendance(scannedId, nowDateStr());
+ const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+ let res = addAttendance(scannedId, activeAttDate);
  if (res.ok) { if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncSuccess(); else playSound("pop"); } else { if (typeof AssistantSounds !== "undefined") AssistantSounds.error(); else playSound("error"); }
  showToast(res.msg, res.ok ? "success" : "warning");
  updateStudentUI(scannedId);
