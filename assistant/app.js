@@ -1942,91 +1942,100 @@ function showToast(msg, type = "success") {
  }
 
  function closeMobileSidebar(fromPopstate) {
- var sidebar = $("sidebarNav");
- var overlay = $("sidebarOverlay");
- if(sidebar && sidebar.classList.contains("mobile-open")) {
- sidebar.classList.remove("mobile-open");
- if(overlay) overlay.classList.remove("active");
- if(!fromPopstate && history.state && history.state.sidebarOpen) {
- history.back();
- }
- }
- }
+  var sidebar = $("sidebarNav");
+  var overlay = $("sidebarOverlay");
+  if (overlay) overlay.classList.remove("active");
+  if (sidebar && sidebar.classList.contains("mobile-open")) {
+    sidebar.classList.remove("mobile-open");
+    if (!fromPopstate && history.state && history.state.sidebarOpen) {
+      history.back();
+    }
+  }
+}
 
- window.addEventListener("popstate", function(e) {
- var sidebar = $("sidebarNav");
- if(sidebar && sidebar.classList.contains("mobile-open")) {
- closeMobileSidebar(true);
- }
- });
+window.addEventListener("popstate", function(e) {
+  var sidebar = $("sidebarNav");
+  if (sidebar && sidebar.classList.contains("mobile-open")) {
+    closeMobileSidebar(true);
+  }
+});
 
- // ==========================================
- // 5. GLOBAL NAVIGATION & TABS
- // ==========================================
- window.switchTab = function(tabId) {
- // Hard Security Guard: Block locked tabs for assistants
- if (currentUserRole !== "admin" && typeof currentPermissions !== "undefined") {
-   if (tabId === "Packages" && currentPermissions.can_manage_packages === false) {
-     showToast("عفواً، قسم الباقات والأسعار مقفل من المدير", "err");
-     return;
-   }
-   if (tabId === "Syllabus" && currentPermissions.can_access_syllabus === false) {
-     showToast("عفواً، قسم المنهج مقفل من المدير", "err");
-     return;
-   }
-   if (tabId === "Reports" && currentPermissions.can_view_reports === false) {
-     showToast("عفواً، قسم التقارير مقفل من المدير", "err");
-     return;
-   }
-   if (tabId === "Marketing") {
-     if (window.SUBSCRIPTION && window.SUBSCRIPTION.loaded && !window.SUBSCRIPTION.marketingEnabled) {
-       showToast("حملات التسويق متاحة حصرياً في الخطة الذهبية - يرجى ترقية باقة الاشتراك للوصول إلى هذه الميزة", "info");
-       return;
-     }
-     if (currentPermissions.can_access_marketing === false) {
-       showToast("عفواً، قسم أدوات التسويق مقفل من المدير", "err");
-       return;
-     }
-   }
-   if (tabId === "SessionStudents" && currentPermissions.can_access_session_students === false) {
-     showToast("عفواً، قسم طلاب الحصة مقفل من المدير", "err");
-     return;
-   }
-   if (tabId === "Booklets" && currentPermissions.can_access_booklets === false) {
-     showToast("عفواً، قسم مخزون المذكرات مقفل من المدير", "err");
-     return;
-   }
-   if ((tabId === "Settings" || tabId === "Admin") && currentPermissions.can_access_settings === false) {
-     showToast("عفواً، قسم الإعدادات مقفل من المدير", "err");
-     return;
-   }
- }
+// ==========================================
+// 5. GLOBAL NAVIGATION & TABS
+// ==========================================
+window.switchTab = function(tabId) {
+  // Hard Security Guard: Block locked tabs for assistants
+  if (currentUserRole !== "admin" && typeof currentPermissions !== "undefined") {
+    if (tabId === "Packages" && currentPermissions.can_manage_packages === false) {
+      showToast("عفواً، قسم الباقات والأسعار مقفل من المدير", "err");
+      return;
+    }
+    if (tabId === "Syllabus" && currentPermissions.can_access_syllabus === false) {
+      showToast("عفواً، قسم المنهج مقفل من المدير", "err");
+      return;
+    }
+    if (tabId === "Reports" && currentPermissions.can_view_reports === false) {
+      showToast("عفواً، قسم التقارير مقفل من المدير", "err");
+      return;
+    }
+    if (tabId === "Marketing") {
+      if (window.SUBSCRIPTION && window.SUBSCRIPTION.loaded && !window.SUBSCRIPTION.marketingEnabled) {
+        showToast("حملات التسويق متاحة حصرياً في الخطة الذهبية - يرجى ترقية باقة الاشتراك للوصول إلى هذه الميزة", "info");
+        return;
+      }
+      if (currentPermissions.can_access_marketing === false) {
+        showToast("عفواً، قسم أدوات التسويق مقفل من المدير", "err");
+        return;
+      }
+    }
+    if (tabId === "SessionStudents" && currentPermissions.can_access_session_students === false) {
+      showToast("عفواً، قسم طلاب الحصة مقفل من المدير", "err");
+      return;
+    }
+    if (tabId === "Booklets" && currentPermissions.can_access_booklets === false) {
+      showToast("عفواً، قسم مخزون المذكرات مقفل من المدير", "err");
+      return;
+    }
+    if ((tabId === "Settings" || tabId === "Admin") && currentPermissions.can_access_settings === false) {
+      showToast("عفواً، قسم الإعدادات مقفل من المدير", "err");
+      return;
+    }
+  }
 
- document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
- const target = $("sec" + tabId); 
- if(target) target.classList.remove('hidden');
- document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
- const activeBtn = $("btnTab" + tabId); 
- if(activeBtn) {
-   if (typeof AssistantSounds !== "undefined") {
-     AssistantSounds.tabSwitch();
-   }
-   activeBtn.classList.add('active');
-   const activeGroup = activeBtn.closest('.nav-group');
-   if (activeGroup) {
-     document.querySelectorAll('.nav-group').forEach(g => g.classList.add('collapsed'));
-     activeGroup.classList.remove('collapsed');
-   }
- }
- if (tabId === "Marketing") {
-   if (typeof window.populateMarketingGroups === 'function') window.populateMarketingGroups();
-   if (typeof window.filterCampaignTarget === 'function') window.filterCampaignTarget();
- }
- if (tabId === "Settings" || tabId === "Admin") {
-   if (typeof window.initCenterNotebook === 'function') window.initCenterNotebook();
- }
- closeMobileSidebar(false);
- };
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
+  const target = $("sec" + tabId); 
+  if (target) target.classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = $("btnTab" + tabId); 
+  if (activeBtn) {
+    if (typeof AssistantSounds !== "undefined") {
+      AssistantSounds.tabSwitch();
+    }
+    activeBtn.classList.add('active');
+    const activeGroup = activeBtn.closest('.nav-group');
+    if (activeGroup) {
+      document.querySelectorAll('.nav-group').forEach(g => g.classList.add('collapsed'));
+      activeGroup.classList.remove('collapsed');
+    }
+  }
+  if (tabId === "Students") {
+    if (typeof renderList === 'function') renderList(true);
+  }
+  if (tabId === "Marketing") {
+    if (typeof window.populateMarketingGroups === 'function') window.populateMarketingGroups();
+    if (typeof window.filterCampaignTarget === 'function') window.filterCampaignTarget();
+  }
+  if (tabId === "Settings" || tabId === "Admin") {
+    if (typeof window.initCenterNotebook === 'function') window.initCenterNotebook();
+  }
+
+  // Ensure overlays and transitions never block screen
+  const overlay = document.getElementById("sidebarOverlay");
+  if (overlay) overlay.classList.remove("active");
+  const transOverlay = document.getElementById("pageTransitionOverlay");
+  if (transOverlay) transOverlay.classList.remove("active");
+  closeMobileSidebar(false);
+};
 
  window.isStudentRegistered = function(st) {
    if (!st) return false;
@@ -4036,14 +4045,19 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
   }
 
  function removeAttendance(id, d) {
- const s = students[String(id)]; if(!s) return;
- if (s.attendanceDates.includes(d) && s.isSessionStudent) {
-     s.sessionBalance = (s.sessionBalance || 0) + 1;
- }
- s.attendanceDates = s.attendanceDates.filter(date => date !== d);
- if(attByDate[d]) attByDate[d] = attByDate[d].filter(x => x !== String(id));
- saveAttendanceOnly();
- }
+  const s = students[String(id)]; if(!s) return;
+  if (s.attendanceDates && s.attendanceDates.includes(d) && s.isSessionStudent) {
+    s.sessionBalance = (s.sessionBalance || 0) + 1;
+  }
+  if (s.attendanceDates) {
+    s.attendanceDates = s.attendanceDates.filter(date => date !== d);
+  }
+  if (attByDate[d]) {
+    attByDate[d] = attByDate[d].filter(x => String(x) !== String(id));
+  }
+  saveAttendanceOnly();
+  if (typeof updateTopStats === "function") updateTopStats();
+}
 
  // ==========================================
  // 10. FINANCIAL & ANALYTICS MODULE
@@ -4451,8 +4465,8 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
      const currencySuffix = isAr ? " ج" : " EGP";
      let isAttended = (s.attendanceDates && s.attendanceDates.includes(today));
      let attendTxt = isAttended 
-        ? `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check"></i> ${isAr ? "حاضر" : "Present"}</span>` 
-        : `<span style="color:var(--text-secondary); font-size:0.85em;">—</span>`;
+        ? `<span class="badge att-toggle-badge present" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.82em; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" title="اضغط للتحويل إلى غياب"><i class="fa-solid fa-check"></i> ${isAr ? "حاضر" : "Present"}</span>` 
+        : `<span class="badge att-toggle-badge absent" style="background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.25); font-size:0.82em; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" title="اضغط لتسجيل الحضور"><i class="fa-solid fa-xmark"></i> ${isAr ? "غائب" : "Absent"}</span>`;
      let rankIcon = s.rank === 'vip' ? ' ' : (s.rank === 'warn' ? ' ' : '');
      let gColor = getTagColor(sClass || (isAr ? "بدون باقة" : "Without Package"));
      let classBadge = sClass 
@@ -4487,12 +4501,37 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
      <td>${remainDisplay}</td>
      <td>${attendTxt}</td>`;
  tr.onclick = function(e) { 
- if(e.target.type !== "checkbox") {
-   if (s.isSessionStudent) {
-     window.openSessionStudentModal(s.sessionRecord);
+ if (e.target.type === "checkbox" || e.target.closest(".stCheckbox")) {
+   return;
+ }
+ const attBadge = e.target.closest(".att-toggle-badge");
+ if (attBadge) {
+   e.stopPropagation();
+   const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+   if (isAttended) {
+     removeAttendance(s.id, activeAttDate);
+     if (typeof updateTopStats === "function") updateTopStats();
+     renderList(true);
+     showToast(isAr ? `تم تسجيل غياب الطالب (${s.id})` : `Student (${s.id}) marked absent`, "success");
+     if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceRemove();
    } else {
-     window.extOpen(s.id);
+     const res = addAttendance(s.id, activeAttDate);
+     if (res && res.ok) {
+       if (typeof updateTopStats === "function") updateTopStats();
+       renderList(true);
+       showToast(res.msg, "success");
+       if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceSuccess();
+     } else if (res && res.msg) {
+       showToast(res.msg, "warning");
+       if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceWarning();
+     }
    }
+   return;
+ }
+ if (s.isSessionStudent) {
+   window.openSessionStudentModal(s.sessionRecord);
+ } else {
+   window.extOpen(s.id);
  }
  };
  tbody.appendChild(tr);
@@ -5607,14 +5646,17 @@ on("quickAttendBtn", "click", function() {
 });
 
  on("unmarkTodayBtn", "click", function() { 
- if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceRemove();
- if(currentId) {
+  if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceRemove();
+  if (currentId) {
     const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
     removeAttendance(currentId, activeAttDate);
+    if (typeof updateTopStats === "function") updateTopStats();
     updateStudentUI(currentId);
     renderReport(activeAttDate);
+    if (typeof renderList === 'function') renderList(true);
+    showToast(currentLang === 'en' ? `Student (${currentId}) marked absent` : `تم تسجيل غياب الطالب (${currentId}) بنجاح`, "success");
   }
- });
+});
 
  // payDebtBtn removed per user request
 
@@ -7190,30 +7232,52 @@ on("importExcelInput", "change", async function(e) {
     }, 250);
     return;
   }
+  const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
+  if (checkedBoxes.length === 0) {
+    showToast(currentLang === 'en' ? "Select students first" : "يرجى تحديد طلاب من الجدول أولاً", "warning");
+    return;
+  }
   let count = 0;
   let lastError = "";
-  const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
+  const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
   for (let i = 0; i < checkedBoxes.length; i++) {
-    const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
     let res = addAttendance(checkedBoxes[i].getAttribute("data-id"), activeAttDate);
     if (res && res.ok) count++;
     else if (res && res.msg) lastError = res.msg;
   }
+  if (typeof updateTopStats === "function") updateTopStats();
+  renderList(true);
+  handleBulk();
   if (count > 0) {
-    showToast(t("msg_att_ok"), "success");
+    showToast(currentLang === 'en' ? `Attendance recorded for ${count} student(s)` : `تم تسجيل الحضور لعدد (${count}) طالب بنجاح`, "success");
+    if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceSuccess();
   } else if (lastError) {
     showToast(lastError, "warning");
+    if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceWarning();
   }
-  renderList(true);
-  handleBulk(); 
 });
 
- on("bulkAbsentBtn", "click", function() { 
- const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
- const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
-  for (let i = 0; i < checkedBoxes.length; i++) { removeAttendance(checkedBoxes[i].getAttribute("data-id"), activeAttDate); }
- showToast(t("msg_att_warn"), "warning"); renderList(true); handleBulk();
- });
+on("bulkAbsentBtn", "click", function() { 
+  const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
+  if (checkedBoxes.length === 0) {
+    showToast(currentLang === 'en' ? "Select students first" : "يرجى تحديد طلاب من الجدول أولاً", "warning");
+    return;
+  }
+  const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+  let count = 0;
+  for (let i = 0; i < checkedBoxes.length; i++) {
+    const id = checkedBoxes[i].getAttribute("data-id");
+    if (id) {
+      removeAttendance(id, activeAttDate);
+      count++;
+    }
+  }
+  if (typeof updateTopStats === "function") updateTopStats();
+  renderList(true);
+  handleBulk();
+  showToast(currentLang === 'en' ? `Marked ${count} student(s) absent` : `تم تسجيل الغياب لعدد (${count}) طالب بنجاح`, "success");
+  if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceRemove();
+});
 
  // ==========================================
  // 17.5. GOOGLE DRIVE CLOUD SYNC (SMART SYNC)
@@ -11238,9 +11302,38 @@ window.openSessionStudentModal = function(item) {
 
 // Installments tab removed per user request
 
- window.currentGlobalSubject = "";
- 
- 
+ function getCanonicalSubjectTitle(str) {
+  if (!str) return '';
+  const trimmed = String(str).trim();
+  const norm = normalizeSubjectName(trimmed);
+  if ((norm.includes('medical surgical') && (norm.includes('2') || norm.includes('ii'))) || norm === 'msn2' || norm === 'msn 2') {
+    return 'Medical Surgical Nursing 2';
+  }
+  if ((norm.includes('medical surgical') && (norm.includes('1') || norm.includes('i'))) || norm === 'msn1' || norm === 'msn 1') {
+    return 'Medical Surgical Nursing 1';
+  }
+  if (norm.includes('pediatric')) return 'Pediatrics';
+  if (norm.includes('obstetric') || norm.includes('gynecol')) return 'Obstetrics & Gynecology';
+  if (norm.includes('critical care')) return 'Critical Care I';
+  if (norm.includes('critical medicine')) return 'Critical Medicine';
+  if (norm.includes('management') || norm.includes('principles of management')) return 'Principles of Management';
+  if (norm.includes('admin')) return 'Administration';
+  if (norm.includes('fund')) return 'Fundamental';
+  if (norm.includes('micro')) return 'Microbiology';
+  if (norm.includes('anat')) return 'Anatomy';
+  if (norm.includes('term')) return 'Terminology';
+  if (norm.includes('pharm')) return 'Pharmacology';
+  if (norm.includes('path')) return 'Pathology';
+  if (norm.includes('internal') || norm.includes('internal medicine')) return 'Internal Medicine';
+  return trimmed;
+}
+
+try {
+  window.currentGlobalSubject = localStorage.getItem("ca_global_subject") || "";
+} catch(e) {
+  window.currentGlobalSubject = "";
+}
+
 window.goToPackagesFromSubjectModal = function() {
     if (currentUserRole !== "admin" && typeof currentPermissions !== "undefined" && !currentPermissions.can_manage_packages) {
         showToast("عفواً، قسم الباقات والأسعار مقفل من قِبَل المدير", "err");
@@ -11261,8 +11354,8 @@ window.openSubjectSelectionModal = function() {
     const clearWrap = document.getElementById("subjectSelectionClearWrap");
     if (!modal || !list) return;
     
-    // Extract real subjects ONLY from the user's actual database (packages and syllabus)
-    let subjects = new Set();
+    // Extract real subjects and canonicalize to prevent duplicates
+    const canonicalMap = new Map();
     const feesObj = (typeof groupFees !== 'undefined' && groupFees) ? groupFees : (window.groupFees || {});
     
     Object.keys(feesObj).forEach(pkgName => {
@@ -11270,23 +11363,31 @@ window.openSubjectSelectionModal = function() {
         if (pkg && pkg.subject && String(pkg.subject).trim()) {
             const constituent = splitSubjectNames(String(pkg.subject).trim());
             constituent.forEach(s => {
-                if (s && String(s).trim()) subjects.add(String(s).trim());
+                if (s && String(s).trim()) {
+                    const cTitle = getCanonicalSubjectTitle(s);
+                    const key = normalizeSubjectName(cTitle);
+                    if (key && !canonicalMap.has(key)) canonicalMap.set(key, cTitle);
+                }
             });
         } else if (pkgName && String(pkgName).trim()) {
-            subjects.add(String(pkgName).trim());
+            const cTitle = getCanonicalSubjectTitle(pkgName);
+            const key = normalizeSubjectName(cTitle);
+            if (key && !canonicalMap.has(key)) canonicalMap.set(key, cTitle);
         }
     });
     
     if (Array.isArray(syllabusData)) {
         syllabusData.forEach(syll => {
             if (syll && syll.subject && String(syll.subject).trim()) {
-                subjects.add(String(syll.subject).trim());
+                const cTitle = getCanonicalSubjectTitle(syll.subject);
+                const key = normalizeSubjectName(cTitle);
+                if (key && !canonicalMap.has(key)) canonicalMap.set(key, cTitle);
             }
         });
     }
     
     // Sort subjects alphabetically
-    const subjectList = Array.from(subjects).sort((a, b) => a.localeCompare(b, 'ar'));
+    const subjectList = Array.from(canonicalMap.values()).sort((a, b) => a.localeCompare(b, 'ar'));
     
     let html = "";
     if (subjectList.length === 0) {
@@ -11306,9 +11407,10 @@ window.openSubjectSelectionModal = function() {
         </div>`;
     } else {
         subjectList.forEach(sub => {
-            const isSelected = (sub === window.currentGlobalSubject);
+            const isSelected = (areSubjectsMatching(sub, window.currentGlobalSubject) || sub === window.currentGlobalSubject);
+            const safeSub = sub.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             html += `
-            <div class="subject-tile-card ${isSelected ? 'selected' : ''}" onclick="selectGlobalSubject('${sub.replace(/'/g, "\\'")}')">
+            <div class="subject-tile-card ${isSelected ? 'selected' : ''}" onclick="selectGlobalSubject('${safeSub}')">
                 <div class="subject-tile-content">
                     <div class="subject-tile-icon"><i class="fa-solid fa-book-open"></i></div>
                     <span class="subject-tile-name" title="${sub}">${sub}</span>
@@ -11339,139 +11441,129 @@ window.openSubjectSelectionModal = function() {
     modal.classList.remove("hidden");
 };
  
- window.selectGlobalSubject = function(sub) {
-     if (typeof AssistantSounds !== "undefined") {
-         if (sub) AssistantSounds.tap();
-         else AssistantSounds.touchTick();
-     }
-     window.currentGlobalSubject = sub;
-     const txt = document.getElementById("globalSubjectText");
-     if (txt) txt.textContent = sub || (typeof currentLang !== "undefined" && currentLang === "ar" ? "مادة الحضور" : "Attendance Subject");
-     if (document.getElementById("subjectSelectionModal")) document.getElementById("subjectSelectionModal").classList.add("hidden");
-     if (window.updateAttendanceUIState) window.updateAttendanceUIState();
-     if (typeof window.updateMobileSheetData === 'function') window.updateMobileSheetData();
- };
+window.selectGlobalSubject = function(sub) {
+    if (typeof AssistantSounds !== "undefined") {
+        if (sub) AssistantSounds.tap();
+        else AssistantSounds.touchTick();
+    }
+    window.currentGlobalSubject = sub || "";
+    try {
+      if (sub) localStorage.setItem("ca_global_subject", sub);
+      else localStorage.removeItem("ca_global_subject");
+    } catch(e) {}
+    
+    const txt = document.getElementById("globalSubjectText");
+    if (txt) txt.textContent = sub || (typeof currentLang !== "undefined" && currentLang === "ar" ? "مادة الحضور" : "Attendance Subject");
+    if (document.getElementById("subjectSelectionModal")) document.getElementById("subjectSelectionModal").classList.add("hidden");
+    if (window.updateAttendanceUIState) window.updateAttendanceUIState();
+    if (typeof window.updateMobileSheetData === 'function') window.updateMobileSheetData();
+    if (sub) {
+      showToast(currentLang === 'en' ? `Attendance subject set to: ${sub}` : `تم تحديد مادة الحضور: ${sub}`, "success");
+    } else {
+      showToast(currentLang === 'en' ? "Subject selection cleared" : "تم إلغاء تحديد المادة", "info");
+    }
+};
 
- // ==========================================
- // MOBILE LIVE SESSION & STATS HUB (BOTTOM SHEET)
- // ==========================================
- window.openMobileSessionStatsSheet = function() {
-   if (typeof AssistantSounds !== "undefined") AssistantSounds.menuOpen();
-   const sheet = document.getElementById("mobileSessionStatsSheet");
-   if (!sheet) return;
-   if (typeof window.updateMobileSheetData === "function") window.updateMobileSheetData();
-   sheet.classList.remove("hidden");
- };
+// ==========================================
+// MOBILE LIVE SESSION & STATS HUB (BOTTOM SHEET)
+// ==========================================
+window.openMobileSessionStatsSheet = function() {
+  if (typeof AssistantSounds !== "undefined") AssistantSounds.menuOpen();
+  const sheet = document.getElementById("mobileSessionStatsSheet");
+  if (!sheet) return;
+  if (typeof window.updateMobileSheetData === "function") window.updateMobileSheetData();
+  sheet.classList.remove("hidden");
+};
 
- window.closeMobileSessionStatsSheet = function(e) {
-   if (e && e.target && e.target.closest('.mobile-stats-sheet-container')) return;
-   if (typeof AssistantSounds !== "undefined") AssistantSounds.touchTick();
-   const sheet = document.getElementById("mobileSessionStatsSheet");
-   if (sheet) sheet.classList.add("hidden");
- };
+window.closeMobileSessionStatsSheet = function(e) {
+  if (e && e.target && e.target.closest('.mobile-stats-sheet-container')) return;
+  if (typeof AssistantSounds !== "undefined") AssistantSounds.touchTick();
+  const sheet = document.getElementById("mobileSessionStatsSheet");
+  if (sheet) sheet.classList.add("hidden");
+};
 
- window.openSubjectSelectionModalFromSheet = function() {
-   window.closeMobileSessionStatsSheet();
-   setTimeout(() => {
-     if (typeof window.openSubjectSelectionModal === 'function') {
-       window.openSubjectSelectionModal();
-     }
-   }, 120);
- };
+window.openSubjectSelectionModalFromSheet = function() {
+  window.closeMobileSessionStatsSheet();
+  setTimeout(() => {
+    if (typeof window.openSubjectSelectionModal === 'function') {
+      window.openSubjectSelectionModal();
+    }
+  }, 60);
+};
 
- window.openRegisteredStudentsFromSheet = function() {
-   window.closeMobileSessionStatsSheet();
-   setTimeout(() => {
-     const btn = document.getElementById("openAllStudentsBtn");
-     if (btn) btn.click();
-   }, 120);
- };
+window.openRegisteredStudentsFromSheet = function() {
+  window.closeMobileSessionStatsSheet();
+  setTimeout(() => {
+    const btn = document.getElementById("openAllStudentsBtn");
+    if (btn) btn.click();
+  }, 60);
+};
 
- window.openTodayAttendanceFromSheet = function() {
-   window.closeMobileSessionStatsSheet();
-   setTimeout(() => {
-     const btn = document.getElementById("todayCountTopCard");
-     if (btn) btn.click();
-   }, 120);
- };
+window.openTodayAttendanceFromSheet = function() {
+  window.closeMobileSessionStatsSheet();
+  setTimeout(() => {
+    const btn = document.getElementById("todayCountTopCard");
+    if (btn) btn.click();
+  }, 60);
+};
 
- window.openTodayRevenueFromSheet = function() {
-   window.closeMobileSessionStatsSheet();
-   setTimeout(() => {
-     const btn = document.getElementById("openRevenueModalBtn");
-     if (btn) btn.click();
-   }, 120);
- };
+window.openTodayRevenueFromSheet = function() {
+  window.closeMobileSessionStatsSheet();
+  setTimeout(() => {
+    const btn = document.getElementById("openRevenueModalBtn");
+    if (btn) btn.click();
+  }, 60);
+};
 
- window.toggleSheetRevenueBlur = function(e) {
-   if (e) e.stopPropagation();
-   const toggleBtn = document.getElementById("toggleRevBtn");
-   if (toggleBtn) toggleBtn.click();
-   if (typeof window.updateMobileSheetData === "function") window.updateMobileSheetData();
- };
+window.toggleSheetRevenueBlur = function(e) {
+  if (e) e.stopPropagation();
+  const toggleBtn = document.getElementById("toggleRevBtn");
+  if (toggleBtn) toggleBtn.click();
+  if (typeof window.updateMobileSheetData === "function") window.updateMobileSheetData();
+};
 
- window.updateMobileSheetData = function() {
-   const isAr = (typeof currentLang !== "undefined" && currentLang === "ar");
-   // Subject name
-   const subName = window.currentGlobalSubject || (isAr ? "مادة الحضور" : "Attendance Subject");
-   const sheetSub = document.getElementById("sheetSubjectName");
-   if (sheetSub) sheetSub.textContent = subName;
+window.updateMobileSheetData = function() {
+  const isAr = (typeof currentLang !== "undefined" && currentLang === "ar");
+  const subName = window.currentGlobalSubject || (isAr ? "مادة الحضور" : "Attendance Subject");
+  const sheetSub = document.getElementById("sheetSubjectName");
+  if (sheetSub) sheetSub.textContent = subName;
 
-   // Total registered students
-   const totalSt = document.getElementById("totalStudentsCount");
-   const sheetTotal = document.getElementById("sheetTotalStudents");
-   if (sheetTotal && totalSt) sheetTotal.textContent = totalSt.textContent;
+  const totalSt = document.getElementById("totalStudentsCount");
+  const sheetTotal = document.getElementById("sheetTotalStudents");
+  if (sheetTotal && totalSt) sheetTotal.textContent = totalSt.textContent;
 
-   // Today attendance count
-   const todayTop = document.getElementById("todayCountTop");
-   const sheetToday = document.getElementById("sheetTodayCount");
-   if (sheetToday && todayTop) sheetToday.textContent = todayTop.textContent;
+  const todayTop = document.getElementById("todayCountTop");
+  const sheetToday = document.getElementById("sheetTodayCount");
+  if (sheetToday && todayTop) sheetToday.textContent = todayTop.textContent;
 
-   // Today revenue
-   const revTop = document.getElementById("todayRevenue");
-   const sheetRev = document.getElementById("sheetTodayRevenue");
-   if (sheetRev && revTop) sheetRev.textContent = revTop.textContent;
+  const revTop = document.getElementById("todayRevenue");
+  const sheetRev = document.getElementById("sheetTodayRevenue");
+  if (sheetRev && revTop) sheetRev.textContent = revTop.textContent;
 
-   // Revenue eye icon state in sheet
-   const sheetEye = document.getElementById("sheetRevEyeIcon");
-   if (sheetEye) {
-     if (typeof isRevHidden !== "undefined" && isRevHidden) {
-       sheetEye.className = "fa-solid fa-eye-slash";
-     } else {
-       sheetEye.className = "fa-solid fa-eye";
-     }
-   }
+  const sheetEye = document.getElementById("sheetRevEyeIcon");
+  if (sheetEye) {
+    if (typeof isRevHidden !== "undefined" && isRevHidden) {
+      sheetEye.className = "fa-solid fa-eye-slash";
+    } else {
+      sheetEye.className = "fa-solid fa-eye";
+    }
+  }
 
-   // Quick stats badge in topbar button
-   const quickStatEl = document.getElementById("mobileSessionQuickStat");
-   if (quickStatEl && todayTop) {
-     const count = todayTop.textContent.trim();
-     quickStatEl.textContent = `${count} ${isAr ? 'حضور' : 'Attend'}`;
-   }
+  const canShowRev = (currentUserRole === 'admin' || !currentPermissions || currentPermissions.show_revenue !== false);
+  const sheetRevCard = document.getElementById("sheetRevenueCard");
+  if (sheetRevCard) {
+    if (!canShowRev) {
+      sheetRevCard.classList.add("locked-feature");
+    } else {
+      sheetRevCard.classList.remove("locked-feature");
+    }
+  }
+};
 
-   // Sync lock state with revenue permission
-   const canShowRev = (currentUserRole === 'admin' || !currentPermissions || currentPermissions.show_revenue !== false);
-   const sheetRevCard = document.getElementById("sheetRevenueCard");
-   if (sheetRevCard) {
-     if (!canShowRev) {
-       sheetRevCard.classList.add("locked-feature");
-     } else {
-       sheetRevCard.classList.remove("locked-feature");
-     }
-   }
- };
-
- on("openSubjectModalBtn", "click", function(e) {
-   if (window.innerWidth <= 768) {
-     if (typeof window.openMobileSessionStatsSheet === "function") {
-       window.openMobileSessionStatsSheet();
-     } else {
-       openSubjectSelectionModal();
-     }
-   } else {
-     openSubjectSelectionModal();
-   }
- });
+on("openSubjectModalBtn", "click", function(e) {
+  // Directly open the subject selection modal so the assistant can pick the subject in 1 tap
+  openSubjectSelectionModal();
+});
 
 
   // ==========================================
