@@ -3613,6 +3613,75 @@ const st = students[id];
   }
 }
 
+// ==========================================
+// SMART SUBJECT & COMBO PACKAGE MATCHER
+// ==========================================
+function splitSubjectNames(raw) {
+  if (!raw || typeof raw !== 'string') return [];
+  const parts = raw.split(/[\/,\*\n]|(?<=\s)\+(?=\s)/).map(s => s.trim()).filter(Boolean);
+  return parts.length > 0 ? parts : [raw.trim()];
+}
+
+function normalizeSubjectName(str) {
+  if (!str) return "";
+  return String(str)
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/[\s\-_]+/g, ' ');
+}
+
+function isPackageMatchingSubject(pkgDetails, pName, selectedSubject) {
+  if (!selectedSubject) return false;
+  const targetNorm = normalizeSubjectName(selectedSubject);
+  if (!targetNorm) return false;
+
+  const pkgNameNorm = normalizeSubjectName(pName);
+  if (pkgNameNorm === targetNorm) return true;
+
+  const rawSubj = (pkgDetails && pkgDetails.subject) ? String(pkgDetails.subject).trim() : "";
+  const pkgSubjNorm = normalizeSubjectName(rawSubj);
+  if (pkgSubjNorm === targetNorm) return true;
+
+  // Check constituent subjects inside package subject (e.g. "MEDICAL SURGICAL NURSING (1) / PHARMACOLOGY / ...")
+  if (rawSubj) {
+    const subs = splitSubjectNames(rawSubj);
+    if (subs.some(s => normalizeSubjectName(s) === targetNorm)) return true;
+  }
+
+  // Check constituent subjects inside package name if separated
+  if (pName) {
+    const pSubs = splitSubjectNames(pName);
+    if (pSubs.some(s => normalizeSubjectName(s) === targetNorm)) return true;
+  }
+
+  // Universal / All-subjects keywords
+  if (pkgSubjNorm.includes("شامل") || pkgSubjNorm.includes("جميع المواد") || pkgSubjNorm.includes("كل المواد") ||
+      pkgNameNorm.includes("شامل") || pkgNameNorm.includes("جميع المواد") || pkgNameNorm.includes("كل المواد")) {
+    return true;
+  }
+
+  // If selectedSubject itself is a combo string (like when full text is selected):
+  const selectedSubs = splitSubjectNames(selectedSubject);
+  if (selectedSubs.length > 1) {
+    for (let i = 0; i < selectedSubs.length; i++) {
+      const sNorm = normalizeSubjectName(selectedSubs[i]);
+      if (sNorm && (pkgNameNorm === sNorm || pkgSubjNorm === sNorm)) return true;
+      if (rawSubj) {
+        const subs = splitSubjectNames(rawSubj);
+        if (subs.some(ps => normalizeSubjectName(ps) === sNorm)) return true;
+      }
+    }
+  }
+
+  return false;
+}
+window.splitSubjectNames = splitSubjectNames;
+window.normalizeSubjectName = normalizeSubjectName;
+window.isPackageMatchingSubject = isPackageMatchingSubject;
+
  function addAttendance(id, d) {
     const selectedSubject = window.currentGlobalSubject || "";
     if (!selectedSubject || !String(selectedSubject).trim()) {
@@ -3650,8 +3719,7 @@ const st = students[id];
               for (let i = 0; i < candidatePkgs.length; i++) {
                   const pName = candidatePkgs[i];
                   const pkgDetails = (typeof groupFees !== 'undefined' && groupFees && groupFees[pName]) ? groupFees[pName] : ((typeof window.getPkgDetails === 'function') ? window.getPkgDetails(pName) : null);
-                  const pkgSubj = (pkgDetails && pkgDetails.subject && String(pkgDetails.subject).trim()) ? String(pkgDetails.subject).trim() : pName;
-                  const matchesSubject = (pkgSubj === selectedSubject || pName === selectedSubject);
+                  const matchesSubject = isPackageMatchingSubject(pkgDetails, pName, selectedSubject);
 
                   if (matchesSubject) {
                       if (pkgDetails && pkgDetails.expiryType === 'time') {
@@ -10944,7 +11012,10 @@ window.openSubjectSelectionModal = function() {
     Object.keys(feesObj).forEach(pkgName => {
         const pkg = feesObj[pkgName];
         if (pkg && pkg.subject && String(pkg.subject).trim()) {
-            subjects.add(String(pkg.subject).trim());
+            const constituent = splitSubjectNames(String(pkg.subject).trim());
+            constituent.forEach(s => {
+                if (s && String(s).trim()) subjects.add(String(s).trim());
+            });
         } else if (pkgName && String(pkgName).trim()) {
             subjects.add(String(pkgName).trim());
         }
