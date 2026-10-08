@@ -8512,6 +8512,414 @@ body.system-hard-locked #appBox {
   background: rgba(245, 158, 11, 0.1) !important;
 }
 
+/* ==============================================
+   REVENUE MODAL — PREMIUM SAAS REDESIGN (RTL & LTR)
+   ============================================== */
+.rev-modal-content {
+  max-width: 620px !important;
+  width: 94% !important;
+  padding: 20px !important;
+  border-radius: var(--radius, 16px) !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-lg) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.rev-modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding-bottom: 14px !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.rev-modal-title-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.rev-modal-title-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  background: var(--bg-success-subtle, rgba(16, 185, 129, 0.12)) !important;
+  color: var(--success, #10b981) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.15em !important;
+}
+
+.rev-modal-header h3 {
+  margin: 0 !important;
+  font-size: 1.2em !important;
+  font-weight: 800 !important;
+  color: var(--text-primary) !important;
+}
+
+.rev-modal-close-btn {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--bg-inset, #f8fafc) !important;
+  color: var(--text-secondary) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.1em !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.rev-modal-close-btn:hover {
+  background: var(--bg-danger-subtle, rgba(239, 68, 68, 0.12)) !important;
+  color: var(--danger, #ef4444) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  transform: scale(1.05) !important;
+}
+
+.rev-modal-body {
+  max-height: 65vh !important;
+  overflow-y: auto !important;
+  padding: 4px 6px 8px 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  scrollbar-gutter: stable;
+}
+
+/* Revenue Summary Banner */
+.rev-summary-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.08)) !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+.rev-summary-main {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+
+.rev-summary-lbl {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 0.9em !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary) !important;
+}
+
+.rev-summary-lbl i {
+  color: var(--success, #10b981) !important;
+  font-size: 1.1em !important;
+}
+
+.rev-summary-amount {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 6px !important;
+  direction: ltr !important;
+}
+
+.rev-summary-amount .rev-num {
+  font-size: 1.6em !important;
+  font-weight: 900 !important;
+  color: var(--success, #10b981) !important;
+  letter-spacing: -0.5px !important;
+}
+
+.rev-summary-amount .rev-curr {
+  font-size: 0.85em !important;
+  font-weight: 700 !important;
+  color: var(--success, #10b981) !important;
+  opacity: 0.85 !important;
+}
+
+.rev-summary-chips {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.rev-stat-chip {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 5px 10px !important;
+  font-size: 0.82em !important;
+  color: var(--text-secondary) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.rev-stat-chip b {
+  color: var(--text-primary) !important;
+  font-weight: 700 !important;
+}
+
+/* Filter Tabs */
+.rev-filter-tabs {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: var(--bg-inset, #f8fafc) !important;
+  padding: 4px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--border) !important;
+}
+
+.rev-filter-btn {
+  flex: 1 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  font-family: inherit !important;
+  font-size: 0.85em !important;
+  font-weight: 700 !important;
+  padding: 7px 10px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.rev-filter-btn:hover {
+  color: var(--text-primary) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="dark"] .rev-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.rev-filter-btn.active {
+  background: var(--bg-surface) !important;
+  color: var(--primary, #2563eb) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+}
+
+.rev-count-pill {
+  font-size: 0.8em !important;
+  background: var(--bg-inset, rgba(0,0,0,0.06)) !important;
+  padding: 1px 7px !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+}
+
+.rev-filter-btn.active .rev-count-pill {
+  background: var(--primary, #2563eb) !important;
+  color: #ffffff !important;
+}
+
+/* Cards List */
+.rev-cards-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+/* Individual Transaction Card */
+.rev-card-item {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+}
+
+.rev-card-item:hover {
+  background: var(--bg-hover, rgba(0,0,0,0.02)) !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Left / Main info */
+.rev-card-left {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.rev-card-name-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.rev-card-name {
+  font-weight: 800 !important;
+  font-size: 0.98em !important;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.2px !important;
+}
+
+.rev-card-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+}
+
+/* Micro badges inside card */
+.rev-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  font-size: 0.78em !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
+}
+
+.rev-badge-id {
+  background: var(--bg-inset, #f1f5f9) !important;
+  color: var(--text-secondary, #64748b) !important;
+  border: 1px solid var(--border) !important;
+  font-size: 0.75em !important;
+  padding: 2px 6px !important;
+}
+
+.rev-badge-session {
+  background: #fff3e0 !important;
+  color: #c2410c !important;
+  border: 1px solid rgba(234, 88, 12, 0.2) !important;
+}
+
+[data-theme="dark"] .rev-badge-session {
+  background: rgba(234, 88, 12, 0.15) !important;
+  color: #fb923c !important;
+}
+
+.rev-badge-pkg {
+  background: var(--bg-inset, #f1f5f9) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.rev-badge-pkg i {
+  color: var(--primary, #2563eb) !important;
+  font-size: 0.9em !important;
+}
+
+.rev-badge-method {
+  border: 1px solid transparent !important;
+}
+
+/* Right / Amount column */
+.rev-card-right {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  text-align: end !important;
+  flex-shrink: 0 !important;
+  min-width: 85px !important;
+}
+
+.rev-card-amount {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 3px !important;
+  color: var(--success, #10b981) !important;
+  font-weight: 800 !important;
+  font-size: 1.15em !important;
+  direction: ltr !important;
+  line-height: 1.2 !important;
+}
+
+.rev-amount-plus {
+  font-size: 0.95em !important;
+  font-weight: 800 !important;
+}
+
+.rev-amount-val {
+  font-weight: 900 !important;
+}
+
+.rev-amount-curr {
+  font-size: 0.8em !important;
+  font-weight: 700 !important;
+  margin-inline-start: 2px !important;
+}
+
+.rev-status-text {
+  font-size: 11px !important;
+  color: var(--text-secondary, #64748b) !important;
+  font-weight: 600 !important;
+  margin-top: 3px !important;
+  white-space: nowrap !important;
+}
+
+.rev-status-instant {
+  color: #0288d1 !important;
+}
+
+/* Empty state */
+.rev-empty-state {
+  text-align: center !important;
+  padding: 40px 20px !important;
+  color: var(--text-secondary) !important;
+}
+
+.rev-empty-icon {
+  font-size: 2.5em !important;
+  color: var(--border) !important;
+  margin-bottom: 12px !important;
+}
+
+.rev-empty-state h4 {
+  margin: 0 0 6px 0 !important;
+  font-size: 1.1em !important;
+  color: var(--text-primary) !important;
+}
+
+.rev-empty-state p {
+  margin: 0 !important;
+  font-size: 0.88em !important;
+}
+
+@media (max-width: 600px) {
+  .rev-card-item {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+  }
+  .rev-summary-main {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+}
+
+
 
 
 

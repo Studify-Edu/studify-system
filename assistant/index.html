@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V116">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V117">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -1726,14 +1726,17 @@
  </div>
 
  <div id="revenueModal" class="modal hidden">
- <div class="modalContent" style="max-width: 600px;">
- <div class="flexBetween" style="border-bottom: 2px solid var(--border); padding-bottom: 10px;">
- <h3 style="color: var(--success);" data-i18n="modal_rev_today"> تفاصيل إيراد اليوم</h3>
- <button class="btn danger smallBtn" onclick="document.getElementById('revenueModal').classList.add('hidden')">X</button>
- </div>
- <div id="revenueModalBody" style="max-height: 60vh; overflow-y: auto; padding: 15px 0;"></div>
- </div>
- </div>
+    <div class="modalContent rev-modal-content">
+      <div class="rev-modal-header">
+        <div class="rev-modal-title-wrap">
+          <div class="rev-modal-title-icon"><i class="fa-solid fa-coins"></i></div>
+          <h3 data-i18n="modal_rev_today">تفاصيل إيراد اليوم</h3>
+        </div>
+        <button type="button" class="rev-modal-close-btn" onclick="window.closeRevenueModal()" title="إغلاق">✕</button>
+      </div>
+      <div id="revenueModalBody" class="rev-modal-body"></div>
+    </div>
+  </div>
 
    <style>
   @media print {
@@ -2082,7 +2085,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V8"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V177"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V178"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

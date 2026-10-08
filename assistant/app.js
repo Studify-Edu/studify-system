@@ -1139,6 +1139,19 @@ let vaultTransfers = [];
  "nav_syllabus": { ar: "المنهج", en: "Syllabus" },
  "tbl_remain": { ar: "المتبقي", en: "Remaining" },
  "modal_rev_today": { ar: "تفاصيل إيراد اليوم", en: "Today's Revenue Details" },
+ "rev_total_collected": { ar: "إجمالي إيراد اليوم المحصل", en: "Total Collected Today" },
+ "rev_transactions": { ar: "معاملة", en: "Transactions" },
+ "rev_flt_all": { ar: "الكل", en: "All" },
+ "rev_flt_regular": { ar: "طلاب الباقات", en: "Package Students" },
+ "rev_flt_session": { ar: "طلاب الحصة", en: "Session Students" },
+ "rev_cash": { ar: "كاش", en: "Cash" },
+ "rev_instapay": { ar: "إنستاباي", en: "InstaPay" },
+ "rev_wallet": { ar: "محفظة / فودافون كاش", en: "Wallet" },
+ "rev_instant_pay": { ar: "دفع فوري", en: "Instant Payment" },
+ "rev_session_st": { ar: "طالب حصة", en: "Session Student" },
+ "rev_remaining": { ar: "المتبقي: ", en: "Remaining: " },
+ "rev_no_pkg": { ar: "بدون باقة", en: "Without Package" },
+ "rev_empty_desc": { ar: "لم يتم تحصيل أي مبالغ أو تسجيل اشتراكات لتاريخ اليوم حتى الآن.", en: "No payments or session fees have been recorded for today yet." },
  "syll_update_title": { ar: "تحديث خريطة المنهج (للمدير)", en: "Update Syllabus (Admin)" },
  "syll_name_lbl": { ar: "اسم الشابتر / الدرس", en: "Chapter / Lesson Name" },
  "syll_status_lbl": { ar: "الحالة", en: "Status" },
@@ -4710,16 +4723,19 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  
  let sessArr = sessionStudentsByDate[d] || [];
  if(sessArr.length > 0) {
+ const isArRep = (currentLang === "ar");
+ const currRep = isArRep ? "ج" : "EGP";
+ const sessRepTitle = isArRep ? `طلاب الحصة الفورية (${sessArr.length})` : `Instant Session Students (${sessArr.length})`;
  html += `
- <h4 style="color:var(--primary); margin-top:15px; display:flex; align-items:center; gap:5px;"><span><i class="fa-solid fa-users"></i></span> طلاب الحصة الفورية (${sessArr.length})</h4>
+ <h4 style="color:var(--primary); margin-top:15px; display:flex; align-items:center; gap:5px;"><span><i class="fa-solid fa-users"></i></span> ${sessRepTitle}</h4>
  <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:5px;">`;
  for (let i = 0; i < sessArr.length; i++) {
  let item = sessArr[i];
- let mBadge = item.method === "instapay" ? " إنستاباي" : (item.method === "wallet" ? " فودافون كاش" : " كاش");
+ let mBadge = item.method === "instapay" ? (isArRep ? "إنستاباي" : "InstaPay") : (item.method === "wallet" ? (isArRep ? "فودافون كاش" : "Wallet") : (isArRep ? "كاش" : "Cash"));
  html += `
- <div class="item flexBetween" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--border);">
- <div><b>${item.name}</b> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "بدون باقة" && item.className !== "Without Package") ? item.className : (currentLang === "ar" ? "بدون باقة" : "Without Package")}</span> <span class="badge" style="background:#e3f2fd; color:#0288d1;">${mBadge}</span></div>
- <div style="color:var(--success); font-weight:bold;">+ ${item.amount} ج</div>
+ <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--border);">
+ <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;"><b><bdi>${item.name}</bdi></b> <span class="badge" style="background:var(--bg-inset, #eee); color:var(--text-primary);"><bdi>${(item.className && item.className !== "بدون باقة" && item.className !== "Without Package") ? item.className : (isArRep ? "بدون باقة" : "Without Package")}</bdi></span> <span class="badge" style="background:#e3f2fd; color:#0288d1;"><bdi>${mBadge}</bdi></span></div>
+ <div style="color:var(--success); font-weight:bold; direction:ltr; white-space:nowrap;">+ ${item.amount} ${currRep}</div>
  </div>`;
  }
  html += `</div>`;
@@ -4887,6 +4903,11 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
     if (typeof renderList === 'function') renderList(true);
   }
   if (typeof updateTopbarRevenue === 'function') updateTopbarRevenue();
+  const revModal = $("revenueModal");
+  if (revModal && !revModal.classList.contains("hidden")) {
+    const revBtn = $("openRevenueModalBtn");
+    if (revBtn) revBtn.click();
+  }
   
   // Remove the anti-FOUC loading class once translation is complete
   document.documentElement.classList.remove("lang-en-loading");
@@ -9500,7 +9521,7 @@ window.openSessionStudentModal = function(item) {
   for(let i=0; i<arr.length; i++) {
   let item = arr[i];
   totalRev += toInt(item.amount);
-  let mBadge = item.method === "instapay" ? " إنستاباي" : (item.method === "wallet" ? " فودافون كاش/محفظة" : " كاش");
+  let mBadge = item.method === "instapay" ? (isArSess ? "إنستاباي" : "InstaPay") : (item.method === "wallet" ? (isArSess ? "فودافون كاش / محفظة" : "Wallet") : (isArSess ? "كاش" : "Cash"));
   let badgeBg = item.method === "instapay" ? "#e3f2fd" : (item.method === "wallet" ? "#e8f5e9" : "#eef2f5");
   let badgeColor = item.method === "instapay" ? "#0288d1" : (item.method === "wallet" ? "#2e7d32" : "#333");
 
@@ -9787,85 +9808,260 @@ window.openSessionStudentModal = function(item) {
  renderSessionStudentsList(e.target.value);
  });
 
- on("openRevenueModalBtn", "click", function(e) {
- if(isRevHidden) return;
- if (typeof AssistantSounds !== "undefined") AssistantSounds.revenueOpen(); 
- const today = nowDateStr();
- let html = "";
- let count = 0;
- 
- const allStuds = Object.values(students);
- for(let i=0; i<allStuds.length; i++) {
- let s = allStuds[i];
- if(s.payments && s.payments.length > 0) {
- for(let j=0; j<s.payments.length; j++) {
- if(s.payments[j].date === today) {
- let sClass = (s.className && s.className !== "بدون باقة" && s.className !== "Without Package") ? s.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
- 
-    let req = 0;
-    if (sClass && groupFees[sClass] !== undefined) {
-       const pkg = groupFees[sClass];
-       if (s.paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg); // handle old format where pkg is just a number
-       }
+ window.closeRevenueModal = function() {
+  const m = document.getElementById("revenueModal");
+  if (m) m.classList.add("hidden");
+ };
+
+ window.filterRevModalCards = function(filter, btn) {
+  const container = document.getElementById("revCardsList");
+  if (!container) return;
+  const cards = container.querySelectorAll(".rev-card-item");
+  cards.forEach(card => {
+    if (filter === "all") {
+      card.style.display = "flex";
+    } else {
+      card.style.display = (card.getAttribute("data-type") === filter) ? "flex" : "none";
     }
+  });
+  const btns = document.querySelectorAll(".rev-filter-btn");
+  btns.forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+ };
 
- let remain = req > 0 ? (req - s.paid) : 0;
- if(remain < 0) remain = 0;
- 
- let m = s.payments[j].method || "cash";
- let mBadge = " كاش";
- let badgeBg = "#eef2f5"; let badgeColor = "#333";
- if (m === "instapay") { mBadge = " إنستاباي"; badgeBg = "#e3f2fd"; badgeColor = "#0288d1"; }
- if (m === "wallet") { mBadge = " فودافون كاش/محفظة"; badgeBg = "#e8f5e9"; badgeColor = "#2e7d32"; }
-
- html += `
- <div class="item flexBetween" style="margin-bottom:8px; cursor:pointer;" onclick="document.getElementById('revenueModal').classList.add('hidden'); window.extOpen('${s.id}')">
- <div>
- <b>${s.name}</b> (#${s.id}) <span class="badge" style="background:#eee; color:#333;">${sClass}</span>
- <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:5px;">${mBadge}</span>
- </div>
- <div style="text-align:left;">
- <span style="color:var(--success); font-weight:bold;">+ ${s.payments[j].amount} ج</span><br>
- <span style="font-size:11px; color:#666;">المتبقي: ${remain} ج</span>
- </div>
- </div>`;
- count++;
- }
- }
- }
+ if (!window._revModalBackdropBound) {
+  window._revModalBackdropBound = true;
+  document.addEventListener("click", function(e) {
+    const m = document.getElementById("revenueModal");
+    if (m && !m.classList.contains("hidden") && e.target === m) {
+      m.classList.add("hidden");
+    }
+  });
  }
 
- let sArr = sessionStudentsByDate[today] || [];
- for(let i=0; i<sArr.length; i++) {
- let item = sArr[i];
- let mBadge = item.method === "instapay" ? " إنستاباي" : (item.method === "wallet" ? " فودافون كاش/محفظة" : " كاش");
- let badgeBg = item.method === "instapay" ? "#e3f2fd" : (item.method === "wallet" ? "#e8f5e9" : "#eef2f5");
- let badgeColor = item.method === "instapay" ? "#0288d1" : (item.method === "wallet" ? "#2e7d32" : "#333");
+ on("openRevenueModalBtn", "click", function(e) {
+  if(isRevHidden) return;
+  if (typeof AssistantSounds !== "undefined") AssistantSounds.revenueOpen(); 
+  const today = nowDateStr();
+  const isAr = (typeof currentLang === "undefined" || currentLang === "ar");
+  const curr = isAr ? "ج" : "EGP";
 
- html += `
- <div class="item flexBetween" style="margin-bottom:8px; cursor:pointer;" onclick="document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('SessionStudents'); if($('sessFilterDate')) $('sessFilterDate').value='${today}'; renderSessionStudentsList('${today}');">
- <div>
- <b>${item.name}</b> <span class="badge" style="background:#fff3e0; color:#e65100;">طالب حصة </span> <span class="badge" style="background:#eee; color:#333;">${(item.className && item.className !== "بدون باقة" && item.className !== "Without Package") ? item.className : (currentLang === "ar" ? "بدون باقة" : "Without Package")}</span>
- <span class="badge" style="background:${badgeBg}; color:${badgeColor}; font-size:0.8em; margin-inline-start:5px;">${mBadge}</span>
- </div>
- <div style="text-align:left;">
- <span style="color:var(--success); font-weight:bold;">+ ${item.amount} ج</span><br>
- <span style="font-size:11px; color:#666;">دفع فوري</span>
- </div>
- </div>`;
- count++;
- }
- 
- if(count === 0) html = `<div class="mutedCenter">${t("txt_no_rev")}</div>`;
- 
- 
-  
+  function safeRevText(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  let allTransactions = [];
+  let cashTotal = 0;
+  let instapayTotal = 0;
+  let walletTotal = 0;
+  let grandTotal = 0;
+  let regCount = 0;
+  let sessCount = 0;
+
+  // 1. Regular Students payments today
+  const allStuds = Object.values(students || {});
+  for(let i = 0; i < allStuds.length; i++) {
+    let s = allStuds[i];
+    if(s && s.payments && Array.isArray(s.payments) && s.payments.length > 0) {
+      for(let j = 0; j < s.payments.length; j++) {
+        let p = s.payments[j];
+        if(p && p.date === today) {
+          let amt = toInt(p.amount) || 0;
+          grandTotal += amt;
+          regCount++;
+
+          let sClass = (s.className && s.className !== "بدون باقة" && s.className !== "Without Package") ? s.className.trim() : (isAr ? "بدون باقة" : "Without Package");
+
+          let req = 0;
+          if (sClass && groupFees[sClass] !== undefined) {
+            const pkg = groupFees[sClass];
+            if (s.paymentPlan === "installments" && pkg.hasInstallments) {
+              req = toInt(pkg.installmentPrice) || 0;
+            } else {
+              req = toInt(pkg.price || pkg);
+            }
+          }
+
+          let remain = req > 0 ? (req - (toInt(s.paid) || 0)) : 0;
+          if(remain < 0) remain = 0;
+
+          let m = String(p.method || "cash").toLowerCase();
+          if (m === "instapay") instapayTotal += amt;
+          else if (m === "wallet") walletTotal += amt;
+          else cashTotal += amt;
+
+          allTransactions.push({
+            type: "regular",
+            id: s.id || "",
+            name: s.name || (isAr ? "بدون اسم" : "Unnamed"),
+            className: sClass,
+            amount: amt,
+            remain: remain,
+            method: m,
+            time: p.time || ""
+          });
+        }
+      }
+    }
+  }
+
+  // 2. Session Students today
+  let sArr = sessionStudentsByDate[today] || [];
+  for(let i = 0; i < sArr.length; i++) {
+    let item = sArr[i];
+    if(item) {
+      let amt = toInt(item.amount) || 0;
+      grandTotal += amt;
+      sessCount++;
+
+      let m = String(item.method || "cash").toLowerCase();
+      if (m === "instapay") instapayTotal += amt;
+      else if (m === "wallet") walletTotal += amt;
+      else cashTotal += amt;
+
+      let sClass = (item.className && item.className !== "بدون باقة" && item.className !== "Without Package") ? item.className.trim() : (isAr ? "بدون باقة" : "Without Package");
+
+      allTransactions.push({
+        type: "session",
+        id: item.id || "",
+        name: item.name || (isAr ? "طالب حصة" : "Session Student"),
+        className: sClass,
+        amount: amt,
+        remain: 0,
+        method: m,
+        time: item.timestamp || ""
+      });
+    }
+  }
+
+  let html = "";
+  if(allTransactions.length === 0) {
+    html = `
+    <div class="rev-empty-state">
+      <div class="rev-empty-icon"><i class="fa-solid fa-receipt"></i></div>
+      <h4>${t("txt_no_rev")}</h4>
+      <p>${isAr ? "لم يتم تحصيل أي مبالغ أو تسجيل اشتراكات لتاريخ اليوم حتى الآن." : "No payments or session fees have been recorded for today yet."}</p>
+    </div>`;
+  } else {
+    html += `
+    <div class="rev-summary-banner">
+      <div class="rev-summary-main">
+        <div class="rev-summary-lbl">
+          <i class="fa-solid fa-wallet"></i>
+          <span>${isAr ? "إجمالي إيراد اليوم المحصل" : "Total Collected Today"}</span>
+        </div>
+        <div class="rev-summary-amount">
+          <span class="rev-num">${grandTotal.toLocaleString()}</span>
+          <span class="rev-curr">${curr}</span>
+        </div>
+      </div>
+      <div class="rev-summary-chips">
+        <div class="rev-stat-chip">
+          <i class="fa-solid fa-receipt" style="color:var(--primary);"></i>
+          <span><b>${allTransactions.length}</b> ${isAr ? "معاملة" : "Transactions"}</span>
+        </div>
+        <div class="rev-stat-chip">
+          <i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i>
+          <span>${isAr ? "كاش" : "Cash"}: <b>${cashTotal.toLocaleString()}</b> ${curr}</span>
+        </div>
+        ${instapayTotal > 0 ? `
+        <div class="rev-stat-chip">
+          <i class="fa-solid fa-bolt" style="color:#0288d1;"></i>
+          <span>${isAr ? "إنستاباي" : "InstaPay"}: <b>${instapayTotal.toLocaleString()}</b> ${curr}</span>
+        </div>` : ''}
+        ${walletTotal > 0 ? `
+        <div class="rev-stat-chip">
+          <i class="fa-solid fa-mobile-screen-button" style="color:#2e7d32;"></i>
+          <span>${isAr ? "محفظة" : "Wallet"}: <b>${walletTotal.toLocaleString()}</b> ${curr}</span>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="rev-filter-tabs">
+      <button type="button" class="rev-filter-btn active" data-filter="all" onclick="window.filterRevModalCards('all', this)">
+        ${isAr ? "الكل" : "All"} <span class="rev-count-pill">${allTransactions.length}</span>
+      </button>
+      <button type="button" class="rev-filter-btn" data-filter="regular" onclick="window.filterRevModalCards('regular', this)">
+        ${isAr ? "طلاب الباقات" : "Package Students"} <span class="rev-count-pill">${regCount}</span>
+      </button>
+      <button type="button" class="rev-filter-btn" data-filter="session" onclick="window.filterRevModalCards('session', this)">
+        ${isAr ? "طلاب الحصة" : "Session Students"} <span class="rev-count-pill">${sessCount}</span>
+      </button>
+    </div>
+
+    <div class="rev-cards-list" id="revCardsList">
+    `;
+
+    for(let k = 0; k < allTransactions.length; k++) {
+      let tx = allTransactions[k];
+      let isReg = (tx.type === "regular");
+      
+      let mLabel = isAr ? "كاش" : "Cash";
+      let mIcon = "fa-solid fa-money-bill-wave";
+      let mBg = "rgba(16, 185, 129, 0.12)";
+      let mColor = "#059669";
+      
+      if (tx.method === "instapay") {
+        mLabel = isAr ? "إنستاباي" : "InstaPay";
+        mIcon = "fa-solid fa-bolt";
+        mBg = "rgba(2, 136, 209, 0.12)";
+        mColor = "#0288d1";
+      } else if (tx.method === "wallet") {
+        mLabel = isAr ? "محفظة / فودافون كاش" : "Wallet";
+        mIcon = "fa-solid fa-mobile-screen-button";
+        mBg = "rgba(46, 125, 50, 0.12)";
+        mColor = "#2e7d32";
+      }
+
+      let clickAction = isReg 
+        ? `document.getElementById('revenueModal').classList.add('hidden'); window.extOpen('${tx.id}');`
+        : `document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('SessionStudents'); if(document.getElementById('sessFilterDate')) document.getElementById('sessFilterDate').value='${today}'; renderSessionStudentsList('${today}');`;
+
+      let statusHtml = "";
+      if (isReg) {
+        statusHtml = `<span class="rev-status-text">${isAr ? "المتبقي: " : "Remaining: "}<bdi>${tx.remain} ${curr}</bdi></span>`;
+      } else {
+        statusHtml = `<span class="rev-status-text rev-status-instant">${isAr ? "دفع فوري" : "Instant Payment"}</span>`;
+      }
+
+      let typeBadgeHtml = isReg
+        ? `<span class="rev-badge rev-badge-id">#${tx.id}</span>`
+        : `<span class="rev-badge rev-badge-session"><i class="fa-solid fa-user-clock"></i> <bdi>${isAr ? "طالب حصة" : "Session Student"}</bdi></span>`;
+
+      html += `
+      <div class="rev-card-item" data-type="${tx.type}" onclick="${clickAction}">
+        <div class="rev-card-left">
+          <div class="rev-card-name-row">
+            <bdi class="rev-card-name">${safeRevText(tx.name)}</bdi>
+            ${typeBadgeHtml}
+          </div>
+          <div class="rev-card-meta-row">
+            <span class="rev-badge rev-badge-pkg">
+              <i class="fa-solid fa-layer-group"></i>
+              <bdi>${safeRevText(tx.className)}</bdi>
+            </span>
+            <span class="rev-badge rev-badge-method" style="background:${mBg}; color:${mColor};">
+              <i class="${mIcon}"></i>
+              <bdi>${mLabel}</bdi>
+            </span>
+          </div>
+        </div>
+        <div class="rev-card-right">
+          <div class="rev-card-amount">
+            <span class="rev-amount-plus">+</span>
+            <span class="rev-amount-val">${tx.amount}</span>
+            <span class="rev-amount-curr">${curr}</span>
+          </div>
+          ${statusHtml}
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
 
   if($("revenueModalBody")) $("revenueModalBody").innerHTML = html;
- if($("revenueModal")) $("revenueModal").classList.remove("hidden");
+  if($("revenueModal")) $("revenueModal").classList.remove("hidden");
  });
 
  // === GLOBAL BARCODE SCANNER LISTENER ===
