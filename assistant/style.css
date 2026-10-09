@@ -1908,21 +1908,22 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
     display: flex !important;
   }
 
-  /* Mobile Single-Row Header */
+  /* Mobile 2-Row Header: Row 1 = Controls & Subject, Row 2 = Live Stats */
   .topbar {
-    height: 56px !important;
-    min-height: 56px !important;
-    padding: 0 10px !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding: 6px 10px 8px 10px !important;
     display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
     background: var(--bg-surface) !important;
     border-bottom: 1px solid var(--border) !important;
     position: sticky !important;
     top: 0 !important;
     z-index: 800 !important;
-    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
   }
 
   /* Single Clean Header Row */
@@ -1930,8 +1931,8 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    height: 56px !important;
-    min-height: 56px !important;
+    height: 42px !important;
+    min-height: 42px !important;
     padding: 0 !important;
     gap: 8px !important;
     border-bottom: none !important;
@@ -2043,10 +2044,60 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
     margin-inline-start: 0 !important;
   }
 
-  /* Completely Hide 2nd Row Stats on Mobile as requested */
+  /* Live Stats Strip on Mobile (مسجلين، حضور، إيراد، الشيفت) */
   .topbar-stats,
   #topbarStatsBar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 2px 0 4px 0 !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    box-sizing: border-box !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: auto !important;
+  }
+
+  .topbar-stats::-webkit-scrollbar,
+  #topbarStatsBar::-webkit-scrollbar {
     display: none !important;
+  }
+
+  .topbar-stats .stat-pill,
+  #topbarStatsBar .stat-pill {
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 4px 10px !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+    background: var(--bg-inset) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-secondary) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .topbar-stats .stat-pill b,
+  #topbarStatsBar .stat-pill b {
+    color: var(--text-primary) !important;
+    font-weight: 800 !important;
+    font-family: 'Cairo', sans-serif !important;
+  }
+
+  .topbar-stats .stat-pill:active,
+  #topbarStatsBar .stat-pill:active {
+    transform: scale(0.96) !important;
+    background: var(--bg-hover) !important;
   }
 
   /* Advanced Search & Select Filters Responsiveness */
@@ -2135,8 +2186,10 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   .tableWrap {
     width: 100% !important;
     overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    -webkit-overflow-scrolling: auto !important;
     display: block !important;
+    transform: translateZ(0);
+    will-change: auto;
   }
   table {
     min-width: 600px !important;
@@ -2288,15 +2341,22 @@ body.flash-green::after { box-shadow: inset 0 0 25px 8px rgba(16,185,129,0.5); t
   .card h2 { font-size: 1em !important; }
   
   /* Topbar: compact balanced stats strip */
-  .topbar-stats {
+  .topbar-stats,
+  #topbarStatsBar {
     display: flex !important;
-    gap: 4px !important;
-    overflow-x: hidden !important;
+    gap: 5px !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
   }
-  .topbar-stats .stat-pill {
-    font-size: 0.68rem !important;
-    padding: 2px 3px !important;
-    gap: 2px !important;
+  .topbar-stats::-webkit-scrollbar,
+  #topbarStatsBar::-webkit-scrollbar {
+    display: none !important;
+  }
+  .topbar-stats .stat-pill,
+  #topbarStatsBar .stat-pill {
+    font-size: 0.74rem !important;
+    padding: 4px 8px !important;
+    gap: 4px !important;
   }
 }
 
@@ -3590,13 +3650,13 @@ body::after {
   animation: tabSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
 
-/* Staggered children animation */
+/* Staggered children animation - opacity: 1 safety fallback for Safari/iOS WebKit */
 .tab-section > .card,
 .tab-section > .bento-grid > .card,
 .tab-section > .grid2 > .card,
 .tab-section > .finance-grid > .finance-card {
-  opacity: 0;
-  animation: tabSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 1; /* CRITICAL: Default to 1 to prevent elements getting stuck at opacity 0 in Safari/iOS */
+  animation: tabSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .tab-section > .card:nth-child(1), .tab-section > .bento-grid > .card:nth-child(1), .tab-section > .grid2 > .card:nth-child(1) { animation-delay: 0.05s; }
 .tab-section > .card:nth-child(2), .tab-section > .bento-grid > .card:nth-child(2), .tab-section > .grid2 > .card:nth-child(2) { animation-delay: 0.12s; }
@@ -7957,7 +8017,7 @@ body.system-hard-locked #appBox {
 
   /* ── 2. TOPBAR SESSION PILL & ATTENDANCE BADGE (المادة + الحضور معاً) ────────── */
   .topbar {
-    padding: 0 8px !important;
+    padding: 6px 10px 8px 10px !important;
   }
   .topbar-start {
     gap: 6px !important;
@@ -8335,6 +8395,40 @@ body.system-hard-locked #appBox {
     right: 12px !important;
     width: auto !important;
     max-width: calc(100vw - 24px) !important;
+  }
+
+  /* ── 8. SAFARI / IOS TAB FIX: PREVENT BLANK OR DISAPPEARING STUDENTS TAB ──────────── */
+  .tab-section {
+    animation: none !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .tab-section > .card,
+  .tab-section > .bento-grid > .card,
+  .tab-section > .grid2 > .card,
+  .tab-section > .finance-grid > .finance-card,
+  #secStudents,
+  #secStudents > .card {
+    opacity: 1 !important;
+    visibility: visible !important;
+    animation: none !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    -webkit-backface-visibility: visible !important;
+    backface-visibility: visible !important;
+  }
+  #secStudents .tableWrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: auto !important;
+    display: block !important;
+    transform: translateZ(0);
+  }
+  #allStudentsTable {
+    width: 100% !important;
+    transform: translateZ(0);
   }
 }
 

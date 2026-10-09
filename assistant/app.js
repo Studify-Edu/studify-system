@@ -1945,23 +1945,32 @@ function showToast(msg, type = "success") {
  // === MOBILE SIDEBAR BACK-BUTTON HISTORY LOGIC ===
  // ==========================================
  function openMobileSidebar() {
- var sidebar = $("sidebarNav");
- var overlay = $("sidebarOverlay");
- if(sidebar && !sidebar.classList.contains("mobile-open")) {
- sidebar.classList.add("mobile-open");
- if(overlay) overlay.classList.add("active");
- history.pushState({ sidebarOpen: true }, "", "#sidebar");
- }
- }
+  var sidebar = $("sidebarNav");
+  var overlay = $("sidebarOverlay");
+  if (sidebar && !sidebar.classList.contains("mobile-open")) {
+    sidebar.classList.add("mobile-open");
+    if (overlay) overlay.classList.add("active");
+    if (!history.state || !history.state.sidebarOpen) {
+      history.pushState({ sidebarOpen: true }, "", "#sidebar");
+    }
+  }
+}
 
- function closeMobileSidebar(fromPopstate) {
+function closeMobileSidebar(fromPopstate) {
   var sidebar = $("sidebarNav");
   var overlay = $("sidebarOverlay");
   if (overlay) overlay.classList.remove("active");
   if (sidebar && sidebar.classList.contains("mobile-open")) {
     sidebar.classList.remove("mobile-open");
-    if (!fromPopstate && history.state && history.state.sidebarOpen) {
-      history.back();
+  }
+  // CRITICAL iOS / Safari FIX: When navigating to a tab programmatically, NEVER call history.back()!
+  // Calling history.back() triggers WebKit navigation traversal that restores the previous page state
+  // and causes the new tab (e.g., Students) to disappear or blank out.
+  if (!fromPopstate) {
+    if (window.location.hash === "#sidebar" || (history.state && history.state.sidebarOpen)) {
+      try {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      } catch (e) {}
     }
   }
 }
@@ -2017,7 +2026,17 @@ window.switchTab = function(tabId) {
 
   document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
   const target = $("sec" + tabId); 
-  if (target) target.classList.remove('hidden');
+  if (target) {
+    target.classList.remove('hidden');
+    // iOS Safari WebKit guarantee: force visible styles and clear any opacity zero or transforms
+    target.style.opacity = "1";
+    target.style.visibility = "visible";
+    target.querySelectorAll('.card').forEach(c => {
+      c.style.opacity = "1";
+      c.style.visibility = "visible";
+    });
+    void target.offsetHeight;
+  }
   document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
   const activeBtn = $("btnTab" + tabId); 
   if (activeBtn) {
@@ -2032,7 +2051,35 @@ window.switchTab = function(tabId) {
     }
   }
   if (tabId === "Students") {
-    if (typeof renderList === 'function') renderList(true);
+    if (typeof renderList === 'function') {
+      try {
+        renderList(true);
+      } catch (e) {
+        console.error("renderList error:", e);
+      }
+    }
+    // Safari iOS secondary paint guarantee
+    requestAnimationFrame(() => {
+      const stSec = $("secStudents");
+      if (stSec) {
+        stSec.style.opacity = "1";
+        stSec.style.visibility = "visible";
+        stSec.querySelectorAll('.card').forEach(c => {
+          c.style.opacity = "1";
+          c.style.visibility = "visible";
+        });
+      }
+      const stWrap = document.querySelector("#secStudents .tableWrap");
+      if (stWrap) {
+        stWrap.style.opacity = "1";
+        stWrap.style.visibility = "visible";
+      }
+      const stTable = $("allStudentsTable");
+      if (stTable) {
+        stTable.style.opacity = "1";
+        stTable.style.visibility = "visible";
+      }
+    });
   }
   if (tabId === "Marketing") {
     if (typeof window.populateMarketingGroups === 'function') window.populateMarketingGroups();
@@ -9050,7 +9097,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
  // Tabs Listeners
  on("btnTabHome", "click", function() { window.switchTab('Home'); });
- on("btnTabStudents", "click", function() { window.switchTab('Students'); renderList(true); });
+ on("btnTabStudents", "click", function() { window.switchTab('Students'); });
  on("btnTabSessionStudents", "click", function() {
    window.switchTab('SessionStudents');
    if (typeof setupSessionPaymentPills === "function") setupSessionPaymentPills();
