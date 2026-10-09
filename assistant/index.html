@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V119">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V120">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -104,7 +104,7 @@
   // Service Worker Registration
   if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_139')
+  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_140')
   .then(reg => {
     reg.update();
     console.log('[SW] Registered:', reg.scope);
@@ -412,11 +412,11 @@
       <i class="fa-solid fa-book-bookmark session-pill-icon"></i>
       <span class="session-pill-label" data-i18n="top_subject_lbl">المادة:</span>
       <b id="globalSubjectText" class="session-pill-val" data-i18n="top_subject_val">مادة الحضور</b>
+      <i class="fa-solid fa-chevron-down top-subject-chevron" style="font-size: 0.72em; opacity: 0.75; margin-inline-start: 4px;"></i>
     </div>
     <div class="session-pill-badge" id="mobileSessionSummaryBadge">
       <span class="live-dot"></span>
       <span id="mobileSessionQuickStat" data-i18n="quick_stats_badge">0 حضور</span>
-      <i class="fa-solid fa-chevron-down top-subject-chevron"></i>
     </div>
    </div>
    </div>
@@ -2085,7 +2085,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V8"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V179"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V180"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

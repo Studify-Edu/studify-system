@@ -11804,8 +11804,15 @@ window.updateMobileSheetData = function() {
 };
 
 on("openSubjectModalBtn", "click", function(e) {
-  // Directly open the subject selection modal so the assistant can pick the subject in 1 tap
-  openSubjectSelectionModal();
+  if (window.innerWidth <= 768) {
+    if (typeof window.openMobileSessionStatsSheet === 'function') {
+      window.openMobileSessionStatsSheet();
+    }
+  } else {
+    if (typeof openSubjectSelectionModal === 'function') {
+      openSubjectSelectionModal();
+    }
+  }
 });
 
 
