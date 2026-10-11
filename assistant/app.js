@@ -4155,6 +4155,10 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  if (s.payments && s.payments.length > 0) {
  for(let j = 0; j < s.payments.length; j++) {
  let p = s.payments[j];
+ // استبعاد مدفوعات الحصص الفورية لتجنب الازدواج مع sessionStudentsByDate
+ if (p.sessionsCount !== undefined || (p.note && p.note.includes("حصة") && s.isSessionStudent) || (s.isSessionStudent && (!s.packages || s.packages.length === 0))) {
+ continue;
+ }
  let amt = toInt(p.amount);
  let m = p.method || "cash";
  
@@ -9914,6 +9918,10 @@ window.openSessionStudentModal = function(item) {
       for(let j = 0; j < s.payments.length; j++) {
         let p = s.payments[j];
         if(p && p.date === today) {
+          // استبعاد مدفوعات الحصص الفورية لتجنب التكرار الحسابي (تُحسب بالكامل ضمن طلاب الحصة)
+          if (p.sessionsCount !== undefined || (p.note && p.note.includes("حصة") && s.isSessionStudent) || (s.isSessionStudent && (!s.packages || s.packages.length === 0))) {
+            continue;
+          }
           let amt = toInt(p.amount) || 0;
           grandTotal += amt;
           regCount++;
@@ -9980,6 +9988,20 @@ window.openSessionStudentModal = function(item) {
         time: item.timestamp || ""
       });
     }
+  }
+
+  // المزامنة التلقائية الدقيقة: ضمان تطابق شريط التوب بار مع إجمالي المعاملات الفعلي في المودال
+  if (revenueByDate[today] !== grandTotal) {
+    revenueByDate[today] = grandTotal;
+    if ($("todayRevenue")) {
+      const currencySuffix = isAr ? " ج" : " EGP";
+      $("todayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (grandTotal + currencySuffix);
+    }
+    if ($("sheetTodayRevenue")) {
+      const currencySuffix = isAr ? " ج" : " EGP";
+      $("sheetTodayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (grandTotal + currencySuffix);
+    }
+    saveAll();
   }
 
   let html = "";
