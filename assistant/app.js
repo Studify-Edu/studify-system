@@ -3569,10 +3569,27 @@ const st = students[id];
      };
    }
  }
- if($("stName")) $("stName").value = st.name || ""; 
- if($("stPhone")) $("stPhone").value = st.phone || ""; 
- if($("stParentPhone")) $("stParentPhone").value = st.parentPhone || "";
- if($("stClass")) $("stClass").value = st.className || "";
+ const isSameCurrentSt = (String(currentId) === String(id) || String(window.currentId) === String(id));
+ if($("stName")) {
+   const typed = $("stName").value.trim();
+   if (typed && !st.name) st.name = typed;
+   $("stName").value = st.name || (isSameCurrentSt ? typed : "");
+ }
+ if($("stPhone")) {
+   const typed = $("stPhone").value.trim();
+   if (typed && !st.phone) st.phone = typed;
+   $("stPhone").value = st.phone || (isSameCurrentSt ? typed : "");
+ }
+ if($("stParentPhone")) {
+   const typed = $("stParentPhone").value.trim();
+   if (typed && !st.parentPhone) st.parentPhone = typed;
+   $("stParentPhone").value = st.parentPhone || (isSameCurrentSt ? typed : "");
+ }
+ if($("stClass")) {
+   const typed = $("stClass").value.trim();
+   if (typed && !st.className) st.className = typed;
+   $("stClass").value = st.className || (isSameCurrentSt ? typed : "");
+ }
 
  // Populate class datalist dynamically
  const classListEl = $("stClassList");
@@ -5536,6 +5553,20 @@ on("quickAttendBtn", "click", function() {
        if ($("stName")) $("stName").focus();
      }, 120);
    }
+ });
+
+ // Real-time synchronization of student form inputs with in-memory student object
+ ["stName", "stPhone", "stParentPhone", "stClass"].forEach(inpId => {
+   on(inpId, "input", function() {
+     const activeId = currentId || window.currentId;
+     if (!activeId || !students[String(activeId)]) return;
+     const st = students[String(activeId)];
+     const val = $(inpId) ? $(inpId).value.trim() : "";
+     if (inpId === "stName") st.name = val;
+     else if (inpId === "stPhone") st.phone = val;
+     else if (inpId === "stParentPhone") st.parentPhone = val;
+     else if (inpId === "stClass") st.className = val;
+   });
  });
 
  on("saveStudentBtn", "click", function() {
@@ -8500,6 +8531,14 @@ document.addEventListener("DOMContentLoaded", () => {
   window.selectedDiscReqStudent = null;
 
   window.openDecisionRequestModal = function(studentId) {
+    const activeId = studentId || currentId || window.currentId;
+    if (activeId && students[String(activeId)]) {
+      const stObj = students[String(activeId)];
+      if ($("stName") && $("stName").value.trim()) stObj.name = $("stName").value.trim();
+      if ($("stPhone") && $("stPhone").value.trim()) stObj.phone = $("stPhone").value.trim();
+      if ($("stParentPhone") && $("stParentPhone").value.trim()) stObj.parentPhone = $("stParentPhone").value.trim();
+      if ($("stClass") && $("stClass").value.trim()) stObj.className = $("stClass").value.trim();
+    }
     if (typeof currentPermissions !== 'undefined' && currentPermissions.can_request_discount === false) {
       showToast("إرسال طلبات القرارات مقفل من قِبل المدير", "warning");
       return;
@@ -11856,6 +11895,14 @@ on("openSubjectModalBtn", "click", function(e) {
   window.tempSelectedStudentId = null;
 
   window.openPackageSelectionModal = function(studentId) {
+      // Capture and preserve any typed values in form before opening modal
+      const activeSt = studentId && students[studentId] ? students[studentId] : null;
+      if (activeSt) {
+        if ($("stName") && $("stName").value.trim()) activeSt.name = $("stName").value.trim();
+        if ($("stPhone") && $("stPhone").value.trim()) activeSt.phone = $("stPhone").value.trim();
+        if ($("stParentPhone") && $("stParentPhone").value.trim()) activeSt.parentPhone = $("stParentPhone").value.trim();
+        if ($("stClass") && $("stClass").value.trim()) activeSt.className = $("stClass").value.trim();
+      }
       window.tempSelectedStudentId = studentId;
       const st = students[studentId];
       if (!st) return;
@@ -11981,6 +12028,13 @@ on("openSubjectModalBtn", "click", function(e) {
   };
 
   window.savePackageSelection = function() {
+      const activeStId = window.tempSelectedStudentId;
+      if (activeStId && students[activeStId]) {
+        if ($("stName") && $("stName").value.trim()) students[activeStId].name = $("stName").value.trim();
+        if ($("stPhone") && $("stPhone").value.trim()) students[activeStId].phone = $("stPhone").value.trim();
+        if ($("stParentPhone") && $("stParentPhone").value.trim()) students[activeStId].parentPhone = $("stParentPhone").value.trim();
+        if ($("stClass") && $("stClass").value.trim()) students[activeStId].className = $("stClass").value.trim();
+      }
       const stId = window.tempSelectedStudentId;
       if (!stId || !students[stId]) return;
 
