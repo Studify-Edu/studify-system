@@ -12079,6 +12079,145 @@ on("openSubjectModalBtn", "click", function(e) {
       }
   });
 
+  // ============================================================
+  // UNSAVED CHANGES GUARD MODULE
+  // ============================================================
+  window._pendingUnsavedProceedAction = null;
+  window._bypassUnsavedCheck = false;
+
+  window.hasUnsavedStudentChanges = function() {
+    if (window._bypassUnsavedCheck) return false;
+    const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+    if (!card || card.classList.contains("hidden")) return false;
+    const activeId = currentId || window.currentId;
+    if (!activeId) return false;
+    const st = (typeof students !== 'undefined' && students) ? students[String(activeId)] : null;
+    if (!st) return false;
+
+    const currentName = $("stName") ? $("stName").value.trim() : "";
+    const savedName = (st.name || "").trim();
+
+    const currentPhone = $("stPhone") ? $("stPhone").value.trim() : "";
+    const savedPhone = (st.phone || "").trim();
+
+    const currentParentPhone = $("stParentPhone") ? $("stParentPhone").value.trim() : "";
+    const savedParentPhone = (st.parentPhone || "").trim();
+
+    const currentClass = $("stClass") ? $("stClass").value.trim() : "";
+    const savedClass = (st.className || "").trim();
+
+    // If pending brand new student and any field is filled
+    if (window.isPendingNewStudent && String(window.isPendingNewStudent) === String(activeId)) {
+      if (currentName || currentPhone || currentParentPhone || currentClass || (st.packages && st.packages.length > 0)) {
+        return true;
+      }
+    }
+
+    // If existing student and inputs differ from saved state
+    if (currentName !== savedName) return true;
+    if (currentPhone !== savedPhone) return true;
+    if (currentParentPhone !== savedParentPhone) return true;
+    if (currentClass !== savedClass) return true;
+
+    return false;
+  };
+
+  window.confirmUnsavedChanges = function(onProceedAction) {
+    if (!window.hasUnsavedStudentChanges()) {
+      if (typeof onProceedAction === 'function') onProceedAction();
+      return;
+    }
+    
+    const modal = document.getElementById('unsavedChangesModal');
+    if (!modal) {
+      if (typeof onProceedAction === 'function') onProceedAction();
+      return;
+    }
+
+    window._pendingUnsavedProceedAction = onProceedAction;
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    if (typeof AssistantSounds !== 'undefined') AssistantSounds.error();
+  };
+
+  window.closeUnsavedChangesModal = function() {
+    const modal = document.getElementById('unsavedChangesModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+    window._pendingUnsavedProceedAction = null;
+  };
+
+  // Wire up modal backdrop click
+  const unsavedModalEl = document.getElementById('unsavedChangesModal');
+  if (unsavedModalEl) {
+    unsavedModalEl.addEventListener('click', function(e) {
+      if (e.target === unsavedModalEl) {
+        window.closeUnsavedChangesModal();
+      }
+    });
+  }
+
+  // Wire up the 3 modal buttons
+  on("unsavedSaveAndExitBtn", "click", function() {
+    const sBtn = document.getElementById("saveStudentBtn");
+    const nameVal = $("stName") ? $("stName").value.trim() : "";
+    if (!nameVal) {
+      showToast(currentLang === 'ar' ? "يرجى كتابة اسم الطالب أولاً لحفظ البيانات" : "Please enter student name first", "warning");
+      window.closeUnsavedChangesModal();
+      if ($("stName")) $("stName").focus();
+      return;
+    }
+
+    if (sBtn) sBtn.click();
+    const proceed = window._pendingUnsavedProceedAction;
+    window.closeUnsavedChangesModal();
+    setTimeout(() => {
+      window._bypassUnsavedCheck = true;
+      try {
+        if (typeof proceed === 'function') proceed();
+      } finally {
+        setTimeout(() => { window._bypassUnsavedCheck = false; }, 300);
+      }
+    }, 120);
+  });
+
+  on("unsavedDiscardAndExitBtn", "click", function() {
+    const activeId = currentId || window.currentId;
+    if (activeId && window.isPendingNewStudent && String(window.isPendingNewStudent) === String(activeId)) {
+      if (toInt(activeId) > BASE_MAX_ID) {
+        delete students[activeId];
+      } else {
+        students[activeId] = makeEmptyStudent(toInt(activeId));
+      }
+      window.isPendingNewStudent = null;
+    }
+    const proceed = window._pendingUnsavedProceedAction;
+    window.closeUnsavedChangesModal();
+    window._bypassUnsavedCheck = true;
+    try {
+      if (typeof proceed === 'function') proceed();
+    } finally {
+      setTimeout(() => { window._bypassUnsavedCheck = false; }, 300);
+    }
+  });
+
+  on("unsavedStayBtn", "click", function() {
+    window.closeUnsavedChangesModal();
+    if (typeof AssistantSounds !== 'undefined') AssistantSounds.touchTick();
+    if ($("stName")) $("stName").focus();
+  });
+
+  // Guard window beforeunload
+  window.addEventListener('beforeunload', function(e) {
+    if (typeof window.hasUnsavedStudentChanges === 'function' && window.hasUnsavedStudentChanges()) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  });
+
 }); // END DOMContentLoaded
 
 
@@ -13538,149 +13677,3 @@ if (typeof applyLanguage === "function") {
     applyLanguage();
   }
 }
-
-
-// ============================================================
-// UNSAVED CHANGES GUARD MODULE
-// ============================================================
-window._pendingUnsavedProceedAction = null;
-window._bypassUnsavedCheck = false;
-
-window.hasUnsavedStudentChanges = function() {
-  if (window._bypassUnsavedCheck) return false;
-  const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
-  if (!card || card.classList.contains("hidden")) return false;
-  const activeId = currentId || window.currentId;
-  if (!activeId) return false;
-  const st = (typeof students !== 'undefined' && students) ? students[String(activeId)] : null;
-  if (!st) return false;
-
-  const currentName = $("stName") ? $("stName").value.trim() : "";
-  const savedName = (st.name || "").trim();
-
-  const currentPhone = $("stPhone") ? $("stPhone").value.trim() : "";
-  const savedPhone = (st.phone || "").trim();
-
-  const currentParentPhone = $("stParentPhone") ? $("stParentPhone").value.trim() : "";
-  const savedParentPhone = (st.parentPhone || "").trim();
-
-  const currentClass = $("stClass") ? $("stClass").value.trim() : "";
-  const savedClass = (st.className || "").trim();
-
-  // If pending brand new student and any field is filled
-  if (window.isPendingNewStudent && String(window.isPendingNewStudent) === String(activeId)) {
-    if (currentName || currentPhone || currentParentPhone || currentClass || (st.packages && st.packages.length > 0)) {
-      return true;
-    }
-  }
-
-  // If existing student and inputs differ from saved state
-  if (currentName !== savedName) return true;
-  if (currentPhone !== savedPhone) return true;
-  if (currentParentPhone !== savedParentPhone) return true;
-  if (currentClass !== savedClass) return true;
-
-  return false;
-};
-
-window.confirmUnsavedChanges = function(onProceedAction) {
-  if (!window.hasUnsavedStudentChanges()) {
-    if (typeof onProceedAction === 'function') onProceedAction();
-    return;
-  }
-  
-  const modal = document.getElementById('unsavedChangesModal');
-  if (!modal) {
-    if (typeof onProceedAction === 'function') onProceedAction();
-    return;
-  }
-
-  window._pendingUnsavedProceedAction = onProceedAction;
-  modal.classList.remove('hidden');
-  modal.style.display = 'flex';
-  if (typeof AssistantSounds !== 'undefined') AssistantSounds.error();
-};
-
-window.closeUnsavedChangesModal = function() {
-  const modal = document.getElementById('unsavedChangesModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-  }
-  window._pendingUnsavedProceedAction = null;
-};
-
-// Wire up the 3 modal buttons and backdrop
-function initUnsavedModalListeners() {
-  const modal = document.getElementById('unsavedChangesModal');
-  if (modal) {
-    modal.addEventListener('click', function(e) {
-      if (e.target === modal) {
-        window.closeUnsavedChangesModal();
-      }
-    });
-  }
-  on("unsavedSaveAndExitBtn", "click", function() {
-    const sBtn = document.getElementById("saveStudentBtn");
-    const nameVal = $("stName") ? $("stName").value.trim() : "";
-    if (!nameVal) {
-      showToast(currentLang === 'ar' ? "يرجى كتابة اسم الطالب أولاً لحفظ البيانات" : "Please enter student name first", "warning");
-      window.closeUnsavedChangesModal();
-      if ($("stName")) $("stName").focus();
-      return;
-    }
-
-    if (sBtn) sBtn.click();
-    const proceed = window._pendingUnsavedProceedAction;
-    window.closeUnsavedChangesModal();
-    setTimeout(() => {
-      window._bypassUnsavedCheck = true;
-      try {
-        if (typeof proceed === 'function') proceed();
-      } finally {
-        setTimeout(() => { window._bypassUnsavedCheck = false; }, 300);
-      }
-    }, 120);
-  });
-
-  on("unsavedDiscardAndExitBtn", "click", function() {
-    const activeId = currentId || window.currentId;
-    if (activeId && window.isPendingNewStudent && String(window.isPendingNewStudent) === String(activeId)) {
-      if (toInt(activeId) > BASE_MAX_ID) {
-        delete students[activeId];
-      } else {
-        students[activeId] = makeEmptyStudent(toInt(activeId));
-      }
-      window.isPendingNewStudent = null;
-    }
-    const proceed = window._pendingUnsavedProceedAction;
-    window.closeUnsavedChangesModal();
-    window._bypassUnsavedCheck = true;
-    try {
-      if (typeof proceed === 'function') proceed();
-    } finally {
-      setTimeout(() => { window._bypassUnsavedCheck = false; }, 300);
-    }
-  });
-
-  on("unsavedStayBtn", "click", function() {
-    window.closeUnsavedChangesModal();
-    if (typeof AssistantSounds !== 'undefined') AssistantSounds.touchTick();
-    if ($("stName")) $("stName").focus();
-  });
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initUnsavedModalListeners);
-} else {
-  initUnsavedModalListeners();
-}
-
-// Guard window beforeunload
-window.addEventListener('beforeunload', function(e) {
-  if (window.hasUnsavedStudentChanges()) {
-    e.preventDefault();
-    e.returnValue = '';
-    return '';
-  }
-});
