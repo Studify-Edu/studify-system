@@ -5555,21 +5555,7 @@ on("quickAttendBtn", "click", function() {
    }
  });
 
- // Real-time synchronization of student form inputs with in-memory student object
- ["stName", "stPhone", "stParentPhone", "stClass"].forEach(inpId => {
-   on(inpId, "input", function() {
-     const activeId = currentId || window.currentId;
-     if (!activeId || !students[String(activeId)]) return;
-     const st = students[String(activeId)];
-     const val = $(inpId) ? $(inpId).value.trim() : "";
-     if (inpId === "stName") st.name = val;
-     else if (inpId === "stPhone") st.phone = val;
-     else if (inpId === "stParentPhone") st.parentPhone = val;
-     else if (inpId === "stClass") st.className = val;
-   });
- });
-
- on("saveStudentBtn", "click", function() {
+on("saveStudentBtn", "click", function() {
    if (!currentId) return;
    const s = students[currentId]; if (!s) return;
    const nameVal = $("stName") ? $("stName").value.trim() : "";
