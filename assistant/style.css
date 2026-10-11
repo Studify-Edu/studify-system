@@ -8945,9 +8945,9 @@ body.system-hard-locked #appBox {
    UNSAVED CHANGES MODAL — HIGH-END CINEMATIC UI
    ======================================================== */
 .unsaved-modal-overlay {
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  background: rgba(11, 17, 32, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  background: rgba(11, 17, 32, 0.45) !important;
   z-index: 10005 !important;
   display: flex;
   align-items: center;
@@ -8957,14 +8957,14 @@ body.system-hard-locked #appBox {
 }
 
 [data-theme="light"] .unsaved-modal-overlay {
-  background: rgba(15, 23, 42, 0.45) !important;
+  background: rgba(15, 23, 42, 0.22) !important;
 }
 
 .unsaved-modal-card {
-  max-width: 440px !important;
+  max-width: 430px !important;
   width: 95% !important;
   border-radius: 22px !important;
-  padding: 28px 24px 22px !important;
+  padding: 24px 20px 20px !important;
   background: var(--bg-surface) !important;
   border: 1px solid rgba(245, 158, 11, 0.35) !important;
   box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.55), 0 0 25px rgba(245, 158, 11, 0.12) !important;
@@ -8979,7 +8979,7 @@ body.system-hard-locked #appBox {
 [data-theme="light"] .unsaved-modal-card {
   background: #ffffff !important;
   border: 1px solid rgba(245, 158, 11, 0.3) !important;
-  box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.2), 0 0 20px rgba(245, 158, 11, 0.08) !important;
+  box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.15), 0 0 20px rgba(245, 158, 11, 0.08) !important;
 }
 
 .unsaved-modal-icon-wrap {
@@ -9081,4 +9081,88 @@ body.system-hard-locked #appBox {
 .unsaved-btn-stay:hover {
   background: var(--bg-hover) !important;
   color: var(--text-primary) !important;
+}
+
+/* ========================================================
+   UNSAVED MODAL DIFF PREVIEW & FIELD HIGHLIGHTS
+   ======================================================== */
+.unsaved-diff-box {
+  width: 100% !important;
+  margin-bottom: 16px !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+  border: 1px dashed rgba(245, 158, 11, 0.4) !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  box-sizing: border-box !important;
+  text-align: start !important;
+}
+
+[data-theme="light"] .unsaved-diff-box {
+  background: #fffbeb !important;
+  border: 1px dashed #f59e0b !important;
+}
+
+.unsaved-diff-title {
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  color: #d97706 !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-family: 'Cairo', sans-serif !important;
+}
+
+[data-theme="light"] .unsaved-diff-title {
+  color: #b45309 !important;
+}
+
+.unsaved-diff-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.unsaved-diff-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 4px 8px !important;
+  font-size: 0.8rem !important;
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-family: 'Cairo', sans-serif !important;
+}
+
+[data-theme="light"] .unsaved-diff-chip {
+  background: #ffffff !important;
+  border-color: #fcd34d !important;
+  color: #1e293b !important;
+}
+
+.unsaved-diff-chip b {
+  color: #d97706 !important;
+  max-width: 140px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Glowing pulse border on modified fields in the background */
+.unsaved-field-highlight {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.38) !important;
+  animation: unsavedFieldGlow 1.8s infinite ease-in-out !important;
+}
+
+@keyframes unsavedFieldGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.65);
+  }
 }

@@ -2143,8 +2143,12 @@ window.switchTab = function(tabId, force = false) {
      window.isPendingNewStudent = null;
    }
    currentId = null;
-   window.currentId = null;
-   window.justAddedStudentId = null;
+    window.currentId = null;
+    window.justAddedStudentId = null;
+    window._currentStudentSnapshot = null;
+    if (typeof window.clearUnsavedFieldHighlights === 'function') {
+      window.clearUnsavedFieldHighlights();
+    }
    const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
    if (card) {
      card.classList.add("hidden");
@@ -3550,6 +3554,7 @@ function applyPermissions() {
   };
 
 function updateStudentUI(id) {
+const prevStudentId = currentId;
 currentId = id;
 window.currentId = id;
 if (!id) {
@@ -3586,7 +3591,7 @@ const st = students[id];
      };
    }
  }
- const isSameCurrentSt = (String(currentId) === String(id) || String(window.currentId) === String(id));
+ const isSameCurrentSt = Boolean(prevStudentId && String(prevStudentId) === String(id));
  if($("stName")) {
    const typed = $("stName").value.trim();
    if (typed && !st.name) st.name = typed;
@@ -3848,7 +3853,10 @@ const st = students[id];
  }
   if (typeof window.updateAttendanceUIState === 'function') {
     window.updateAttendanceUIState();
-  }
+   }
+   if (typeof window.captureStudentSnapshot === 'function') {
+     window.captureStudentSnapshot(id);
+   }
 }
 
 // ==========================================
@@ -12080,50 +12088,155 @@ on("openSubjectModalBtn", "click", function(e) {
   });
 
   // ============================================================
-  // UNSAVED CHANGES GUARD MODULE
+  // UNSAVED CHANGES GUARD MODULE (SNAPSHOT & DIFF ENGINE)
   // ============================================================
   window._pendingUnsavedProceedAction = null;
   window._bypassUnsavedCheck = false;
+  window._currentStudentSnapshot = null;
+
+  const _esc = (val) => String(val || "").replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  window.captureStudentSnapshot = function(id) {
+    if (!id) {
+      window._currentStudentSnapshot = null;
+      window.clearUnsavedFieldHighlights();
+      return;
+    }
+    const st = (typeof students !== 'undefined' && students) ? students[String(id)] : null;
+    const pkgs = (st && Array.isArray(st.packages)) ? [...st.packages].sort() : [];
+    window._currentStudentSnapshot = {
+      id: String(id),
+      name: $("stName") ? $("stName").value.trim() : (st?.name || "").trim(),
+      phone: $("stPhone") ? $("stPhone").value.trim() : (st?.phone || "").trim(),
+      parentPhone: $("stParentPhone") ? $("stParentPhone").value.trim() : (st?.parentPhone || "").trim(),
+      className: $("stClass") ? $("stClass").value.trim() : (st?.className || "").trim(),
+      studentType: $("newStudentType") ? $("newStudentType").value : (st?.isSessionStudent ? "session" : "package"),
+      sessionBalance: $("newSessionBalanceInp") ? $("newSessionBalanceInp").value.trim() : String(st?.sessionBalance || 0),
+      packages: pkgs
+    };
+    window.clearUnsavedFieldHighlights();
+  };
+
+  window.highlightUnsavedFields = function(diffs) {
+    window.clearUnsavedFieldHighlights();
+    (diffs || []).forEach(d => {
+      let el = document.getElementById(d.fieldId);
+      if (!el && d.fieldId === 'stPackagesContainer') {
+        el = document.getElementById('managePackagesBtn') || document.getElementById('stPackagesContainer');
+      }
+      if (el) {
+        el.classList.add('unsaved-field-highlight');
+      }
+    });
+  };
+
+  window.clearUnsavedFieldHighlights = function() {
+    document.querySelectorAll('.unsaved-field-highlight').forEach(el => {
+      el.classList.remove('unsaved-field-highlight');
+    });
+  };
+
+  window.getUnsavedStudentDiff = function() {
+    if (window._bypassUnsavedCheck) return [];
+    const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+    if (!card || card.classList.contains("hidden")) return [];
+    const activeId = currentId || window.currentId;
+    if (!activeId) return [];
+    const snap = window._currentStudentSnapshot;
+    if (!snap || String(snap.id) !== String(activeId)) return [];
+
+    const diffs = [];
+
+    const curName = $("stName") ? $("stName").value.trim() : "";
+    if (curName !== snap.name) {
+      diffs.push({
+        fieldId: "stName",
+        labelAr: "اسم الطالب",
+        labelEn: "Student Name",
+        oldVal: snap.name || "—",
+        newVal: curName || "—"
+      });
+    }
+
+    const curPhone = $("stPhone") ? $("stPhone").value.trim() : "";
+    if (curPhone !== snap.phone) {
+      diffs.push({
+        fieldId: "stPhone",
+        labelAr: "رقم الطالب",
+        labelEn: "Student Phone",
+        oldVal: snap.phone || "—",
+        newVal: curPhone || "—"
+      });
+    }
+
+    const curParentPhone = $("stParentPhone") ? $("stParentPhone").value.trim() : "";
+    if (curParentPhone !== snap.parentPhone) {
+      diffs.push({
+        fieldId: "stParentPhone",
+        labelAr: "رقم ولي الأمر",
+        labelEn: "Parent Phone",
+        oldVal: snap.parentPhone || "—",
+        newVal: curParentPhone || "—"
+      });
+    }
+
+    const curClass = $("stClass") ? $("stClass").value.trim() : "";
+    if (curClass !== snap.className) {
+      diffs.push({
+        fieldId: "stClass",
+        labelAr: "الصف / المجموعة",
+        labelEn: "Grade / Group",
+        oldVal: snap.className || "—",
+        newVal: curClass || "—"
+      });
+    }
+
+    const curType = $("newStudentType") ? $("newStudentType").value : snap.studentType;
+    if (curType !== snap.studentType) {
+      diffs.push({
+        fieldId: "newStudentType",
+        labelAr: "نظام الطالب",
+        labelEn: "Student Plan",
+        oldVal: snap.studentType === "session" ? "حصة" : "باقة",
+        newVal: curType === "session" ? "حصة" : "باقة"
+      });
+    }
+
+    const curBalance = $("newSessionBalanceInp") ? $("newSessionBalanceInp").value.trim() : snap.sessionBalance;
+    if (curBalance !== snap.sessionBalance && curType === "session") {
+      diffs.push({
+        fieldId: "newSessionBalanceInp",
+        labelAr: "رصيد الحصص",
+        labelEn: "Session Balance",
+        oldVal: snap.sessionBalance,
+        newVal: curBalance
+      });
+    }
+
+    const st = (typeof students !== 'undefined' && students) ? students[String(activeId)] : null;
+    const curPackages = (st && Array.isArray(st.packages)) ? [...st.packages].sort() : [];
+    const snapPackages = Array.isArray(snap.packages) ? [...snap.packages].sort() : [];
+    if (JSON.stringify(curPackages) !== JSON.stringify(snapPackages)) {
+      diffs.push({
+        fieldId: "stPackagesContainer",
+        labelAr: "الباقات المشترك بها",
+        labelEn: "Enrolled Packages",
+        oldVal: snapPackages.join(", ") || (currentLang === 'ar' ? "لا توجد" : "None"),
+        newVal: curPackages.join(", ") || (currentLang === 'ar' ? "لا توجد" : "None")
+      });
+    }
+
+    return diffs;
+  };
 
   window.hasUnsavedStudentChanges = function() {
     if (window._bypassUnsavedCheck) return false;
-    const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
-    if (!card || card.classList.contains("hidden")) return false;
-    const activeId = currentId || window.currentId;
-    if (!activeId) return false;
-    const st = (typeof students !== 'undefined' && students) ? students[String(activeId)] : null;
-    if (!st) return false;
-
-    const currentName = $("stName") ? $("stName").value.trim() : "";
-    const savedName = (st.name || "").trim();
-
-    const currentPhone = $("stPhone") ? $("stPhone").value.trim() : "";
-    const savedPhone = (st.phone || "").trim();
-
-    const currentParentPhone = $("stParentPhone") ? $("stParentPhone").value.trim() : "";
-    const savedParentPhone = (st.parentPhone || "").trim();
-
-    const currentClass = $("stClass") ? $("stClass").value.trim() : "";
-    const savedClass = (st.className || "").trim();
-
-    // If pending brand new student and any field is filled
-    if (window.isPendingNewStudent && String(window.isPendingNewStudent) === String(activeId)) {
-      if (currentName || currentPhone || currentParentPhone || currentClass || (st.packages && st.packages.length > 0)) {
-        return true;
-      }
-    }
-
-    // If existing student and inputs differ from saved state
-    if (currentName !== savedName) return true;
-    if (currentPhone !== savedPhone) return true;
-    if (currentParentPhone !== savedParentPhone) return true;
-    if (currentClass !== savedClass) return true;
-
-    return false;
+    return window.getUnsavedStudentDiff().length > 0;
   };
 
   window.confirmUnsavedChanges = function(onProceedAction) {
-    if (!window.hasUnsavedStudentChanges()) {
+    const diffs = window.getUnsavedStudentDiff();
+    if (diffs.length === 0) {
       if (typeof onProceedAction === 'function') onProceedAction();
       return;
     }
@@ -12132,6 +12245,23 @@ on("openSubjectModalBtn", "click", function(e) {
     if (!modal) {
       if (typeof onProceedAction === 'function') onProceedAction();
       return;
+    }
+
+    // Highlight modified boxes on screen
+    window.highlightUnsavedFields(diffs);
+
+    // Populate modal diff container
+    const container = document.getElementById('unsavedDiffListContainer');
+    if (container) {
+      const isAr = currentLang === 'ar';
+      let h = `<div class="unsaved-diff-title"><i class="fa-solid fa-list-check"></i> ${isAr ? "الحقول والمربعات التي تم تعديلها:" : "Modified Fields & Sections:"}</div><div class="unsaved-diff-chips">`;
+      diffs.forEach(d => {
+        const lbl = isAr ? d.labelAr : d.labelEn;
+        h += `<span class="unsaved-diff-chip"><i class="fa-solid fa-pen-nib"></i> <span>${lbl}:</span> <b>${_esc(d.newVal || (isAr ? 'معدل' : 'Modified'))}</b></span>`;
+      });
+      h += `</div>`;
+      container.innerHTML = h;
+      container.classList.remove('hidden');
     }
 
     window._pendingUnsavedProceedAction = onProceedAction;
@@ -12146,6 +12276,7 @@ on("openSubjectModalBtn", "click", function(e) {
       modal.classList.add('hidden');
       modal.style.display = 'none';
     }
+    window.clearUnsavedFieldHighlights();
     window._pendingUnsavedProceedAction = null;
   };
 
@@ -12193,6 +12324,8 @@ on("openSubjectModalBtn", "click", function(e) {
       }
       window.isPendingNewStudent = null;
     }
+    window._currentStudentSnapshot = null;
+    window.clearUnsavedFieldHighlights();
     const proceed = window._pendingUnsavedProceedAction;
     window.closeUnsavedChangesModal();
     window._bypassUnsavedCheck = true;
@@ -12204,8 +12337,15 @@ on("openSubjectModalBtn", "click", function(e) {
   });
 
   on("unsavedStayBtn", "click", function() {
+    const diffs = window.getUnsavedStudentDiff();
     window.closeUnsavedChangesModal();
     if (typeof AssistantSounds !== 'undefined') AssistantSounds.touchTick();
+    if (diffs && diffs.length > 0) {
+      window.highlightUnsavedFields(diffs);
+      setTimeout(() => {
+        window.clearUnsavedFieldHighlights();
+      }, 3500);
+    }
     if ($("stName")) $("stName").focus();
   });
 
