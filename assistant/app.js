@@ -5786,10 +5786,14 @@ on("quickAttendBtn", "click", function() {
     }
   };
 
+  let _addPaymentLock = false;
   on("addPaymentBtn", "click", function() {
+  if (_addPaymentLock) return;
   if(!currentId) return;
   const payInp = $("newPaymentInput"); if (!payInp) return;
   const v = toInt(payInp.value); if(!v) return;
+  _addPaymentLock = true;
+  setTimeout(() => { _addPaymentLock = false; }, 900);
   
   const methodInp = $("newPaymentMethod");
   const method = methodInp ? methodInp.value : "cash";
@@ -9655,7 +9659,11 @@ window.openSessionStudentModal = function(item) {
   });
   };
 
+  let _saveSessionStudentLock = false;
   on("saveSessionStudentBtn", "click", async function() {
+  if (_saveSessionStudentLock) return;
+  _saveSessionStudentLock = true;
+  const unlockSess = () => { setTimeout(() => { _saveSessionStudentLock = false; }, 900); };
   let name = $("sessStName") ? $("sessStName").value.trim() : "";
   let phone = $("sessStPhone") ? $("sessStPhone").value.trim() : "";
   let className = $("sessStClass") ? $("sessStClass").value : "";
@@ -9667,6 +9675,7 @@ window.openSessionStudentModal = function(item) {
 
   if(!name) {
     showToast("يرجى إدخال اسم الطالب", "warning");
+    _saveSessionStudentLock = false;
     return;
   }
 
@@ -9685,6 +9694,7 @@ window.openSessionStudentModal = function(item) {
   // Validation: must have amount > 0 or existing balance >= 1
   if (amount <= 0 && curBalance <= 0) {
     showToast("يرجى إدخال المبلغ المدفوع أو التأكد من وجود رصيد حصص كافٍ", "warning");
+    _saveSessionStudentLock = false;
     return;
   }
 
@@ -9853,6 +9863,7 @@ window.openSessionStudentModal = function(item) {
       : `مرحباً ${name}،\r\nتم تسجيل حضورك بنجاح لحصة (${className})\r\nكود الطالب: ${stId}\r\nتم خصم حضور اليوم من رصيد الحصص المسبق.\r\nرصيد الحصص المتبقي لديك: ${newBalance} حصة.\r\n\r\nمع تحيات: أ/ ${centerMgr}`;
     window.open(`https://wa.me/20${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   }
+  unlockSess();
   });
 
  on("sessFilterDate", "change", function(e) {
