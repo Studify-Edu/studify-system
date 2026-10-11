@@ -22,7 +22,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
  <!-- FontAwesome for Icons -->
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=STUDIFY_V120">
+  <link rel="stylesheet" href="style.css?v=STUDIFY_V121">
  <link rel="stylesheet" href="./icons.css?v=STUDIFY_V52">
  
  <!-- PREVENT THEME & LANGUAGE FLASH -->
@@ -104,7 +104,7 @@
   // Service Worker Registration
   if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_144')
+  navigator.serviceWorker.register('./service-worker.js?v=STUDIFY_SW_145')
   .then(reg => {
     reg.update();
     console.log('[SW] Registered:', reg.scope);
@@ -2085,7 +2085,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V8"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V184"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V185"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
@@ -2231,7 +2231,40 @@
       </div>
     </div>
 
-   <!-- مودال اختيار مادة الحضور الحديث بالعرض -->
+   
+    <!-- MODAL: UNSAVED CHANGES WARNING -->
+    <div id="unsavedChangesModal" class="modal hidden unsaved-modal-overlay">
+      <div class="modal-content unsaved-modal-card">
+        <div class="unsaved-modal-icon-wrap">
+          <div class="unsaved-modal-icon-pulse"></div>
+          <i class="fa-solid fa-triangle-exclamation unsaved-modal-icon"></i>
+        </div>
+        
+        <h3 class="unsaved-modal-title" data-i18n="modal_unsaved_title">تنبيه: تعديلات غير محفوظة</h3>
+        <p class="unsaved-modal-desc" data-i18n="modal_unsaved_desc">
+          لديك بيانات أو تعديلات تم إدخالها في ملف الطالب ولم يتم حفظها بعد. إذا غادرت الآن ستفقد هذه التعديلات.
+        </p>
+
+        <div class="unsaved-modal-actions">
+          <button type="button" id="unsavedSaveAndExitBtn" class="btn success unsaved-btn-action unsaved-btn-save">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span data-i18n="btn_save_and_exit">حفظ ومتابعة الخروج</span>
+          </button>
+          
+          <button type="button" id="unsavedDiscardAndExitBtn" class="btn danger-outline unsaved-btn-action unsaved-btn-discard">
+            <i class="fa-solid fa-trash-can"></i>
+            <span data-i18n="btn_discard_and_exit">تجاهل التعديلات والخروج</span>
+          </button>
+
+          <button type="button" id="unsavedStayBtn" class="btn secondary unsaved-btn-action unsaved-btn-stay">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            <span data-i18n="btn_stay_editing">إلغاء والبقاء في الملف</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- مودال اختيار مادة الحضور الحديث بالعرض -->
     <div id="subjectSelectionModal" class="modal hidden" style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(0,0,0,0.65); z-index: 10001; align-items:center; justify-content:center;">
       <div class="modal-content subject-modal-wide">
         <!-- Header -->

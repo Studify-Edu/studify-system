@@ -8939,3 +8939,146 @@ body.system-hard-locked #appBox {
 
 
 
+
+
+/* ========================================================
+   UNSAVED CHANGES MODAL — HIGH-END CINEMATIC UI
+   ======================================================== */
+.unsaved-modal-overlay {
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  background: rgba(11, 17, 32, 0.75) !important;
+  z-index: 10005 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .unsaved-modal-overlay {
+  background: rgba(15, 23, 42, 0.45) !important;
+}
+
+.unsaved-modal-card {
+  max-width: 440px !important;
+  width: 95% !important;
+  border-radius: 22px !important;
+  padding: 28px 24px 22px !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.55), 0 0 25px rgba(245, 158, 11, 0.12) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  animation: modalPopIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+[data-theme="light"] .unsaved-modal-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.2), 0 0 20px rgba(245, 158, 11, 0.08) !important;
+}
+
+.unsaved-modal-icon-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.15));
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.unsaved-modal-icon-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.2);
+  animation: pulseDot 2s infinite ease-in-out;
+  z-index: 0;
+}
+
+.unsaved-modal-icon {
+  font-size: 1.8rem;
+  color: #f59e0b;
+  position: relative;
+  z-index: 1;
+}
+
+.unsaved-modal-title {
+  margin: 0 0 8px 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: var(--text-primary) !important;
+  font-family: 'Cairo', sans-serif !important;
+}
+
+.unsaved-modal-desc {
+  margin: 0 0 22px 0 !important;
+  font-size: 0.92rem !important;
+  line-height: 1.55 !important;
+  color: var(--text-secondary) !important;
+  font-family: 'Almarai', sans-serif !important;
+}
+
+.unsaved-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.unsaved-btn-action {
+  width: 100% !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  font-size: 0.94rem !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, background 0.2s ease !important;
+  box-sizing: border-box !important;
+}
+
+.unsaved-btn-action:active {
+  transform: scale(0.98) !important;
+}
+
+.unsaved-btn-save {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+}
+
+.unsaved-btn-discard {
+  background: transparent !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+.unsaved-btn-discard:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: #ef4444 !important;
+}
+
+.unsaved-btn-stay {
+  background: var(--bg-inset) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.unsaved-btn-stay:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+}

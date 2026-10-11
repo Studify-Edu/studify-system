@@ -1427,6 +1427,11 @@ let vaultTransfers = [];
   "top_subject_lbl": { ar: "المادة:", en: "Subject:" },
   "top_subject_val": { ar: "مادة الحضور", en: "Attendance Subject" },
   "quick_subtitle": { ar: "تسجيل الحضور الفوري بالـ ID أو الباركود", en: "Instant attendance logging via ID or barcode" },
+  "modal_unsaved_title": { ar: "تنبيه: تعديلات غير محفوظة", en: "Warning: Unsaved Changes" },
+  "modal_unsaved_desc": { ar: "لديك بيانات أو تعديلات تم إدخالها في ملف الطالب ولم يتم حفظها بعد. إذا غادرت الآن ستفقد هذه التعديلات.", en: "You have unsaved changes in the student profile. If you leave now, these changes will be lost." },
+  "btn_save_and_exit": { ar: "حفظ ومتابعة الخروج", en: "Save & Exit" },
+  "btn_discard_and_exit": { ar: "تجاهل التعديلات والخروج", en: "Discard & Exit" },
+  "btn_stay_editing": { ar: "إلغاء والبقاء في الملف", en: "Stay & Keep Editing" },
   "lbl_student_id": { ar: "معرّف الطالب (ID)", en: "Student ID" },
   "search_subtitle": { ar: "الوصول السريع لملفات وبيانات الطلاب", en: "Quick lookup for student profiles & records" },
   "lbl_open_id_direct": { ar: "فتح مباشر برقم الـ ID", en: "Direct Open by ID #" },
@@ -1985,7 +1990,11 @@ window.addEventListener("popstate", function(e) {
 // ==========================================
 // 5. GLOBAL NAVIGATION & TABS
 // ==========================================
-window.switchTab = function(tabId) {
+window.switchTab = function(tabId, force = false) {
+  if (tabId !== 'Home' && !force && !window._bypassUnsavedCheck && window.hasUnsavedStudentChanges()) {
+    window.confirmUnsavedChanges(() => window.switchTab(tabId, true));
+    return;
+  }
   // Hard Security Guard: Block locked tabs for assistants
   if (currentUserRole !== "admin" && typeof currentPermissions !== "undefined") {
     if (tabId === "Packages" && currentPermissions.can_manage_packages === false) {
@@ -2116,7 +2125,11 @@ window.switchTab = function(tabId) {
    }
  };
 
- window.hideStudentCard = function() {
+ window.hideStudentCard = function(force = false) {
+    if (!force && !window._bypassUnsavedCheck && window.hasUnsavedStudentChanges()) {
+      window.confirmUnsavedChanges(() => window.hideStudentCard(true));
+      return;
+    }
    if (typeof AssistantSounds !== "undefined") AssistantSounds.studentClose();
    if (window.isPendingNewStudent && students[window.isPendingNewStudent]) {
      const pendingSt = students[window.isPendingNewStudent];
@@ -2152,7 +2165,11 @@ window.switchTab = function(tabId) {
    window.scrollTo({ top: 0, behavior: "smooth" });
  };
 
- window.extOpen = function(id) {
+ window.extOpen = function(id, force = false) {
+  if (!force && !window._bypassUnsavedCheck && currentId && String(currentId) !== String(id) && window.hasUnsavedStudentChanges()) {
+    window.confirmUnsavedChanges(() => window.extOpen(id, true));
+    return;
+  }
  if (typeof AssistantSounds !== "undefined") AssistantSounds.studentOpen();
  if(!id || !students[String(id)]) {
  showToast(currentLang === 'ar' ? "الطالب غير مسجل" : "Student not found", "err");
@@ -5417,6 +5434,14 @@ on("quickAttendBtn", "click", function() {
  });
 
  on("openBtn", "click", function() {
+  if (!window._bypassUnsavedCheck && currentId && typeof window.hasUnsavedStudentChanges === 'function' && window.hasUnsavedStudentChanges()) {
+    window.confirmUnsavedChanges(() => {
+      window._bypassUnsavedCheck = true;
+      document.getElementById("openBtn")?.click();
+      setTimeout(() => { window._bypassUnsavedCheck = false; }, 300);
+    });
+    return;
+  }
    const rawVal = $("openId") ? $("openId").value.trim() : "";
    if (!rawVal) {
      triggerShake("openId");
@@ -5500,6 +5525,14 @@ on("quickAttendBtn", "click", function() {
  });
 
  on("addNewBtn", "click", function() {
+    if (!window._bypassUnsavedCheck && currentId && typeof window.hasUnsavedStudentChanges === 'function' && window.hasUnsavedStudentChanges()) {
+      window.confirmUnsavedChanges(() => {
+        window._bypassUnsavedCheck = true;
+        document.getElementById("addNewBtn")?.click();
+        setTimeout(() => { window._bypassUnsavedCheck = false; }, 300);
+      });
+      return;
+    }
    if (currentUserRole !== "admin" && (!currentPermissions || !currentPermissions.can_add_student)) {
      showToast("عفواً، إضافة طالب جديد مقفلة من المدير ", "err");
      return;
@@ -13505,3 +13538,149 @@ if (typeof applyLanguage === "function") {
     applyLanguage();
   }
 }
+
+
+// ============================================================
+// UNSAVED CHANGES GUARD MODULE
+// ============================================================
+window._pendingUnsavedProceedAction = null;
+window._bypassUnsavedCheck = false;
+
+window.hasUnsavedStudentChanges = function() {
+  if (window._bypassUnsavedCheck) return false;
+  const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+  if (!card || card.classList.contains("hidden")) return false;
+  const activeId = currentId || window.currentId;
+  if (!activeId) return false;
+  const st = (typeof students !== 'undefined' && students) ? students[String(activeId)] : null;
+  if (!st) return false;
+
+  const currentName = $("stName") ? $("stName").value.trim() : "";
+  const savedName = (st.name || "").trim();
+
+  const currentPhone = $("stPhone") ? $("stPhone").value.trim() : "";
+  const savedPhone = (st.phone || "").trim();
+
+  const currentParentPhone = $("stParentPhone") ? $("stParentPhone").value.trim() : "";
+  const savedParentPhone = (st.parentPhone || "").trim();
+
+  const currentClass = $("stClass") ? $("stClass").value.trim() : "";
+  const savedClass = (st.className || "").trim();
+
+  // If pending brand new student and any field is filled
+  if (window.isPendingNewStudent && String(window.isPendingNewStudent) === String(activeId)) {
+    if (currentName || currentPhone || currentParentPhone || currentClass || (st.packages && st.packages.length > 0)) {
+      return true;
+    }
+  }
+
+  // If existing student and inputs differ from saved state
+  if (currentName !== savedName) return true;
+  if (currentPhone !== savedPhone) return true;
+  if (currentParentPhone !== savedParentPhone) return true;
+  if (currentClass !== savedClass) return true;
+
+  return false;
+};
+
+window.confirmUnsavedChanges = function(onProceedAction) {
+  if (!window.hasUnsavedStudentChanges()) {
+    if (typeof onProceedAction === 'function') onProceedAction();
+    return;
+  }
+  
+  const modal = document.getElementById('unsavedChangesModal');
+  if (!modal) {
+    if (typeof onProceedAction === 'function') onProceedAction();
+    return;
+  }
+
+  window._pendingUnsavedProceedAction = onProceedAction;
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  if (typeof AssistantSounds !== 'undefined') AssistantSounds.error();
+};
+
+window.closeUnsavedChangesModal = function() {
+  const modal = document.getElementById('unsavedChangesModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+  window._pendingUnsavedProceedAction = null;
+};
+
+// Wire up the 3 modal buttons and backdrop
+function initUnsavedModalListeners() {
+  const modal = document.getElementById('unsavedChangesModal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        window.closeUnsavedChangesModal();
+      }
+    });
+  }
+  on("unsavedSaveAndExitBtn", "click", function() {
+    const sBtn = document.getElementById("saveStudentBtn");
+    const nameVal = $("stName") ? $("stName").value.trim() : "";
+    if (!nameVal) {
+      showToast(currentLang === 'ar' ? "يرجى كتابة اسم الطالب أولاً لحفظ البيانات" : "Please enter student name first", "warning");
+      window.closeUnsavedChangesModal();
+      if ($("stName")) $("stName").focus();
+      return;
+    }
+
+    if (sBtn) sBtn.click();
+    const proceed = window._pendingUnsavedProceedAction;
+    window.closeUnsavedChangesModal();
+    setTimeout(() => {
+      window._bypassUnsavedCheck = true;
+      try {
+        if (typeof proceed === 'function') proceed();
+      } finally {
+        setTimeout(() => { window._bypassUnsavedCheck = false; }, 300);
+      }
+    }, 120);
+  });
+
+  on("unsavedDiscardAndExitBtn", "click", function() {
+    const activeId = currentId || window.currentId;
+    if (activeId && window.isPendingNewStudent && String(window.isPendingNewStudent) === String(activeId)) {
+      if (toInt(activeId) > BASE_MAX_ID) {
+        delete students[activeId];
+      } else {
+        students[activeId] = makeEmptyStudent(toInt(activeId));
+      }
+      window.isPendingNewStudent = null;
+    }
+    const proceed = window._pendingUnsavedProceedAction;
+    window.closeUnsavedChangesModal();
+    window._bypassUnsavedCheck = true;
+    try {
+      if (typeof proceed === 'function') proceed();
+    } finally {
+      setTimeout(() => { window._bypassUnsavedCheck = false; }, 300);
+    }
+  });
+
+  on("unsavedStayBtn", "click", function() {
+    window.closeUnsavedChangesModal();
+    if (typeof AssistantSounds !== 'undefined') AssistantSounds.touchTick();
+    if ($("stName")) $("stName").focus();
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initUnsavedModalListeners);
+} else {
+  initUnsavedModalListeners();
+}
+
+// Guard window beforeunload
+window.addEventListener('beforeunload', function(e) {
+  if (window.hasUnsavedStudentChanges()) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
