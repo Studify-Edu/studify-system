@@ -104,7 +104,7 @@ const ADMIN_DICT = {
 
   // New Students of the Month Module
   "stat_term_new_students": { ar: "طلاب جدد هذا الشهر", en: "New Students This Month" },
-  "stat_daily_new_students": { ar: "جدد هذا الشهر", en: "New This Month" },
+  "stat_daily_new_students": { ar: "جدد هذا اليوم", en: "New Today" },
   "new_st_modal_title": { ar: "الطلاب الجدد المنضمين", en: "New Registered Students" },
   "new_st_modal_subtitle": { ar: "متابعة الطلاب الجدد الذين تمت إضافتهم، بيانات اشتراكاتهم، والتواصل الترحيبي", en: "Track newly enrolled students, packages & welcome outreach" },
   "lbl_total_new_students": { ar: "إجمالي الطلاب الجدد:", en: "Total New Students:" },
@@ -2468,9 +2468,16 @@ export function loadDailyReport(dateStr) {
 
   const statDailyNew = document.getElementById("statDailyNewStudents");
   if (statDailyNew) {
-    const curMonthKey = (d || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0])).substring(0, 7);
-    const newStCount = (typeof window.getNewStudentsForMonth === 'function') ? window.getNewStudentsForMonth(curMonthKey).length : 0;
-    statDailyNew.textContent = newStCount;
+    const targetDate = d || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+    let todayNewCount = 0;
+    Object.values(students || {}).forEach(st => {
+      if (!st || !st.name) return;
+      const jDate = st.joinedDate || (st.createdAt ? st.createdAt.split('T')[0] : '');
+      if (jDate === targetDate) {
+        todayNewCount++;
+      }
+    });
+    statDailyNew.textContent = todayNewCount;
   }
 
   // Render Groups Breakdown
@@ -7382,6 +7389,8 @@ window.renderStudentsListModal = function() {
 // 9. NEW STUDENTS OF THE MONTH MODULE (الطلاب الجدد لهذا الشهر)
 // ========================================================
 window.selectedNewStudentsMonth = null;
+window.newStudentsModalCurrentPage = 1;
+const NEW_STUDENTS_PAGE_SIZE = 50;
 
 window.formatMonthName = function(monthStr, isAr) {
   if (!monthStr || !monthStr.includes('-')) return monthStr || '';
@@ -7430,6 +7439,7 @@ window.openNewStudentsModal = function(targetMonth) {
   const isAr = (currentLang === "ar");
   const curMonth = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]).substring(0, 7);
   window.selectedNewStudentsMonth = targetMonth || curMonth;
+  window.newStudentsModalCurrentPage = 1;
 
   // Populate month selector dropdown
   const monthSel = document.getElementById("newStudentsMonthSelect");
@@ -7458,6 +7468,19 @@ window.closeNewStudentsModal = function() {
 
 window.onNewStudentsMonthChanged = function(newMonth) {
   window.selectedNewStudentsMonth = newMonth;
+  window.newStudentsModalCurrentPage = 1;
+  window.renderNewStudentsModalTable();
+};
+
+window.newStudentsModalPrevPage = function() {
+  if (window.newStudentsModalCurrentPage > 1) {
+    window.newStudentsModalCurrentPage--;
+    window.renderNewStudentsModalTable();
+  }
+};
+
+window.newStudentsModalNextPage = function() {
+  window.newStudentsModalCurrentPage++;
   window.renderNewStudentsModalTable();
 };
 
@@ -7517,6 +7540,29 @@ window.renderNewStudentsModalTable = function() {
     return Number(b.id) - Number(a.id);
   });
 
+  // 50 Students Per Page Pagination
+  const totalPages = Math.ceil(filtered.length / NEW_STUDENTS_PAGE_SIZE) || 1;
+  if (window.newStudentsModalCurrentPage > totalPages) window.newStudentsModalCurrentPage = totalPages;
+  if (window.newStudentsModalCurrentPage < 1) window.newStudentsModalCurrentPage = 1;
+
+  const startIdx = (window.newStudentsModalCurrentPage - 1) * NEW_STUDENTS_PAGE_SIZE;
+  const pageItems = filtered.slice(startIdx, startIdx + NEW_STUDENTS_PAGE_SIZE);
+
+  // Update pagination UI controls
+  const prevBtn = document.getElementById("newStudentsPrevBtn");
+  const nextBtn = document.getElementById("newStudentsNextBtn");
+  const curPageEl = document.getElementById("newStudentsCurrentPageNum");
+  const totalPagesEl = document.getElementById("newStudentsTotalPagesNum");
+  const showingCountEl = document.getElementById("newStudentsShowingCount");
+  const totalCountEl = document.getElementById("newStudentsTotalCount");
+
+  if (prevBtn) prevBtn.disabled = (window.newStudentsModalCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (window.newStudentsModalCurrentPage >= totalPages);
+  if (curPageEl) curPageEl.textContent = window.newStudentsModalCurrentPage;
+  if (totalPagesEl) totalPagesEl.textContent = totalPages;
+  if (showingCountEl) showingCountEl.textContent = pageItems.length;
+  if (totalCountEl) totalCountEl.textContent = filtered.length;
+
   if (!tbody) return;
 
   if (filtered.length === 0) {
@@ -7531,7 +7577,7 @@ window.renderNewStudentsModalTable = function() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(st => {
+  tbody.innerHTML = pageItems.map(st => {
     const fin = (typeof window.getStudentFinancialStatus === 'function') 
       ? window.getStudentFinancialStatus(st) 
       : { paid: 0, debt: 0 };

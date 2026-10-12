@@ -4736,6 +4736,12 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   scrollbar-color: #94a3b8 var(--bg-inset, rgba(0, 0, 0, 0.06)) !important;
 }
 
+#newStudentsModal .modal-box-premium,
+.new-students-modal-box {
+  max-width: 980px !important;
+  width: 95% !important;
+}
+
 /* Prominent, stylish vertical scrollbar on the side of the modal */
 .term-details-modal-box::-webkit-scrollbar,
 #expensesDetailsModal .modal-box-premium::-webkit-scrollbar,
