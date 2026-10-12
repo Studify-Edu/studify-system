@@ -1943,7 +1943,7 @@ function showToast(msg, type = "success") {
  // Studify Studio Real MP3 Sound Engine: uses window.AssistantSounds and window.playSound from sounds.js.
 
  function makeEmptyStudent(id) {
- return { id: id, name: "", className: "", phone: "", paid: 0, notes: "", rank: "normal", joinedDate: nowDateStr(), attendanceDates: [] };
+ return { id: id, name: "", className: "", phone: "", paid: 0, notes: "", rank: "normal", joinedDate: nowDateStr(), createdAt: new Date().toISOString(), attendanceDates: [] };
  }
 
  // ==========================================
@@ -2251,6 +2251,7 @@ window.switchTab = function(tabId, force = false) {
         installments: st.installments || [],
         payments: st.payments || [],
         attendance_dates: Array.from(new Set(st.attendanceDates || [])),
+        created_at: st.createdAt || (st.joinedDate ? new Date(st.joinedDate).toISOString() : new Date().toISOString()),
         last_modified: st.lastModified || Date.now()
       }));
 
@@ -2581,6 +2582,8 @@ async function loadAll() {
               attendanceDates: Array.from(new Set(row.attendance_dates || [])),
               isSessionStudent: stSessionData !== null,
               sessionBalance: stSessionData !== null ? stSessionData : 0,
+              createdAt: row.created_at || (row.joined_date ? new Date(row.joined_date).toISOString() : null),
+              joinedDate: row.created_at ? row.created_at.split('T')[0] : (row.joined_date || (row.payments && row.payments[0] && row.payments[0].date) || (row.attendance_dates && row.attendance_dates[0]) || nowDateStr()),
               lastModified: row.last_modified || Date.now()
             };
 

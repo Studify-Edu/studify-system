@@ -102,6 +102,18 @@ const ADMIN_DICT = {
   "prompt_switch_to_asst": { ar: "هل أنت مساعد؟", en: "Are you an assistant?" },
   "action_switch_to_asst": { ar: "الانتقال لبوابة المساعد والعمليات", en: "Go to Assistant Portal & Operations" },
 
+  // New Students of the Month Module
+  "stat_term_new_students": { ar: "طلاب جدد هذا الشهر", en: "New Students This Month" },
+  "stat_daily_new_students": { ar: "جدد هذا الشهر", en: "New This Month" },
+  "new_st_modal_title": { ar: "الطلاب الجدد المنضمين", en: "New Registered Students" },
+  "new_st_modal_subtitle": { ar: "متابعة الطلاب الجدد الذين تمت إضافتهم، بيانات اشتراكاتهم، والتواصل الترحيبي", en: "Track newly enrolled students, packages & welcome outreach" },
+  "lbl_total_new_students": { ar: "إجمالي الطلاب الجدد:", en: "Total New Students:" },
+  "lbl_new_students_paid": { ar: "إجمالي مدفوعاتهم:", en: "Total Paid:" },
+  "lbl_new_students_debt": { ar: "المتبقي / المديونيات:", en: "Remaining Debt:" },
+  "btn_filter_new_students": { ar: "عرض الجدد فقط 🌟", en: "New Students Only 🌟" },
+  "tbl_th_join_date": { ar: "تاريخ الانضمام", en: "Join Date" },
+  "tbl_th_actions": { ar: "تواصل وترحيب", en: "Welcome Outreach" },
+
   "dec_val_ph": { ar: "مثال: 100", en: "e.g. 100" },
   "dec_reason_ph": { ar: "مثال: قرار مدير - ظرف خاص / تفوق دراسي", en: "e.g. Manager Decision - Special case / Academic excellence" },
   "dec_no_pending": { ar: "لا توجد طلبات معلقة حالياً", en: "No pending requests at this time" },
@@ -1820,6 +1832,18 @@ async function loadAllAdminData() {
 
         const restoredDiscounts = (stPkgDiscountsMap && stPkgDiscountsMap[s.id]) || s.package_discounts || s.packageDiscounts || (Number(s.discount) > 0 && pList.length === 1 ? { [pList[0]]: Number(s.discount) } : {});
 
+        const rawCreatedAt = s.created_at || s.createdAt || '';
+        let joinDate = '';
+        if (rawCreatedAt) {
+          joinDate = rawCreatedAt.split('T')[0];
+        } else if (s.joined_date || s.joinedDate) {
+          joinDate = (s.joined_date || s.joinedDate).split('T')[0];
+        } else if (Array.isArray(s.payments) && s.payments[0] && s.payments[0].date) {
+          joinDate = s.payments[0].date;
+        } else if (Array.isArray(s.attendance_dates) && s.attendance_dates[0]) {
+          joinDate = s.attendance_dates[0];
+        }
+
         students[String(s.id)] = {
           id: s.id,
           name: s.name || '',
@@ -1834,6 +1858,8 @@ async function loadAllAdminData() {
           packages: pList,
           payments: s.payments || [],
           attendanceDates: s.attendance_dates || [],
+          createdAt: rawCreatedAt,
+          joinedDate: joinDate,
           status: s.status || 'active'
         };
       });
@@ -2440,6 +2466,13 @@ export function loadDailyReport(dateStr) {
   if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - totalAttended);
   if (statExp) statExp.textContent = totalExp.toLocaleString() + currencySuffix;
 
+  const statDailyNew = document.getElementById("statDailyNewStudents");
+  if (statDailyNew) {
+    const curMonthKey = (d || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0])).substring(0, 7);
+    const newStCount = (typeof window.getNewStudentsForMonth === 'function') ? window.getNewStudentsForMonth(curMonthKey).length : 0;
+    statDailyNew.textContent = newStCount;
+  }
+
   // Render Groups Breakdown
   const body = document.getElementById("dailyGroupsBreakdown");
   if (body) {
@@ -2854,6 +2887,12 @@ window.renderTermTable = function() {
   const statTermDisc = document.getElementById("statTermTotalDiscounts");
 
   if (statTermSt) statTermSt.textContent = matchCount;
+  const statTermNewSt = document.getElementById("statTermNewStudents");
+  if (statTermNewSt) {
+    const curMonthPrefix = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]).substring(0, 7);
+    const newStList = (typeof window.getNewStudentsForMonth === 'function') ? window.getNewStudentsForMonth(curMonthPrefix) : [];
+    statTermNewSt.textContent = newStList.length;
+  }
   if (statTermRev) statTermRev.textContent = totalRev.toLocaleString() + currencySuffix;
   if (statTermExp) statTermExp.textContent = totalExpenses.toLocaleString() + currencySuffix;
   if (statTermWd) statTermWd.textContent = totalWithdrawals.toLocaleString() + currencySuffix;
@@ -7163,20 +7202,53 @@ window.closeVaultsBreakdownModal = function() {
 // ========================================================
 // 8. REGISTERED STUDENTS LIST MODAL (قائمة وبيانات الطلاب)
 // ========================================================
+// ========================================================
+// 8. REGISTERED STUDENTS LIST MODAL (قائمة وبيانات الطلاب)
+// ========================================================
 window.studentsModalCurrentPage = 1;
+window.studentsModalFilterNewOnly = false;
 const STUDENTS_MODAL_PAGE_SIZE = 30; // 30 students per page as requested
+
+window.toggleStudentsModalNewFilter = function() {
+  window.studentsModalFilterNewOnly = !window.studentsModalFilterNewOnly;
+  const btn = document.getElementById("btnFilterNewStudentsOnly");
+  const isAr = (currentLang === "ar");
+  if (btn) {
+    if (window.studentsModalFilterNewOnly) {
+      btn.style.background = "#06b6d4";
+      btn.style.color = "#ffffff";
+      btn.style.borderColor = "#0891b2";
+      btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>${isAr ? 'الجدد فقط (مفعل) 🌟' : 'New Only (Active) 🌟'}</span>`;
+    } else {
+      btn.style.background = "";
+      btn.style.color = "";
+      btn.style.borderColor = "";
+      btn.innerHTML = `<i class="fa-solid fa-sparkles" style="color: #06b6d4;"></i> <span>${isAr ? 'عرض الجدد فقط 🌟' : 'New Students Only 🌟'}</span>`;
+    }
+  }
+  window.studentsModalCurrentPage = 1;
+  window.renderStudentsListModal();
+};
 
 window.openStudentsListModal = function() {
   const modal = document.getElementById("studentsListModal");
   if (!modal) return;
   window.studentsModalCurrentPage = 1;
+  window.studentsModalFilterNewOnly = false;
+  const btn = document.getElementById("btnFilterNewStudentsOnly");
+  const isAr = (currentLang === "ar");
+  if (btn) {
+    btn.style.background = "";
+    btn.style.color = "";
+    btn.style.borderColor = "";
+    btn.innerHTML = `<i class="fa-solid fa-sparkles" style="color: #06b6d4;"></i> <span>${isAr ? 'عرض الجدد فقط 🌟' : 'New Students Only 🌟'}</span>`;
+  }
   const searchInp = document.getElementById("studentsSearchInp");
   if (searchInp) searchInp.value = "";
 
   // Populate classes filter dropdown
   const filterSel = document.getElementById("studentsClassFilter");
   if (filterSel) {
-    const isAr = (currentLang === "ar");
     const classSet = new Set();
     Object.values(students || {}).forEach(s => {
       if (s && s.className && s.className !== 'عام' && s.className !== 'Without Package') {
@@ -7227,6 +7299,11 @@ window.renderStudentsListModal = function() {
     }
 
     if (clsFilter && st.className !== clsFilter) return;
+    if (window.studentsModalFilterNewOnly) {
+      const curMonth = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]).substring(0, 7);
+      const isNew = (st.joinedDate && st.joinedDate.startsWith(curMonth)) || (st.createdAt && st.createdAt.startsWith(curMonth));
+      if (!isNew) return;
+    }
     if (q) {
       const matchName = (st.name || '').toLowerCase().includes(q);
       const matchId = String(st.id || '').includes(q);
@@ -7300,3 +7377,274 @@ window.renderStudentsListModal = function() {
     `;
   }).join("");
 };
+
+// ========================================================
+// 9. NEW STUDENTS OF THE MONTH MODULE (الطلاب الجدد لهذا الشهر)
+// ========================================================
+window.selectedNewStudentsMonth = null;
+
+window.formatMonthName = function(monthStr, isAr) {
+  if (!monthStr || !monthStr.includes('-')) return monthStr || '';
+  try {
+    const parts = monthStr.split('-');
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = new Date(y, m, 1);
+    return d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' });
+  } catch (e) {
+    return monthStr;
+  }
+};
+
+window.getAllStudentMonths = function() {
+  const monthSet = new Set();
+  const curMonth = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]).substring(0, 7);
+  monthSet.add(curMonth);
+
+  Object.values(students || {}).forEach(st => {
+    if (!st) return;
+    const dateStr = st.joinedDate || (st.createdAt ? st.createdAt.split('T')[0] : '');
+    if (dateStr && dateStr.length >= 7 && dateStr.includes('-')) {
+      monthSet.add(dateStr.substring(0, 7));
+    }
+  });
+
+  return Array.from(monthSet).sort().reverse();
+};
+
+window.getNewStudentsForMonth = function(monthStr) {
+  if (!monthStr) {
+    monthStr = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]).substring(0, 7);
+  }
+  return Object.values(students || {}).filter(st => {
+    if (!st || !st.name) return false;
+    const joinDate = st.joinedDate || (st.createdAt ? st.createdAt.split('T')[0] : '');
+    return Boolean(joinDate && joinDate.startsWith(monthStr));
+  });
+};
+
+window.openNewStudentsModal = function(targetMonth) {
+  const modal = document.getElementById("newStudentsModal");
+  if (!modal) return;
+
+  const isAr = (currentLang === "ar");
+  const curMonth = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]).substring(0, 7);
+  window.selectedNewStudentsMonth = targetMonth || curMonth;
+
+  // Populate month selector dropdown
+  const monthSel = document.getElementById("newStudentsMonthSelect");
+  if (monthSel) {
+    const allMonths = window.getAllStudentMonths();
+    monthSel.innerHTML = allMonths.map(m => {
+      const isCur = (m === curMonth);
+      const label = window.formatMonthName(m, isAr) + (isCur ? (isAr ? ' (الحالي)' : ' (Current)') : '');
+      const selected = (m === window.selectedNewStudentsMonth) ? 'selected' : '';
+      return `<option value="${m}" ${selected}>${label}</option>`;
+    }).join("");
+    monthSel.value = window.selectedNewStudentsMonth;
+  }
+
+  const searchInp = document.getElementById("newStudentsSearchInp");
+  if (searchInp) searchInp.value = "";
+
+  window.renderNewStudentsModalTable();
+  modal.classList.remove("hidden");
+};
+
+window.closeNewStudentsModal = function() {
+  const modal = document.getElementById("newStudentsModal");
+  if (modal) modal.classList.add("hidden");
+};
+
+window.onNewStudentsMonthChanged = function(newMonth) {
+  window.selectedNewStudentsMonth = newMonth;
+  window.renderNewStudentsModalTable();
+};
+
+window.renderNewStudentsModalTable = function() {
+  const isAr = (currentLang === "ar");
+  const tbody = document.getElementById("newStudentsModalTbody");
+  const curMonth = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]).substring(0, 7);
+  const targetMonth = window.selectedNewStudentsMonth || curMonth;
+
+  // Update month label in modal title
+  const monthLbl = document.getElementById("newStudentsSelectedMonthLabel");
+  if (monthLbl) {
+    monthLbl.textContent = window.formatMonthName(targetMonth, isAr);
+  }
+
+  const allMonthStudents = window.getNewStudentsForMonth(targetMonth);
+
+  // Compute KPI totals
+  let totalPaid = 0;
+  let totalDebt = 0;
+  allMonthStudents.forEach(st => {
+    const fin = (typeof window.getStudentFinancialStatus === 'function') 
+      ? window.getStudentFinancialStatus(st) 
+      : { paid: 0, debt: 0 };
+    totalPaid += (fin.paid || 0);
+    totalDebt += (fin.debt || 0);
+  });
+
+  const currencySuffix = isAr ? ' ج' : ' EGP';
+  const cntEl = document.getElementById("newStudentsModalCount");
+  const paidEl = document.getElementById("newStudentsModalPaid");
+  const debtEl = document.getElementById("newStudentsModalDebt");
+
+  if (cntEl) cntEl.textContent = allMonthStudents.length;
+  if (paidEl) paidEl.textContent = totalPaid.toLocaleString() + currencySuffix;
+  if (debtEl) debtEl.textContent = totalDebt.toLocaleString() + currencySuffix;
+
+  // Search filter
+  const q = (document.getElementById("newStudentsSearchInp")?.value || "").toLowerCase().trim();
+  let filtered = allMonthStudents;
+  if (q) {
+    filtered = allMonthStudents.filter(st => {
+      const matchName = (st.name || '').toLowerCase().includes(q);
+      const matchId = String(st.id || '').includes(q);
+      const matchPhone = String(st.phone || '').includes(q);
+      const matchParent = String(st.parentPhone || '').includes(q);
+      const matchClass = String(st.className || '').toLowerCase().includes(q);
+      return matchName || matchId || matchPhone || matchParent || matchClass;
+    });
+  }
+
+  // Sort by join date descending, then ID descending
+  filtered.sort((a, b) => {
+    const dateA = a.joinedDate || a.createdAt || '';
+    const dateB = b.joinedDate || b.createdAt || '';
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
+    return Number(b.id) - Number(a.id);
+  });
+
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 36px 16px; color: var(--text-secondary); font-weight: 600;">
+          <div style="font-size: 2em; margin-bottom: 8px;">🌱</div>
+          ${isAr ? 'لا يوجد طلاب جدد مسجلين في هذا الشهر أو يطابقون البحث' : 'No new registered students found for this month or search'}
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(st => {
+    const fin = (typeof window.getStudentFinancialStatus === 'function') 
+      ? window.getStudentFinancialStatus(st) 
+      : { paid: 0, debt: 0 };
+    const joinDate = st.joinedDate || (st.createdAt ? st.createdAt.split('T')[0] : '—');
+    const cls = (st.className && st.className !== 'عام' && st.className !== 'General') ? st.className : (isAr ? "بدون باقة" : "No Package");
+
+    const statusBadge = fin.debt > 0
+      ? `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; font-weight: 700;">${isAr ? 'متبقي ' + fin.debt + ' ج' : 'Debt ' + fin.debt + ' EGP'}</span>`
+      : `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; font-weight: 700;">${isAr ? 'خالص' : 'Paid'}</span>`;
+
+    const hasPhone = Boolean(st.phone || st.parentPhone);
+
+    return `
+      <tr>
+        <td style="font-weight: 700; color: var(--text-secondary);">#${st.id}</td>
+        <td style="font-weight: 600; color: var(--text-secondary); font-size: 0.9em; white-space: nowrap;">
+          <i class="fa-regular fa-calendar" style="margin-inline-end: 4px; opacity: 0.7;"></i>${joinDate}
+        </td>
+        <td style="font-weight: 800; color: var(--text-primary);">${st.name}</td>
+        <td><span class="badge" style="background: var(--bg-inset); color: var(--primary); font-weight: 700;">${cls}</span></td>
+        <td style="font-weight: 700; color: #10b981;">${(fin.paid || 0).toLocaleString()} ${currencySuffix}</td>
+        <td>${statusBadge}</td>
+        <td style="white-space: nowrap;">
+          ${hasPhone ? `
+            <button type="button" class="btn success smallBtn" onclick="window.sendWhatsAppWelcome('${st.id}')" title="${isAr ? 'إرسال رسالة ترحيبية عبر واتساب' : 'Send WhatsApp Welcome Message'}" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 0.85em; border-radius: 8px; font-weight: 700; background: #25D366; color: #ffffff; border: none; cursor: pointer;">
+              <i class="fa-brands fa-whatsapp" style="font-size: 1.1em;"></i>
+              <span>${isAr ? 'ترحيب' : 'Welcome'}</span>
+            </button>
+          ` : `
+            <span style="color: var(--text-secondary); font-size: 0.8em; font-weight: 600;">—</span>
+          `}
+        </td>
+      </tr>
+    `;
+  }).join("");
+};
+
+window.sendWhatsAppWelcome = function(studentId) {
+  const isAr = (currentLang === "ar");
+  const st = students[String(studentId)];
+  if (!st) {
+    if (typeof showToast === 'function') showToast(isAr ? 'بيانات الطالب غير موجودة' : 'Student data not found', 'err');
+    return;
+  }
+  const phone = st.phone || st.parentPhone;
+  if (!phone) {
+    if (typeof showToast === 'function') showToast(isAr ? 'لا يوجد رقم هاتف مسجل لهذا الطالب' : 'No phone number registered for this student', 'warn');
+    return;
+  }
+  let cleanPhone = phone.replace(/\D/g, '');
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = '2' + cleanPhone;
+  } else if (!cleanPhone.startsWith('20') && cleanPhone.length === 10 && cleanPhone.startsWith('1')) {
+    cleanPhone = '20' + cleanPhone;
+  }
+
+  const centerName = (typeof centerSettings !== 'undefined' && centerSettings?.centerName) ? centerSettings.centerName : 'السنتر التعليمي';
+  const welcomeMsg = isAr
+    ? `مرحباً ${st.name} 🌟\nيسعدنا انضمامك إلى أسرة ${centerName}.\nكود الطالب الخاص بك هو: #${st.id}\nنتمنى لك عاماً دراسياً حافلاً بالنجاح والتفوق!`
+    : `Hello ${st.name} 🌟\nWelcome to ${centerName}!\nYour Student ID is: #${st.id}\nWe wish you great success!`;
+
+  const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(welcomeMsg)}`;
+  window.open(waUrl, '_blank');
+};
+
+window.exportNewStudentsExcel = function() {
+  const isAr = (currentLang === "ar");
+  const curMonth = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]).substring(0, 7);
+  const targetMonth = window.selectedNewStudentsMonth || curMonth;
+  const list = window.getNewStudentsForMonth(targetMonth);
+
+  if (!list || list.length === 0) {
+    if (typeof showToast === 'function') showToast(isAr ? 'لا يوجد طلاب جدد للتصدير في هذا الشهر' : 'No new students to export for this month', 'warn');
+    return;
+  }
+
+  if (typeof XLSX === 'undefined') {
+    if (typeof showToast === 'function') showToast(isAr ? 'مكتبة الإكسيل غير محملة' : 'Excel library not loaded', 'err');
+    return;
+  }
+
+  const header = isAr 
+    ? ['كود الطالب', 'اسم الطالب', 'تاريخ الانضمام', 'الصف / المجموعة', 'هاتف الطالب', 'هاتف ولي الأمر', 'المسدد (ج)', 'المتبقي (ج)', 'حالة السداد']
+    : ['Student ID', 'Student Name', 'Join Date', 'Class / Package', 'Student Phone', 'Parent Phone', 'Paid (EGP)', 'Debt (EGP)', 'Status'];
+
+  const rows = [header];
+  list.forEach(st => {
+    const fin = (typeof window.getStudentFinancialStatus === 'function') 
+      ? window.getStudentFinancialStatus(st) 
+      : { paid: 0, debt: 0 };
+    const joinDate = st.joinedDate || (st.createdAt ? st.createdAt.split('T')[0] : '—');
+    const cls = st.className || (isAr ? 'بدون باقة' : 'No Package');
+    rows.push([
+      st.id,
+      st.name,
+      joinDate,
+      cls,
+      st.phone || '—',
+      st.parentPhone || '—',
+      fin.paid || 0,
+      fin.debt || 0,
+      fin.debt > 0 ? (isAr ? `متبقي ${fin.debt} ج` : `Debt ${fin.debt}`) : (isAr ? 'خالص' : 'Paid')
+    ]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const sheetTitle = isAr ? 'الطلاب الجدد' : 'New Students';
+  XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
+  XLSX.writeFile(wb, `Studify_New_Students_${targetMonth}.xlsx`);
+
+  if (typeof showToast === 'function') {
+    showToast(isAr ? `تم تصدير إكسيل لطلاب شهر ${targetMonth} بنجاح` : `Exported Excel for month ${targetMonth} successfully`, 'ok');
+  }
+};
+
