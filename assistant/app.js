@@ -2094,6 +2094,9 @@ window.switchTab = function(tabId, force = false) {
     if (typeof window.populateMarketingGroups === 'function') window.populateMarketingGroups();
     if (typeof window.filterCampaignTarget === 'function') window.filterCampaignTarget();
   }
+  if (tabId === "Booklets") {
+    if (typeof window.renderBookletsStock === 'function') window.renderBookletsStock();
+  }
   if (tabId === "Settings" || tabId === "Admin") {
     if (typeof window.initCenterNotebook === 'function') window.initCenterNotebook();
   }
@@ -2267,19 +2270,26 @@ window.switchTab = function(tabId, force = false) {
         };
       });
 
-      // 3. Prepare Booklets array
+      // 3. Prepare Booklets array (strictly adhere to Supabase schema: id, name, price, stock, sales)
       const bookletRows = Object.keys(bookletsStock || {}).map(bId => {
         const b = bookletsStock[bId];
         const qtyVal = toInt(b.qty !== undefined ? b.qty : (b.stock || 0));
         const soldVal = toInt(b.sold || 0);
+        const remainStock = Math.max(0, qtyVal - soldVal);
+        const salesMeta = Array.isArray(b.sales) ? b.sales.slice() : [];
+        const existingMetaIdx = salesMeta.findIndex(x => x && typeof x === 'object' && x.__meta === true);
+        const metaObj = { __meta: true, qty: qtyVal, sold: soldVal };
+        if (existingMetaIdx >= 0) {
+          salesMeta[existingMetaIdx] = metaObj;
+        } else {
+          salesMeta.unshift(metaObj);
+        }
         return {
           id: String(bId),
           name: b.name || '',
           price: toInt(b.price) || 0,
-          qty: qtyVal,
-          sold: soldVal,
-          stock: Math.max(0, qtyVal - soldVal),
-          sales: b.sales || []
+          stock: remainStock,
+          sales: salesMeta
         };
       });
 
@@ -2357,6 +2367,7 @@ window.switchTab = function(tabId, force = false) {
         student_ranks: getMergedRanks(),
         student_package_discounts: getMergedDiscounts(),
         group_fees: groupFees || {},
+        booklets_stock: bookletsStock || {},
         center_notebook: currentNbVal
       });
 
@@ -2647,20 +2658,48 @@ async function loadAll() {
           await secureSave(K_GROUP_FEES, groupFees);
         }
 
-        // 3. BOOKLETS: Cloud booklets table is single source of truth
-        if (!bRes.error && Array.isArray(bRes.data)) {
+        // 3. BOOKLETS: Load from Supabase config.booklets_stock or booklets table
+        let cloudBookletsLoaded = false;
+        if (cfg && cfg.booklets_stock && typeof cfg.booklets_stock === 'object' && Object.keys(cfg.booklets_stock).length > 0) {
+          bookletsStock = cfg.booklets_stock;
+          cloudBookletsLoaded = true;
+        } else if (!bRes.error && Array.isArray(bRes.data) && bRes.data.length > 0) {
           const loadedBooklets = {};
           bRes.data.forEach(b => {
+            let bQty = 0;
+            let bSold = 0;
+            if (Array.isArray(b.sales)) {
+              const meta = b.sales.find(x => x && typeof x === 'object' && x.__meta === true);
+              if (meta) {
+                bQty = toInt(meta.qty);
+                bSold = toInt(meta.sold);
+              }
+            }
+            if (!bQty && b.stock) {
+              bQty = toInt(b.stock) + bSold;
+            }
             loadedBooklets[b.id] = {
               id: b.id,
-              name: b.name,
+              name: b.name || '',
               price: Number(b.price) || 0,
-              stock: parseInt(b.stock) || 0,
+              qty: bQty,
+              sold: bSold,
+              stock: parseInt(b.stock) || Math.max(0, bQty - bSold),
               sales: b.sales || []
             };
           });
           bookletsStock = loadedBooklets;
+          cloudBookletsLoaded = true;
+        }
+
+        if (cloudBookletsLoaded) {
           await secureSave(K_BOOKLETS, bookletsStock);
+        } else {
+          // If cloud has no booklets data yet, NEVER wipe local IndexedDB! Fallback to local storage:
+          const localBkl = await secureLoad(K_BOOKLETS, {});
+          if (localBkl && typeof localBkl === 'object' && Object.keys(localBkl).length > 0) {
+            bookletsStock = localBkl;
+          }
         }
 
         if (!centerRes.error && centerRes.data) {
@@ -2785,6 +2824,7 @@ async function loadAll() {
  updateTopStats(); updateFinanceSummary(); renderCharts(); if (typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState();
  if (typeof window.refreshSessionFormAutoId === 'function') window.refreshSessionFormAutoId();
  if (typeof window.setupSessionFormAutocomplete === 'function') window.setupSessionFormAutocomplete();
+ if (typeof window.renderBookletsStock === 'function') window.renderBookletsStock();
  } catch(e) { console.error("Data Load Error", e); }
  }
 
@@ -3595,25 +3635,36 @@ const st = students[id];
    }
  }
  const isSameCurrentSt = Boolean(prevStudentId && String(prevStudentId) === String(id));
- if($("stName")) {
-   const typed = $("stName").value.trim();
-   if (typed && !st.name) st.name = typed;
-   $("stName").value = st.name || (isSameCurrentSt ? typed : "");
- }
- if($("stPhone")) {
-   const typed = $("stPhone").value.trim();
-   if (typed && !st.phone) st.phone = typed;
-   $("stPhone").value = st.phone || (isSameCurrentSt ? typed : "");
- }
- if($("stParentPhone")) {
-   const typed = $("stParentPhone").value.trim();
-   if (typed && !st.parentPhone) st.parentPhone = typed;
-   $("stParentPhone").value = st.parentPhone || (isSameCurrentSt ? typed : "");
- }
- if($("stClass")) {
-   const typed = $("stClass").value.trim();
-   if (typed && !st.className) st.className = typed;
-   $("stClass").value = st.className || (isSameCurrentSt ? typed : "");
+ if (isSameCurrentSt) {
+   if($("stName")) {
+     const typed = $("stName").value.trim();
+     if (typed && !st.name) st.name = typed;
+     $("stName").value = st.name || typed || "";
+   }
+   if($("stPhone")) {
+     const typed = $("stPhone").value.trim();
+     if (typed && !st.phone) st.phone = typed;
+     $("stPhone").value = st.phone || typed || "";
+   }
+   if($("stParentPhone")) {
+     const typed = $("stParentPhone").value.trim();
+     if (typed && !st.parentPhone) st.parentPhone = typed;
+     $("stParentPhone").value = st.parentPhone || typed || "";
+   }
+   if($("stClass")) {
+     const typed = $("stClass").value.trim();
+     if (typed && !st.className) st.className = typed;
+     $("stClass").value = st.className || typed || "";
+   }
+ } else {
+   if($("stName")) $("stName").value = st.name || "";
+   if($("stPhone")) $("stPhone").value = st.phone || "";
+   if($("stParentPhone")) $("stParentPhone").value = st.parentPhone || "";
+   if($("stClass")) $("stClass").value = st.className || "";
+   if($("newPaymentInput")) $("newPaymentInput").value = "";
+   if($("newSessionBalanceInp")) $("newSessionBalanceInp").value = "";
+   if($("stDiscount")) $("stDiscount").value = "";
+   if($("quickNoteInp")) $("quickNoteInp").value = "";
  }
 
  // Populate class datalist dynamically
@@ -5488,9 +5539,16 @@ on("quickAttendBtn", "click", function() {
          return;
        }
      }
-     if (!students[String(openVal)]) {
+     if (!students[String(openVal)] || !window.isStudentRegistered(students[String(openVal)])) {
        students[String(openVal)] = makeEmptyStudent(openVal);
      }
+     if ($("stName")) $("stName").value = "";
+     if ($("stPhone")) $("stPhone").value = "";
+     if ($("stParentPhone")) $("stParentPhone").value = "";
+     if ($("stClass")) $("stClass").value = "";
+     if ($("newPaymentInput")) $("newPaymentInput").value = "";
+     if ($("newSessionBalanceInp")) $("newSessionBalanceInp").value = "";
+     if ($("stDiscount")) $("stDiscount").value = "";
      window.justAddedStudentId = String(openVal);
      window.isPendingNewStudent = String(openVal);
      showToast(currentLang === "ar" ? `هذا الـ ID (#${openVal}) غير مسجل، تم فتح استمارة تسجيل طالب جديد` : `ID #${openVal} is not registered. Opened new student form.`, "info");
@@ -5580,9 +5638,16 @@ on("quickAttendBtn", "click", function() {
      if ($("newId")) $("newId").value = "";
      return;
    }
-   if (!students[String(id)]) {
+   if (!students[String(id)] || !window.isStudentRegistered(students[String(id)])) {
      students[String(id)] = makeEmptyStudent(id);
    }
+   if ($("stName")) $("stName").value = "";
+   if ($("stPhone")) $("stPhone").value = "";
+   if ($("stParentPhone")) $("stParentPhone").value = "";
+   if ($("stClass")) $("stClass").value = "";
+   if ($("newPaymentInput")) $("newPaymentInput").value = "";
+   if ($("newSessionBalanceInp")) $("newSessionBalanceInp").value = "";
+   if ($("stDiscount")) $("stDiscount").value = "";
    window.justAddedStudentId = String(id);
    window.isPendingNewStudent = String(id);
    showToast(currentLang === "ar" ? `تم فتح استمارة طالب جديد برقم #${id}، يرجى كتابة البيانات والضغط على حفظ` : `Opened new student profile #${id}`, "info");
@@ -10464,6 +10529,15 @@ window.openSessionStudentModal = function(item) {
  window.deleteBooklet = function(id) {
    if (!bookletsStock[id]) return;
    let b = bookletsStock[id];
+   const doDelete = () => {
+     delete bookletsStock[id];
+     if (window.supabaseClient) {
+       window.supabaseClient.from('booklets').delete().eq('id', String(id)).then(() => {}).catch(err => console.error("Error deleting booklet from supabase:", err));
+     }
+     saveAll();
+     renderBookletsStock();
+     showToast("تم حذف المذكرة من قائمة المخزون", "success");
+   };
    if (typeof Swal !== 'undefined') {
      Swal.fire({
        title: "حذف مذكرة من الجرد",
@@ -10475,18 +10549,10 @@ window.openSessionStudentModal = function(item) {
        confirmButtonText: "نعم، حذف المذكرة",
        cancelButtonText: "إلغاء"
      }).then(res => {
-       if (res.isConfirmed) {
-         delete bookletsStock[id];
-         saveAll();
-         renderBookletsStock();
-         showToast("تم حذف المذكرة من قائمة المخزون", "success");
-       }
+       if (res.isConfirmed) doDelete();
      });
    } else {
-     delete bookletsStock[id];
-     saveAll();
-     renderBookletsStock();
-     showToast("تم حذف المذكرة من قائمة المخزون", "success");
+     doDelete();
    }
  };
 

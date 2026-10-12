@@ -1908,13 +1908,29 @@ async function loadAllAdminData() {
     // Booklets
     if (bklRes.data) {
       booklets = {};
-      bklRes.data.forEach(b => { booklets[b.id] = b; });
+      bklRes.data.forEach(b => {
+        let sold = Number(b.sold) || 0;
+        let qty = Number(b.qty) || 0;
+        if (Array.isArray(b.sales)) {
+          const meta = b.sales.find(x => x && typeof x === 'object' && x.__meta === true);
+          if (meta) {
+            if (meta.sold !== undefined) sold = Number(meta.sold) || 0;
+            if (meta.qty !== undefined) qty = Number(meta.qty) || 0;
+          }
+        }
+        b.sold = sold;
+        b.qty = qty || (Number(b.stock) || 0) + sold;
+        booklets[b.id] = b;
+      });
     }
 
     // Settings & Center Data (attendance, revenue, expenses, syllabus, daily approval)
     if (setRes && setRes.data) {
       const s = setRes.data;
       const cfg = s.config || {};
+      if (cfg && cfg.booklets_stock && typeof cfg.booklets_stock === 'object' && Object.keys(cfg.booklets_stock).length > 0) {
+        booklets = Object.assign({}, cfg.booklets_stock, booklets);
+      }
       dailyShiftStatus = s.daily_shift_status || 'open';
       dailyApprovalMap = cfg.daily_approval_map || dailyApprovalMap || {};
       if (typeof cfg.shift_system_enabled === 'boolean') {
