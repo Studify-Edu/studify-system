@@ -2096,6 +2096,16 @@ window.switchTab = function(tabId, force = false) {
   }
   if (tabId === "Booklets") {
     if (typeof window.renderBookletsStock === 'function') window.renderBookletsStock();
+ if (typeof window.renderSessionFinanceStats === 'function') window.renderSessionFinanceStats();
+ if (typeof window.renderAllSessionStudentsTable === 'function') window.renderAllSessionStudentsTable();
+  }
+  if (tabId === "SessionStudents") {
+    if (typeof window.renderSessionFinanceStats === 'function') window.renderSessionFinanceStats();
+    if (typeof window.renderAllSessionStudentsTable === 'function') window.renderAllSessionStudentsTable();
+    if (typeof window.renderSessionStudentsList === 'function') {
+      const curDate = ($("sessFilterDate") && $("sessFilterDate").value) ? $("sessFilterDate").value : nowDateStr();
+      window.renderSessionStudentsList(curDate);
+    }
   }
   if (tabId === "Settings" || tabId === "Admin") {
     if (typeof window.initCenterNotebook === 'function') window.initCenterNotebook();
@@ -3208,7 +3218,8 @@ function applyPermissions() {
  const studentValues = Object.values(students);
  let filledCount = 0;
  for (let i = 0; i < studentValues.length; i++) {
- if (studentValues[i].name || studentValues[i].paid > 0) filledCount++;
+   const s = studentValues[i];
+   if (s && (s.name || s.paid > 0) && !s.isSessionStudent && !String(s.id).startsWith("ST-") && s.id !== 'حصة') filledCount++;
  }
  
  const todayStr = nowDateStr();
@@ -3221,8 +3232,7 @@ function applyPermissions() {
 
   if($("totalStudentsCount")) {
     const maxSt = window.SUBSCRIPTION?.maxStudents;
-    const combinedCount = (typeof window.getTotalStudentsCombinedCount === "function") ? window.getTotalStudentsCombinedCount() : (filledCount + (typeof window.getUniqueSessionStudentsCount === "function" ? window.getUniqueSessionStudentsCount() : 0));
-    $("totalStudentsCount").textContent = maxSt ? `${combinedCount} / ${maxSt}` : combinedCount;
+    $("totalStudentsCount").textContent = maxSt ? `${filledCount} / ${maxSt}` : filledCount;
   }
   if($("todayCountTop")) $("todayCountTop").textContent = todayCount;
   if($("mobileSessionQuickStat")) $("mobileSessionQuickStat").textContent = `${todayCount} حضور`;
@@ -4433,31 +4443,10 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  let filled = [];
  const allStudents = Object.values(students);
  for (let i = 0; i < allStudents.length; i++) {
- if (allStudents[i] && (allStudents[i].name || allStudents[i].paid > 0)) filled.push(allStudents[i]);
- }
-
- // Include Session Students in the main list
- if (typeof window.getAllSessionStudents === 'function') {
-   const sessList = window.getAllSessionStudents();
-   sessList.forEach(item => {
-     filled.push({
-       id: 'حصة',
-       realId: 'sess_' + item.id,
-       isSessionStudent: true,
-       name: item.name,
-       phone: item.phone || '',
-       parentPhone: '',
-       className: item.className || "",
-       packages: ['حصة'],
-       paid: Number(item.amount) || 0,
-       discount: 0,
-       debt: 0,
-       status: 'active',
-       attendanceDates: [item.date || nowDateStr()],
-       method: item.method,
-       sessionRecord: item
-     });
-   });
+   const st = allStudents[i];
+   if (st && (st.name || st.paid > 0) && !st.isSessionStudent && !String(st.id).startsWith("ST-") && st.id !== 'حصة') {
+     filled.push(st);
+   }
  }
  
  const today = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
@@ -9245,6 +9234,8 @@ document.addEventListener("DOMContentLoaded", () => {
    if (typeof setupSessionPaymentPills === "function") setupSessionPaymentPills();
    if (typeof window.refreshSessionFormAutoId === "function") window.refreshSessionFormAutoId();
    if (typeof window.setupSessionFormAutocomplete === "function") window.setupSessionFormAutocomplete();
+   if (typeof window.renderSessionFinanceStats === "function") window.renderSessionFinanceStats();
+   if (typeof window.renderAllSessionStudentsTable === "function") window.renderAllSessionStudentsTable();
    renderSessionStudentsList(nowDateStr());
    if($("sessFilterDate")) $("sessFilterDate").value = nowDateStr();
  });
@@ -9699,6 +9690,477 @@ window.openSessionStudentModal = function(item) {
    }
  };
 
+
+  // ==========================================
+  // === ADVANCED SESSION STUDENTS ENGINE ===
+  // ==========================================
+  window.currentSessFinancePeriod = 'all';
+
+  window.setSessionFinancePeriod = function(period) {
+    window.currentSessFinancePeriod = period;
+    document.querySelectorAll(".sess-period-btn").forEach(b => b.classList.remove("active"));
+    const activeBtn = $("btnSessPeriod" + (period === 'all' ? 'All' : (period === 'month' ? 'Month' : 'Today')));
+    if (activeBtn) activeBtn.classList.add("active");
+    window.renderSessionFinanceStats();
+  };
+
+  window.setSessionQuickAmount = function(amt) {
+    const amtInp = $("sessStAmount");
+    if (amtInp) {
+      amtInp.value = amt;
+      amtInp.focus();
+    }
+  };
+
+  window.switchSessionSubTab = function(tab) {
+    const paneDb = $("sessSubTabDatabasePane");
+    const paneQuick = $("sessSubTabQuickPane");
+    const btnDb = $("tabBtnSessDatabase");
+    const btnQuick = $("tabBtnSessQuick");
+
+    if (tab === 'database') {
+      if (paneDb) paneDb.style.display = "block";
+      if (paneQuick) paneQuick.style.display = "none";
+      if (btnDb) {
+        btnDb.classList.add("active");
+        btnDb.style.background = "";
+        btnDb.style.border = "";
+        btnDb.style.color = "";
+      }
+      if (btnQuick) {
+        btnQuick.classList.remove("active");
+        btnQuick.style.background = "transparent";
+        btnQuick.style.border = "1px solid var(--border)";
+        btnQuick.style.color = "var(--text-secondary)";
+      }
+      window.renderAllSessionStudentsTable();
+      window.renderSessionFinanceStats();
+    } else {
+      if (paneDb) paneDb.style.display = "none";
+      if (paneQuick) paneQuick.style.display = "block";
+      if (btnQuick) {
+        btnQuick.classList.add("active");
+        btnQuick.style.background = "";
+        btnQuick.style.border = "";
+        btnQuick.style.color = "";
+      }
+      if (btnDb) {
+        btnDb.classList.remove("active");
+        btnDb.style.background = "transparent";
+        btnDb.style.border = "1px solid var(--border)";
+        btnDb.style.color = "var(--text-secondary)";
+      }
+      const curDate = ($("sessFilterDate") && $("sessFilterDate").value) ? $("sessFilterDate").value : nowDateStr();
+      window.renderSessionStudentsList(curDate);
+      if (typeof window.setupSessionFormAutocomplete === "function") window.setupSessionFormAutocomplete();
+    }
+  };
+
+  window.renderSessionFinanceStats = function() {
+    const period = window.currentSessFinancePeriod || 'all';
+    const today = nowDateStr();
+    const curMonthPrefix = today.slice(0, 7); // YYYY-MM
+
+    let totalRev = 0;
+    let cashRev = 0;
+    let instapayRev = 0;
+    let walletRev = 0;
+
+    Object.keys(sessionStudentsByDate || {}).forEach(d => {
+      let match = false;
+      if (period === 'all') match = true;
+      else if (period === 'month' && d.startsWith(curMonthPrefix)) match = true;
+      else if (period === 'today' && d === today) match = true;
+
+      if (match) {
+        const arr = sessionStudentsByDate[d] || [];
+        arr.forEach(item => {
+          const amt = toInt(item.amount);
+          totalRev += amt;
+          if (item.method === 'instapay') instapayRev += amt;
+          else if (item.method === 'wallet') walletRev += amt;
+          else cashRev += amt;
+        });
+      }
+    });
+
+    const allSess = window.getAllSessionStudentsList();
+    const totalStudents = allSess.length;
+    let activeBalance = 0;
+    allSess.forEach(s => {
+      activeBalance += Math.max(0, toInt(s.sessionBalance));
+    });
+
+    if ($("sessStatTotalRev")) $("sessStatTotalRev").textContent = totalRev + " ج";
+    if ($("sessStatCashRev")) $("sessStatCashRev").textContent = cashRev + " ج";
+    if ($("sessStatInstapayRev")) $("sessStatInstapayRev").textContent = instapayRev + " ج";
+    if ($("sessStatWalletRev")) $("sessStatWalletRev").textContent = walletRev + " ج";
+    if ($("sessStatTotalStudents")) $("sessStatTotalStudents").textContent = totalStudents;
+    if ($("sessStatActiveBalance")) $("sessStatActiveBalance").textContent = activeBalance + " حصة";
+    if ($("sessDbStudentsCountBadge")) $("sessDbStudentsCountBadge").textContent = totalStudents;
+  };
+
+  window.getAllSessionStudentsList = function() {
+    const map = new Map();
+
+    // 1. Collect from students dictionary
+    Object.values(students || {}).forEach(s => {
+      if (s && (s.isSessionStudent || String(s.id).startsWith("ST-") || s.id === 'حصة')) {
+        const sId = String(s.id);
+        let lastMethod = 'cash';
+        let lastActivity = s.createdAt ? s.createdAt.slice(0, 10) : '';
+
+        if (Array.isArray(s.payments) && s.payments.length > 0) {
+          const lastP = s.payments[s.payments.length - 1];
+          if (lastP) {
+            lastMethod = lastP.method || 'cash';
+            if (lastP.date) lastActivity = lastP.date;
+          }
+        }
+        if (Array.isArray(s.attendanceDates) && s.attendanceDates.length > 0) {
+          const lastAtt = s.attendanceDates[s.attendanceDates.length - 1];
+          if (lastAtt && (!lastActivity || lastAtt > lastActivity)) lastActivity = lastAtt;
+        }
+
+        map.set(sId, {
+          id: sId,
+          name: s.name || '',
+          phone: s.phone || '',
+          className: s.className || '',
+          sessionBalance: toInt(s.sessionBalance) || 0,
+          paid: toInt(s.paid) || 0,
+          lastMethod: lastMethod,
+          lastActivity: lastActivity || nowDateStr(),
+          studentObj: s
+        });
+      }
+    });
+
+    // 2. Cross-reference with sessionStudentsByDate
+    Object.keys(sessionStudentsByDate || {}).sort().forEach(d => {
+      const arr = sessionStudentsByDate[d] || [];
+      arr.forEach(it => {
+        const itId = it.id || '';
+        if (itId && map.has(itId)) {
+          const entry = map.get(itId);
+          if (it.phone && !entry.phone) entry.phone = it.phone;
+          if (it.className && !entry.className) entry.className = it.className;
+          if (it.method) entry.lastMethod = it.method;
+          if (d >= entry.lastActivity) entry.lastActivity = d;
+          if (it.balanceLeft !== undefined && it.balanceLeft !== null) entry.sessionBalance = toInt(it.balanceLeft);
+        } else if (it.name) {
+          const tempKey = itId || ('ST_' + (it.name.trim().toLowerCase()) + '_' + (it.phone || ''));
+          if (!map.has(tempKey)) {
+            map.set(tempKey, {
+              id: itId || 'ST-???',
+              name: it.name || '',
+              phone: it.phone || '',
+              className: it.className || '',
+              sessionBalance: toInt(it.balanceLeft) || 0,
+              paid: toInt(it.amount) || 0,
+              lastMethod: it.method || 'cash',
+              lastActivity: d,
+              studentObj: null
+            });
+          }
+        }
+      });
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      return (b.lastActivity || '').localeCompare(a.lastActivity || '');
+    });
+  };
+
+  window.renderAllSessionStudentsTable = function() {
+    const filterClassEl = $("sessDbFilterClass");
+    if (filterClassEl) {
+      const currentSelected = filterClassEl.value || 'all';
+      const classesSet = new Set();
+      Object.keys(groupFees || {}).forEach(k => classesSet.add(k));
+      window.getAllSessionStudentsList().forEach(s => {
+        if (s.className && s.className.trim()) classesSet.add(s.className.trim());
+      });
+      let opts = '<option value="all">كل المواد والصفوف</option>';
+      classesSet.forEach(c => {
+        opts += '<option value="' + c + '">' + c + '</option>';
+      });
+      filterClassEl.innerHTML = opts;
+      filterClassEl.value = currentSelected;
+    }
+    window.filterSessionStudentsDatabase();
+  };
+
+  window.filterSessionStudentsDatabase = function() {
+    const tbody = $("sessionStudentsFullTableBody");
+    const emptyState = $("sessDbEmptyState");
+    if (!tbody) return;
+
+    const query = ($("sessDbSearchInput") ? $("sessDbSearchInput").value.trim().toLowerCase() : "");
+    const classFilter = ($("sessDbFilterClass") ? $("sessDbFilterClass").value : "all");
+    const balanceFilter = ($("sessDbFilterBalance") ? $("sessDbFilterBalance").value : "all");
+
+    const allList = window.getAllSessionStudentsList();
+    const filtered = allList.filter(s => {
+      if (query) {
+        const matchName = (s.name || '').toLowerCase().includes(query);
+        const matchPhone = (s.phone || '').includes(query);
+        const matchId = (s.id || '').toLowerCase().includes(query);
+        if (!matchName && !matchPhone && !matchId) return false;
+      }
+      if (classFilter !== 'all') {
+        if ((s.className || '').trim() !== classFilter) return false;
+      }
+      if (balanceFilter === 'has_balance' && s.sessionBalance <= 0) return false;
+      if (balanceFilter === 'zero_balance' && s.sessionBalance > 0) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = "";
+      if (emptyState) emptyState.style.display = "block";
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = "none";
+    let html = "";
+
+    filtered.forEach(s => {
+      const bal = s.sessionBalance || 0;
+      const balBadge = bal > 0 
+        ? '<span class="badge" style="background:#fce7f3; color:#db2777; font-weight:800; font-size:0.9em; padding:4px 10px; border-radius:8px;"><i class="fa-solid fa-ticket"></i> ' + bal + ' حصة</span>'
+        : '<span class="badge" style="background:#fee2e2; color:#dc2626; font-weight:800; font-size:0.85em; padding:4px 8px; border-radius:8px;"><i class="fa-solid fa-circle-exclamation"></i> رصيد 0</span>';
+
+      let mBadge = s.lastMethod === "instapay" ? "إنستاباي" : (s.lastMethod === "wallet" ? "فودافون كاش" : "كاش");
+      let mBg = s.lastMethod === "instapay" ? "#e0f2fe" : (s.lastMethod === "wallet" ? "#f3e8ff" : "#dcfce7");
+      let mColor = s.lastMethod === "instapay" ? "#0284c7" : (s.lastMethod === "wallet" ? "#7c3aed" : "#15803d");
+
+      html += '<tr style="border-bottom: 1px solid var(--border); transition: background 0.15s ease;" onmouseover="this.style.background=\x27var(--bg-inset)\x27" onmouseout="this.style.background=\x27transparent\x27">';
+      html += '<td style="padding:12px 14px;"><span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:800; letter-spacing:0.5px; font-size:0.88em; padding:4px 8px; border-radius:6px;">' + s.id + '</span></td>';
+      html += '<td style="padding:12px 14px; font-weight:800; color:var(--text); font-size:0.95em;">' + s.name + '</td>';
+      html += '<td style="padding:12px 14px;">';
+      if (s.phone) {
+        html += '<div style="display:flex; align-items:center; gap:6px;">' +
+          '<span style="font-family:monospace; font-size:0.92em; color:var(--text-secondary); direction:ltr;">' + s.phone + '</span>' +
+          '<button class="btn success smallBtn iconOnly" style="padding:3px 7px; border-radius:6px;" title="مراسلة واتساب" onclick="window.open(\x27https://wa.me/20' + s.phone + '\x27, \x27_blank\x27)"><i class="fa-brands fa-whatsapp"></i></button>' +
+          '</div>';
+      } else {
+        html += '<span style="color:var(--text-secondary); opacity:0.5;">—</span>';
+      }
+      html += '</td>';
+      html += '<td style="padding:12px 14px;"><span class="badge" style="background:var(--bg-inset); color:var(--text); border:1px solid var(--border); padding:3px 8px; border-radius:6px; font-size:0.85em;">' + (s.className || 'بدون باقة') + '</span></td>';
+      html += '<td style="padding:12px 14px; text-align:center;">' + balBadge + '</td>';
+      html += '<td style="padding:12px 14px; text-align:center; font-weight:800; color:var(--success); font-size:1em;">' + s.paid + ' ج</td>';
+      html += '<td style="padding:12px 14px; text-align:center;"><span class="badge" style="background:' + mBg + '; color:' + mColor + '; font-weight:700; font-size:0.82em; padding:3px 8px; border-radius:6px;">' + mBadge + '</span></td>';
+      html += '<td style="padding:12px 14px; text-align:center; font-size:0.85em; color:var(--text-secondary); font-family:monospace;">' + (s.lastActivity || '—') + '</td>';
+      html += '<td style="padding:12px 14px; text-align:center;">';
+      html += '<div style="display:inline-flex; align-items:center; gap:6px;">';
+      html += '<button type="button" class="btn success smallBtn" style="padding:5px 9px; font-weight:700; font-size:0.8em; border-radius:6px;" title="شحن رصيد حصص سريع" onclick="window.quickRechargeSessionStudent(\x27' + s.id + '\x27)"><i class="fa-solid fa-plus"></i> شحن</button>';
+      if (String(s.id).startsWith("ST-") || s.studentObj) {
+        html += '<button type="button" class="btn primary smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="فتح الملف وتعديل البيانات" onclick="window.extOpen(\x27' + s.id + '\x27)"><i class="fa-solid fa-user-gear"></i></button>';
+      }
+      html += '<button type="button" class="btn danger smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="حذف طالب الحصة بالكامل" onclick="window.deleteSessionStudentCompletely(\x27' + s.id + '\x27)"><i class="fa-solid fa-trash-can"></i></button>';
+      html += '</div></td></tr>';
+    });
+
+    tbody.innerHTML = html;
+  };
+
+  window.quickRechargeSessionStudent = function(id) {
+    const sList = window.getAllSessionStudentsList();
+    const st = sList.find(x => x.id === id);
+    if (!st) {
+      showToast("تعذر العثور على طالب الحصة", "err");
+      return;
+    }
+
+    if (typeof Swal !== "undefined") {
+      Swal.fire({
+        title: "شحن رصيد حصص: " + st.name,
+        html: `
+          <div style="text-align:right; font-size:0.9em; margin-bottom:12px; color:var(--text-secondary);">
+            كود الطالب: <b>${st.id}</b> | الرصيد الحالي: <b>${st.sessionBalance}</b> حصة
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px; text-align:right;">
+            <div>
+              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">عدد الحصص المراد شحنها:</label>
+              <input type="number" id="swalSessCount" class="swal2-input" value="1" min="1" style="width:100%; margin:0;">
+            </div>
+            <div>
+              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">المبلغ المحصل (ج):</label>
+              <input type="number" id="swalSessAmount" class="swal2-input" placeholder="مثال: 100" style="width:100%; margin:0;">
+            </div>
+            <div>
+              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">طريقة التحصيل:</label>
+              <select id="swalSessMethod" class="swal2-select" style="width:100%; margin:0;">
+                <option value="cash">كاش</option>
+                <option value="instapay">إنستاباي</option>
+                <option value="wallet">فودافون كاش</option>
+              </select>
+            </div>
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: "تأكيد الشحن والتحصيل",
+        confirmButtonColor: "#10b981",
+        cancelButtonText: "إلغاء",
+        preConfirm: () => {
+          const count = toInt(document.getElementById("swalSessCount")?.value);
+          const amt = toInt(document.getElementById("swalSessAmount")?.value);
+          const method = document.getElementById("swalSessMethod")?.value || 'cash';
+          if (count <= 0) {
+            Swal.showValidationMessage("يرجى إدخال عدد حصص صحيح (1 على الأقل)");
+            return false;
+          }
+          if (amt < 0) {
+            Swal.showValidationMessage("يرجى إدخال مبلغ صحيح");
+            return false;
+          }
+          return { count, amt, method };
+        }
+      }).then(async res => {
+        if (res.isConfirmed && res.value) {
+          const { count, amt, method } = res.value;
+          const today = nowDateStr();
+
+          let targetSt = students[id];
+          if (!targetSt) {
+            students[id] = {
+              id: id,
+              name: st.name,
+              phone: st.phone,
+              className: st.className,
+              paid: 0,
+              sessionBalance: 0,
+              isSessionStudent: true,
+              payments: [],
+              attendanceDates: []
+            };
+            targetSt = students[id];
+          }
+
+          targetSt.sessionBalance = (toInt(targetSt.sessionBalance) || 0) + count;
+          targetSt.paid = (toInt(targetSt.paid) || 0) + amt;
+          if (!targetSt.payments) targetSt.payments = [];
+          targetSt.payments.push({
+            id: Date.now(),
+            date: today,
+            amount: amt,
+            method: method,
+            sessionsCount: count,
+            note: "شحن رصيد " + count + " حصة من جدول طلاب الحصة"
+          });
+
+          if (!sessionStudentsByDate[today]) sessionStudentsByDate[today] = [];
+          sessionStudentsByDate[today].push({
+            id: id,
+            name: targetSt.name,
+            phone: targetSt.phone,
+            className: targetSt.className || '',
+            amount: amt,
+            sessionsCount: count,
+            method: method,
+            timestamp: new Date().toLocaleTimeString(),
+            balanceLeft: targetSt.sessionBalance
+          });
+
+          if (amt > 0) {
+            revenueByDate[today] = (revenueByDate[today] || 0) + amt;
+          }
+
+          await saveAll();
+          window.renderSessionFinanceStats();
+          window.renderAllSessionStudentsTable();
+          showToast("تم شحن " + count + " حصة بنجاح للطالب (" + st.name + ") - الرصيد الجديد: " + targetSt.sessionBalance + " حصة", "success");
+        }
+      });
+    }
+  };
+
+  window.deleteSessionStudentCompletely = function(id) {
+    if (typeof Swal !== "undefined") {
+      Swal.fire({
+        title: "حذف طالب الحصة",
+        text: "هل أنت متأكد من حذف طالب الحصة (" + id + ") وجميع سجلاته نهائياً؟",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#64748b",
+        confirmButtonText: "نعم، حذف نهائي",
+        cancelButtonText: "إلغاء"
+      }).then(async res => {
+        if (res.isConfirmed) {
+          if (students[id]) delete students[id];
+          Object.keys(sessionStudentsByDate || {}).forEach(d => {
+            sessionStudentsByDate[d] = (sessionStudentsByDate[d] || []).filter(x => x.id !== id);
+          });
+          await saveAll();
+          window.renderSessionFinanceStats();
+          window.renderAllSessionStudentsTable();
+          showToast("تم حذف طالب الحصة بنجاح", "success");
+        }
+      });
+    }
+  };
+
+  window.exportSessionStudentsToExcel = function() {
+    if (typeof XLSX === "undefined") {
+      showToast("مكتبة Excel غير محملة", "err");
+      return;
+    }
+    const allList = window.getAllSessionStudentsList();
+    if (allList.length === 0) {
+      showToast("لا يوجد طلاب حصة لتصديرهم", "warning");
+      return;
+    }
+
+    const rows = [
+      [
+        "كود الحصة (ID)",
+        "اسم الطالب",
+        "رقم الموبايل",
+        "المادة / الصف / الباقة",
+        "رصيد الحصص المتبقي",
+        "إجمالي المبالغ المدفوعة (ج)",
+        "طريقة آخر دفع",
+        "تاريخ آخر نشاط / حضور"
+      ]
+    ];
+
+    allList.forEach(s => {
+      let mBadge = s.lastMethod === "instapay" ? "إنستاباي" : (s.lastMethod === "wallet" ? "فودافون كاش" : "كاش");
+      rows.push([
+        s.id || '',
+        s.name || '',
+        s.phone ? ("'" + s.phone) : '',
+        s.className || 'بدون باقة',
+        s.sessionBalance || 0,
+        s.paid || 0,
+        mBadge,
+        s.lastActivity || ''
+      ]);
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 16 },
+      { wch: 18 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "سجل طلاب الحصة");
+    const today = nowDateStr();
+    XLSX.writeFile(wb, "سجل_طلاب_الحصة_Studify_" + today + ".xlsx");
+    showToast("تم تصدير سجل طلاب الحصة بالكامل إلى Excel بنجاح ", "success");
+  };
+
  window.renderSessionStudentsList = function(d) {
   const slist = $("sessStudentsList"); if(!slist) return;
   let arr = sessionStudentsByDate[d] || [];
@@ -9769,6 +10231,8 @@ window.openSessionStudentModal = function(item) {
       sessionStudentsByDate[dt].splice(idx, 1);
       await saveAll();
       renderSessionStudentsList(dt);
+      if (typeof window.renderSessionFinanceStats === "function") window.renderSessionFinanceStats();
+      if (typeof window.renderAllSessionStudentsTable === "function") window.renderAllSessionStudentsTable();
       if (typeof updateTopStats === "function") updateTopStats();
       showToast("تم إلغاء تسجيل الحضور والمبلغ بنجاح", "success");
     };
@@ -9969,6 +10433,8 @@ window.openSessionStudentModal = function(item) {
 
   await saveAll();
   renderSessionStudentsList(today);
+  if (typeof window.renderSessionFinanceStats === "function") window.renderSessionFinanceStats();
+  if (typeof window.renderAllSessionStudentsTable === "function") window.renderAllSessionStudentsTable();
   if (typeof updateTopStats === "function") updateTopStats();
   if (typeof renderList === "function") renderList(false);
   if (typeof window.refreshSessionFormAutoId === "function") window.refreshSessionFormAutoId();

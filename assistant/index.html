@@ -924,104 +924,247 @@
  </div>
  </section>
 
- <!-- ====== SESSION STUDENTS (طلاب الحصة) ====== -->
- <section id="secSessionStudents" class="tab-section hidden">
- <div class="flexBetween" style="margin-bottom: 20px;">
- <div>
- <h1 style="color: var(--primary); display:flex; align-items:center; gap:10px;" data-i18n="sess_main_title">
- <span></span> <span data-i18n="sess_main_title">نظام تسجيل طلاب الحصة الفورية</span>
- </h1>
- <p style="color: var(--text-secondary); font-size: 0.9em; margin-top: 5px;" data-i18n="sess_main_desc">
- تسجيل الحضور والدفع للطلاب المؤقتين (بدون إصدار كارت أو حجز ID دائم في قاعدة البيانات)
- </p>
- </div>
- </div>
+ <!-- ====== SESSION STUDENTS (طلاب الحصة المتكامل) ====== -->
+  <section id="secSessionStudents" class="tab-section hidden">
+    <!-- 1. Header -->
+    <div class="flexBetween wrap" style="margin-bottom: 20px; gap: 15px;">
+      <div>
+        <h1 style="color: var(--primary); display:flex; align-items:center; gap:12px; margin:0;" data-i18n="sess_main_title">
+          <i class="fa-solid fa-ticket-simple" style="font-size:1.2em;"></i>
+          <span>نظام وسجل طلاب الحصة المتكامل</span>
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 0.9em; margin-top: 6px;" data-i18n="sess_main_desc">
+          إدارة شاملة لطلاب الحصص، قاعدة بيانات متكاملة بالأرصدة والمواد، وإحصائيات مالية دقيقة لطرق الدفع.
+        </p>
+      </div>
+      <!-- الفلترة الزمنية للإحصائيات -->
+      <div class="sess-period-selector" style="display:flex; background:var(--bg-inset); padding:4px; border-radius:12px; border:1px solid var(--border); gap:4px;">
+        <button type="button" class="btn smallBtn sess-period-btn active" id="btnSessPeriodAll" onclick="window.setSessionFinancePeriod('all')" style="border-radius:8px; font-weight:700;">كل الأوقات</button>
+        <button type="button" class="btn smallBtn sess-period-btn" id="btnSessPeriodMonth" onclick="window.setSessionFinancePeriod('month')" style="border-radius:8px; font-weight:700;">هذا الشهر</button>
+        <button type="button" class="btn smallBtn sess-period-btn" id="btnSessPeriodToday" onclick="window.setSessionFinancePeriod('today')" style="border-radius:8px; font-weight:700;">اليوم</button>
+      </div>
+    </div>
 
- <div class="grid2" style="gap: 20px;">
- <!-- 1. نموذج الإضافة السريعة -->
- <div class="card">
- <h2 style="color: var(--success); margin-bottom: 15px;" data-i18n="sess_add_title"> تسجيل حضور ودفع فوري</h2>
- <label class="lbl" data-i18n="sess_name_lbl">اسم الطالب *</label>
- <input id="sessStName" list="sessStudentsDatalist" class="inp" placeholder="مثال: أحمد محمود عثمان" data-i18n-placeholder="sess_name_plc" autocomplete="off">
- <datalist id="sessStudentsDatalist"></datalist>
+    <!-- 2. كروت الإحصائيات المالية المتقدمة لطلاب الحصة -->
+    <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px;">
+      <!-- إجمالي إيراد طلاب الحصة -->
+      <div class="card stat-card" style="background: var(--bg-surface); border-top: 4px solid var(--primary); padding: 16px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); text-align: center;">
+        <div style="color: var(--text-secondary); font-size: 0.85em; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fa-solid fa-coins" style="color:var(--primary);"></i> إجمالي إيراد الحصص
+        </div>
+        <div id="sessStatTotalRev" style="font-size: 1.8em; font-weight: 800; color: var(--primary); margin-top: 6px;">0 ج</div>
+      </div>
+      <!-- كاش -->
+      <div class="card stat-card" style="background: var(--bg-surface); border-top: 4px solid #10b981; padding: 16px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); text-align: center;">
+        <div style="color: var(--text-secondary); font-size: 0.85em; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i> كاش (نقداً)
+        </div>
+        <div id="sessStatCashRev" style="font-size: 1.8em; font-weight: 800; color: #10b981; margin-top: 6px;">0 ج</div>
+      </div>
+      <!-- إنستاباي -->
+      <div class="card stat-card" style="background: var(--bg-surface); border-top: 4px solid #0284c7; padding: 16px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); text-align: center;">
+        <div style="color: var(--text-secondary); font-size: 0.85em; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fa-solid fa-bolt-lightning" style="color:#0284c7;"></i> إنستاباي
+        </div>
+        <div id="sessStatInstapayRev" style="font-size: 1.8em; font-weight: 800; color: #0284c7; margin-top: 6px;">0 ج</div>
+      </div>
+      <!-- محفظة / فودافون كاش -->
+      <div class="card stat-card" style="background: var(--bg-surface); border-top: 4px solid #8b5cf6; padding: 16px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); text-align: center;">
+        <div style="color: var(--text-secondary); font-size: 0.85em; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fa-solid fa-wallet" style="color:#8b5cf6;"></i> فودافون كاش / محفظة
+        </div>
+        <div id="sessStatWalletRev" style="font-size: 1.8em; font-weight: 800; color: #8b5cf6; margin-top: 6px;">0 ج</div>
+      </div>
+      <!-- إجمالي طلاب الحصة المسجلين -->
+      <div class="card stat-card" style="background: var(--bg-surface); border-top: 4px solid #4f46e5; padding: 16px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); text-align: center;">
+        <div style="color: var(--text-secondary); font-size: 0.85em; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fa-solid fa-users" style="color:#4f46e5;"></i> طلاب الحصة المسجلين
+        </div>
+        <div id="sessStatTotalStudents" style="font-size: 1.8em; font-weight: 800; color: #4f46e5; margin-top: 6px;">0</div>
+      </div>
+      <!-- رصيد الحصص المتاح للطلاب -->
+      <div class="card stat-card" style="background: var(--bg-surface); border-top: 4px solid #db2777; padding: 16px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); text-align: center;">
+        <div style="color: var(--text-secondary); font-size: 0.85em; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fa-solid fa-ticket" style="color:#db2777;"></i> رصيد حصص متبقي
+        </div>
+        <div id="sessStatActiveBalance" style="font-size: 1.8em; font-weight: 800; color: #db2777; margin-top: 6px;">0 حصة</div>
+      </div>
+    </div>
 
- <div class="grid2" style="gap:10px; margin-top:10px;">
-   <div>
-     <label class="lbl"><i class="fa-solid fa-id-badge" style="color:var(--primary); margin-inline-end:5px;"></i> كود الحصة (ID)</label>
-     <input id="sessStId" class="inp" readonly value="ST-00001" style="font-weight:bold; background:var(--bg-inset); color:var(--primary); letter-spacing:1px;" title="كود الحصة التلقائي للطالب">
-   </div>
-   <div>
-     <label class="lbl"><i class="fa-solid fa-ticket" style="color:var(--primary); margin-inline-end:5px;"></i> عدد الحصص المدفوعة</label>
-     <input id="sessStCount" type="number" class="inp" value="1" min="1" placeholder="1" style="font-weight:bold;">
-   </div>
- </div>
+    <!-- 3. شريط التبويبات الداخلية الفاخر (Sub-Tabs) -->
+    <div style="display:flex; gap:10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 8px;">
+      <button type="button" id="tabBtnSessDatabase" class="btn sess-subtab-btn active" onclick="window.switchSessionSubTab('database')" style="padding:10px 20px; font-weight:800; font-size:1em; display:flex; align-items:center; gap:8px; border-radius:10px;">
+        <i class="fa-solid fa-table-list"></i>
+        <span>سجل وقاعدة بيانات طلاب الحصة الشامل</span>
+        <span id="sessDbStudentsCountBadge" class="badge" style="background:var(--primary); color:#fff; font-size:0.8em; padding:2px 8px; border-radius:10px;">0</span>
+      </button>
+      <button type="button" id="tabBtnSessQuick" class="btn sess-subtab-btn" onclick="window.switchSessionSubTab('quick')" style="padding:10px 20px; font-weight:800; font-size:1em; display:flex; align-items:center; gap:8px; border-radius:10px; background:transparent; border:1px solid var(--border); color:var(--text-secondary);">
+        <i class="fa-solid fa-bolt"></i>
+        <span>تسجيل حضور ودفع فوري + سجل اليوم</span>
+      </button>
+    </div>
 
- <div id="sessBalanceBanner" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(37,99,235,0.08); border:1.5px dashed var(--primary); border-radius:10px; align-items:center; justify-content:space-between; gap:10px;">
-   <div style="font-size:0.86rem; font-weight:700; color:var(--primary);"><i class="fa-solid fa-circle-check"></i> <span id="sessBalanceBannerText">طالب مسجل سابقاً - رصيد متاح: 0 حصة</span></div>
-   <button type="button" id="btnUseSessBalance" class="btn primary smallBtn" style="padding:4px 10px; font-size:0.8rem; white-space:nowrap; border-radius:6px;"><i class="fa-solid fa-ticket"></i> خصم من الرصيد</button>
- </div>
+    <!-- PANE 1: قاعدة بيانات وسجل طلاب الحصة الشامل -->
+    <div id="sessSubTabDatabasePane" class="sess-subtab-pane">
+      <div class="card" style="padding:20px; border-radius:12px; margin-bottom:15px;">
+        <!-- شريط الفلاتر والبحث والأزرار -->
+        <div class="flexBetween wrap" style="gap:15px; margin-bottom:18px;">
+          <div style="display:flex; flex-wrap:wrap; gap:10px; flex:1; min-width:280px;">
+            <!-- حقل البحث الحي -->
+            <div style="position:relative; flex:1; min-width:220px;">
+              <i class="fa-solid fa-magnifying-glass" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-secondary);"></i>
+              <input type="text" id="sessDbSearchInput" class="inp" placeholder="بحث بالاسم، رقم الموبايل، أو كود الحصة (ST-xxxx)..." style="padding-inline-start:36px;" oninput="window.filterSessionStudentsDatabase()">
+            </div>
+            <!-- فلتر المادة / الصف -->
+            <select id="sessDbFilterClass" class="inp" style="width:auto; min-width:160px;" onchange="window.filterSessionStudentsDatabase()">
+              <option value="all">كل المواد والصفوف</option>
+            </select>
+            <!-- فلتر الرصيد -->
+            <select id="sessDbFilterBalance" class="inp" style="width:auto; min-width:140px;" onchange="window.filterSessionStudentsDatabase()">
+              <option value="all">كل الأرصدة</option>
+              <option value="has_balance">رصيد متاح (> 0)</option>
+              <option value="zero_balance">رصيد منتهي (0)</option>
+            </select>
+          </div>
+          <!-- زر تصدير Excel -->
+          <button type="button" id="btnExportSessExcel" class="btn success" onclick="window.exportSessionStudentsToExcel()" style="padding:10px 18px; font-weight:800; display:flex; align-items:center; gap:8px; border-radius:10px; box-shadow:0 2px 8px rgba(16,185,129,0.25);">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>تصدير سجل طلاب الحصة Excel</span>
+          </button>
+        </div>
 
- <label class="lbl" style="margin-top:10px;" data-i18n="sess_phone_lbl">رقم الموبايل (اختياري)</label>
- <input id="sessStPhone" class="inp" inputmode="tel" placeholder="مثال: 01012345678" data-i18n-placeholder="sess_phone_plc">
+        <!-- جدول طلاب الحصة الشامل -->
+        <div class="tableWrap" style="overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--bg-surface);">
+          <table id="sessionStudentsFullTable" class="table" style="width:100%; border-collapse:collapse; min-width:850px;">
+            <thead>
+              <tr style="background:var(--bg-inset); text-align:right;">
+                <th style="padding:12px 14px; font-size:0.9em;">الكود (ID)</th>
+                <th style="padding:12px 14px; font-size:0.9em;">اسم الطالب</th>
+                <th style="padding:12px 14px; font-size:0.9em;">رقم الموبايل</th>
+                <th style="padding:12px 14px; font-size:0.9em;">المادة / الصف</th>
+                <th style="padding:12px 14px; font-size:0.9em; text-align:center;">رصيد الحصص المتبقي</th>
+                <th style="padding:12px 14px; font-size:0.9em; text-align:center;">إجمالي المدفوع</th>
+                <th style="padding:12px 14px; font-size:0.9em; text-align:center;">طريقة آخر دفع</th>
+                <th style="padding:12px 14px; font-size:0.9em; text-align:center;">آخر نشاط</th>
+                <th style="padding:12px 14px; font-size:0.9em; text-align:center;">إجراءات سريعة</th>
+              </tr>
+            </thead>
+            <tbody id="sessionStudentsFullTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+        <div id="sessDbEmptyState" class="mutedCenter" style="padding:35px 20px; display:none;">
+          <i class="fa-solid fa-user-slash" style="font-size:2em; margin-bottom:10px; display:block; opacity:0.4;"></i>
+          <span>لا يوجد طلاب حصة مطابقين لبيانات البحث</span>
+        </div>
+      </div>
+    </div>
 
- <label class="lbl" data-i18n="sess_class_lbl">المادة / الصف / الباقة</label>
- <select id="sessStClass" class="inp">
- <option value="" disabled selected data-i18n="sess_class_opt">اختر المادة / الباقة</option>
- </select>
+    <!-- PANE 2: نموذج التسجيل والدفع الفوري وقائمة اليوم -->
+    <div id="sessSubTabQuickPane" class="sess-subtab-pane" style="display:none;">
+      <div class="grid2" style="gap: 20px;">
+        <!-- 1. نموذج الإضافة السريعة -->
+        <div class="card">
+          <h2 style="color: var(--success); margin-bottom: 15px; display:flex; align-items:center; gap:8px;" data-i18n="sess_add_title">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>تسجيل حضور ودفع فوري</span>
+          </h2>
+          <label class="lbl" data-i18n="sess_name_lbl">اسم الطالب *</label>
+          <input id="sessStName" list="sessStudentsDatalist" class="inp" placeholder="مثال: أحمد محمود عثمان" data-i18n-placeholder="sess_name_plc" autocomplete="off">
+          <datalist id="sessStudentsDatalist"></datalist>
 
- <div class="grid2" style="gap:10px; margin-top:10px;">
- <div>
- <label class="lbl" data-i18n="sess_amount_lbl">مبلغ الحصة *</label>
- <input id="sessStAmount" type="number" class="inp" placeholder="المبلغ (ج)" data-i18n-placeholder="sess_amount_plc">
- </div>
-                <div>
-                  <label class="lbl" data-i18n="sess_method_lbl">طريقة الدفع *</label>
-                  <select id="sessStMethod" class="inp" style="display:none;">
-                    <option value="cash" data-i18n="opt_cash">كاش</option>
-                    <option value="instapay" data-i18n="opt_instapay">إنستاباي</option>
-                    <option value="wallet" data-i18n="opt_wallet">فودافون كاش</option>
-                  </select>
-                  <div class="sess-payment-pills" id="sessPaymentPills" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:4px;">
-                    <button type="button" class="sess-pay-pill active" data-method="cash" id="sessPayBtnCash" style="padding:9px 4px; border-radius:10px; border:2px solid #10b981; background:rgba(16,185,129,0.14); color:#10b981; font-weight:800; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 2px 8px rgba(16,185,129,0.2);">
-                      <i class="fa-solid fa-money-bill-wave"></i>
-                      <span data-i18n="opt_cash">كاش</span>
-                    </button>
-                    <button type="button" class="sess-pay-pill" data-method="instapay" id="sessPayBtnInstapay" style="padding:9px 4px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg-surface); color:var(--text-secondary); font-weight:700; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);">
-                      <i class="fa-solid fa-bolt-lightning"></i>
-                      <span data-i18n="opt_instapay">إنستاباي</span>
-                    </button>
-                    <button type="button" class="sess-pay-pill" data-method="wallet" id="sessPayBtnWallet" style="padding:9px 4px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg-surface); color:var(--text-secondary); font-weight:700; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);">
-                      <i class="fa-solid fa-wallet"></i>
-                      <span data-i18n="opt_wallet">فودافون</span>
-                    </button>
-                  </div>
-                </div>
- </div>
+          <div class="grid2" style="gap:10px; margin-top:10px;">
+            <div>
+              <label class="lbl"><i class="fa-solid fa-id-badge" style="color:var(--primary); margin-inline-end:5px;"></i> كود الحصة (ID)</label>
+              <input id="sessStId" class="inp" readonly value="ST-00001" style="font-weight:bold; background:var(--bg-inset); color:var(--primary); letter-spacing:1px;" title="كود الحصة التلقائي للطالب">
+            </div>
+            <div>
+              <label class="lbl"><i class="fa-solid fa-ticket" style="color:var(--primary); margin-inline-end:5px;"></i> عدد الحصص المدفوعة</label>
+              <input id="sessStCount" type="number" class="inp" value="1" min="1" placeholder="1" style="font-weight:bold;">
+            </div>
+          </div>
 
- <button id="saveSessionStudentBtn" class="btn success w100" style="margin-top: 20px; padding: 12px; font-weight: bold; font-size: 1.05em;" data-i18n="sess_save_btn">
- تسجيل الحضور وتحصيل المبلغ 
- </button>
- </div>
+          <div id="sessBalanceBanner" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(37,99,235,0.08); border:1.5px dashed var(--primary); border-radius:10px; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="font-size:0.86rem; font-weight:700; color:var(--primary);"><i class="fa-solid fa-circle-check"></i> <span id="sessBalanceBannerText">طالب مسجل سابقاً - رصيد متاح: 0 حصة</span></div>
+            <button type="button" id="btnUseSessBalance" class="btn primary smallBtn" style="padding:4px 10px; font-size:0.8rem; white-space:nowrap; border-radius:6px;"><i class="fa-solid fa-ticket"></i> خصم من الرصيد</button>
+          </div>
 
- <!-- 2. قائمة طلاب الحصة لليوم المختار -->
- <div class="card">
- <div class="flexBetween" style="margin-bottom: 15px;">
- <h2 data-i18n="sess_list_title"> سجل طلاب الحصة</h2>
- <input id="sessFilterDate" type="date" class="inp" style="width: auto;">
- </div>
- <div class="badges" style="margin-bottom: 15px;">
- <span class="badge"><span data-i18n="badge_count">العدد:</span> <b id="sessCountBadge">0</b></span>
- <span class="badge" style="color: var(--success);"><span data-i18n="badge_rev">إجمالي الإيراد:</span> <b id="sessRevenueBadge">0</b> <span id="sessRevenueCurr">ج</span></span>
- </div>
+          <label class="lbl" style="margin-top:10px;" data-i18n="sess_phone_lbl">رقم الموبايل (اختياري)</label>
+          <input id="sessStPhone" class="inp" inputmode="tel" placeholder="مثال: 01012345678" data-i18n-placeholder="sess_phone_plc">
 
- <div id="sessStudentsList" class="list" style="max-height: 400px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px;">
- <div class="mutedCenter" data-i18n="sess_no_students">لا يوجد طلاب مسجلين بالحصة لهذا اليوم</div>
- </div>
- </div>
- </div>
- </section>
+          <label class="lbl" style="margin-top:10px;" data-i18n="sess_class_lbl">المادة / الصف / الباقة</label>
+          <select id="sessStClass" class="inp">
+            <option value="" disabled selected data-i18n="sess_class_opt">اختر المادة / الباقة</option>
+          </select>
 
- <!-- ====== BOOKLETS STOCK ====== -->
+          <!-- أزرار مبالغ نقدية سريعة لتسهيل وتسريع الإدخال على المساعد -->
+          <div style="margin-top:12px;">
+            <label class="lbl" style="display:flex; justify-content:space-between; align-items:center;">
+              <span data-i18n="sess_amount_lbl">مبلغ الحصة *</span>
+              <small style="color:var(--text-secondary); font-weight:normal;">أزرار سريعة:</small>
+            </label>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+              <button type="button" class="btn smallBtn sess-quick-amt-btn" onclick="window.setSessionQuickAmount(50)" style="flex:1; min-width:50px; padding:4px 6px; font-weight:700; border-radius:6px; background:var(--bg-inset); border:1px solid var(--border); color:var(--text);">50 ج</button>
+              <button type="button" class="btn smallBtn sess-quick-amt-btn" onclick="window.setSessionQuickAmount(75)" style="flex:1; min-width:50px; padding:4px 6px; font-weight:700; border-radius:6px; background:var(--bg-inset); border:1px solid var(--border); color:var(--text);">75 ج</button>
+              <button type="button" class="btn smallBtn sess-quick-amt-btn" onclick="window.setSessionQuickAmount(100)" style="flex:1; min-width:50px; padding:4px 6px; font-weight:700; border-radius:6px; background:var(--bg-inset); border:1px solid var(--border); color:var(--text);">100 ج</button>
+              <button type="button" class="btn smallBtn sess-quick-amt-btn" onclick="window.setSessionQuickAmount(120)" style="flex:1; min-width:50px; padding:4px 6px; font-weight:700; border-radius:6px; background:var(--bg-inset); border:1px solid var(--border); color:var(--text);">120 ج</button>
+              <button type="button" class="btn smallBtn sess-quick-amt-btn" onclick="window.setSessionQuickAmount(150)" style="flex:1; min-width:50px; padding:4px 6px; font-weight:700; border-radius:6px; background:var(--bg-inset); border:1px solid var(--border); color:var(--text);">150 ج</button>
+            </div>
+            <input id="sessStAmount" type="number" class="inp" placeholder="المبلغ (ج)" data-i18n-placeholder="sess_amount_plc">
+          </div>
+
+          <div style="margin-top:12px;">
+            <label class="lbl" data-i18n="sess_method_lbl">طريقة الدفع *</label>
+            <select id="sessStMethod" class="inp" style="display:none;">
+              <option value="cash" data-i18n="opt_cash">كاش</option>
+              <option value="instapay" data-i18n="opt_instapay">إنستاباي</option>
+              <option value="wallet" data-i18n="opt_wallet">فودافون كاش</option>
+            </select>
+            <div class="sess-payment-pills" id="sessPaymentPills" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:4px;">
+              <button type="button" class="sess-pay-pill active" data-method="cash" id="sessPayBtnCash" style="padding:9px 4px; border-radius:10px; border:2px solid #10b981; background:rgba(16,185,129,0.14); color:#10b981; font-weight:800; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 2px 8px rgba(16,185,129,0.2);">
+                <i class="fa-solid fa-money-bill-wave"></i>
+                <span data-i18n="opt_cash">كاش</span>
+              </button>
+              <button type="button" class="sess-pay-pill" data-method="instapay" id="sessPayBtnInstapay" style="padding:9px 4px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg-surface); color:var(--text-secondary); font-weight:700; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);">
+                <i class="fa-solid fa-bolt-lightning"></i>
+                <span data-i18n="opt_instapay">إنستاباي</span>
+              </button>
+              <button type="button" class="sess-pay-pill" data-method="wallet" id="sessPayBtnWallet" style="padding:9px 4px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg-surface); color:var(--text-secondary); font-weight:700; font-size:0.86em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);">
+                <i class="fa-solid fa-wallet"></i>
+                <span data-i18n="opt_wallet">فودافون</span>
+              </button>
+            </div>
+          </div>
+
+          <button id="saveSessionStudentBtn" class="btn success w100" style="margin-top: 20px; padding: 12px; font-weight: bold; font-size: 1.05em;" data-i18n="sess_save_btn">
+            تسجيل الحضور وتحصيل المبلغ 
+          </button>
+        </div>
+
+        <!-- 2. قائمة طلاب الحصة لليوم المختار -->
+        <div class="card">
+          <div class="flexBetween" style="margin-bottom: 15px;">
+            <h2 data-i18n="sess_list_title" style="display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-calendar-day" style="color:var(--primary);"></i>
+              <span>سجل حضور اليوم المختار</span>
+            </h2>
+            <input id="sessFilterDate" type="date" class="inp" style="width: auto;">
+          </div>
+          <div class="badges" style="margin-bottom: 15px;">
+            <span class="badge"><span data-i18n="badge_count">العدد:</span> <b id="sessCountBadge">0</b></span>
+            <span class="badge" style="color: var(--success);"><span data-i18n="badge_rev">إجمالي الإيراد:</span> <b id="sessRevenueBadge">0</b> <span id="sessRevenueCurr">ج</span></span>
+          </div>
+
+          <div id="sessStudentsList" class="list" style="max-height: 440px; overflow-y: auto; background: var(--bg-inset); border-radius: 8px; padding: 10px;">
+            <div class="mutedCenter" data-i18n="sess_no_students">لا يوجد طلاب مسجلين بالحصة لهذا اليوم</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== BOOKLETS STOCK ====== -->
  <section id="secBooklets" class="tab-section hidden adminOnly">
  <div class="section-header-beautiful" style="margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, var(--bg-surface), var(--bg-inset)); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
  <h2 style="color: var(--primary); margin: 0; font-size: 1.6em; display: flex; align-items: center; gap: 10px;" data-i18n="booklets_main_title">
@@ -2085,7 +2228,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V8"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V188"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V189"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->
