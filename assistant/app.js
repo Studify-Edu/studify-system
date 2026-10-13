@@ -895,7 +895,8 @@ let vaultTransfers = [];
  let currentId = null;
  let currentUserRole = window.CURRENT_ROLE || "admin";
  let currentPage = 1;
- let currentFilteredList = [];
+ window.selectedStudentIds = window.selectedStudentIds || new Set();
+let currentFilteredList = [];
  let recentScans = [];
  let isRevHidden = false;
  let passSuccessCallback = null;
@@ -4640,8 +4641,9 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
         remainDisplay = `<span style="color:var(--danger); font-weight:bold; font-size:0.95em;">${remainAmt}${currencySuffix}</span>`;
      }
 
+     const isChecked = Boolean(window.selectedStudentIds && window.selectedStudentIds.has(String(s.id)));
      tr.innerHTML = `
-     <td><input type="checkbox" class="stCheckbox" data-id="${s.id}"></td>
+     <td><input type="checkbox" class="stCheckbox" data-id="${s.id}" ${isChecked ? "checked" : ""}></td>
      <td style="font-weight:bold; color:var(--text-secondary); font-size:0.9em;">${s.isSessionStudent ? `<span class="badge" style="background:rgba(59,130,246,0.12); color:#2563eb; border:1px solid rgba(59,130,246,0.3); font-weight:700; font-size:0.8em; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-user-clock"></i> ${isAr ? "طالب حصة" : "Session"}</span>` : s.id}</td>
      <td><b>${s.name}</b>${rankIcon}</td>
      <td>${classBadge}</td>
@@ -4650,6 +4652,15 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
      <td>${remainDisplay}</td>
      <td>${attendTxt}</td>`;
  tr.onclick = function(e) { 
+ const checkboxTd = e.target.closest("td:first-child");
+ if (checkboxTd && e.target.type !== "checkbox") {
+   const box = checkboxTd.querySelector(".stCheckbox");
+   if (box) {
+     box.checked = !box.checked;
+     box.dispatchEvent(new Event("change", { bubbles: true }));
+   }
+   return;
+ }
  if (e.target.type === "checkbox" || e.target.closest(".stCheckbox")) {
    return;
  }
@@ -4694,6 +4705,7 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  
  if ($("prevPageBtn")) $("prevPageBtn").disabled = (currentPage === 1);
  if ($("nextPageBtn")) $("nextPageBtn").disabled = (end >= currentFilteredList.length);
+ if (typeof handleBulk === "function") handleBulk();
  }
 
  let simpleCurrentPage = 1;
@@ -4794,17 +4806,41 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  }
 
  function handleBulk() {
-  const boxes = document.querySelectorAll(".stCheckbox:checked");
-  if ($("selectedCount")) $("selectedCount").textContent = boxes.length;
+  if (!window.selectedStudentIds) window.selectedStudentIds = new Set();
+  
+  // Sync checkboxes on current page with selectedStudentIds
+  const visibleBoxes = document.querySelectorAll(".stCheckbox");
+  visibleBoxes.forEach(b => {
+    const id = b.getAttribute("data-id");
+    if (id) {
+      if (window.selectedStudentIds.has(String(id))) {
+        b.checked = true;
+      }
+    }
+  });
+
+  const count = window.selectedStudentIds.size;
+  if ($("selectedCount")) $("selectedCount").textContent = count;
   
   const bulkBar = $("bulkActionBar");
   if (bulkBar) {
-    if(boxes.length > 0) {
+    if (count > 0) {
       bulkBar.classList.remove("hidden");
       if (typeof window.updateAttendanceUIState === 'function') window.updateAttendanceUIState();
     } else {
       bulkBar.classList.add("hidden");
     }
+  }
+
+  const selectAllBox = $("selectAllCheckbox");
+  if (selectAllBox && visibleBoxes.length > 0) {
+    const allChecked = Array.from(visibleBoxes).every(b => b.checked);
+    const someChecked = Array.from(visibleBoxes).some(b => b.checked);
+    selectAllBox.checked = allChecked;
+    selectAllBox.indeterminate = (!allChecked && (someChecked || count > 0));
+  } else if (selectAllBox) {
+    selectAllBox.checked = false;
+    selectAllBox.indeterminate = false;
   }
 }
 
@@ -7404,12 +7440,43 @@ on("importExcelInput", "change", async function(e) {
  on("nextPageBtn", "click", function() { currentPage++; renderPage(); });
 
  document.addEventListener("change", function(e) {
- if(e.target.classList.contains("stCheckbox")) { handleBulk(); }
- if(e.target.id === "selectAllCheckbox") { 
- const boxes = document.querySelectorAll(".stCheckbox");
- for (let i = 0; i < boxes.length; i++) { boxes[i].checked = e.target.checked; }
- handleBulk(); 
+ if(e.target.classList.contains("stCheckbox")) {
+   if (!window.selectedStudentIds) window.selectedStudentIds = new Set();
+   const id = e.target.getAttribute("data-id");
+   if (id) {
+     if (e.target.checked) {
+       window.selectedStudentIds.add(String(id));
+     } else {
+       window.selectedStudentIds.delete(String(id));
+     }
+   }
+   handleBulk();
  }
+ if(e.target.id === "selectAllCheckbox") { 
+   if (!window.selectedStudentIds) window.selectedStudentIds = new Set();
+   const boxes = document.querySelectorAll(".stCheckbox");
+   for (let i = 0; i < boxes.length; i++) {
+     boxes[i].checked = e.target.checked;
+     const id = boxes[i].getAttribute("data-id");
+     if (id) {
+       if (e.target.checked) {
+         window.selectedStudentIds.add(String(id));
+       } else {
+         window.selectedStudentIds.delete(String(id));
+       }
+     }
+   }
+   handleBulk(); 
+ }
+ });
+
+ on("bulkClearBtn", "click", function() {
+   if (window.selectedStudentIds) window.selectedStudentIds.clear();
+   document.querySelectorAll(".stCheckbox").forEach(b => b.checked = false);
+   const selectAllBox = $("selectAllCheckbox");
+   if (selectAllBox) { selectAllBox.checked = false; selectAllBox.indeterminate = false; }
+   handleBulk();
+   showToast(currentLang === 'en' ? "Selection cleared" : "تم إلغاء التحديد", "info");
  });
 
  on("bulkAttendBtn", "click", function() { 
@@ -7423,19 +7490,25 @@ on("importExcelInput", "change", async function(e) {
     }, 250);
     return;
   }
-  const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
-  if (checkedBoxes.length === 0) {
+  const targetIds = new Set(window.selectedStudentIds || []);
+  document.querySelectorAll(".stCheckbox:checked").forEach(b => {
+    const id = b.getAttribute("data-id");
+    if (id) targetIds.add(String(id));
+  });
+
+  if (targetIds.size === 0) {
     showToast(currentLang === 'en' ? "Select students first" : "يرجى تحديد طلاب من الجدول أولاً", "warning");
     return;
   }
   let count = 0;
   let lastError = "";
   const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
-  for (let i = 0; i < checkedBoxes.length; i++) {
-    let res = addAttendance(checkedBoxes[i].getAttribute("data-id"), activeAttDate);
+  for (const id of targetIds) {
+    let res = addAttendance(id, activeAttDate);
     if (res && res.ok) count++;
     else if (res && res.msg) lastError = res.msg;
   }
+  if (window.selectedStudentIds) window.selectedStudentIds.clear();
   if (typeof updateTopStats === "function") updateTopStats();
   renderList(true);
   handleBulk();
@@ -7449,20 +7522,23 @@ on("importExcelInput", "change", async function(e) {
 });
 
 on("bulkAbsentBtn", "click", function() { 
-  const checkedBoxes = document.querySelectorAll(".stCheckbox:checked");
-  if (checkedBoxes.length === 0) {
+  const targetIds = new Set(window.selectedStudentIds || []);
+  document.querySelectorAll(".stCheckbox:checked").forEach(b => {
+    const id = b.getAttribute("data-id");
+    if (id) targetIds.add(String(id));
+  });
+
+  if (targetIds.size === 0) {
     showToast(currentLang === 'en' ? "Select students first" : "يرجى تحديد طلاب من الجدول أولاً", "warning");
     return;
   }
   const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
   let count = 0;
-  for (let i = 0; i < checkedBoxes.length; i++) {
-    const id = checkedBoxes[i].getAttribute("data-id");
-    if (id) {
-      removeAttendance(id, activeAttDate);
-      count++;
-    }
+  for (const id of targetIds) {
+    removeAttendance(id, activeAttDate);
+    count++;
   }
+  if (window.selectedStudentIds) window.selectedStudentIds.clear();
   if (typeof updateTopStats === "function") updateTopStats();
   renderList(true);
   handleBulk();
