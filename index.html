@@ -19,9 +19,11 @@
   <script>
     // Smart PWA Router
     try {
-      const role = localStorage.getItem("ca_role");
-      const isAuth = localStorage.getItem("ca_auth_v1");
-      if (isAuth === "1" && role === "admin") {
+      const isManager = (localStorage.getItem("ca_admin_session") === "1") || 
+        ((localStorage.getItem("ca_auth_v2") === "1" || localStorage.getItem("ca_auth_v1") === "1") && 
+         (localStorage.getItem("ca_role_v1") === "admin" || localStorage.getItem("ca_role") === "admin"));
+
+      if (isManager) {
         window.location.replace("./admin/admin.html");
       } else {
         window.location.replace("./assistant/index.html");

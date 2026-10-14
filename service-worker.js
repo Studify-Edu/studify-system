@@ -1,7 +1,7 @@
 // ============================================================================
 // Studify Service Worker - Offline-First Static Asset Caching
 // ============================================================================
-const CACHE_NAME = 'studify-cache-v156';
+const CACHE_NAME = 'studify-cache-v157';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -17,6 +17,10 @@ const STATIC_ASSETS = [
     './icon-512.png',
     './manifest.json',
     './assets/xlsx.full.min.js',
+    './assets/Cairo-Regular.ttf',
+    './assets/Cairo-Bold.ttf',
+    './assets/Almarai-Regular.ttf',
+    './assets/Almarai-Bold.ttf',
     './assets/sounds/scan.mp3',
     './assets/sounds/cash.mp3',
     './assets/sounds/achievement.mp3',
@@ -45,9 +49,25 @@ const STATIC_ASSETS = [
     './assets/sounds/page_attendance.mp3',
     './assets/sounds/page_students.mp3',
     './assets/sounds/page_syllabus.mp3',
+    './assets/sounds/paper_sheet.mp3',
+    './assets/sounds/notif_iphone.mp3',
     './assets/sounds/sound_unmute.wav',
     './assets/sounds/sound_mute.wav'
 ];
+
+// Dynamically resolve static assets to the project root URL regardless of where this service worker is executed/imported
+const swLocation = new URL(self.location.href);
+let basePath = swLocation.pathname;
+basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+if (basePath.endsWith('/assistant/') || basePath.endsWith('/admin/')) {
+    basePath = basePath.replace(/\/(assistant|admin)\/$/, '/');
+}
+const rootUrl = new URL(basePath, swLocation.origin).href;
+
+const RESOLVED_STATIC_ASSETS = STATIC_ASSETS.map(asset => {
+    const clean = asset.replace(/^\.\//, '');
+    return new URL(clean, rootUrl).href;
+});
 
 // Install: Cache all core static assets
 self.addEventListener('install', (event) => {
@@ -55,7 +75,7 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(STATIC_ASSETS);
+            return cache.addAll(RESOLVED_STATIC_ASSETS);
         })
     );
 });

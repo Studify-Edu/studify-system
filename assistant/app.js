@@ -2274,10 +2274,12 @@ window.switchTab = function(tabId, force = false) {
     updateTopStats(); updateFinanceSummary();
     if (typeof renderCharts === "function") renderCharts();
     if (typeof renderList === "function") renderList(true);
-    if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
-    if (typeof renderManagerTermReport === "function") renderManagerTermReport();
+    if (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin') {
+      if (typeof renderManagerPackagesCard === "function") renderManagerPackagesCard();
+      if (typeof renderManagerTermReport === "function") renderManagerTermReport();
+      if (typeof updateManagerPermissionsUI === "function") updateManagerPermissionsUI();
+    }
     if (typeof populatePackages === "function") populatePackages();
-    if (typeof updateManagerPermissionsUI === "function") updateManagerPermissionsUI();
     if (typeof renderReportsPage === "function") renderReportsPage();
 
     // Push to Supabase
@@ -2454,7 +2456,7 @@ window.switchTab = function(tabId, force = false) {
   }
 }
 
-async function saveAttendanceOnly() {
+async function saveAttendanceOnly(targetStudentId = null) {
   try {
     hasUnsavedChanges = true;
     updateSyncUI('pending', 'جاري حفظ الحضور...');
@@ -2470,7 +2472,22 @@ async function saveAttendanceOnly() {
       updateSyncUI('syncing', 'جاري المزامنة...');
       const mid = window.CURRENT_MANAGER_ID || "ahmedqutb11232_gmail_com";
 
-      const studentRows = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.parentPhone || s.className || (s.packages && s.packages.length > 0) || (s.attendanceDates && s.attendanceDates.length > 0) || s.lastModified)).map(st => ({
+      // Select target student(s) to upsert instead of re-uploading all center students
+      let targetList = [];
+      if (targetStudentId && students[String(targetStudentId)]) {
+        targetList = [students[String(targetStudentId)]];
+      } else {
+        const today = (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+        targetList = Object.values(students || {}).filter(s => s && s.id && (
+          (s.attendanceDates && s.attendanceDates.includes(today)) ||
+          (s.lastModified && (Date.now() - s.lastModified < 86400000))
+        ));
+        if (targetList.length === 0) {
+          targetList = Object.values(students || {}).filter(s => s && s.id && (s.name || s.phone || s.className));
+        }
+      }
+
+      const studentRows = targetList.map(st => ({
         id: String(st.id),
         name: st.name || '',
         phone: st.phone || '',
@@ -2484,6 +2501,7 @@ async function saveAttendanceOnly() {
         installments: st.installments || [],
         payments: st.payments || [],
         attendance_dates: Array.from(new Set(st.attendanceDates || [])),
+        created_at: st.createdAt || (st.joinedDate ? new Date(st.joinedDate).toISOString() : new Date().toISOString()),
         last_modified: Date.now()
       }));
 
@@ -2788,6 +2806,12 @@ async function loadAll() {
             sessionStudentsByDate = sessionSrc;
           }
 
+          // Single source of truth for vault_transfers from cloud
+          const vtSrc = cd.vault_transfers !== undefined ? cd.vault_transfers : cfg.vault_transfers;
+          if (Array.isArray(vtSrc)) {
+            vaultTransfers = vtSrc;
+          }
+
           // Merge Smart Center Notebook from cloud
           const nbSrc = cd.center_notebook !== undefined ? cd.center_notebook : cfg.center_notebook;
           if (nbSrc !== undefined && nbSrc !== null) {
@@ -2826,7 +2850,8 @@ async function loadAll() {
           secureSave(K_SYLLABUS, syllabusData),
           secureSave(K_EVAL, evalData),
           secureSave(K_SESSION_STUDENTS, sessionStudentsByDate),
-          secureSave(K_BOOKLETS, bookletsStock)
+          secureSave(K_BOOKLETS, bookletsStock),
+          secureSave(K_VAULT_TRANSFERS, vaultTransfers)
         ]);
 
         fromCloud = true;
@@ -4302,7 +4327,7 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
       s.sessionBalance = (s.sessionBalance || 0) - 1;
   }
   
-  saveAttendanceOnly(); 
+  saveAttendanceOnly(s.id); 
   updateLiveFeed(s);
   triggerEdgeFlash(); 
   showFullscreenFeedback(true, false);
@@ -4329,7 +4354,7 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
   if (attByDate[d]) {
     attByDate[d] = attByDate[d].filter(x => String(x) !== String(id));
   }
-  saveAttendanceOnly();
+  saveAttendanceOnly(id);
   if (typeof updateTopStats === "function") updateTopStats();
 }
 
@@ -8902,6 +8927,10 @@ function initSupabaseRealtimeSync() {
               if (typeof renderSyllabus === 'function') renderSyllabus();
             }
           }
+          if (cfg.vault_transfers && Array.isArray(cfg.vault_transfers)) {
+            vaultTransfers = cfg.vault_transfers;
+            secureSave(K_VAULT_TRANSFERS, vaultTransfers);
+          }
         }
         if (typeof window.checkDailyShiftHeartbeat === 'function') {
           window.checkDailyShiftHeartbeat(false);
@@ -11004,14 +11033,23 @@ window.openSessionStudentModal = function(item) {
   // Insert into Supabase session_students and upsert students
   if (window.supabaseClient) {
     try {
+      const stObj = students[stId] || {};
       window.supabaseClient.from('students').upsert([{
         id: String(stId),
         name: name,
         phone: phone,
+        parent_phone: stObj.parentPhone || '',
         class_name: className,
-        paid: students[stId].paid || 0,
-        data: students[stId]
-      }]).then(({ error }) => {
+        paid: toInt(stObj.paid) || 0,
+        discount: toInt(stObj.discount) || 0,
+        payment_plan: stObj.paymentPlan || 'cash',
+        status: stObj.status || 'active',
+        installments: stObj.installments || [],
+        payments: stObj.payments || [],
+        attendance_dates: Array.from(new Set(stObj.attendanceDates || [])),
+        created_at: stObj.createdAt || (stObj.joinedDate ? new Date(stObj.joinedDate).toISOString() : new Date().toISOString()),
+        last_modified: Date.now()
+      }], { onConflict: 'id' }).then(({ error }) => {
         if (error) console.warn('[Supabase session student upsert error]:', error);
       });
 

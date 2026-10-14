@@ -1828,6 +1828,8 @@ async function loadAllAdminData() {
     if (stRes.data) {
       students = {};
       stRes.data.forEach(s => {
+        if (!s || s.status === 'deleted') return;
+        if (!s.name && !s.phone && !s.parent_phone && !s.parentPhone) return;
         let cName = s.class_name || s.className || '';
         if (cName === 'عام' || cName === 'General' || cName === 'بدون باقة' || cName === 'No Package') cName = '';
         let pList = (Array.isArray(s.packages) && s.packages.length > 0) 
