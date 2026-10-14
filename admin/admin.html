@@ -705,6 +705,10 @@
           <i class="fa-solid fa-boxes-stacked"></i>
           <span data-i18n="nav_packages">إدارة الباقات</span>
         </button>
+        <button id="navBtnBooklets" class="admin-nav-item" onclick="window.switchAdminTab('booklets')">
+          <i class="fa-solid fa-book-bookmark"></i>
+          <span data-i18n="nav_booklets">المذكرات والمخزون</span>
+        </button>
         <button id="navBtnSyllabus" class="admin-nav-item" onclick="window.switchAdminTab('syllabus')">
           <i class="fa-solid fa-book-open"></i>
           <span data-i18n="nav_syllabus">خريطة سير المنهج</span>
@@ -1323,6 +1327,95 @@
         <!-- ==================================================== -->
         <!-- VIEW 7: SUBSCRIPTION PLAN -->
         <!-- ==================================================== -->
+        <!-- ==================================================== -->
+        <!-- VIEW: BOOKLETS & STOCK MANAGEMENT -->
+        <!-- ==================================================== -->
+        <div id="viewBooklets" class="admin-view hidden">
+          <!-- Header Banner -->
+          <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, var(--bg-surface), var(--bg-inset)); border: 1px solid var(--border); border-radius: 14px; padding: 22px;">
+            <div class="flexBetween wrap" style="gap: 15px;">
+              <div>
+                <h2 style="color: var(--primary); margin: 0; font-size: 1.5em; display: flex; align-items: center; gap: 10px;">
+                  <i class="fa-solid fa-book-bookmark"></i>
+                  <span data-i18n="booklets_admin_title">إدارة مخزون المذكرات والورق</span>
+                </h2>
+                <p style="color: var(--text-secondary); margin: 8px 0 0 0; font-size: 0.95em;" data-i18n="booklets_admin_desc">
+                  متابعة حركة طباعة واستلام المذكرات، المباع منها، المخزون المتبقي، وإجمالي العائد المالي بدقة تامة.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Metrics Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 15px; margin-bottom: 22px;">
+            <div class="card stat-card" style="text-align: center; border-top: 4px solid var(--primary); padding: 16px;">
+              <div style="color: var(--text-secondary); font-size: 0.85em;" data-i18n="stat_b_types">أنواع المذكرات</div>
+              <div id="adminStatBookletTypes" style="font-size: 1.8em; font-weight: bold; color: var(--text); margin-top: 5px;">0</div>
+            </div>
+            <div class="card stat-card" style="text-align: center; border-top: 4px solid #3b82f6; padding: 16px;">
+              <div style="color: var(--text-secondary); font-size: 0.85em;" data-i18n="stat_b_recd">إجمالي المستلم</div>
+              <div id="adminStatCopiesReceived" style="font-size: 1.8em; font-weight: bold; color: #3b82f6; margin-top: 5px;">0</div>
+            </div>
+            <div class="card stat-card" style="text-align: center; border-top: 4px solid #10b981; padding: 16px;">
+              <div style="color: var(--text-secondary); font-size: 0.85em;" data-i18n="stat_b_sold">النسخ المباعة</div>
+              <div id="adminStatCopiesSold" style="font-size: 1.8em; font-weight: bold; color: #10b981; margin-top: 5px;">0</div>
+            </div>
+            <div class="card stat-card" style="text-align: center; border-top: 4px solid #f59e0b; padding: 16px;">
+              <div style="color: var(--text-secondary); font-size: 0.85em;" data-i18n="stat_b_remain">المخزون المتبقي</div>
+              <div id="adminStatCopiesRemain" style="font-size: 1.8em; font-weight: bold; color: #f59e0b; margin-top: 5px;">0</div>
+            </div>
+            <div class="card stat-card" style="text-align: center; border-top: 4px solid #6366f1; padding: 16px; background-image: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(99,102,241,0.12));">
+              <div style="color: #6366f1; font-size: 0.85em; font-weight: bold;" data-i18n="stat_b_rev">إجمالي عائد المبيعات</div>
+              <div id="adminStatBookletsRevenue" style="font-size: 1.8em; font-weight: 900; color: #6366f1; margin-top: 5px;">0 ج</div>
+            </div>
+          </div>
+
+          <!-- Add Booklet Form Card -->
+          <div class="card" style="margin-bottom: 22px; padding: 22px;">
+            <div class="card-title" style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-plus-circle" style="color: var(--primary);"></i>
+              <span data-i18n="booklet_add_title">استلام وتسجيل ورق / مذكرة جديدة</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+              <div>
+                <label class="lbl" data-i18n="booklet_name_lbl">اسم المذكرة / الورق</label>
+                <input id="adminBookletNameInp" class="inp" placeholder="مثال: مذكرة مراجعة الباب الأول..." data-i18n-placeholder="booklet_name_plc">
+              </div>
+              <div>
+                <label class="lbl" data-i18n="booklet_qty_lbl">العدد الكلي المستلم (نسخة)</label>
+                <input id="adminBookletQtyInp" type="number" min="1" class="inp" placeholder="مثال: 150" data-i18n-placeholder="booklet_qty_plc">
+              </div>
+              <div>
+                <label class="lbl" data-i18n="booklet_price_lbl">سعر بيع النسخة (جنيه)</label>
+                <input id="adminBookletPriceInp" type="number" min="0" class="inp" placeholder="مثال: 50" data-i18n-placeholder="booklet_price_plc">
+              </div>
+            </div>
+            <div style="margin-top: 18px; text-align: start;">
+              <button type="button" class="btn primary" onclick="window.saveAdminBooklet()" style="padding: 11px 26px; font-weight: bold; font-size: 1.02em;">
+                <i class="fa-solid fa-save"></i> <span data-i18n="booklet_save_btn">تسجيل المذكرة وإضافتها للمخزون</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Booklets List Card -->
+          <div class="card" style="padding: 22px;">
+            <div class="flexBetween" style="border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 18px;">
+              <div class="card-title" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i>
+                <span data-i18n="booklet_list_title">قائمة جرد المذكرات وحركة البيع الفورية</span>
+              </div>
+              <span class="badge" style="background: var(--bg-inset); color: var(--text-secondary); border: 1px solid var(--border);" data-i18n="booklet_list_tip">
+                اضغط زر البيع عند بيع أي نسخة للتحديث الفوري
+              </span>
+            </div>
+            <div id="adminBookletsList" style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="text-align: center; color: var(--text-secondary); padding: 30px;" data-i18n="booklet_no_items">
+                لا توجد مذكرات مسجلة بالمخزون حالياً
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="viewSubscription" class="admin-view hidden">
           <!-- Current Plan Status Card -->
           <div id="subCurrentPlanCard" class="sub-current-plan-card">

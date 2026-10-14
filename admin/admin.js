@@ -102,6 +102,27 @@ const ADMIN_DICT = {
   "prompt_switch_to_asst": { ar: "هل أنت مساعد؟", en: "Are you an assistant?" },
   "action_switch_to_asst": { ar: "الانتقال لبوابة المساعد والعمليات", en: "Go to Assistant Portal & Operations" },
 
+  // Booklets Inventory Module
+  "nav_booklets": { ar: "المذكرات والمخزون", en: "Booklets & Stock" },
+  "booklets_admin_title": { ar: "إدارة مخزون المذكرات والورق", en: "Booklets & Paper Inventory" },
+  "booklets_admin_desc": { ar: "متابعة حركة طباعة واستلام المذكرات، المباع منها، المخزون المتبقي، وإجمالي العائد المالي بدقة تامة.", en: "Track booklet printing, sales, remaining stock, and total financial return." },
+  "stat_b_types": { ar: "أنواع المذكرات", en: "Booklet Types" },
+  "stat_b_recd": { ar: "إجمالي النسخ المستلمة", en: "Total Received" },
+  "stat_b_sold": { ar: "النسخ المباعة", en: "Sold Copies" },
+  "stat_b_remain": { ar: "المخزون المتبقي بالسنتر", en: "Remaining Stock" },
+  "stat_b_rev": { ar: "إجمالي عائد المذكرات", en: "Total Booklets Revenue" },
+  "booklet_add_title": { ar: "استلام وتسجيل ورق / مذكرة جديدة", en: "Receive & Register New Booklet" },
+  "booklet_name_lbl": { ar: "اسم المذكرة / الورق", en: "Booklet / Paper Name" },
+  "booklet_name_plc": { ar: "مثال: مذكرة مراجعة الباب الأول...", en: "Ex: Chapter 1 Review Booklet..." },
+  "booklet_qty_lbl": { ar: "العدد الكلي المستلم (نسخة)", en: "Total Received Copies" },
+  "booklet_qty_plc": { ar: "مثال: 150", en: "Ex: 150" },
+  "booklet_price_lbl": { ar: "سعر بيع النسخة (جنيه)", en: "Unit Selling Price (EGP)" },
+  "booklet_price_plc": { ar: "مثال: 50", en: "Ex: 50" },
+  "booklet_save_btn": { ar: "تسجيل المذكرة وإضافتها للمخزون", en: "Save Booklet & Add to Stock" },
+  "booklet_list_title": { ar: "قائمة جرد المذكرات وحركة البيع الفورية", en: "Booklets Inventory & Instant Sales Log" },
+  "booklet_list_tip": { ar: "اضغط زر البيع عند بيع أي نسخة للتحديث الفوري", en: "Click sell to instantly update inventory" },
+  "booklet_no_items": { ar: "لا توجد مذكرات أو ورق مسجل بالمخزون حالياً", en: "No booklets currently registered in stock" },
+
   // New Students of the Month Module
   "stat_term_new_students": { ar: "طلاب جدد هذا الشهر", en: "New Students This Month" },
   "stat_daily_new_students": { ar: "جدد هذا اليوم", en: "New Today" },
@@ -1070,6 +1091,7 @@ if (supabase) {
             booklets[b.id] = b;
           }
           if (typeof window.renderTermTable === 'function') window.renderTermTable();
+          if (typeof window.renderAdminBookletsStock === 'function') window.renderAdminBookletsStock();
           const dInput = document.getElementById("adminDailyDateInput");
           if (typeof window.loadDailyReport === 'function') window.loadDailyReport(dInput ? dInput.value : nowDateStr());
         } catch(err) {
@@ -2116,6 +2138,7 @@ window.switchAdminTab = function(tabKey) {
     assistants:   { view: "viewAssistants",   btn: "navBtnAssistants",   title: isAr ? "إدارة المساعدين والصلاحيات" : "Assistants & Permissions", icon: "fa-user-shield" },
     decisions:    { view: "viewDecisions",    btn: "navBtnDecisions",    title: isAr ? "صندوق طلبات القرارات" : "Decision Requests Inbox", icon: "fa-bell" },
     packages:     { view: "viewPackages",     btn: "navBtnPackages",     title: isAr ? "إدارة الباقات" : "Packages Management", icon: "fa-boxes-stacked" },
+    booklets:     { view: "viewBooklets",     btn: "navBtnBooklets",     title: isAr ? "المذكرات والمخزون" : "Booklets & Stock", icon: "fa-book-bookmark" },
     syllabus:     { view: "viewSyllabus",     btn: "navBtnSyllabus",     title: isAr ? "خريطة سير المنهج" : "Syllabus Roadmap", icon: "fa-book-open" },
     settings:     { view: "viewSettings",     btn: "navBtnSettings",     title: isAr ? "الإعدادات المتقدمة والنسخ الاحتياطي" : "Advanced Settings & Backup", icon: "fa-sliders" },
     subscription: { view: "viewSubscription", btn: "navBtnSubscription", title: isAr ? "خطة الاشتراك والباقة" : "Subscription Plan & Status", icon: "fa-crown" }
@@ -2145,6 +2168,7 @@ window.switchAdminTab = function(tabKey) {
   if (tabKey === "dailyReport") window.loadDailyReport(document.getElementById("adminDailyDateInput")?.value || nowDateStr());
   if (tabKey === "termReport") window.renderTermTable();
   if (tabKey === "packages") window.renderAdminPackages();
+  if (tabKey === "booklets" && typeof window.renderAdminBookletsStock === 'function') window.renderAdminBookletsStock();
   if (tabKey === "syllabus") window.renderAdminSyllabus();
   if (tabKey === "assistants") window.fetchAssistants();
   if (tabKey === "decisions") window.fetchDecisions();
@@ -2690,6 +2714,30 @@ export function loadDailyReport(dateStr) {
       subjectRevenueMap[cls] = (subjectRevenueMap[cls] || 0) + amt;
     }
   });
+
+  // Payments from booklets sold today
+  if (booklets && typeof booklets === 'object') {
+    Object.values(booklets).forEach(b => {
+      if (!b || !Array.isArray(b.sales)) return;
+      b.sales.forEach(s => {
+        if (!s || s.date !== d) return;
+        const bAmt = Number(s.price) || Number(b.price) || 0;
+        if (bAmt <= 0) return;
+        const bMethod = (s.method || 'cash').toLowerCase();
+        todayPayments.push({
+          id: b.id || '',
+          name: (isAr ? "مذكرة: " : "Booklet: ") + (b.name || ""),
+          className: isAr ? "مبيعات مذكرات" : "Booklet Sales",
+          amount: bAmt,
+          method: bMethod,
+          type: 'booklet',
+          timestamp: s.timestamp || s.time || ''
+        });
+        const bkSubject = isAr ? "مبيعات مذكرات" : "Booklet Sales";
+        subjectRevenueMap[bkSubject] = (subjectRevenueMap[bkSubject] || 0) + bAmt;
+      });
+    });
+  }
 
   window.dailyCachedPayments = todayPayments;
 
@@ -5519,6 +5567,402 @@ window.deleteSyllabusLesson = async function(idx) {
     showToast("تم حذف الدرس من المنهج", "info");
     window.renderAdminSyllabus();
   } catch(e) { console.error(e); }
+};
+
+// ========================================================
+// 10.5. BOOKLETS & STOCK MANAGEMENT CONTROLLERS
+// ========================================================
+window.renderAdminBookletsStock = function() {
+  const blist = document.getElementById("adminBookletsList");
+  if (!blist) return;
+
+  const isAr = (currentLang === "ar");
+  const keys = Object.keys(booklets || {});
+  let totalTypes = keys.length;
+  let totalReceived = 0;
+  let totalSold = 0;
+  let totalRemain = 0;
+  let totalRevenue = 0;
+
+  let h = "";
+  for (let i = 0; i < keys.length; i++) {
+    const id = keys[i];
+    const b = booklets[id];
+    if (!b) continue;
+
+    const qty = Number(b.qty !== undefined ? b.qty : (Number(b.stock || 0) + Number(b.sold || 0))) || 0;
+    const price = Number(b.price) || 0;
+    const sold = Number(b.sold) || 0;
+    const remain = Math.max(0, qty - sold);
+    const rev = sold * price;
+
+    totalReceived += qty;
+    totalSold += sold;
+    totalRemain += remain;
+    totalRevenue += rev;
+
+    h += `
+      <div class="card item-card flexBetween wrap" style="background: var(--bg-inset); border: 1px solid var(--border); padding: 18px; border-radius: 12px; margin-bottom: 8px; gap: 15px;">
+        <div style="flex: 1; min-width: 240px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-book" style="color: var(--primary); font-size: 1.3em;"></i>
+            <h4 style="margin:0; color:var(--text); font-size:1.15em;">${b.name}</h4>
+          </div>
+          <div style="font-size:0.9em; color:var(--text-secondary); margin-top:8px; display:flex; gap:16px; flex-wrap:wrap;">
+            <span>${isAr ? 'الكمية الكلية:' : 'Total:'} <b>${qty}</b></span>
+            <span>${isAr ? 'سعر النسخة:' : 'Price:'} <b>${price} ج</b></span>
+            <span style="color:#10b981;">${isAr ? 'المباع:' : 'Sold:'} <b>${sold}</b></span>
+            <span style="color:#f59e0b;">${isAr ? 'المتبقي:' : 'Remain:'} <b>${remain}</b></span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div style="background:var(--bg-surface); padding:8px 16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+            <span style="font-size:0.8em; color:var(--text-secondary); display:block;">${isAr ? 'عائد المذكرة' : 'Revenue'}</span>
+            <strong style="color:var(--primary); font-size:1.2em;">${rev.toLocaleString()} ج</strong>
+          </div>
+          <button class="btn success" style="padding:9px 16px; font-weight:bold; font-size:1em; display:flex; align-items:center; gap:6px;" onclick="window.sellAdminBookletCopy('${id}')">
+            <i class="fa-solid fa-cart-shopping"></i> ${isAr ? 'بيع نسخة (+1)' : 'Sell (+1)'}
+          </button>
+          <button class="btn warning smallBtn" title="${isAr ? 'إرجاع نسخة (-1)' : 'Return Copy (-1)'}" onclick="window.returnAdminBookletCopy('${id}')" style="padding:8px 12px;">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+          <button class="btn primary smallBtn" title="${isAr ? 'تعديل العدد المستلم' : 'Edit Qty'}" onclick="window.editAdminBookletQty('${id}')" style="padding:8px 12px;">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+          <button class="btn danger smallBtn" title="${isAr ? 'حذف المذكرة' : 'Delete Booklet'}" onclick="window.deleteAdminBooklet('${id}')" style="padding:8px 12px;">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  if (keys.length === 0) {
+    h = `<div style="text-align: center; color: var(--text-secondary); padding: 35px;"><i class="fa-solid fa-book-open" style="font-size: 2.2rem; opacity: 0.4; display: block; margin-bottom: 10px;"></i>${isAr ? "لا توجد مذكرات أو ورق مسجل بالمخزون حالياً .. أضف مذكرة جديدة بالترويسة أعلاه" : "No booklets or sheets currently in stock. Add a new booklet using the form above."}</div>`;
+  }
+
+  blist.innerHTML = h;
+
+  const statTypes = document.getElementById("adminStatBookletTypes");
+  const statRecd = document.getElementById("adminStatCopiesReceived");
+  const statSold = document.getElementById("adminStatCopiesSold");
+  const statRemain = document.getElementById("adminStatCopiesRemain");
+  const statRev = document.getElementById("adminStatBookletsRevenue");
+
+  if (statTypes) statTypes.textContent = totalTypes;
+  if (statRecd) statRecd.textContent = totalReceived;
+  if (statSold) statSold.textContent = totalSold;
+  if (statRemain) statRemain.textContent = totalRemain;
+  if (statRev) statRev.textContent = totalRevenue.toLocaleString() + " ج";
+};
+
+window.saveAdminBooklet = async function() {
+  const isAr = (currentLang === "ar");
+  const nameInp = document.getElementById("adminBookletNameInp");
+  const qtyInp = document.getElementById("adminBookletQtyInp");
+  const priceInp = document.getElementById("adminBookletPriceInp");
+
+  const name = nameInp ? nameInp.value.trim() : "";
+  const qty = qtyInp ? Number(qtyInp.value) : 0;
+  const price = priceInp ? Number(priceInp.value) : 0;
+
+  if (!name) {
+    showToast(isAr ? "يرجى إدخال اسم المذكرة أو الورق" : "Please enter booklet name", "err");
+    return;
+  }
+  if (qty <= 0) {
+    showToast(isAr ? "يرجى إدخال عدد النسخ المستلمة" : "Please enter received copies quantity", "err");
+    return;
+  }
+
+  const id = "b_" + Date.now();
+  const metaObj = { __meta: true, qty: qty, sold: 0 };
+  const newBooklet = {
+    id: String(id),
+    name: name,
+    price: price,
+    qty: qty,
+    sold: 0,
+    stock: qty,
+    sales: [metaObj]
+  };
+
+  booklets[id] = newBooklet;
+
+  // Direct Supabase upsert to table 'booklets'
+  if (supabase) {
+    try {
+      await supabase.from('booklets').upsert({
+        id: String(id),
+        name: name,
+        price: price,
+        stock: qty,
+        sales: [metaObj]
+      }, { onConflict: 'id' });
+      await saveCenterConfig({ booklets_stock: booklets });
+    } catch(err) {
+      console.warn('[Admin Save Booklet Cloud Error]:', err);
+    }
+  }
+
+  window.renderAdminBookletsStock();
+
+  if (nameInp) nameInp.value = "";
+  if (qtyInp) qtyInp.value = "";
+  if (priceInp) priceInp.value = "";
+
+  showToast(isAr ? "تم استلام وإضافة المذكرة للمخزون بنجاح" : "Booklet added to inventory successfully", "success");
+};
+
+window.sellAdminBookletCopy = function(id) {
+  if (!booklets[id]) return;
+  const b = booklets[id];
+  const isAr = (currentLang === "ar");
+  const qty = Number(b.qty !== undefined ? b.qty : (Number(b.stock || 0) + Number(b.sold || 0))) || 0;
+  const sold = Number(b.sold) || 0;
+
+  if (sold >= qty) {
+    showToast(isAr ? "انتهى مخزون هذه المذكرة، يرجى تعديل العدد الكلي إذا قمت بطباعة نسخ إضافية." : "Stock depleted for this booklet. Please update total count.", "err");
+    return;
+  }
+
+  const doCompleteSale = async (payMethod = 'cash') => {
+    b.sold = (Number(b.sold) || 0) + 1;
+    const today = nowDateStr();
+    if (!Array.isArray(b.sales)) b.sales = [];
+    const saleObj = {
+      date: today,
+      price: Number(b.price) || 0,
+      method: payMethod,
+      time: new Date().toLocaleTimeString('ar-EG'),
+      timestamp: Date.now()
+    };
+    b.sales.push(saleObj);
+
+    // Update today's revenue
+    revenueByDate[today] = (revenueByDate[today] || 0) + (Number(b.price) || 0);
+
+    // Direct Supabase table upsert
+    if (supabase) {
+      try {
+        const remainStock = Math.max(0, qty - b.sold);
+        const salesMeta = Array.isArray(b.sales) ? b.sales.slice() : [];
+        const existingMetaIdx = salesMeta.findIndex(x => x && typeof x === 'object' && x.__meta === true);
+        const metaObj = { __meta: true, qty: qty, sold: b.sold };
+        if (existingMetaIdx >= 0) salesMeta[existingMetaIdx] = metaObj;
+        else salesMeta.unshift(metaObj);
+
+        await supabase.from('booklets').upsert({
+          id: String(id),
+          name: b.name || '',
+          price: Number(b.price) || 0,
+          stock: remainStock,
+          sales: salesMeta
+        }, { onConflict: 'id' });
+
+        await saveCenterConfig({ booklets_stock: booklets, revenue_by_date: revenueByDate });
+      } catch(err) {
+        console.warn('[Admin Sell Booklet Error]:', err);
+      }
+    }
+
+    window.renderAdminBookletsStock();
+    const dInput = document.getElementById("adminDailyDateInput");
+    if (typeof window.loadDailyReport === 'function') window.loadDailyReport(dInput ? dInput.value : today);
+
+    const methodLabel = payMethod === 'instapay' ? 'إنستاباي' : (payMethod === 'wallet' ? 'فودافون كاش' : 'كاش');
+    showToast(isAr ? `تم بيع نسخة من ${b.name} وإضافة ${b.price} ج للخزينة (${methodLabel})` : `Sold copy of ${b.name} (${methodLabel})`, "success");
+  };
+
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      title: isAr ? 'بيع نسخة مذكرة' : 'Sell Booklet Copy',
+      html: `
+        <div style="text-align: start; font-size: 0.95em; direction: ${isAr ? 'rtl' : 'ltr'};">
+          <div style="font-weight: 700; font-size: 1.1em; color: var(--text); margin-bottom: 8px;">
+            <i class="fa-solid fa-book" style="color: var(--primary); margin-inline-end: 6px;"></i> ${b.name}
+          </div>
+          <div style="background: var(--bg-inset, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-secondary); font-size: 0.9em;">${isAr ? 'سعر النسخة:' : 'Copy Price:'}</span>
+            <strong style="color: var(--primary); font-size: 1.15em;">${b.price} ج</strong>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.85em; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">
+              ${isAr ? 'طريقة الدفع والتحصيل:' : 'Payment Method:'}
+            </label>
+            <select id="swalAdminBookletPayMethod" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box; height: 42px; font-size: 0.95em;">
+              <option value="cash" selected>${isAr ? 'كاش (نقداً)' : 'Cash'}</option>
+              <option value="instapay">${isAr ? 'إنستاباي (InstaPay)' : 'InstaPay'}</option>
+              <option value="wallet">${isAr ? 'فودافون كاش / محفظة' : 'Vodafone Cash / Wallet'}</option>
+            </select>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: isAr ? 'تأكيد البيع (+1)' : 'Confirm Sale (+1)',
+      confirmButtonColor: '#10b981',
+      cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
+    }).then(res => {
+      if (res.isConfirmed) {
+        const m = document.getElementById("swalAdminBookletPayMethod")?.value || 'cash';
+        doCompleteSale(m);
+      }
+    });
+  } else {
+    doCompleteSale('cash');
+  }
+};
+
+window.returnAdminBookletCopy = async function(id) {
+  if (!booklets[id]) return;
+  const b = booklets[id];
+  const isAr = (currentLang === "ar");
+
+  if (Number(b.sold || 0) <= 0) {
+    showToast(isAr ? "لم يتم بيع أي نسخة من هذه المذكرة لإرجاعها" : "No sold copies to return", "err");
+    return;
+  }
+
+  b.sold = Math.max(0, (Number(b.sold) || 0) - 1);
+  const today = nowDateStr();
+  if (Array.isArray(b.sales) && b.sales.length > 0) {
+    const lastTodayIdx = b.sales.map((s, i) => (s && s.date === today ? i : -1)).filter(i => i !== -1).pop();
+    if (lastTodayIdx !== undefined) {
+      b.sales.splice(lastTodayIdx, 1);
+    } else {
+      b.sales.pop();
+    }
+  }
+
+  if (revenueByDate[today]) {
+    revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - (Number(b.price) || 0));
+  }
+
+  if (supabase) {
+    try {
+      const qty = Number(b.qty !== undefined ? b.qty : (Number(b.stock || 0) + Number(b.sold || 0))) || 0;
+      const remainStock = Math.max(0, qty - b.sold);
+      const salesMeta = Array.isArray(b.sales) ? b.sales.slice() : [];
+      const existingMetaIdx = salesMeta.findIndex(x => x && typeof x === 'object' && x.__meta === true);
+      const metaObj = { __meta: true, qty: qty, sold: b.sold };
+      if (existingMetaIdx >= 0) salesMeta[existingMetaIdx] = metaObj;
+      else salesMeta.unshift(metaObj);
+
+      await supabase.from('booklets').upsert({
+        id: String(id),
+        name: b.name || '',
+        price: Number(b.price) || 0,
+        stock: remainStock,
+        sales: salesMeta
+      }, { onConflict: 'id' });
+
+      await saveCenterConfig({ booklets_stock: booklets, revenue_by_date: revenueByDate });
+    } catch(err) {
+      console.warn('[Admin Return Booklet Error]:', err);
+    }
+  }
+
+  window.renderAdminBookletsStock();
+  const dInput = document.getElementById("adminDailyDateInput");
+  if (typeof window.loadDailyReport === 'function') window.loadDailyReport(dInput ? dInput.value : today);
+
+  showToast(isAr ? `تم إرجاع نسخة من ${b.name} وخصم ${b.price} ج من الخزينة` : `Returned copy of ${b.name}`, "warning");
+};
+
+window.editAdminBookletQty = function(id) {
+  if (!booklets[id]) return;
+  const b = booklets[id];
+  const isAr = (currentLang === "ar");
+  const curQty = Number(b.qty !== undefined ? b.qty : (Number(b.stock || 0) + Number(b.sold || 0))) || 0;
+
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      title: isAr ? "تعديل رصيد المذكرة" : "Edit Booklet Stock",
+      text: isAr ? `أدخل العدد الكلي المستلم لمذكرة (${b.name}):` : `Enter total received copies for (${b.name}):`,
+      input: "number",
+      inputValue: curQty,
+      showCancelButton: true,
+      confirmButtonText: isAr ? "حفظ التعديل" : "Save Changes",
+      cancelButtonText: isAr ? "إلغاء" : "Cancel",
+      confirmButtonColor: "#2563eb",
+      inputValidator: (value) => {
+        if (value === "" || isNaN(value) || parseInt(value) < 0) {
+          return isAr ? "يرجى إدخال عدد صحيح موجب" : "Please enter a valid positive number";
+        }
+      }
+    }).then(async (res) => {
+      if (res.isConfirmed && res.value !== undefined && res.value !== "") {
+        const q = Number(res.value);
+        const sold = Number(b.sold) || 0;
+        if (q < sold) {
+          showToast(isAr ? `العدد الكلي (${q}) لا يمكن أن يكون أقل من النسخ المباعة بالفعل (${sold})` : `Total quantity cannot be less than sold copies (${sold})`, "err");
+          return;
+        }
+        b.qty = q;
+        if (supabase) {
+          try {
+            const remainStock = Math.max(0, q - sold);
+            const salesMeta = Array.isArray(b.sales) ? b.sales.slice() : [];
+            const existingMetaIdx = salesMeta.findIndex(x => x && typeof x === 'object' && x.__meta === true);
+            const metaObj = { __meta: true, qty: q, sold: sold };
+            if (existingMetaIdx >= 0) salesMeta[existingMetaIdx] = metaObj;
+            else salesMeta.unshift(metaObj);
+
+            await supabase.from('booklets').upsert({
+              id: String(id),
+              name: b.name || '',
+              price: Number(b.price) || 0,
+              stock: remainStock,
+              sales: salesMeta
+            }, { onConflict: 'id' });
+
+            await saveCenterConfig({ booklets_stock: booklets });
+          } catch(err) {
+            console.warn('[Admin Edit Booklet Qty Error]:', err);
+          }
+        }
+        window.renderAdminBookletsStock();
+        showToast(isAr ? "تم تحديث العدد الكلي بنجاح" : "Total quantity updated successfully", "success");
+      }
+    });
+  }
+};
+
+window.deleteAdminBooklet = function(id) {
+  if (!booklets[id]) return;
+  const b = booklets[id];
+  const isAr = (currentLang === "ar");
+
+  const doDelete = async () => {
+    delete booklets[id];
+    if (supabase) {
+      try {
+        await supabase.from('booklets').delete().eq('id', String(id));
+        await saveCenterConfig({ booklets_stock: booklets });
+      } catch(err) {
+        console.warn('[Admin Delete Booklet Error]:', err);
+      }
+    }
+    window.renderAdminBookletsStock();
+    showToast(isAr ? "تم حذف المذكرة من قائمة المخزون" : "Booklet deleted from inventory", "success");
+  };
+
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      title: isAr ? "حذف مذكرة من الجرد" : "Delete Booklet from Inventory",
+      text: isAr ? `هل أنت متأكد من حذف مذكرة (${b.name}) من قائمة الجرد نهائياً؟` : `Are you sure you want to permanently delete (${b.name}) from inventory?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: isAr ? "نعم، حذف المذكرة" : "Yes, Delete Booklet",
+      cancelButtonText: isAr ? "إلغاء" : "Cancel"
+    }).then(res => {
+      if (res.isConfirmed) doDelete();
+    });
+  } else {
+    doDelete();
+  }
 };
 
 // ========================================================

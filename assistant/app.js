@@ -9044,8 +9044,8 @@ function initSupabaseRealtimeSync() {
             if (typeof updateTopStats === 'function') updateTopStats();
             if (typeof renderExpensesTable === 'function') renderExpensesTable();
           }
-          if (cfg.booklets_stock && typeof cfg.booklets_stock === 'object') {
-            bookletsStock = cfg.booklets_stock;
+          if (cfg.booklets_stock && typeof cfg.booklets_stock === 'object' && Object.keys(cfg.booklets_stock).length > 0) {
+            bookletsStock = Object.assign({}, bookletsStock, cfg.booklets_stock);
             secureSave(K_BOOKLETS, bookletsStock);
             if (typeof window.renderBookletsStock === 'function') window.renderBookletsStock();
             else if (typeof renderBookletsStock === 'function') renderBookletsStock();
@@ -9090,6 +9090,41 @@ function initSupabaseRealtimeSync() {
         }
         if (typeof window.checkDailyShiftHeartbeat === 'function') {
           window.checkDailyShiftHeartbeat(false);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'booklets' }, async (payload) => {
+        try {
+          if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+            delete bookletsStock[payload.old.id];
+            await secureSave(K_BOOKLETS, bookletsStock);
+          } else if (payload.new && payload.new.id) {
+            const b = payload.new;
+            let sold = Number(b.sold) || 0;
+            let qty = Number(b.qty) || 0;
+            if (Array.isArray(b.sales)) {
+              const meta = b.sales.find(x => x && typeof x === 'object' && x.__meta === true);
+              if (meta) {
+                if (meta.sold !== undefined) sold = Number(meta.sold) || 0;
+                if (meta.qty !== undefined) qty = Number(meta.qty) || 0;
+              }
+            }
+            sold = sold || 0;
+            qty = qty || (Number(b.stock) || 0) + sold;
+            bookletsStock[b.id] = {
+              id: b.id,
+              name: b.name || '',
+              price: Number(b.price) || 0,
+              qty: qty,
+              sold: sold,
+              stock: Math.max(0, qty - sold),
+              sales: b.sales || []
+            };
+            await secureSave(K_BOOKLETS, bookletsStock);
+          }
+          if (typeof window.renderBookletsStock === 'function') window.renderBookletsStock();
+          else if (typeof renderBookletsStock === 'function') renderBookletsStock();
+        } catch(e) {
+          console.warn('[Realtime Booklet Sync Error]:', e);
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'packages' }, async (payload) => {
@@ -11840,7 +11875,19 @@ window.openSessionStudentModal = function(item) {
  if (qty <= 0) { showToast("يرجى إدخال عدد النسخ المستلمة", "err"); return; }
  
  let id = "b_" + Date.now();
- bookletsStock[id] = { name: name, qty: qty, price: price, sold: 0 };
+ const metaObj = { __meta: true, qty: qty, sold: 0 };
+ bookletsStock[id] = { id: id, name: name, qty: qty, price: price, sold: 0, stock: qty, sales: [metaObj] };
+
+ if (window.supabaseClient) {
+   window.supabaseClient.from('booklets').upsert({
+     id: String(id),
+     name: name,
+     price: price,
+     stock: qty,
+     sales: [metaObj]
+   }, { onConflict: 'id' }).then(() => {}).catch(err => console.warn("Supabase direct booklet save error:", err));
+ }
+
  saveAll();
  renderBookletsStock();
  
@@ -11854,29 +11901,93 @@ window.openSessionStudentModal = function(item) {
  window.sellBookletCopy = function(id) {
  if (!bookletsStock[id]) return;
  let b = bookletsStock[id];
- if (b.sold >= b.qty) {
- showToast(" انتهى مخزون هذه المذكرة، يرجى تعديل العدد الكلي إذا قمت بطباعة نسخ إضافية.", "err");
- if (typeof AssistantSounds !== "undefined") AssistantSounds.error(); else playSound("error");
- return;
+ let qty = toInt(b.qty !== undefined ? b.qty : (b.stock || 0));
+ let sold = toInt(b.sold || 0);
+ if (sold >= qty) {
+   showToast("انتهى مخزون هذه المذكرة، يرجى تعديل العدد الكلي إذا قمت بطباعة نسخ إضافية.", "err");
+   if (typeof AssistantSounds !== "undefined") AssistantSounds.error(); else playSound("error");
+   return;
  }
- b.sold += 1;
- 
- let today = nowDateStr();
- if (!Array.isArray(b.sales)) b.sales = [];
- b.sales.push({
-   date: today,
-   price: toInt(b.price),
-   time: new Date().toLocaleTimeString('ar-EG'),
-   timestamp: Date.now()
- });
- 
- // تسجيل العائد في إيرادات اليوم التلقائية بالخزينة كاش
- revenueByDate[today] = (revenueByDate[today] || 0) + b.price;
- 
- saveAll();
- renderBookletsStock();
- showToast(`تم بيع نسخة من ${b.name} وإضافة ${b.price} ج للخزينة كاش `, "success");
- if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceScan(); else playSound("beep");
+
+ const doCompleteSale = (payMethod = 'cash') => {
+   b.sold = (toInt(b.sold) || 0) + 1;
+   let today = nowDateStr();
+   if (!Array.isArray(b.sales)) b.sales = [];
+   const saleObj = {
+     date: today,
+     price: toInt(b.price),
+     method: payMethod,
+     time: new Date().toLocaleTimeString('ar-EG'),
+     timestamp: Date.now()
+   };
+   b.sales.push(saleObj);
+
+   // تسجيل العائد في إيرادات اليوم التلقائية بالخزينة
+   revenueByDate[today] = (revenueByDate[today] || 0) + toInt(b.price);
+
+   // مزامنة فورية مباشرة مع جدول المذكرات في سوبابيز
+   if (window.supabaseClient) {
+     const remainStock = Math.max(0, toInt(b.qty) - toInt(b.sold));
+     const salesMeta = Array.isArray(b.sales) ? b.sales.slice() : [];
+     const existingMetaIdx = salesMeta.findIndex(x => x && typeof x === 'object' && x.__meta === true);
+     const metaObj = { __meta: true, qty: toInt(b.qty), sold: toInt(b.sold) };
+     if (existingMetaIdx >= 0) salesMeta[existingMetaIdx] = metaObj;
+     else salesMeta.unshift(metaObj);
+
+     window.supabaseClient.from('booklets').upsert({
+       id: String(id),
+       name: b.name || '',
+       price: toInt(b.price) || 0,
+       stock: remainStock,
+       sales: salesMeta
+     }, { onConflict: 'id' }).then(() => {}).catch(err => console.warn("Supabase booklet direct upsert error:", err));
+   }
+
+   saveAll();
+   renderBookletsStock();
+   const methodLabel = payMethod === 'instapay' ? 'إنستاباي' : (payMethod === 'wallet' ? 'فودافون كاش' : 'كاش');
+   showToast(`تم بيع نسخة من ${b.name} وإضافة ${b.price} ج للخزينة (${methodLabel}) `, "success");
+   if (typeof AssistantSounds !== "undefined") AssistantSounds.attendanceScan(); else playSound("beep");
+ };
+
+ const isAr = (currentLang === "ar");
+ if (typeof Swal !== 'undefined') {
+   Swal.fire({
+     title: isAr ? 'بيع نسخة مذكرة' : 'Sell Booklet Copy',
+     html: `
+       <div style="text-align: start; font-size: 0.95em; direction: ${isAr ? 'rtl' : 'ltr'};">
+         <div style="font-weight: 700; font-size: 1.1em; color: var(--text); margin-bottom: 8px;">
+           <i class="fa-solid fa-book" style="color: var(--primary); margin-inline-end: 6px;"></i> ${b.name}
+         </div>
+         <div style="background: var(--bg-inset, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+           <span style="color: var(--text-secondary); font-size: 0.9em;">${isAr ? 'سعر النسخة:' : 'Copy Price:'}</span>
+           <strong style="color: var(--primary); font-size: 1.15em;">${b.price} ج</strong>
+         </div>
+         <div>
+           <label style="display: block; font-size: 0.85em; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">
+             ${isAr ? 'طريقة الدفع والتحصيل:' : 'Payment Method:'}
+           </label>
+           <select id="swalBookletPayMethod" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box; height: 42px; font-size: 0.95em;">
+             <option value="cash" selected>${isAr ? 'كاش (نقداً)' : 'Cash'}</option>
+             <option value="instapay">${isAr ? 'إنستاباي (InstaPay)' : 'InstaPay'}</option>
+             <option value="wallet">${isAr ? 'فودافون كاش / محفظة' : 'Vodafone Cash / Wallet'}</option>
+           </select>
+         </div>
+       </div>
+     `,
+     showCancelButton: true,
+     confirmButtonText: isAr ? 'تأكيد البيع (+1)' : 'Confirm Sale (+1)',
+     confirmButtonColor: '#10b981',
+     cancelButtonText: isAr ? 'إلغاء' : 'Cancel'
+   }).then(res => {
+     if (res.isConfirmed) {
+       const m = document.getElementById("swalBookletPayMethod")?.value || 'cash';
+       doCompleteSale(m);
+     }
+   });
+ } else {
+   doCompleteSale('cash');
+ }
  };
 
  window.returnBookletCopy = function(id) {
@@ -11899,10 +12010,28 @@ window.openSessionStudentModal = function(item) {
   if (revenueByDate[today]) {
     revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - toInt(b.price));
   }
+
+  if (window.supabaseClient) {
+    const remainStock = Math.max(0, toInt(b.qty) - toInt(b.sold));
+    const salesMeta = Array.isArray(b.sales) ? b.sales.slice() : [];
+    const existingMetaIdx = salesMeta.findIndex(x => x && typeof x === 'object' && x.__meta === true);
+    const metaObj = { __meta: true, qty: toInt(b.qty), sold: toInt(b.sold) };
+    if (existingMetaIdx >= 0) salesMeta[existingMetaIdx] = metaObj;
+    else salesMeta.unshift(metaObj);
+
+    window.supabaseClient.from('booklets').upsert({
+      id: String(id),
+      name: b.name || '',
+      price: toInt(b.price) || 0,
+      stock: remainStock,
+      sales: salesMeta
+    }, { onConflict: 'id' }).then(() => {}).catch(err => console.warn("Supabase booklet direct upsert error:", err));
+  }
+
   saveAll();
   renderBookletsStock();
   showToast(`تم إرجاع نسخة من ${b.name} وخصم ${b.price} ج من الخزينة `, "warning");
-};
+ };
 
  window.editBookletQty = function(id) {
    if (!bookletsStock[id]) return;
@@ -11931,6 +12060,22 @@ window.openSessionStudentModal = function(item) {
           }
           if (q >= 0) {
             b.qty = q;
+            if (window.supabaseClient) {
+              const remainStock = Math.max(0, toInt(b.qty) - toInt(b.sold));
+              const salesMeta = Array.isArray(b.sales) ? b.sales.slice() : [];
+              const existingMetaIdx = salesMeta.findIndex(x => x && typeof x === 'object' && x.__meta === true);
+              const metaObj = { __meta: true, qty: toInt(b.qty), sold: toInt(b.sold) };
+              if (existingMetaIdx >= 0) salesMeta[existingMetaIdx] = metaObj;
+              else salesMeta.unshift(metaObj);
+
+              window.supabaseClient.from('booklets').upsert({
+                id: String(id),
+                name: b.name || '',
+                price: toInt(b.price) || 0,
+                stock: remainStock,
+                sales: salesMeta
+              }, { onConflict: 'id' }).then(() => {}).catch(err => console.warn("Supabase booklet direct upsert error:", err));
+            }
             saveAll();
             renderBookletsStock();
             showToast("تم تحديث العدد الكلي بنجاح", "success");
