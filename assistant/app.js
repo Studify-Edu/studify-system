@@ -1727,6 +1727,15 @@ let currentFilteredList = [];
  function toInt(v) { if (typeof v === 'object' && v !== null) return toInt(v.price || 0); const n = parseInt(v); return isNaN(n) ? 0 : n; }
   window.toInt = toInt;
 
+ function formatEgyptWaPhone(rawPhone) {
+   if (!rawPhone) return "";
+   let cleanPhone = String(rawPhone).replace(/[^\d]/g, '').trim();
+   if (cleanPhone.startsWith('20')) return cleanPhone;
+   if (cleanPhone.startsWith('0')) return '2' + cleanPhone;
+   return '20' + cleanPhone;
+ }
+ window.formatEgyptWaPhone = formatEgyptWaPhone;
+
 
 
  window.getPkgDetails = function(pkgName) {
@@ -2070,6 +2079,7 @@ window.switchTab = function(tabId, force = false) {
     }
   }
 
+  window.currentActiveTab = tabId;
   document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
   const target = $("sec" + tabId); 
   if (target) {
@@ -2216,12 +2226,27 @@ window.switchTab = function(tabId, force = false) {
    if ($("stPhone")) $("stPhone").value = "";
    if ($("stParentPhone")) $("stParentPhone").value = "";
    if ($("stClass")) $("stClass").value = "";
-   window.scrollTo({ top: 0, behavior: "smooth" });
+
+   const returnTab = window._studentCardReturnTab;
+   const returnScroll = window._studentCardReturnScroll;
+   window._studentCardReturnTab = null;
+   window._studentCardReturnScroll = null;
+
+   if (returnTab && returnTab !== 'Home') {
+     window.switchTab(returnTab);
+     if (typeof returnScroll === 'number') {
+       setTimeout(() => {
+         window.scrollTo({ top: returnScroll, behavior: "smooth" });
+       }, 80);
+     }
+   } else {
+     window.scrollTo({ top: 0, behavior: "smooth" });
+   }
  };
 
- window.extOpen = function(id, force = false) {
+ window.extOpen = function(id, force = false, sourceTab = null) {
   if (!force && !window._bypassUnsavedCheck && currentId && String(currentId) !== String(id) && window.hasUnsavedStudentChanges()) {
-    window.confirmUnsavedChanges(() => window.extOpen(id, true));
+    window.confirmUnsavedChanges(() => window.extOpen(id, true, sourceTab));
     return;
   }
  if (typeof AssistantSounds !== "undefined") AssistantSounds.studentOpen();
@@ -2230,6 +2255,20 @@ window.switchTab = function(tabId, force = false) {
  return;
  }
  
+ const visibleSec = document.querySelector('.tab-section:not(.hidden)');
+ const detectedTab = (visibleSec && visibleSec.id && visibleSec.id.startsWith('sec'))
+   ? visibleSec.id.substring(3)
+   : (window.currentActiveTab || 'Home');
+
+ const originTab = sourceTab || detectedTab;
+ if (originTab && originTab !== 'Home') {
+   window._studentCardReturnTab = originTab;
+   window._studentCardReturnScroll = window.scrollY || window.pageYOffset || 0;
+ } else {
+   window._studentCardReturnTab = null;
+   window._studentCardReturnScroll = null;
+ }
+
  window.switchTab('Home'); 
  if($("searchAny")) $("searchAny").value = ""; 
  if($("searchMsg")) $("searchMsg").style.display = "none";
@@ -4652,7 +4691,9 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
      }
 
      let totalPaid = s.paid || 0;
-     let remainAmt = Math.max(0, totalReq - totalPaid);
+     let totalDisc = toInt(s.discount) || 0;
+     let netReq = Math.max(0, totalReq - totalDisc);
+     let remainAmt = Math.max(0, netReq - totalPaid);
 
      if(fStatus !== "all") {
         if(fStatus === "paid" && (remainAmt > 0 || totalReq === 0)) isValid = false;
@@ -4776,11 +4817,13 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
      }
 
      let totalPaid = s.paid || 0;
-     let remainAmt = Math.max(0, totalReq - totalPaid);
+     let totalDisc = toInt(s.discount) || 0;
+     let netReq = Math.max(0, totalReq - totalDisc);
+     let remainAmt = Math.max(0, netReq - totalPaid);
 
-     let percent = totalReq > 0 ? Math.min((totalPaid / totalReq) * 100, 100) : (totalPaid > 0 ? 100 : 0);
+     let percent = netReq > 0 ? Math.min((totalPaid / netReq) * 100, 100) : (totalPaid > 0 ? 100 : 0);
      let pBarColor = (remainAmt === 0 && totalReq > 0) ? "var(--success)" : "var(--primary)";
-     let pBar = totalReq > 0 ? `<div style="width:100%; background:var(--bg-inset); height:5px; border-radius:3px; margin-top:4px; overflow:hidden; border:1px solid var(--border);"><div style="width:${percent}%; height:100%; background:${pBarColor}; border-radius:3px;"></div></div>` : '';
+     let pBar = netReq > 0 ? `<div style="width:100%; background:var(--bg-inset); height:5px; border-radius:3px; margin-top:4px; overflow:hidden; border:1px solid var(--border);"><div style="width:${percent}%; height:100%; background:${pBarColor}; border-radius:3px;"></div></div>` : '';
 
      const isAr = (currentLang === "ar");
      const currencySuffix = isAr ? " ج" : " EGP";
@@ -6800,9 +6843,8 @@ on("saveStudentBtn", "click", function() {
  if (typeof AssistantSounds !== "undefined") AssistantSounds.messageSend();
  const phInp = $("stPhone");
  if (phInp && phInp.value) {
-   let ph = phInp.value.trim().replace(/\D/g, '');
-   if (ph.startsWith('0')) ph = ph.substring(1);
-   window.open(`https://wa.me/20${ph}`, '_blank'); 
+   let ph = formatEgyptWaPhone(phInp.value);
+   window.open(`https://wa.me/${ph}`, '_blank'); 
  } else {
    showToast("يرجى إدخال رقم الطالب أولاً", "err");
  }
@@ -6812,9 +6854,8 @@ on("saveStudentBtn", "click", function() {
  if (typeof AssistantSounds !== "undefined") AssistantSounds.messageSend();
  const phInp = $("stParentPhone");
  if (phInp && phInp.value) {
-   let ph = phInp.value.trim().replace(/\D/g, '');
-   if (ph.startsWith('0')) ph = ph.substring(1);
-   window.open(`https://wa.me/20${ph}`, '_blank'); 
+   let ph = formatEgyptWaPhone(phInp.value);
+   window.open(`https://wa.me/${ph}`, '_blank'); 
  } else {
    showToast("يرجى إدخال رقم ولي الأمر أولاً", "err");
  }
@@ -9763,11 +9804,17 @@ if (document.readyState === "loading") {
  const allStuds = Object.values(students);
  for (let i = 0; i < allStuds.length; i++) {
  let s = allStuds[i];
+ if (!s || s.isSessionStudent || String(s.id).startsWith("ST-")) continue;
  if (s.name || s.paid > 0) {
  let sClass = s.className ? s.className.trim() : "";
  
     let req = 0;
-    if (sClass && groupFees[sClass] !== undefined) {
+    if (Array.isArray(s.packages) && s.packages.length > 0) {
+       s.packages.forEach(pkgName => {
+           const pDetails = window.getPkgDetails(pkgName);
+           req += toInt(pDetails.price);
+       });
+    } else if (sClass && groupFees[sClass] !== undefined) {
        const pkg = groupFees[sClass];
        if (s.paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
@@ -9777,10 +9824,11 @@ if (document.readyState === "loading") {
     }
 
  let p = s.paid || 0;
- let remain = req > 0 ? (req - p) : 0;
- if (remain < 0) remain = 0;
+ let disc = toInt(s.discount) || 0;
+ let netReq = Math.max(0, req - disc);
+ let remain = Math.max(0, netReq - p);
 
- totalExpected += req;
+ totalExpected += netReq;
  totalPaid += p;
  totalRemaining += remain;
 
@@ -9856,11 +9904,17 @@ if (document.readyState === "loading") {
  const allStuds = Object.values(students);
  for (let i = 0; i < allStuds.length; i++) {
  let s = allStuds[i];
+ if (!s || s.isSessionStudent || String(s.id).startsWith("ST-")) continue;
  if (s.name || s.paid > 0) {
  let sClass = s.className ? s.className.trim() : "";
  
     let req = 0;
-    if (sClass && groupFees[sClass] !== undefined) {
+    if (Array.isArray(s.packages) && s.packages.length > 0) {
+       s.packages.forEach(pkgName => {
+           const pDetails = window.getPkgDetails(pkgName);
+           req += toInt(pDetails.price);
+       });
+    } else if (sClass && groupFees[sClass] !== undefined) {
        const pkg = groupFees[sClass];
        if (s.paymentPlan === "installments" && pkg.hasInstallments) {
            req = toInt(pkg.installmentPrice) || 0;
@@ -9870,10 +9924,11 @@ if (document.readyState === "loading") {
     }
 
  let p = s.paid || 0;
- let remain = req > 0 ? (req - p) : 0;
- if (remain < 0) remain = 0;
+ let disc = toInt(s.discount) || 0;
+ let netReq = Math.max(0, req - disc);
+ let remain = Math.max(0, netReq - p);
 
- totalExpected += req;
+ totalExpected += netReq;
  totalPaid += p;
  totalRemaining += remain;
 
@@ -10181,7 +10236,7 @@ window.openSessionStudentModal = function(item) {
   if (waBtn) {
     if (item.phone) {
       waBtn.style.display = 'inline-flex';
-      waBtn.onclick = () => window.open(`https://wa.me/20${item.phone}`, '_blank');
+      waBtn.onclick = () => window.open(`https://wa.me/${formatEgyptWaPhone(item.phone)}`, '_blank');
     } else {
       waBtn.style.display = 'none';
     }
@@ -10699,7 +10754,7 @@ window.openSessionStudentModal = function(item) {
       if (s.phone) {
         html += '<div style="display:flex; align-items:center; gap:6px;">' +
           '<span style="font-family:monospace; font-size:0.92em; color:var(--text-secondary); direction:ltr;">' + s.phone + '</span>' +
-          '<button class="btn success smallBtn iconOnly" style="padding:3px 7px; border-radius:6px;" title="' + (isAr ? 'مراسلة واتساب' : 'WhatsApp Chat') + '" onclick="window.open(\x27https://wa.me/20' + s.phone + '\x27, \x27_blank\x27)"><i class="fa-brands fa-whatsapp"></i></button>' +
+          '<button class="btn success smallBtn iconOnly" style="padding:3px 7px; border-radius:6px;" title="' + (isAr ? 'مراسلة واتساب' : 'WhatsApp Chat') + '" onclick="window.open(\x27https://wa.me/' + window.formatEgyptWaPhone(s.phone) + '\x27, \x27_blank\x27)"><i class="fa-brands fa-whatsapp"></i></button>' +
           '</div>';
       } else {
         html += '<span style="color:var(--text-secondary); opacity:0.5;">—</span>';
@@ -10714,7 +10769,7 @@ window.openSessionStudentModal = function(item) {
       html += '<div style="display:inline-flex; align-items:center; gap:6px;">';
       html += '<button type="button" class="btn success smallBtn" style="padding:5px 9px; font-weight:700; font-size:0.8em; border-radius:6px;" title="' + (isAr ? 'شحن رصيد حصص سريع' : 'Quick Recharge Session Balance') + '" onclick="window.quickRechargeSessionStudent(\x27' + s.id + '\x27)"><i class="fa-solid fa-plus"></i> ' + (isAr ? 'شحن' : 'Recharge') + '</button>';
       if (String(s.id).startsWith("ST-") || s.studentObj) {
-        html += '<button type="button" class="btn primary smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="' + (isAr ? 'فتح الملف وتعديل البيانات' : 'Open File & Edit Details') + '" onclick="window.extOpen(\x27' + s.id + '\x27)"><i class="fa-solid fa-user-gear"></i></button>';
+        html += '<button type="button" class="btn primary smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="' + (isAr ? 'فتح الملف وتعديل البيانات' : 'Open File & Edit Details') + '" onclick="window.extOpen(\x27' + s.id + '\x27, false, \x27SessionStudents\x27)"><i class="fa-solid fa-user-gear"></i></button>';
       }
       html += '<button type="button" class="btn danger smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="' + (isAr ? 'حذف طالب الحصة بالكامل' : 'Delete Session Student') + '" onclick="window.deleteSessionStudentCompletely(\x27' + s.id + '\x27)"><i class="fa-solid fa-trash-can"></i></button>';
       html += '</div></td></tr>';
@@ -10956,8 +11011,8 @@ window.openSessionStudentModal = function(item) {
   </div>
   <div class="row" style="width:auto; gap:10px;">
   <span style="color:var(--success); font-weight:bold; font-size:1.1em;">+ ${item.amount} ${currencySuffix}</span>
-  ${stCode ? `<button class="btn primary smallBtn iconOnly" title="عرض ملف الطالب والترقية" onclick="window.extOpen('${stCode}')"><i class="fa-solid fa-user-gear"></i></button>` : ""}
-  ${item.phone ? `<button class="btn success smallBtn iconOnly" title="مراسلة واتساب" onclick="window.open('https://wa.me/20${item.phone}', '_blank')"><i class="fa-brands fa-whatsapp"></i></button>` : ""}
+  ${stCode ? `<button class="btn primary smallBtn iconOnly" title="عرض ملف الطالب والترقية" onclick="window.extOpen('${stCode}', false, 'SessionStudents')"><i class="fa-solid fa-user-gear"></i></button>` : ""}
+  ${item.phone ? `<button class="btn success smallBtn iconOnly" title="مراسلة واتساب" onclick="window.open('https://wa.me/${formatEgyptWaPhone(item.phone)}', '_blank')"><i class="fa-brands fa-whatsapp"></i></button>` : ""}
   <button class="btn danger smallBtn iconOnly delete-sess-btn" data-date="${d}" data-index="${i}" title="حذف وإلغاء الدفعة"><i class="fa-solid fa-trash-can"></i></button>
   </div>
   </div>`;
@@ -10974,10 +11029,20 @@ window.openSessionStudentModal = function(item) {
   btn.onclick = function() {
     let dt = this.getAttribute("data-date");
     let idx = toInt(this.getAttribute("data-index"));
+    const triggerBtn = this;
+    const isAr = (currentLang === "ar");
+
     const proceedDelete = async () => {
+      if (triggerBtn) {
+        triggerBtn.disabled = true;
+        triggerBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      }
+
       let delItem = sessionStudentsByDate[dt] ? sessionStudentsByDate[dt][idx] : null;
       let st = null;
       let targetStId = null;
+      let ghostToDelete = null;
+
       if (delItem) {
         revenueByDate[dt] = Math.max(0, (revenueByDate[dt] || 0) - toInt(delItem.amount));
         if (delItem.id && students[delItem.id]) {
@@ -11032,41 +11097,49 @@ window.openSessionStudentModal = function(item) {
           } else {
             delete students[targetStId];
           }
-
-          if (window.supabaseClient) {
-            try {
-              await window.supabaseClient.from('students').delete().eq('id', targetStId);
-            } catch(e) {
-              console.warn('[Supabase delete ghost session student error]:', e);
-            }
-          }
+          ghostToDelete = targetStId;
         }
       }
 
-      await saveAll();
+      // تحديث فوري فائق السرعة للواجهة (Optimistic UI) بدون أي تعليق
       renderSessionStudentsList(dt);
       if (typeof window.renderSessionFinanceStats === "function") window.renderSessionFinanceStats();
       if (typeof window.renderAllSessionStudentsTable === "function") window.renderAllSessionStudentsTable();
       if (typeof updateTopStats === "function") updateTopStats();
       if (typeof renderList === "function") renderList(false);
-      showToast("تم إلغاء تسجيل الحضور والمبلغ بنجاح", "success");
+      showToast(isAr ? "تم إلغاء تسجيل الحضور والمبلغ بنجاح" : "Session attendance cancelled successfully", "success");
+      if (typeof AssistantSounds !== "undefined") AssistantSounds.paymentDelete();
+
+      // الحفظ في الخلفية دون تعطيل واجهة المستخدم
+      (async () => {
+        try {
+          if (ghostToDelete && window.supabaseClient) {
+            await window.supabaseClient.from('students').delete().eq('id', ghostToDelete);
+          }
+          await saveAll();
+        } catch(e) {
+          console.warn('[Error in background save after session delete]:', e);
+        }
+      })();
     };
 
     if (typeof Swal !== 'undefined') {
       Swal.fire({
-        title: "إلغاء الحضور المالي",
-        text: "هل أنت متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟",
+        title: isAr ? "إلغاء الحضور المالي" : "Cancel Session Attendance",
+        text: isAr ? "هل أنت متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟" : "Are you sure you want to delete and cancel this student's attendance for today?",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#ef4444",
         cancelButtonColor: "#64748b",
-        confirmButtonText: "نعم، إلغاء الحضور",
-        cancelButtonText: "تراجع"
+        confirmButtonText: isAr ? "نعم، إلغاء الحضور" : "Yes, Cancel Attendance",
+        cancelButtonText: isAr ? "تراجع" : "Cancel"
       }).then(res => {
         if (res.isConfirmed) proceedDelete();
       });
     } else {
-      proceedDelete();
+      if (confirm(isAr ? "هل أنت متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟" : "Are you sure you want to delete and cancel this student's attendance for today?")) {
+        proceedDelete();
+      }
     }
   };
   });
@@ -11287,7 +11360,7 @@ window.openSessionStudentModal = function(item) {
     let msg = amount > 0
       ? `مرحباً ${name}،\r\nتم تسجيل حضورك بنجاح لحصة (${className})\r\nكود الطالب: ${stId}\r\nالمبلغ المدفوع: ${amount} ج (${mName}) مقابل ${sessCount} حصة.\r\nرصيد الحصص المتبقي لديك: ${newBalance} حصة.\r\n\r\nمع تحيات: أ/ ${centerMgr}`
       : `مرحباً ${name}،\r\nتم تسجيل حضورك بنجاح لحصة (${className})\r\nكود الطالب: ${stId}\r\nتم خصم حضور اليوم من رصيد الحصص المسبق.\r\nرصيد الحصص المتبقي لديك: ${newBalance} حصة.\r\n\r\nمع تحيات: أ/ ${centerMgr}`;
-    window.open(`https://wa.me/20${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://wa.me/${formatEgyptWaPhone(phone)}?text=${encodeURIComponent(msg)}`, '_blank');
   }
   unlockSess();
   });
@@ -11366,7 +11439,12 @@ window.openSessionStudentModal = function(item) {
           let sClass = (s.className && s.className !== "بدون باقة" && s.className !== "Without Package") ? s.className.trim() : (isAr ? "بدون باقة" : "Without Package");
 
           let req = 0;
-          if (sClass && groupFees[sClass] !== undefined) {
+          if (Array.isArray(s.packages) && s.packages.length > 0) {
+            s.packages.forEach(pkgName => {
+              const pDetails = window.getPkgDetails(pkgName);
+              req += toInt(pDetails.price);
+            });
+          } else if (sClass && groupFees[sClass] !== undefined) {
             const pkg = groupFees[sClass];
             if (s.paymentPlan === "installments" && pkg.hasInstallments) {
               req = toInt(pkg.installmentPrice) || 0;
@@ -11375,8 +11453,9 @@ window.openSessionStudentModal = function(item) {
             }
           }
 
-          let remain = req > 0 ? (req - (toInt(s.paid) || 0)) : 0;
-          if(remain < 0) remain = 0;
+          let disc = toInt(s.discount) || 0;
+          let netReq = Math.max(0, req - disc);
+          let remain = Math.max(0, netReq - (toInt(s.paid) || 0));
 
           let m = String(p.method || "cash").toLowerCase();
           if (m === "instapay") instapayTotal += amt;
@@ -12163,26 +12242,25 @@ window.openSessionStudentModal = function(item) {
         let st = students[sKeys[i]];
         if (!st || !st.name) continue;
         if (!st.phone || st.phone.trim() === "") continue;
+        if (st.isSessionStudent || String(st.id).startsWith("ST-")) continue;
         
         let p = st.phone.trim();
         let stClassName = st.className ? st.className.trim() : "";
         let hasAttendedToday = todayAttIds.has(String(st.id));
         
         let req = 0;
-        if (stClassName && groupFees[stClassName] !== undefined) {
+        if (Array.isArray(st.packages) && st.packages.length > 0) {
+          st.packages.forEach(pName => {
+            const pDetails = window.getPkgDetails(pName);
+            req += toInt(pDetails.price);
+          });
+        } else if (stClassName && groupFees[stClassName] !== undefined) {
           const pkg = groupFees[stClassName];
           if (st.paymentPlan === "installments" && pkg.hasInstallments) {
             req = toInt(pkg.installmentPrice) || 0;
           } else {
             req = toInt(pkg.price || pkg) || 0;
           }
-        } else if (Array.isArray(st.packages) && st.packages.length > 0) {
-          st.packages.forEach(pName => {
-            if (groupFees[pName]) {
-              const pkg = groupFees[pName];
-              req += toInt(pkg.price || pkg) || 0;
-            }
-          });
         }
 
         let paid = toInt(st.paid) || 0;
@@ -12279,11 +12357,7 @@ window.openSessionStudentModal = function(item) {
     let cardsHtml = '<div class="mkt-cards-grid">';
     for(let i = 0; i < pageSlice.length; i++) {
       const item = pageSlice[i];
-      let pNum = String(item.phone || '').replace(/[^\d]/g, '').trim();
-      if (pNum.startsWith('20')) pNum = pNum;
-      else if (pNum.startsWith('0')) pNum = '2' + pNum;
-      else pNum = '20' + pNum;
-      let cleanPhone = pNum;
+      let cleanPhone = formatEgyptWaPhone(item.phone);
       
       let customMsg = msgBody;
       if (customMsg) {
@@ -12372,11 +12446,7 @@ window.openSessionStudentModal = function(item) {
  customMsg = `مرحباً بك أ/ ${item.name}،\r\nيرجى التواصل مع إدارة السنتر.`;
  }
 
- let pNum = String(item.phone || '').replace(/[^\d]/g, '').trim();
-  if (pNum.startsWith('20')) pNum = pNum;
-  else if (pNum.startsWith('0')) pNum = '2' + pNum;
-  else pNum = '20' + pNum;
-  let cleanPhone = pNum;
+ let cleanPhone = formatEgyptWaPhone(item.phone);
  let waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(customMsg)}`;
 
  // فتح نافذة المحادثة
