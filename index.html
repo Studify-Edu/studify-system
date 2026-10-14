@@ -32,11 +32,14 @@
       window.location.replace("./assistant/index.html");
     }
   </script>
+  <meta name="apple-touch-fullscreen" content="yes">
 </head>
-<body style="background:#0B1120; margin:0; display:flex; align-items:center; justify-content:center; min-height:100vh; color:#94a3b8; font-family:sans-serif;">
+<body style="background:#0B1120; margin:0; display:flex; align-items:center; justify-content:center; min-height:100vh; color:#94a3b8; font-family:sans-serif; overflow:hidden;">
   <div style="text-align:center;">
-    <p>جاري تحميل التطبيق...</p>
-    <p><a href="./assistant/index.html" style="color:#38bdf8;">اضغط هنا إذا لم يتم التحويل تلقائياً</a></p>
+    <div style="width:44px; height:44px; border:3px solid rgba(56,189,248,0.2); border-top-color:#38bdf8; border-radius:50%; animation:studifySpin 0.75s linear infinite; margin:0 auto 16px;"></div>
+    <div style="font-size:1.15em; font-weight:800; color:#f8fafc; letter-spacing:0.5px;">Studify</div>
+    <p style="font-size:0.85em; color:#64748b; margin-top:6px;">جاري تشغيل النظام...</p>
   </div>
+  <style>@keyframes studifySpin { to { transform: rotate(360deg); } }</style>
 </body>
 </html>

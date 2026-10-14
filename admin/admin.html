@@ -22,6 +22,7 @@
   <meta name="theme-color" content="#0B1120">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-touch-fullscreen" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Studify">
   <meta name="application-name" content="Studify">
@@ -259,6 +260,9 @@
             <span class="lang-badge" id="adminTopbarLangCode">EN</span>
           </button>
 
+          <button id="adminFullscreenToggle" class="topbar-icon-btn" title="ملء الشاشة كبرنامج كامل (إخفاء شريط المتصفح)" onclick="window.toggleAdminFullscreen ? window.toggleAdminFullscreen() : null">
+            <i class="fa-solid fa-expand" id="adminFullscreenIcon"></i>
+          </button>
           <button id="adminThemeToggle" class="topbar-icon-btn" title="تبديل المظهر" onclick="window.toggleAdminTheme()">
             <i class="fa-solid fa-moon" id="adminThemeIcon"></i>
           </button>

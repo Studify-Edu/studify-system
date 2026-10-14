@@ -15292,3 +15292,65 @@ if (typeof applyLanguage === "function") {
     applyLanguage();
   }
 }
+
+
+// ==========================================
+// PWA STANDALONE & FULLSCREEN APP CONTROLS
+// ==========================================
+window.toggleAppFullscreen = function() {
+  const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  if (!isFs) {
+    const docEl = document.documentElement;
+    const reqFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+    if (reqFs) {
+      reqFs.call(docEl).catch(err => {
+        console.warn('[Fullscreen Request Error]:', err);
+        showToast(currentLang === 'ar' ? 'يمكنك الضغط على F11 لملء الشاشة كبرنامج كامل' : 'Press F11 for full app mode', 'info');
+      });
+    } else {
+      showToast(currentLang === 'ar' ? 'يمكنك الضغط على F11 لملء الشاشة كبرنامج كامل' : 'Press F11 for full app mode', 'info');
+    }
+  } else {
+    const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if (exitFs) {
+      exitFs.call(document).catch(err => console.warn('[Fullscreen Exit Error]:', err));
+    }
+  }
+};
+
+function updateFullscreenIcons() {
+  const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  const icon = document.getElementById("topbarFullscreenIcon");
+  const quickIcon = document.getElementById("quickFullscreenIcon");
+  const quickText = document.querySelector("#quickFullscreenBtn [data-i18n]");
+  const isAr = (typeof currentLang !== "undefined" ? currentLang === "ar" : true);
+
+  if (icon) {
+    icon.className = isFs ? "fa-solid fa-compress" : "fa-solid fa-expand";
+    const btn = document.getElementById("topbarFullscreenToggle");
+    if (btn) btn.title = isFs ? (isAr ? "الخروج من ملء الشاشة" : "Exit Fullscreen") : (isAr ? "ملء الشاشة كبرنامج كامل" : "Fullscreen App Mode");
+  }
+  if (quickIcon) {
+    quickIcon.className = isFs ? "fa-solid fa-compress" : "fa-solid fa-expand";
+  }
+  if (quickText) {
+    quickText.textContent = isFs 
+      ? (isAr ? "الخروج من ملء الشاشة" : "Exit Fullscreen")
+      : (isAr ? "ملء الشاشة كبرنامج (إخفاء المتصفح)" : "Fullscreen App Mode");
+  }
+}
+
+document.addEventListener("fullscreenchange", updateFullscreenIcons);
+document.addEventListener("webkitfullscreenchange", updateFullscreenIcons);
+
+// PWA Install prompt listener
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.deferredPWAInstallPrompt = e;
+  console.log('[PWA] beforeinstallprompt captured');
+});
+
+window.addEventListener('appinstalled', () => {
+  window.deferredPWAInstallPrompt = null;
+  showToast(typeof currentLang !== "undefined" && currentLang === "en" ? "Studify installed as a standalone application!" : "تم تثبيت Studify كبرنامج مستقل على جهازك بنجاح!", "success");
+});

@@ -1,7 +1,7 @@
 // ============================================================================
 // Studify Service Worker - Offline-First Static Asset Caching
 // ============================================================================
-const CACHE_NAME = 'studify-cache-v162';
+const CACHE_NAME = 'studify-cache-v163';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -10,9 +10,11 @@ const STATIC_ASSETS = [
     './assistant/app.js',
     './assistant/style.css',
     './assistant/sounds.js',
+    './assistant/manifest.json',
     './admin/admin.html',
     './admin/admin.js',
     './admin/admin.css',
+    './admin/manifest.json',
     './icon-192.png',
     './icon-512.png',
     './manifest.json',

@@ -7916,3 +7916,43 @@ window.exportNewStudentsExcel = function() {
   }
 };
 
+
+
+// ==========================================
+// PWA STANDALONE & FULLSCREEN CONTROLS (ADMIN)
+// ==========================================
+window.toggleAdminFullscreen = function() {
+  const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  if (!isFs) {
+    const docEl = document.documentElement;
+    const reqFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+    if (reqFs) {
+      reqFs.call(docEl).catch(err => {
+        console.warn('[Admin Fullscreen Request Error]:', err);
+      });
+    }
+  } else {
+    const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if (exitFs) {
+      exitFs.call(document).catch(err => console.warn('[Admin Fullscreen Exit Error]:', err));
+    }
+  }
+};
+
+function updateAdminFullscreenIcons() {
+  const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  const icon = document.getElementById("adminFullscreenIcon");
+  if (icon) {
+    icon.className = isFs ? "fa-solid fa-compress" : "fa-solid fa-expand";
+    const btn = document.getElementById("adminFullscreenToggle");
+    if (btn) btn.title = isFs ? "الخروج من ملء الشاشة" : "ملء الشاشة كبرنامج كامل";
+  }
+}
+
+document.addEventListener("fullscreenchange", updateAdminFullscreenIcons);
+document.addEventListener("webkitfullscreenchange", updateAdminFullscreenIcons);
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.deferredPWAInstallPrompt = e;
+});
