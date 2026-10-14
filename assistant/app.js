@@ -6161,58 +6161,185 @@ on("saveStudentBtn", "click", function() {
      mColor = "#ef4444";
    }
 
+   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || document.body.classList.contains('theme-dark');
+   const cardBg = isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
+   const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
+   const labelColor = isDark ? '#94a3b8' : '#64748b';
+   const valColor = isDark ? '#ffffff' : '#0f172a';
+   const inputBg = isDark ? 'rgba(0,0,0,0.3)' : '#ffffff';
+   const inputBorder = isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1';
+   const inputColor = isDark ? '#ffffff' : '#0f172a';
+   const chipBg = isDark ? 'rgba(255,255,255,0.08)' : '#f1f5f9';
+   const chipBorder = isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1';
+   const chipColor = isDark ? '#e2e8f0' : '#334155';
+
+   let mBg = "rgba(16,185,129,0.12)";
+   if (m === "instapay") mBg = "rgba(139,92,246,0.12)";
+   else if (m === "wallet") mBg = "rgba(239,68,68,0.12)";
+
+   // Quick preset amounts
+   const halfAmt = Math.round(origAmt / 2);
+   let presetChipsHtml = `
+     <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(${origAmt})" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
+       كامل المبلغ (${origAmt} ج)
+     </button>
+   `;
+   if (halfAmt > 0 && halfAmt < origAmt) {
+     presetChipsHtml += `
+       <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(${halfAmt})" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
+         نصف المبلغ (${halfAmt} ج)
+       </button>
+     `;
+   }
+   if (origAmt > 500) {
+     presetChipsHtml += `
+       <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(500)" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
+         500 ج
+       </button>
+     `;
+   }
+   if (origAmt > 200 && origAmt !== 500) {
+     presetChipsHtml += `
+       <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(200)" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
+         200 ج
+       </button>
+     `;
+   }
+
+   // Quick reason chips
+   const reasonChips = ["إيداع بالخطأ", "استرداد نقدي", "تعديل باقة", "تسجيل مكرر"];
+   let reasonChipsHtml = reasonChips.map(r => `
+     <button type="button" class="refund-chip-btn" onclick="window._setRefundReason('${r}')" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor}; font-size:0.75rem; padding:4px 8px;">
+       ${r}
+     </button>
+   `).join("");
+
    const result = await Swal.fire({
-     title: `<div style="display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.15rem; color:#f59e0b;">
-               <i class="fa-solid fa-rotate-left"></i>
-               <span>استرجاع / خصم دفعة مسجلة</span>
-             </div>`,
+     width: '780px',
+     padding: '20px 24px',
+     background: isDark ? 'rgba(15, 23, 42, 0.98)' : '#ffffff',
+     color: isDark ? '#f1f5f9' : '#0f172a',
+     showCloseButton: true,
+     customClass: { popup: 'swal2-refund-landscape-modal' },
      html: `
-       <div style="text-align:right; direction:rtl; font-size:0.92rem; line-height:1.7; color:var(--text-primary, #333);">
-         <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:12px; margin-bottom:14px;">
-           <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-             <span style="color:var(--text-muted, #666);">المبلغ المسجل:</span>
-             <strong style="color:var(--success, #10b981); font-size:1.1em;">+${origAmt} ج</strong>
+       <div style="text-align:right; direction:rtl; font-family:'Cairo', sans-serif;">
+         <!-- Header -->
+         <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid ${cardBorder}; padding-bottom:12px; margin-bottom:14px;">
+           <div style="display:flex; align-items:center; gap:12px;">
+             <div style="width:40px; height:40px; border-radius:12px; background:rgba(245,158,11,0.15); color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+               <i class="fa-solid fa-rotate-left"></i>
+             </div>
+             <div>
+               <div style="font-size:1.15rem; font-weight:800; color:${valColor};">استرجاع / خصم دفعة مسجلة</div>
+               <div style="font-size:0.78rem; color:${labelColor};">خصم فوري من الخزنة ووردية اليوم مع توثيق القيد</div>
+             </div>
            </div>
-           <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-             <span style="color:var(--text-muted, #666);">طريقة الدفع (الخزنة):</span>
-             <strong style="color:${mColor}; display:inline-flex; align-items:center; gap:5px;">
-               <i class="fa-solid ${mIcon}"></i> ${mLabel}
-             </strong>
-           </div>
-           <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-             <span style="color:var(--text-muted, #666);">تاريخ الدفعة:</span>
-             <strong>${prettyDate(p.date)}</strong>
-           </div>
-           ${p.pkgName ? `
-           <div style="display:flex; justify-content:space-between;">
-             <span style="color:var(--text-muted, #666);">الباقة:</span>
-             <strong>${p.pkgName}</strong>
-           </div>` : ''}
+           <span class="badge" style="background:${mBg}; color:${mColor}; border:1px solid ${mColor}40; padding:6px 12px; border-radius:8px; font-weight:700; font-size:0.82rem; display:inline-flex; align-items:center; gap:6px;">
+             <i class="fa-solid ${mIcon}"></i> ${mLabel}
+           </span>
          </div>
 
-         <p style="font-size:0.83rem; color:var(--text-muted, #888); margin-bottom:12px;">
-           <i class="fa-solid fa-circle-info" style="color:#f59e0b;"></i>
-           سيتم خصم المبلغ من خزنة (<b>${mLabel}</b>) ومن إيراد وردية اليوم، وتسجيل حركة استرجاع بالسالب في سجل الطالب.
-         </p>
+         <!-- Body: 2 Columns Grid -->
+         <div class="refund-grid-layout">
+           <!-- Right: بيانات الدفعة المسجلة -->
+           <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+             <div>
+               <div style="font-size:0.85rem; font-weight:800; color:#f59e0b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                 <i class="fa-solid fa-receipt"></i> بيانات الدفعة المسجلة
+               </div>
+               <div style="display:flex; flex-direction:column; gap:8px; font-size:0.88rem;">
+                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
+                   <span style="color:${labelColor};">المبلغ المسجل:</span>
+                   <span style="color:var(--success, #10b981); font-weight:900; font-size:1.2rem;">+${origAmt} ج</span>
+                 </div>
+                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
+                   <span style="color:${labelColor};">الخزنة المستهدفة:</span>
+                   <strong style="color:${mColor}; display:inline-flex; align-items:center; gap:5px;">
+                     <i class="fa-solid ${mIcon}"></i> ${mLabel}
+                   </strong>
+                 </div>
+                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
+                   <span style="color:${labelColor};">تاريخ الدفعة:</span>
+                   <strong style="color:${valColor};">${prettyDate(p.date)}</strong>
+                 </div>
+                 <div style="display:flex; justify-content:space-between; align-items:center;">
+                   <span style="color:${labelColor};">الباقة / البند:</span>
+                   <strong style="color:${valColor};">${p.pkgName || 'عام'}</strong>
+                 </div>
+               </div>
+             </div>
 
-         <div style="margin-bottom:12px;">
-           <label style="display:block; font-weight:700; margin-bottom:5px; font-size:0.88rem;">المبلغ المراد خصمه / استرجاعه (ج):</label>
-           <input id="swalRefundAmount" type="number" min="1" max="${origAmt}" value="${origAmt}" class="swal2-input" style="width:100%; box-sizing:border-box; margin:0; padding:10px; border-radius:8px; font-size:1rem; font-weight:700;" placeholder="المبلغ">
-         </div>
+             <div style="padding:10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:10px; font-size:0.75rem; color:${labelColor}; line-height:1.5;">
+               <i class="fa-solid fa-shield-halved" style="color:#f59e0b;"></i>
+               سيتم خصم المبلغ من خزنة (<b>${mLabel}</b>) ومن إيراد وردية اليوم، وتسجيل حركة سالبة في كشف حساب الطالب.
+             </div>
+           </div>
 
-         <div>
-           <label style="display:block; font-weight:700; margin-bottom:5px; font-size:0.88rem;">سبب الاسترجاع (اختياري):</label>
-           <input id="swalRefundReason" type="text" class="swal2-input" style="width:100%; box-sizing:border-box; margin:0; padding:10px; border-radius:8px; font-size:0.9rem;" placeholder="مثال: إيداع بالخطأ، استرداد نقدي، إلخ">
+           <!-- Left: تحديد الخصم والاسترجاع -->
+           <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+             <div>
+               <label style="display:block; font-weight:800; margin-bottom:6px; font-size:0.86rem; color:${valColor};">
+                 المبلغ المراد استرجاعه (ج):
+               </label>
+               <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                 ${presetChipsHtml}
+               </div>
+               <div style="position:relative;">
+                 <input id="swalRefundAmount" type="number" min="1" max="${origAmt}" value="${origAmt}" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:10px; font-size:1.15rem; font-weight:800; background:${inputBg}; border:1px solid ${inputBorder}; color:${inputColor}; outline:none; text-align:center;" placeholder="المبلغ">
+               </div>
+               <div id="swalRefundCalcPreview" style="font-size:0.78rem; color:${labelColor}; display:flex; justify-content:space-between; margin-top:6px; padding:0 4px;">
+                 <span>المتبقي في الدفعة بعد الخصم:</span>
+                 <b id="swalRefundRemainVal" style="color:var(--success, #10b981);">0 ج</b>
+               </div>
+             </div>
+
+             <div>
+               <label style="display:block; font-weight:800; margin-bottom:6px; font-size:0.86rem; color:${valColor};">
+                 سبب الاسترجاع (اختياري):
+               </label>
+               <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
+                 ${reasonChipsHtml}
+               </div>
+               <input id="swalRefundReason" type="text" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; font-size:0.85rem; background:${inputBg}; border:1px solid ${inputBorder}; color:${inputColor}; outline:none;" placeholder="مثال: إيداع بالخطأ، استرداد نقدي، إلخ">
+             </div>
+           </div>
          </div>
        </div>
      `,
-     icon: 'warning',
      showCancelButton: true,
      confirmButtonText: '<i class="fa-solid fa-check"></i> تأكيد الخصم والاسترجاع',
      cancelButtonText: 'إلغاء',
      confirmButtonColor: '#f59e0b',
-     cancelButtonColor: '#6b7280',
+     cancelButtonColor: isDark ? '#334155' : '#94a3b8',
      focusConfirm: false,
+     didOpen: () => {
+       const amtInp = document.getElementById('swalRefundAmount');
+       const remainEl = document.getElementById('swalRefundRemainVal');
+       const updateRemain = () => {
+         const v = Number(amtInp ? amtInp.value : 0);
+         const rem = Math.max(0, origAmt - v);
+         if (remainEl) remainEl.textContent = rem + " ج";
+       };
+       if (amtInp) {
+         amtInp.addEventListener('input', updateRemain);
+         amtInp.focus();
+         amtInp.select();
+       }
+       window._setRefundAmt = (val) => {
+         if (amtInp) {
+           amtInp.value = val;
+           updateRemain();
+           amtInp.focus();
+         }
+       };
+       window._setRefundReason = (text) => {
+         const rInp = document.getElementById('swalRefundReason');
+         if (rInp) {
+           rInp.value = text;
+           rInp.focus();
+         }
+       };
+     },
      preConfirm: () => {
        const amtInp = document.getElementById('swalRefundAmount');
        const reasonInp = document.getElementById('swalRefundReason');
