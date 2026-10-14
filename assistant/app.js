@@ -740,7 +740,7 @@ const K_VAULT_TRANSFERS = "ca_vault_transfers_v1";
  // Data keys that are HEAVY and must go to localForage (IndexedDB)
  const HEAVY_DATA_KEYS = [K_STUDENTS, K_ATT_BY_DATE, K_REVENUE, K_GROUP_FEES, 
  K_EXPENSES, K_DELETED, K_SYLLABUS, K_EVAL, 
- K_SESSION_STUDENTS, K_BOOKLETS];
+ K_SESSION_STUDENTS, K_BOOKLETS, K_VAULT_TRANSFERS];
 
  // Keys that STAY in localStorage (tiny, need synchronous boot access)
  // K_AUTH, K_ROLE, K_LANG, K_THEME, K_BG_IMAGE, K_NOTEBOOK, K_LAST_BACKUP,
@@ -4437,6 +4437,23 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  }
  }
 
+  // إدراج مبيعات المذكرات في الخزينة كاش
+  if (bookletsStock && typeof bookletsStock === 'object') {
+    Object.values(bookletsStock).forEach(b => {
+      if (!b) return;
+      if (Array.isArray(b.sales) && b.sales.length > 0) {
+        b.sales.forEach(s => {
+          if (!s) return;
+          const bAmt = toInt(s.price) || toInt(b.price) || 0;
+          cashTotal += bAmt;
+          if (s.date === today) cashToday += bAmt;
+        });
+      } else if (toInt(b.sold) > 0) {
+        cashTotal += (toInt(b.sold) * toInt(b.price));
+      }
+    });
+  }
+
   let expTotal = 0;
   let expCashTotal = 0, expWalletTotal = 0, expInstapayTotal = 0;
   let expCashToday = 0, expWalletToday = 0, expInstapayToday = 0;
@@ -4471,10 +4488,32 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
   if($("vaultInstapayToday")) $("vaultInstapayToday").textContent = instapayToday + currSuffix;
   if($("vaultWalletToday")) $("vaultWalletToday").textContent = walletToday + currSuffix;
 
-  // Real Net Balances in Vaults: Inflow - Outflow
-  if($("vaultCashAll")) $("vaultCashAll").textContent = Math.max(0, cashTotal - expCashTotal) + currSuffix;
-  if($("vaultInstapayAll")) $("vaultInstapayAll").textContent = Math.max(0, instapayTotal - expInstapayTotal) + currSuffix;
-  if($("vaultWalletAll")) $("vaultWalletAll").textContent = Math.max(0, walletTotal - expWalletTotal) + currSuffix;
+  // تأثير تحويلات الخزائن (Vault Transfers)
+  let cashTransfersIn = 0, cashTransfersOut = 0;
+  let walletTransfersIn = 0, walletTransfersOut = 0;
+  let instapayTransfersIn = 0, instapayTransfersOut = 0;
+
+  (vaultTransfers || []).forEach(tr => {
+    if (!tr) return;
+    const amt = toInt(tr.amount) || 0;
+    if (tr.from_vault === 'cash') cashTransfersOut += amt;
+    if (tr.to_vault === 'cash') cashTransfersIn += amt;
+
+    if (tr.from_vault === 'wallet') walletTransfersOut += amt;
+    if (tr.to_vault === 'wallet') walletTransfersIn += amt;
+
+    if (tr.from_vault === 'instapay') instapayTransfersOut += amt;
+    if (tr.to_vault === 'instapay') instapayTransfersIn += amt;
+  });
+
+  const netCash = cashTotal - expCashTotal + (cashTransfersIn - cashTransfersOut);
+  const netInstapay = instapayTotal - expInstapayTotal + (instapayTransfersIn - instapayTransfersOut);
+  const netWallet = walletTotal - expWalletTotal + (walletTransfersIn - walletTransfersOut);
+
+  // Real Net Balances in Vaults: Inflow - Outflow + Net Transfers
+  if($("vaultCashAll")) $("vaultCashAll").textContent = Math.max(0, netCash) + currSuffix;
+  if($("vaultInstapayAll")) $("vaultInstapayAll").textContent = Math.max(0, netInstapay) + currSuffix;
+  if($("vaultWalletAll")) $("vaultWalletAll").textContent = Math.max(0, netWallet) + currSuffix;
 
   if($("vaultCashTotal")) $("vaultCashTotal").textContent = cashTotal;
   if($("vaultCashExp")) $("vaultCashExp").textContent = expTotal;
@@ -8127,6 +8166,7 @@ function updateDriveUI() {
  backupData[K_SESSION_STUDENTS] = JSON.stringify(sessionStudentsByDate || {});
  backupData[K_BOOKLETS] = JSON.stringify(bookletsStock || {});
  backupData[K_EXTRA_IDS] = JSON.stringify(extraIds || []);
+ backupData[K_VAULT_TRANSFERS] = JSON.stringify(vaultTransfers || []);
 
  const fileContent = JSON.stringify(backupData);
  const metadata = { name: BACKUP_FILE_NAME, mimeType: 'application/json' };
@@ -8208,7 +8248,8 @@ function updateDriveUI() {
  [K_SYLLABUS]: backupData[K_SYLLABUS],
  [K_EVAL]: backupData[K_EVAL],
  [K_SESSION_STUDENTS]: backupData[K_SESSION_STUDENTS],
- [K_BOOKLETS]: backupData[K_BOOKLETS]
+ [K_BOOKLETS]: backupData[K_BOOKLETS],
+ [K_VAULT_TRANSFERS]: backupData[K_VAULT_TRANSFERS]
  };
 
  // Save data correctly (to IndexedDB for heavy data, localStorage for lightweight)
@@ -8223,6 +8264,20 @@ function updateDriveUI() {
  }
  }
  }
+
+ // Update in-memory state so saveAll() does NOT overwrite restored data with stale RAM variables
+ if (restoreMap[K_STUDENTS]) { try { students = JSON.parse(restoreMap[K_STUDENTS]); } catch(e){} }
+ if (restoreMap[K_EXTRA_IDS]) { try { extraIds = JSON.parse(restoreMap[K_EXTRA_IDS]); } catch(e){} }
+ if (restoreMap[K_ATT_BY_DATE]) { try { attByDate = JSON.parse(restoreMap[K_ATT_BY_DATE]); } catch(e){} }
+ if (restoreMap[K_REVENUE]) { try { revenueByDate = JSON.parse(restoreMap[K_REVENUE]); } catch(e){} }
+ if (restoreMap[K_DELETED]) { try { deletedStudents = JSON.parse(restoreMap[K_DELETED]); } catch(e){} }
+ if (restoreMap[K_GROUP_FEES]) { try { groupFees = JSON.parse(restoreMap[K_GROUP_FEES]); } catch(e){} }
+ if (restoreMap[K_EXPENSES]) { try { expensesByDate = JSON.parse(restoreMap[K_EXPENSES]); } catch(e){} }
+ if (restoreMap[K_SYLLABUS]) { try { syllabusData = JSON.parse(restoreMap[K_SYLLABUS]); } catch(e){} }
+ if (restoreMap[K_EVAL]) { try { evalData = JSON.parse(restoreMap[K_EVAL]); } catch(e){} }
+ if (restoreMap[K_SESSION_STUDENTS]) { try { sessionStudentsByDate = JSON.parse(restoreMap[K_SESSION_STUDENTS]); } catch(e){} }
+ if (restoreMap[K_BOOKLETS]) { try { bookletsStock = JSON.parse(restoreMap[K_BOOKLETS]); } catch(e){} }
+ if (restoreMap[K_VAULT_TRANSFERS]) { try { vaultTransfers = JSON.parse(restoreMap[K_VAULT_TRANSFERS]); } catch(e){} }
 
  // Push to Supabase if manager is logged in
  if (window.CURRENT_MANAGER_ID) {
@@ -10200,8 +10255,10 @@ window.openSessionStudentModal = function(item) {
            Swal.showValidationMessage("يرجى إدخال كود الطالب الجديد");
            return false;
          }
-         if (students[nId]) {
-           Swal.showValidationMessage(`الكود #${nId} محجوز بالفعل لطالب آخر (${students[nId].name || ''})`);
+         const existingTarget = students[nId];
+         const isOccupied = existingTarget && ((existingTarget.name && existingTarget.name.trim() !== '') || (existingTarget.phone && existingTarget.phone.trim() !== '') || Number(existingTarget.paid) > 0);
+         if (isOccupied) {
+           Swal.showValidationMessage(`الكود #${nId} محجوز بالفعل لطالب آخر (${existingTarget.name || ''})`);
            return false;
          }
          return { newId: nId, newPkg: nPkg };
@@ -10280,8 +10337,10 @@ window.openSessionStudentModal = function(item) {
    } else {
      const newId = prompt(`أدخل كود الطالب الرسمي الجديد لترقية ${st.name}:`, suggestedId);
      if (!newId) return;
-     if (students[newId]) {
-       alert(`الكود #${newId} محجوز بالفعل!`);
+     const existingTarget = students[newId];
+     const isOccupied = existingTarget && ((existingTarget.name && existingTarget.name.trim() !== '') || (existingTarget.phone && existingTarget.phone.trim() !== '') || Number(existingTarget.paid) > 0);
+     if (isOccupied) {
+       alert(`الكود #${newId} محجوز بالفعل لطالب آخر (${existingTarget.name || ''})!`);
        return;
      }
      const newStudent = { ...st, id: String(newId), isSessionStudent: false, promotedFrom: oldId };
@@ -11304,6 +11363,29 @@ window.openSessionStudentModal = function(item) {
       });
     }
   }
+  // 3. Booklets Sales today
+  if (bookletsStock && typeof bookletsStock === 'object') {
+    Object.values(bookletsStock).forEach(b => {
+      if (!b || !Array.isArray(b.sales)) return;
+      b.sales.forEach(s => {
+        if (!s || s.date !== today) return;
+        const bAmt = toInt(s.price) || toInt(b.price) || 0;
+        if (bAmt <= 0) return;
+        grandTotal += bAmt;
+        cashTotal += bAmt;
+        allTransactions.push({
+          type: "booklet",
+          id: b.id || "",
+          name: (isAr ? "مذكرة: " : "Booklet: ") + (b.name || ""),
+          className: isAr ? "مبيعات مذكرات" : "Booklet Sales",
+          amount: bAmt,
+          remain: 0,
+          method: "cash",
+          time: s.time || ""
+        });
+      });
+    });
+  }
 
   // المزامنة التلقائية الدقيقة: ضمان تطابق شريط التوب بار مع إجمالي المعاملات الفعلي في المودال
   if (revenueByDate[today] !== grandTotal) {
@@ -11633,8 +11715,16 @@ window.openSessionStudentModal = function(item) {
  }
  b.sold += 1;
  
- // تسجيل العائد في إيرادات اليوم التلقائية بالخزينة كاش
  let today = nowDateStr();
+ if (!Array.isArray(b.sales)) b.sales = [];
+ b.sales.push({
+   date: today,
+   price: toInt(b.price),
+   time: new Date().toLocaleTimeString('ar-EG'),
+   timestamp: Date.now()
+ });
+ 
+ // تسجيل العائد في إيرادات اليوم التلقائية بالخزينة كاش
  revenueByDate[today] = (revenueByDate[today] || 0) + b.price;
  
  saveAll();
@@ -11652,6 +11742,14 @@ window.openSessionStudentModal = function(item) {
   }
   b.sold -= 1;
   const today = nowDateStr();
+  if (Array.isArray(b.sales) && b.sales.length > 0) {
+    const lastTodayIdx = b.sales.map((s, i) => (s && s.date === today ? i : -1)).filter(i => i !== -1).pop();
+    if (lastTodayIdx !== undefined) {
+      b.sales.splice(lastTodayIdx, 1);
+    } else {
+      b.sales.pop();
+    }
+  }
   if (revenueByDate[today]) {
     revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - toInt(b.price));
   }

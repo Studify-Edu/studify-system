@@ -3972,22 +3972,32 @@ window.approveDecision = async function(reqId, studentId, subType, amount, targe
     // 1. Update Student record if exists
     const st = students[String(studentId)];
     if (st) {
-      let req = 0;
-      const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
-      stPkgs.forEach(pName => {
-        if (packages[pName]) req += (packages[pName].price || 0);
-        else if (groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
-      });
-
-      if (subType === "exemption") {
-        st.discount = req;
-      } else {
-        st.discount = Math.min(req, (Number(st.discount) || 0) + Number(amount));
-      }
-
       if (targetPkg && targetPkg !== 'all') {
+        let pkgReq = 0;
+        if (packages[targetPkg]) pkgReq = packages[targetPkg].price || 0;
+        else if (groupFees[targetPkg]) pkgReq = groupFees[targetPkg].price || groupFees[targetPkg] || 0;
+
         st.packageDiscounts = st.packageDiscounts || {};
-        st.packageDiscounts[targetPkg] = (subType === "exemption") ? req : ((Number(st.packageDiscounts[targetPkg]) || 0) + Number(amount));
+        st.packageDiscounts[targetPkg] = (subType === "exemption") ? pkgReq : Math.min(pkgReq, (Number(st.packageDiscounts[targetPkg]) || 0) + Number(amount));
+
+        let totalDiscount = 0;
+        for (const p in st.packageDiscounts) {
+          totalDiscount += Number(st.packageDiscounts[p]) || 0;
+        }
+        st.discount = totalDiscount;
+      } else {
+        let req = 0;
+        const stPkgs = (st.packages && st.packages.length > 0) ? st.packages : (st.className ? ["باقة " + st.className, st.className] : []);
+        stPkgs.forEach(pName => {
+          if (packages[pName]) req += (packages[pName].price || 0);
+          else if (groupFees[pName]) req += (groupFees[pName].price || groupFees[pName] || 0);
+        });
+
+        if (subType === "exemption") {
+          st.discount = req;
+        } else {
+          st.discount = Math.min(req, (Number(st.discount) || 0) + Number(amount));
+        }
       }
 
       st.lastModified = Date.now();
