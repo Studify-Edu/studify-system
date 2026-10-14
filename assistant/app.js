@@ -7633,41 +7633,48 @@ on("importExcelInput", "change", async function(e) {
  });
  if(!confirmRes.isConfirmed) return;
  
- // تصفير كل حاجة قبل ما نستقبل الداتا الجديدة
+ // 0. استخراج صفوف الطلاب وفحص الحد الأقصى للباقة (max_students) أولاً قبل مسح أي بيانات
+ let studentRows = [];
+ if(wb.SheetNames.includes("بيانات الطلاب") || wb.SheetNames[0]) {
+   const sheetName = wb.SheetNames.includes("بيانات الطلاب") ? "بيانات الطلاب" : wb.SheetNames[0];
+   studentRows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+ }
+
+ // SaaS Limit Enforcement: max_students (فحص أمان مسبق قبل تصفير الذاكرة)
+ const maxSt = window.SUBSCRIPTION?.maxStudents;
+ const validRows = studentRows.filter(r => toInt(r["كود الطالب"] || r["ID"] || r["كود"]));
+ if (maxSt && validRows.length > maxSt) {
+   if (typeof Swal !== "undefined") {
+     await Swal.fire({
+       icon: "error",
+       title: "تجاوز الحد الأقصى للطلاب",
+       html: `<p style="color:var(--text-secondary);margin-bottom:12px">الملف يحتوي على <b>${validRows.length} طالب</b>، بينما باقتك الحالية تسمح بحد أقصى <b>${maxSt} طالب</b>.</p><p style="font-size:.88em;color:#EF4444;font-weight:700">تم إلغاء الاستيراد لحماية سعة الباقة المحددة وبيانات السنتر الحالية.</p>`,
+       confirmButtonText: "موافق",
+       confirmButtonColor: "#2563EB"
+     });
+   } else {
+     showToast(`الملف يتجاوز الحد الأقصى للطلاب (${maxSt})`, "err");
+   }
+   return;
+ }
+
+ // تصفير البيانات بعد التأكد التام من مطابقة السعة المسموحة
  students = {}; attByDate = {}; revenueByDate = {}; expensesByDate = {}; syllabusData = [];
  for (let i = BASE_MIN_ID; i <= BASE_MAX_ID; i++) { students[String(i)] = makeEmptyStudent(i); }
  
  // 1. استيراد بيانات الطلاب (الصفحة الأولى)
- if(wb.SheetNames.includes("بيانات الطلاب") || wb.SheetNames[0]) {
- const sheetName = wb.SheetNames.includes("بيانات الطلاب") ? "بيانات الطلاب" : wb.SheetNames[0];
- const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
-
-  // SaaS Limit Enforcement: max_students
-  const maxSt = window.SUBSCRIPTION?.maxStudents;
-  const validRows = rows.filter(r => toInt(r["كود الطالب"] || r["ID"] || r["كود"]));
-  if (maxSt && validRows.length > maxSt) {
-    if (typeof Swal !== "undefined") {
-      await Swal.fire({
-        icon: "error",
-        title: "تجاوز الحد الأقصى للطلاب",
-        html: `<p style="color:var(--text-secondary);margin-bottom:12px">الملف يحتوي على <b>${validRows.length} طالب</b>، بينما باقتك الحالية تسمح بحد أقصى <b>${maxSt} طالب</b>.</p><p style="font-size:.88em;color:#EF4444;font-weight:700">تم إلغاء الاستيراد لحماية سعة الباقة المحددة.</p>`,
-        confirmButtonText: "موافق",
-        confirmButtonColor: "#2563EB"
-      });
-    } else {
-      showToast(`الملف يتجاوز الحد الأقصى للطلاب (${maxSt})`, "err");
-    }
-    return;
-  }
- for (let i = 0; i < rows.length; i++) {
- let row = rows[i];
+ for (let i = 0; i < studentRows.length; i++) {
+ let row = studentRows[i];
  const id = toInt(row["كود الطالب"] || row["ID"] || row["كود"]);
  if(id) {
  let st = makeEmptyStudent(id);
  st.name = row["اسم الطالب"] || row["Name"] || row["الاسم"] || ""; 
  st.className = row["الباقة / المجموعة"] || row["Class"] || row["المجموعة"] || "";
+ st.packages = st.className ? [st.className] : [];
  st.phone = String(row["رقم الموبايل"] || row["Phone"] || ""); 
+ st.parentPhone = String(row["هاتف ولي الأمر"] || row["رقم ولي الأمر"] || row["Parent Phone"] || row["ParentPhone"] || "");
  st.paid = toInt(row["إجمالي المدفوع"] || row["Paid"] || row["المدفوع"]);
+ st.discount = toInt(row["الخصم"] || row["قيمة الخصم"] || row["Discount"] || 0);
  
  let rankAr = row["التصنيف"] || row["Rank"] || "";
  st.rank = rankAr.includes("VIP") ? "vip" : (rankAr.includes("إنذار") ? "warn" : "normal");
@@ -7685,7 +7692,6 @@ on("importExcelInput", "change", async function(e) {
  }
  }
  students[String(id)] = st;
- }
  }
  }
 
@@ -7733,8 +7739,9 @@ on("importExcelInput", "change", async function(e) {
  }
  }
 
- saveAll(); showToast(t("msg_saved")); 
- setTimeout(function() { location.reload(); }, 1000);
+ await saveAll(); 
+ showToast(t("msg_saved")); 
+ setTimeout(function() { location.reload(); }, 800);
  });
 
  // ==========================================
@@ -10968,26 +10975,80 @@ window.openSessionStudentModal = function(item) {
     let dt = this.getAttribute("data-date");
     let idx = toInt(this.getAttribute("data-index"));
     const proceedDelete = async () => {
-      let delItem = sessionStudentsByDate[dt][idx];
+      let delItem = sessionStudentsByDate[dt] ? sessionStudentsByDate[dt][idx] : null;
+      let st = null;
+      let targetStId = null;
       if (delItem) {
         revenueByDate[dt] = Math.max(0, (revenueByDate[dt] || 0) - toInt(delItem.amount));
         if (delItem.id && students[delItem.id]) {
-          const st = students[delItem.id];
-          if (toInt(delItem.amount) === 0) {
+          targetStId = String(delItem.id);
+          st = students[targetStId];
+          const delAmt = toInt(delItem.amount);
+          if (delAmt === 0) {
             st.sessionBalance = (st.sessionBalance || 0) + 1;
           } else {
             const addedBal = Math.max(0, (toInt(delItem.sessionsCount) || 1) - 1);
             st.sessionBalance = Math.max(0, (st.sessionBalance || 0) - addedBal);
-            st.paid = Math.max(0, (toInt(st.paid) || 0) - toInt(delItem.amount));
+            st.paid = Math.max(0, (toInt(st.paid) || 0) - delAmt);
+          }
+
+          // 1. حذف وصل الدفع المقابل من st.payments
+          if (Array.isArray(st.payments) && delAmt > 0) {
+            const pIdx = st.payments.map((p, i) => (p && (p.date === dt || !p.date) && toInt(p.amount) === delAmt) ? i : -1).filter(i => i !== -1).pop();
+            if (pIdx !== undefined) {
+              st.payments.splice(pIdx, 1);
+            }
           }
         }
       }
-      sessionStudentsByDate[dt].splice(idx, 1);
+
+      // حذف السجل من مصفوفة اليوم
+      if (sessionStudentsByDate[dt]) {
+        sessionStudentsByDate[dt].splice(idx, 1);
+      }
+
+      // 2. تحديث الحضور وفحص حذف الطالب الوهمي
+      if (st && targetStId) {
+        const remainingToday = (sessionStudentsByDate[dt] || []).filter(item => item && String(item.id) === targetStId);
+        if (remainingToday.length === 0) {
+          if (Array.isArray(st.attendanceDates)) {
+            st.attendanceDates = st.attendanceDates.filter(d => d !== dt);
+          }
+          if (Array.isArray(st.attendance)) {
+            st.attendance = st.attendance.filter(a => a && a.date !== dt);
+          }
+        }
+
+        // إذا أصبح طالب الحصة بلا أي حضور وبلا مدفوعات وبلا رصيد
+        const hasNoAtt = !st.attendanceDates || st.attendanceDates.length === 0;
+        const hasNoPaid = (toInt(st.paid) || 0) === 0;
+        const hasNoBal = (toInt(st.sessionBalance) || 0) <= 0;
+        const isSessionStudentOnly = Boolean(st.isSessionStudent || targetStId.startsWith("ST-"));
+
+        if (isSessionStudentOnly && hasNoAtt && hasNoPaid && hasNoBal) {
+          const numId = toInt(targetStId);
+          if (numId >= BASE_MIN_ID && numId <= BASE_MAX_ID) {
+            students[targetStId] = makeEmptyStudent(numId);
+          } else {
+            delete students[targetStId];
+          }
+
+          if (window.supabaseClient) {
+            try {
+              await window.supabaseClient.from('students').delete().eq('id', targetStId);
+            } catch(e) {
+              console.warn('[Supabase delete ghost session student error]:', e);
+            }
+          }
+        }
+      }
+
       await saveAll();
       renderSessionStudentsList(dt);
       if (typeof window.renderSessionFinanceStats === "function") window.renderSessionFinanceStats();
       if (typeof window.renderAllSessionStudentsTable === "function") window.renderAllSessionStudentsTable();
       if (typeof updateTopStats === "function") updateTopStats();
+      if (typeof renderList === "function") renderList(false);
       showToast("تم إلغاء تسجيل الحضور والمبلغ بنجاح", "success");
     };
 
@@ -11032,9 +11093,10 @@ window.openSessionStudentModal = function(item) {
   }
 
   // Check existing student by ID or exact name & phone
-  let existingSt = students[stId];
+  let rawSt = students[stId];
+  let existingSt = (rawSt && ((rawSt.name && rawSt.name.trim() !== '') || (rawSt.phone && rawSt.phone.trim() !== '') || rawSt.isSessionStudent)) ? rawSt : null;
   if (!existingSt) {
-    const allSess = Object.values(students || {}).filter(s => s && (s.isSessionStudent || String(s.id).startsWith("ST-")));
+    const allSess = Object.values(students || {}).filter(s => s && (s.isSessionStudent || String(s.id).startsWith("ST-")) && s.name);
     existingSt = allSess.find(s => (s.name || "").trim().toLowerCase() === name.toLowerCase() && (!phone || (s.phone || "").trim() === phone));
     if (existingSt) {
       stId = existingSt.id;
@@ -11109,8 +11171,9 @@ window.openSessionStudentModal = function(item) {
       }]
     };
   } else {
+    existingSt.name = name;
     existingSt.sessionBalance = newBalance;
-    if (phone && !existingSt.phone) existingSt.phone = phone;
+    if (phone) existingSt.phone = phone;
     if (className) existingSt.className = className;
     if (amount > 0) {
       existingSt.paid = (Number(existingSt.paid) || 0) + amount;
@@ -11543,20 +11606,24 @@ window.openSessionStudentModal = function(item) {
  let scannedId = toInt(barcodeBuffer);
  barcodeBuffer = "";
  clearTimeout(barcodeTimer);
- if (scannedId && students[String(scannedId)]) {
- window.switchTab('Home');
- const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
- let res = addAttendance(scannedId, activeAttDate);
- if (res.ok) { if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncSuccess(); else playSound("pop"); } else { if (typeof AssistantSounds !== "undefined") AssistantSounds.error(); else playSound("error"); }
- showToast(res.msg, res.ok ? "success" : "warning");
- updateStudentUI(scannedId);
- updateTopStats();
- const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
- if(card) {
-   setTimeout(() => {
-     card.scrollIntoView({behavior: "smooth", block: "start"});
-   }, 120);
- }
+  const targetStudent = scannedId ? students[String(scannedId)] : null;
+  const isRegistered = Boolean(targetStudent && ((targetStudent.name && targetStudent.name.trim() !== "") || (targetStudent.phone && targetStudent.phone.trim() !== "")));
+  if (isRegistered) {
+  window.switchTab('Home');
+  const activeAttDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+  let res = addAttendance(scannedId, activeAttDate);
+  if (res.ok) { if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncSuccess(); else playSound("pop"); } else { if (typeof AssistantSounds !== "undefined") AssistantSounds.error(); else playSound("error"); }
+  showToast(res.msg, res.ok ? "success" : "warning");
+  if (res.ok || (targetStudent && targetStudent.name)) {
+    updateStudentUI(scannedId);
+    updateTopStats();
+    const card = document.getElementById("studentDetailsCard") || document.querySelector(".studentCard");
+    if(card) {
+      setTimeout(() => {
+        card.scrollIntoView({behavior: "smooth", block: "start"});
+      }, 120);
+    }
+  }
  } else if (scannedId) {
  showToast("الطالب غير مسجل: " + scannedId, "err");
  showFullscreenFeedback(false, false);

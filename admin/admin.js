@@ -4619,7 +4619,7 @@ window.openEditPackageModal = async function(encodedName) {
 
         for (const st of studentsToUpdate) {
           try {
-            await supabase.from('students').update({ packages: st.packages, payments: st.payments, class_name: st.className }).eq('id', st.id);
+            await supabase.from('students').update({ payments: st.payments, class_name: st.className, last_modified: Date.now() }).eq('id', st.id);
           } catch(err) {
             console.warn('Failed to update student packages in cloud:', err);
           }
@@ -4644,6 +4644,15 @@ window.openEditPackageModal = async function(encodedName) {
           Object.keys(cfg.student_packages).forEach(stId => {
             if (Array.isArray(cfg.student_packages[stId])) {
               cfg.student_packages[stId] = cfg.student_packages[stId].map(p => p === name ? newName : p);
+            }
+          });
+        }
+        if (cfg.student_package_discounts) {
+          Object.keys(cfg.student_package_discounts).forEach(stId => {
+            const discObj = cfg.student_package_discounts[stId];
+            if (discObj && typeof discObj === 'object' && discObj[name] !== undefined) {
+              discObj[newName] = discObj[name];
+              delete discObj[name];
             }
           });
         }
