@@ -3216,6 +3216,39 @@ function applyPermissionsToAssistantUI() {
     group.style.display = 'block';
   });
 
+  // Refund modal lock guard
+  if (p.can_refund_payment === false) {
+    const refModal = document.getElementById("refundPaymentModal");
+    if (refModal && !refModal.classList.contains("hidden")) {
+      refModal.classList.add("hidden");
+    }
+  }
+
+  // Active section lock guard: automatically redirect to Home if current tab got locked
+  if (currentUserRole !== "admin") {
+    const activeSec = document.querySelector('.tab-section:not(.hidden)');
+    if (activeSec) {
+      const tId = activeSec.id.replace(/^sec/, '');
+      let shouldKick = false;
+      if (tId === 'Packages' && p.can_manage_packages === false) shouldKick = true;
+      else if (tId === 'Syllabus' && p.can_access_syllabus === false) shouldKick = true;
+      else if (tId === 'Reports' && p.can_view_reports === false) shouldKick = true;
+      else if (tId === 'SessionStudents' && p.can_access_session_students === false) shouldKick = true;
+      else if (tId === 'Marketing' && p.can_access_marketing === false) shouldKick = true;
+      else if (tId === 'Booklets' && p.can_access_booklets === false) shouldKick = true;
+      else if ((tId === 'Settings' || tId === 'Admin') && p.can_access_settings === false) shouldKick = true;
+      
+      if (shouldKick && typeof window.switchTab === 'function') {
+        window.switchTab('Home', true);
+      }
+    }
+  }
+
+  // Instant re-render of student payments UI if student card is open
+  if (typeof currentId !== 'undefined' && currentId && typeof students !== 'undefined' && students && students[currentId] && typeof window.renderStudentPaymentsUI === 'function') {
+    window.renderStudentPaymentsUI(students[currentId], typeof currentSelectedPkg !== 'undefined' ? currentSelectedPkg : null);
+  }
+
   if (typeof updateTopStats === 'function') updateTopStats();
 }
 function applyPermissions() {
@@ -5116,6 +5149,9 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
   if (typeof populateSubjectModalList === "function") populateSubjectModalList();
   if (typeof window.updateNotebookCounters === "function") window.updateNotebookCounters();
   if (typeof window.setNotebookSyncStatus === "function") window.setNotebookSyncStatus('synced');
+  if (typeof currentId !== 'undefined' && currentId && typeof students !== 'undefined' && students && students[currentId] && typeof updateStudentUI === 'function') {
+    updateStudentUI(currentId);
+  }
 
   const isEn = (currentLang === 'en');
   document.querySelectorAll('input[type="date"]').forEach(inp => {
@@ -6174,14 +6210,18 @@ on("saveStudentBtn", "click", function() {
 });
 
  window.showRefundLockedToast = function() {
+   const isAr = (typeof currentLang === 'undefined' || currentLang === 'ar');
+   const msg = isAr 
+     ? "عفواً، خاصية استرجاع أو خصم الإيداعات مقفلة من قِبل المدير" 
+     : "Sorry, refunding or deducting deposits is locked by the manager";
    if (typeof showToast === "function") {
-     showToast("عفواً، خاصية استرجاع أو خصم الإيداعات مقفلة من قِبل المدير", "warning");
-   } else {
+     showToast(msg, "warning");
+   } else if (typeof Swal !== 'undefined') {
      Swal.fire({
        icon: "warning",
-       title: "خاصية مقفلة",
-       text: "عفواً، خاصية استرجاع أو خصم الإيداعات مقفلة من قِبل المدير.",
-       confirmButtonText: "حسناً"
+       title: isAr ? "خاصية مقفلة" : "Feature Locked",
+       text: msg,
+       confirmButtonText: isAr ? "حسناً" : "OK"
      });
    }
  };
@@ -8376,12 +8416,31 @@ window.toggleAssistantPermission = async function(username, key, val) {
     
     // 2. Update it
     currentPerms[key] = val;
+
+    // Broadcast immediately (< 1ms)
+    if ('BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('studify_permissions_sync');
+        bc.postMessage({
+          type: 'PERMISSIONS_UPDATED',
+          username: username,
+          permissions: currentPerms,
+          changedKey: key,
+          newValue: val
+        });
+        bc.close();
+      } catch(e) {}
+    }
+    localStorage.setItem(`ca_asst_permissions_${username}`, JSON.stringify(currentPerms));
+    localStorage.setItem("ca_asst_permissions", JSON.stringify(currentPerms));
+
     await window.supabaseClient.from('assistants').update({ permissions: currentPerms }).eq('username', username);
     
-    showToast("تم تحديث صلاحية المساعد بنجاح", "success");
+    const isAr = (typeof currentLang === 'undefined' || currentLang === 'ar');
+    showToast(isAr ? "تم تحديث صلاحية المساعد بنجاح" : "Assistant permission updated successfully", "success");
   } catch (err) {
     console.error(err);
-    showToast("فشل تحديث الصلاحية", "err");
+    showToast(typeof currentLang === 'undefined' || currentLang === 'ar' ? "فشل تحديث الصلاحية" : "Failed to update permission", "err");
   }
 };
 
@@ -8619,6 +8678,7 @@ window.deleteAssistant = async function(asstKey) {
 
 // Default permissions initialized from local cache immediately
 let currentPermissions = {};
+window.currentPermissions = currentPermissions;
 PERMISSIONS_DEFS.forEach(p => currentPermissions[p.key] = true);
 try {
   const cached = localStorage.getItem("ca_asst_permissions");
@@ -8629,24 +8689,84 @@ try {
     });
   }
 } catch(e) {}
+window.currentPermissions = currentPermissions;
 
-// Instant Real-time sync with Admin via BroadcastChannel (< 5ms response across tabs)
+// Clean matching helper for assistant targets
+function isPermissionTargetCurrentAssistant(targetUsername) {
+  if (!targetUsername) return true; // Broadcast to all if not specified
+  const currentU = (localStorage.getItem("ca_current_username") || "").trim().toLowerCase().replace(/@studify\.com$/i, '');
+  const currentEmail = (localStorage.getItem("ca_asst_email") || "").trim().toLowerCase().replace(/@studify\.com$/i, '');
+  const targetU = String(targetUsername).trim().toLowerCase().replace(/@studify\.com$/i, '');
+  if (!currentU && !currentEmail) return true;
+  if (currentU && (targetU === currentU || targetU.includes(currentU) || currentU.includes(targetU))) return true;
+  if (currentEmail && (targetU === currentEmail || targetU.includes(currentEmail) || currentEmail.includes(targetU))) return true;
+  return false;
+}
+
+// Live real-time permission synchronizer
+function handleLivePermissionsUpdate(newPerms, changedKey, newValue, notify = true) {
+  if (!newPerms && !changedKey) return;
+  if (changedKey && newValue !== undefined) {
+    currentPermissions[changedKey] = newValue;
+  }
+  if (newPerms && typeof newPerms === 'object') {
+    currentPermissions = Object.assign({}, currentPermissions, newPerms);
+  }
+  window.currentPermissions = currentPermissions;
+  try {
+    localStorage.setItem("ca_asst_permissions", JSON.stringify(currentPermissions));
+  } catch(e) {}
+
+  // 1. Update UI locks across system
+  if (typeof applyPermissionsToAssistantUI === 'function') {
+    applyPermissionsToAssistantUI();
+  }
+
+  // 2. Instant re-render of currently open student card (switches refund buttons between active & locked immediately)
+  if (typeof currentId !== 'undefined' && currentId && typeof students !== 'undefined' && students && students[currentId] && typeof updateStudentUI === 'function') {
+    updateStudentUI(currentId);
+  }
+
+  // 3. If refund permission was revoked while refund modal is open, close it
+  if (currentPermissions.can_refund_payment === false) {
+    const refModal = document.getElementById("refundPaymentModal");
+    if (refModal && !refModal.classList.contains("hidden")) {
+      refModal.classList.add("hidden");
+    }
+  }
+
+  if (notify && typeof showToast === 'function') {
+    const isAr = (typeof currentLang === 'undefined' || currentLang === 'ar');
+    showToast(isAr ? "تم تحديث الصلاحيات من قِبل المدير فورياً" : "Permissions updated by manager instantly", "info");
+  }
+}
+
+// Multi-Tab LocalStorage Storage Event Listener
+window.addEventListener('storage', (e) => {
+  if (e.key === 'ca_asst_permissions' && e.newValue) {
+    try {
+      const parsed = JSON.parse(e.newValue);
+      handleLivePermissionsUpdate(parsed, null, undefined, false);
+    } catch(err) {}
+  }
+});
+
+// Window focus background sync (re-verifies permissions when switching tabs)
+window.addEventListener('focus', () => {
+  if (currentUserRole !== 'admin' && typeof loadPermissions === 'function') {
+    loadPermissions();
+  }
+});
+
+// Instant Real-time sync with Admin via BroadcastChannel (< 1ms response across tabs)
 if ('BroadcastChannel' in window) {
   const permChannel = new BroadcastChannel('studify_permissions_sync');
   permChannel.onmessage = (e) => {
     const msg = e.data;
     if (!msg) return;
-    const currentU = localStorage.getItem("ca_current_username") || "";
     if (msg.type === 'PERMISSIONS_UPDATED') {
-      if (!msg.username || msg.username.toLowerCase() === currentU.toLowerCase()) {
-        currentPermissions = msg.permissions || {};
-        localStorage.setItem("ca_asst_permissions", JSON.stringify(currentPermissions));
-        if (typeof applyPermissionsToAssistantUI === 'function') {
-          applyPermissionsToAssistantUI();
-        }
-        if (typeof showToast === 'function') {
-          showToast("تم تحديث الصلاحيات من قِبل المدير فورياً", "info");
-        }
+      if (isPermissionTargetCurrentAssistant(msg.username)) {
+        handleLivePermissionsUpdate(msg.permissions, msg.changedKey, msg.newValue, true);
       }
     } else if (msg.type === 'DAILY_SHIFT_CHANGE' || msg.type === 'DAILY_SHIFT_APPROVED' || msg.type === 'DAILY_SHIFT_REJECTED') {
       if (msg.shift_system_enabled === false) {
@@ -8694,19 +8814,15 @@ if ('BroadcastChannel' in window) {
 }
 
 // Supabase Real-time sync across different devices (Mobile & PC)
-document.addEventListener("DOMContentLoaded", () => {
-  if (window.supabaseClient) {
+function initSupabaseRealtimeSync() {
+  if (window.supabaseClient && !window._supabaseRealtimeSyncInitialized) {
+    window._supabaseRealtimeSyncInitialized = true;
     window.supabaseClient.channel('custom-all-channel-sync')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'assistants' }, payload => {
-        const currentU = localStorage.getItem("ca_current_username") || "";
-        if (payload.new && payload.new.username && payload.new.username.toLowerCase() === currentU.toLowerCase()) {
-          currentPermissions = payload.new.permissions || {};
-          localStorage.setItem("ca_asst_permissions", JSON.stringify(currentPermissions));
-          if (typeof applyPermissionsToAssistantUI === 'function') {
-            applyPermissionsToAssistantUI();
-          }
-          if (typeof showToast === 'function') {
-            showToast("تم تحديث الصلاحيات من قِبل المدير فورياً", "info");
+        if (payload.new && payload.new.permissions) {
+          const targetU = payload.new.username || payload.new.email;
+          if (isPermissionTargetCurrentAssistant(targetU)) {
+            handleLivePermissionsUpdate(payload.new.permissions, null, undefined, true);
           }
         }
       })
@@ -8878,7 +8994,12 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .subscribe();
   }
-});
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initSupabaseRealtimeSync);
+} else {
+  initSupabaseRealtimeSync();
+}
 
  async function loadPermissions() {
   if (!window.supabaseClient) return;
@@ -8886,6 +9007,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (window.CURRENT_ROLE === "admin") {
       // Admin has all permissions automatically
       PERMISSIONS_DEFS.forEach(p => currentPermissions[p.key] = true);
+      window.currentPermissions = currentPermissions;
       return;
   }
   
@@ -8901,14 +9023,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .maybeSingle();
 
     if (asst && asst.permissions) {
-      const saved = asst.permissions;
-      PERMISSIONS_DEFS.forEach(p => {
-        if (saved[p.key] !== undefined) currentPermissions[p.key] = saved[p.key];
-      });
-      localStorage.setItem("ca_asst_permissions", JSON.stringify(currentPermissions));
-      if (typeof applyPermissionsToAssistantUI === 'function') {
-        applyPermissionsToAssistantUI();
-      }
+      handleLivePermissionsUpdate(asst.permissions, null, undefined, false);
     }
   } catch(e) { console.error("Load permissions error:", e); }
 }

@@ -3064,52 +3064,81 @@ window.fetchAssistants = async function() {
   }
 };
 
-// INSTANT PERMISSION TOGGLER WITH REAL-TIME BROADCAST
+// INSTANT PERMISSION TOGGLER WITH REAL-TIME BROADCAST (< 1ms zero-latency broadcast)
 window.togglePermission = async function(username, permKey, isAllowed) {
   if (!supabase) return;
   try {
-    // 1. Fetch current permissions
-    const { data: asst } = await supabase
-      .from('assistants')
-      .select('permissions')
-      .eq('username', username)
-      .single();
-
-    const perms = asst ? (asst.permissions || {}) : {};
+    // 1. Optimistically retrieve existing permissions from cache or localStorage
+    let asst = (window.cachedAssistants || []).find(a => a.username === username);
+    let perms = {};
+    if (asst && asst.permissions) {
+      perms = Object.assign({}, asst.permissions);
+    } else {
+      try {
+        const cached = localStorage.getItem(`ca_asst_permissions_${username}`);
+        if (cached) perms = JSON.parse(cached);
+      } catch(e) {}
+    }
     perms[permKey] = isAllowed;
+    if (asst) asst.permissions = perms;
 
-    // 2. Save in Supabase
-    await supabase
-      .from('assistants')
-      .update({ permissions: perms })
-      .eq('username', username);
-
-    // 3. BROADCAST IMMEDIATELY (Instant sync to any open assistant tabs in < 5ms)
+    // 2. ZERO-LATENCY BROADCAST IMMEDIATELY (< 1ms across tabs)
     if (permChannel) {
-      permChannel.postMessage({
-        type: 'PERMISSIONS_UPDATED',
-        username: username,
-        permissions: perms,
-        changedKey: permKey,
-        newValue: isAllowed
-      });
+      try {
+        permChannel.postMessage({
+          type: 'PERMISSIONS_UPDATED',
+          username: username,
+          permissions: perms,
+          changedKey: permKey,
+          newValue: isAllowed
+        });
+      } catch(e) {}
     }
 
+    // 3. Update localStorage immediately for cross-tab storage events
     localStorage.setItem(`ca_asst_permissions_${username}`, JSON.stringify(perms));
     localStorage.setItem("ca_asst_permissions", JSON.stringify(perms));
 
-    const statusText = isAllowed ? 'تفعيل' : 'تعطيل';
+    const isAr = (currentLang === "ar");
+    const statusText = isAllowed ? (isAr ? 'تفعيل' : 'Enabled') : (isAr ? 'تعطيل' : 'Disabled');
     const permName = getPermissionTitle(permKey);
-    const msgText = `تم ${statusText} صلاحية «${permName}» للمساعد ${username}.`;
+    const msgText = isAr ? `تم ${statusText} صلاحية «${permName}» للمساعد ${username}.` : `Permission "${permName}" ${statusText} for assistant ${username}.`;
     if (typeof window.createNotification === 'function') {
       window.createNotification(msgText, isAllowed ? 'info' : 'warning');
     }
 
-    showToast(`تم ${statusText} صلاحية «${permName}» للمساعد ${username} بنجاح`, "success");
+    showToast(isAr ? `تم ${statusText} صلاحية «${permName}» للمساعد ${username} بنجاح` : `Permission "${permName}" ${statusText} for ${username} successfully`, "success");
+
+    // 4. Persist to Supabase in background
+    const { error } = await supabase
+      .from('assistants')
+      .update({ permissions: perms })
+      .eq('username', username);
+
+    if (error) {
+      console.error("Toggle Permission Supabase Error:", error);
+      // Revert optimistic state on failure
+      perms[permKey] = !isAllowed;
+      if (asst) asst.permissions = perms;
+      if (permChannel) {
+        try {
+          permChannel.postMessage({
+            type: 'PERMISSIONS_UPDATED',
+            username: username,
+            permissions: perms,
+            changedKey: permKey,
+            newValue: !isAllowed
+          });
+        } catch(e) {}
+      }
+      localStorage.setItem(`ca_asst_permissions_${username}`, JSON.stringify(perms));
+      localStorage.setItem("ca_asst_permissions", JSON.stringify(perms));
+      showToast(isAr ? "فشل تحديث الصلاحية في السحابة، تم التراجع" : "Failed to update permission in cloud, reverted", "err");
+    }
 
   } catch(err) {
     console.error("Toggle Permission Error:", err);
-    showToast("فشل تحديث الصلاحية في السحابة", "err");
+    showToast(currentLang === 'ar' ? "فشل تحديث الصلاحية في السحابة" : "Failed to update permission in cloud", "err");
   }
 };
 
