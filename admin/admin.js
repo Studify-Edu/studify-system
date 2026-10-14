@@ -6869,7 +6869,8 @@ window.filterRevenueModal = function() {
           source: st.name + ` (#${st.id})`,
           channel: isRefund ? (isAr ? "استرجاع / خصم إيداع" : "Deposit Refund") : (isAr ? "اشتراك باقة" : "Package Subscription"),
           amount: amt,
-          method: m
+          method: m,
+          note: p.note || ''
         });
       });
     } else if (Number(st.paid) > 0 && !sDate && !eDate) {
@@ -6992,7 +6993,10 @@ window.filterRevenueModal = function() {
         <tr>
           <td style="font-weight:600;">${it.date}</td>
           <td style="font-weight:700;">${it.source}</td>
-          <td><span class="badge" style="background:${channelBg}; color:${channelColor}; font-weight:700;">${it.channel}</span></td>
+          <td>
+            <span class="badge" style="background:${channelBg}; color:${channelColor}; font-weight:700;">${it.channel}</span>
+            ${it.note ? `<div style="font-size:0.75rem; color:var(--text-secondary); margin-top:4px; display:flex; align-items:center; gap:4px;"><i class="fa-regular fa-comment-dots"></i> <span>${it.note}</span></div>` : ''}
+          </td>
           <td style="font-weight:800; color:${amtColor}; font-size:1.05em;">${amtPrefix}${absVal} ج</td>
           <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
         </tr>
