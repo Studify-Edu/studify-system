@@ -5070,14 +5070,20 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  bl.innerHTML = html;
  }
 
- window.restoreSt = function(idStr) {
- const id = String(idStr);
- const st = deletedStudents[id]; 
- if(!st) return;
- 
- students[id] = st; delete deletedStudents[id]; saveAll(); renderBinList(); 
- showToast("تم الاسترجاع "); window.extOpen(id); 
- };
+  window.restoreSt = function(idStr) {
+    const id = String(idStr);
+    const st = deletedStudents[id]; 
+    if(!st) return;
+    
+    st.status = 'active';
+    st.lastModified = Date.now();
+    students[id] = st;
+    delete deletedStudents[id];
+    saveAll();
+    renderBinList(); 
+    showToast(currentLang === 'ar' ? "تم الاسترجاع بنجاح" : "Student restored successfully", "success");
+    window.extOpen(id); 
+  };
 // ==========================================
  // 12. SYSTEM THEME & LANGUAGE APPLY
  // ==========================================

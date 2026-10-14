@@ -771,10 +771,9 @@ let sessionStudentsByDate = {};
 window.getAdminUniqueSessionStudents = function() {
   const list = [];
   const seen = new Set();
-  const existingStudentKeys = new Set(Object.keys(students || {}));
   const existingNamesPhones = new Set();
   Object.values(students || {}).forEach(s => {
-    if (s && s.name) {
+    if (s && s.name && !s.isSessionStudent) {
       existingNamesPhones.add((s.name || '').trim().toLowerCase() + '___' + (s.phone || '').trim());
     }
   });
@@ -783,7 +782,7 @@ window.getAdminUniqueSessionStudents = function() {
   dates.forEach(d => {
     const arr = sessionStudentsByDate[d] || [];
     arr.forEach((it, idx) => {
-      if (it.id && existingStudentKeys.has(String(it.id))) return;
+      if (it.id && students[String(it.id)] && !students[String(it.id)].isSessionStudent) return;
       const key = (it.name || '').trim().toLowerCase() + '___' + (it.phone || '').trim();
       if (existingNamesPhones.has(key)) return;
       if (!seen.has(key)) {
@@ -856,6 +855,8 @@ if (supabase) {
                 jDate = (row.joined_date || row.joinedDate || existing.joinedDate).split('T')[0];
               }
 
+              const isSess = Boolean(String(row.id).startsWith('ST-') || row.id === 'حصة' || (existing && existing.isSessionStudent));
+
               students[String(row.id)] = {
                 id: row.id,
                 name: row.name !== undefined ? (row.name || '') : (existing.name || ''),
@@ -866,6 +867,8 @@ if (supabase) {
                 discount: row.discount !== undefined ? (Number(row.discount) || 0) : (existing.discount !== undefined ? (Number(existing.discount) || 0) : 0),
                 notes: row.notes !== undefined ? (row.notes || '') : (existing.notes || ''),
                 rank: row.rank || existing.rank || 'normal',
+                isSessionStudent: isSess,
+                sessionBalance: (existing && existing.sessionBalance !== undefined) ? existing.sessionBalance : 0,
                 createdAt: rawCreatedAt,
                 joinedDate: jDate,
                 packageDiscounts: row.package_discounts || row.packageDiscounts || existing.packageDiscounts || {},
@@ -940,6 +943,32 @@ if (supabase) {
                 }
               }
               expensesByDate = flatList;
+            }
+            if (cfg.student_sessions && typeof cfg.student_sessions === 'object') {
+              const sMap = cfg.student_sessions;
+              Object.keys(sMap).forEach(stId => {
+                if (students[stId]) {
+                  students[stId].isSessionStudent = true;
+                  students[stId].sessionBalance = sMap[stId];
+                }
+              });
+            }
+            if (cfg.booklets_stock && typeof cfg.booklets_stock === 'object') {
+              for (const bId in cfg.booklets_stock) {
+                const bStock = cfg.booklets_stock[bId];
+                if (!booklets[bId]) {
+                  booklets[bId] = { id: bId, name: bStock.name || bId, price: Number(bStock.price) || 0 };
+                }
+                const b = booklets[bId];
+                let sold = Number(bStock.sold) || 0;
+                let qty = Number(bStock.qty) || 0;
+                b.sold = sold;
+                b.qty = qty || (Number(bStock.stock) || 0) + sold;
+                b.price = Number(bStock.price) || b.price || 0;
+                if (bStock.name) b.name = bStock.name;
+                if (bStock.sales) b.sales = bStock.sales;
+              }
+              if (typeof window.renderTermTable === 'function') window.renderTermTable();
             }
             const dInput = document.getElementById("adminDailyDateInput");
             const curDate = dInput ? dInput.value : nowDateStr();
@@ -1019,6 +1048,32 @@ if (supabase) {
           }
         } catch(err) {
           console.warn('[Admin Realtime Communications] Error handling payload:', err);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'booklets' }, payload => {
+        try {
+          if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+            delete booklets[payload.old.id];
+          } else if (payload.new && payload.new.id) {
+            const b = payload.new;
+            let sold = Number(b.sold) || 0;
+            let qty = Number(b.qty) || 0;
+            if (Array.isArray(b.sales)) {
+              const meta = b.sales.find(x => x && typeof x === 'object' && x.__meta === true);
+              if (meta) {
+                if (meta.sold !== undefined) sold = Number(meta.sold) || 0;
+                if (meta.qty !== undefined) qty = Number(meta.qty) || 0;
+              }
+            }
+            b.sold = sold;
+            b.qty = qty || (Number(b.stock) || 0) + sold;
+            booklets[b.id] = b;
+          }
+          if (typeof window.renderTermTable === 'function') window.renderTermTable();
+          const dInput = document.getElementById("adminDailyDateInput");
+          if (typeof window.loadDailyReport === 'function') window.loadDailyReport(dInput ? dInput.value : nowDateStr());
+        } catch(err) {
+          console.warn('[Admin Realtime Booklets] Error:', err);
         }
       })
       .subscribe((status) => {
@@ -1834,6 +1889,7 @@ async function loadAllAdminData() {
     const stPkgsMap = cfg.student_packages || {};
     const stRanksMap = cfg.student_ranks || {};
     const stPkgDiscountsMap = cfg.student_package_discounts || {};
+    const stSessionsMap = cfg.student_sessions || {};
     const cfgGroupFees = cfg.group_fees || {};
     vaultTransfers = Array.isArray(cfg.vault_transfers) ? cfg.vault_transfers : [];
 
@@ -1866,6 +1922,8 @@ async function loadAllAdminData() {
           joinDate = s.attendance_dates[0];
         }
 
+        const isSess = Boolean((stSessionsMap && stSessionsMap[s.id] !== undefined) || String(s.id).startsWith('ST-') || s.id === 'حصة');
+
         students[String(s.id)] = {
           id: s.id,
           name: s.name || '',
@@ -1877,6 +1935,8 @@ async function loadAllAdminData() {
           packageDiscounts: restoredDiscounts,
           paymentPlan: s.payment_plan || s.paymentPlan || 'cash',
           rank: stRanksMap[s.id] || s.rank || 'normal',
+          isSessionStudent: isSess,
+          sessionBalance: (stSessionsMap && stSessionsMap[s.id] !== undefined) ? stSessionsMap[s.id] : (s.session_balance || s.sessionBalance || 0),
           packages: pList,
           payments: s.payments || [],
           attendanceDates: s.attendance_dates || [],
@@ -2690,9 +2750,18 @@ window.renderTermTable = function() {
   Object.values(students).forEach(st => {
     if (!st || !st.name) return;
 
+    // Exclude session-only students from regular enrolled students loop
+    // They are rendered in sessList (1b) and tracked from sessionStudentsByDate (2)
+    const isSessOnly = Boolean(st.isSessionStudent && (!st.packages || st.packages.length === 0));
+    if (isSessOnly) return;
+
     // Track Payments into Treasuries (all enrolled students)
     if (st.payments && Array.isArray(st.payments) && st.payments.length > 0) {
       st.payments.forEach(p => {
+        // Exclude instant session payments to avoid double-counting with sessionStudentsByDate
+        if (p.sessionsCount !== undefined || (p.note && p.note.includes("حصة") && st.isSessionStudent)) {
+          return;
+        }
         const pAmt = Number(p.amount) || 0;
         const pMethod = p.method || 'cash';
         if (pMethod === 'cash') { cashIn += pAmt; regCash += pAmt; }
@@ -5588,21 +5657,42 @@ window.importDataFromExcel = async function(event) {
             const amount = Number(r['المبلغ بالجنيه'] || r['المبلغ'] || r['amount'] || 0) || 0;
             if (amount <= 0) return;
 
+            const itemDate = String(r['التاريخ'] || r['date'] || nowDateStr());
+            const reason = String(r['بند المصروف / السبب'] || r['reason'] || r['category'] || '');
+            const recipient = String(r['المسؤول / المستلم'] || r['recipient'] || r['created_by'] || 'Admin');
             existingExpenses.push({
               id,
-              date: String(r['التاريخ'] || r['date'] || nowDateStr()),
-              category: String(r['بند المصروف / السبب'] || r['category'] || r['reason'] || ''),
+              date: itemDate,
+              reason,
               type,
-              vault,
+              method: vault,
               amount,
+              recipient,
               note: String(r['التفاصيل'] || r['note'] || ''),
-              created_by: String(r['المسؤول / المستلم'] || r['created_by'] || 'Admin')
+              timestamp: Date.now()
             });
             existingIds.add(id);
             importedExpenses++;
           });
 
-          cfg.expenses_by_date = existingExpenses;
+          const expObj = {};
+          existingExpenses.forEach(e => {
+            if (!e) return;
+            const k = e.date || nowDateStr();
+            if (!expObj[k]) expObj[k] = [];
+            expObj[k].push({
+              id: e.id || `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              amount: Number(e.amount) || 0,
+              reason: e.reason || e.category || '',
+              method: e.method || e.vault || 'cash',
+              type: e.type || 'expense',
+              recipient: e.recipient || e.created_by || '',
+              date: k,
+              timestamp: e.timestamp || Date.now()
+            });
+          });
+
+          cfg.expenses_by_date = expObj;
           expensesByDate = existingExpenses;
           cfgModified = true;
         }
@@ -5666,18 +5756,30 @@ window.resetTermData = async function() {
     for (const k in students) {
       students[k].paid = 0;
       students[k].attendanceDates = [];
+      students[k].payments = [];
+      students[k].installments = [];
     }
     attByDate = {};
     revenueByDate = {};
     expensesByDate = [];
+    sessionStudentsByDate = {};
+    vaultTransfers = [];
 
     if (supabase) {
       await saveCenterConfig({
+        att_by_date: {},
         attendance_by_date: {},
         revenue_by_date: {},
-        expenses_by_date: []
+        expenses_by_date: {},
+        session_students_by_date: {},
+        vault_transfers: []
       });
-      await supabase.from('students').update({ paid: 0, attendance_dates: [] }).not('id', 'is', null);
+      await supabase.from('students').update({
+        paid: 0,
+        attendance_dates: [],
+        payments: [],
+        installments: []
+      }).not('id', 'is', null);
     }
 
     showToast("تم تصفير حضور ومصاريف الترم بالكامل بنجاح", "success");
@@ -5713,6 +5815,28 @@ window.factoryResetSystem = async function() {
 
   try {
     if (supabase) {
+      const { data: curSettings } = await supabase.from('settings').select('config').eq('id', 1).maybeSingle();
+      const existingSub = (curSettings && curSettings.config && curSettings.config.subscription) ? curSettings.config.subscription : null;
+      const cleanConfig = {
+        att_by_date: {},
+        attendance_by_date: {},
+        revenue_by_date: {},
+        expenses_by_date: {},
+        session_students_by_date: {},
+        vault_transfers: [],
+        group_fees: {},
+        student_packages: {},
+        student_ranks: {},
+        student_package_discounts: {},
+        student_sessions: {},
+        booklets_stock: {},
+        syllabus: [],
+        daily_approval_map: {}
+      };
+      if (existingSub) {
+        cleanConfig.subscription = existingSub;
+      }
+
       await Promise.all([
         supabase.from('students').delete().neq('id', '0'),
         supabase.from('packages').delete().neq('id', '0'),
@@ -5721,13 +5845,7 @@ window.factoryResetSystem = async function() {
         supabase.from('decision_requests').delete().neq('id', '0'),
         supabase.from('settings').update({
           daily_shift_status: 'closed',
-          config: {
-            attendance_by_date: {},
-            revenue_by_date: {},
-            expenses_by_date: [],
-            syllabus: [],
-            daily_approval_map: {}
-          },
+          config: cleanConfig,
           updated_at: new Date().toISOString()
         }).eq('id', 1)
       ]);
@@ -6895,8 +7013,15 @@ window.filterRevenueModal = function() {
   // A. Regular Students Inflow
   Object.values(students || {}).forEach(st => {
     if (!st || !st.name) return;
+    const isSessOnly = Boolean(st.isSessionStudent && (!st.packages || st.packages.length === 0));
+    if (isSessOnly) return;
+
     if (st.payments && Array.isArray(st.payments)) {
       st.payments.forEach(p => {
+        // Exclude instant session payments to avoid double-counting with sessionStudentsByDate
+        if (p.sessionsCount !== undefined || (p.note && p.note.includes("حصة") && st.isSessionStudent)) {
+          return;
+        }
         const d = p.date || "";
         if (sDate && d < sDate) return;
         if (eDate && d > eDate) return;
