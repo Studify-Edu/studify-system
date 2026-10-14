@@ -1040,6 +1040,13 @@ export const PERMISSIONS_DEFS = [
     icon: "fa-tags", 
     group: "financial" 
   },
+  { 
+    key: "can_refund_payment", 
+    label: { ar: "حذف واسترجاع الدفعات (خصم الإيداع)", en: "Refund & Delete Payments" }, 
+    desc: { ar: "السماح للمساعد بخصم أو استرجاع الدفعات المسجلة بالخطأ للطلاب", en: "Allow assistant to delete or refund mistaken deposit payments" }, 
+    icon: "fa-rotate-left", 
+    group: "financial" 
+  },
   
   { 
     key: "can_add_student", 
@@ -6856,10 +6863,11 @@ window.filterRevenueModal = function() {
         else if (m === 'wallet') regWallet += amt;
         else regCash += amt;
 
+        const isRefund = amt < 0;
         inFlowItems.push({
           date: d || nowDateStr(),
           source: st.name + ` (#${st.id})`,
-          channel: isAr ? "اشتراك باقة" : "Package Subscription",
+          channel: isRefund ? (isAr ? "استرجاع / خصم إيداع" : "Deposit Refund") : (isAr ? "اشتراك باقة" : "Package Subscription"),
           amount: amt,
           method: m
         });
@@ -6974,12 +6982,18 @@ window.filterRevenueModal = function() {
 
     tbody.innerHTML = inFlowItems.reverse().map(it => {
       const mb = mBadges[it.method] || mBadges.cash;
+      const isNeg = Number(it.amount) < 0;
+      const amtColor = isNeg ? '#ef4444' : '#10b981';
+      const amtPrefix = isNeg ? '-' : '+';
+      const absVal = Math.abs(Number(it.amount) || 0).toLocaleString();
+      const channelBg = isNeg ? 'rgba(239,68,68,0.1)' : 'var(--bg-inset)';
+      const channelColor = isNeg ? '#ef4444' : 'var(--primary)';
       return `
         <tr>
           <td style="font-weight:600;">${it.date}</td>
           <td style="font-weight:700;">${it.source}</td>
-          <td><span class="badge" style="background:var(--bg-inset); color:var(--primary); font-weight:700;">${it.channel}</span></td>
-          <td style="font-weight:800; color:#10b981; font-size:1.05em;">+${it.amount} ج</td>
+          <td><span class="badge" style="background:${channelBg}; color:${channelColor}; font-weight:700;">${it.channel}</span></td>
+          <td style="font-weight:800; color:${amtColor}; font-size:1.05em;">${amtPrefix}${absVal} ج</td>
           <td><span class="badge" style="background:${mb.bg}; color:${mb.color}; font-weight:700;">${mb.text}</span></td>
         </tr>
       `;

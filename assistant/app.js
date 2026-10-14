@@ -3578,28 +3578,60 @@ function applyPermissions() {
               badgeStyle = "background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.3); font-weight:700;";
           }
 
-          const delBtn = isAdmin 
-              ? '<button type="button" class="btn danger smallBtn iconOnly" style="padding:4px 7px; font-size:11px; border-radius:6px;" onclick="window.deleteStudentPayment(' + p.originalIndex + ')" title="حذف الدفعة"><i class="fa-solid fa-trash-can"></i></button>' 
-              : "";
+          const isNegative = Number(p.amount) < 0;
+          const absAmount = Math.abs(Number(p.amount) || 0);
+          const canRefund = Boolean(isAdmin || (typeof currentPermissions !== "undefined" && currentPermissions.can_refund_payment === true));
+
+          let actionBtn = "";
+          if (isNegative) {
+              if (isAdmin) {
+                  actionBtn = `<button type="button" class="btn danger smallBtn iconOnly" style="padding:4px 7px; font-size:11px; border-radius:6px;" onclick="window.deleteStudentPayment(${p.originalIndex})" title="حذف قيد الاسترجاع"><i class="fa-solid fa-trash-can"></i></button>`;
+              }
+          } else {
+              if (canRefund) {
+                  actionBtn = `<button type="button" class="btn warning smallBtn" style="padding:4px 9px; font-size:11px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); cursor:pointer; font-weight:700;" onclick="window.refundStudentPayment(${p.originalIndex})" title="خصم / استرجاع دفعة مسجلة بالخطأ"><i class="fa-solid fa-rotate-left"></i> استرجاع / خصم</button>`;
+              } else {
+                  actionBtn = `<button type="button" class="btn secondary smallBtn locked-feature" style="padding:4px 9px; font-size:11px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; cursor:not-allowed; opacity:0.85;" onclick="window.showRefundLockedToast()" title="خاصية استرجاع الدفعات مقفلة من قِبل المدير"><i class="fa-solid fa-lock" style="color:#f59e0b;"></i> استرجاع</button>`;
+              }
+              if (isAdmin) {
+                  actionBtn += ` <button type="button" class="btn danger smallBtn iconOnly" style="padding:4px 7px; font-size:11px; border-radius:6px; margin-right:4px;" onclick="window.deleteStudentPayment(${p.originalIndex})" title="حذف الدفعة نهائياً"><i class="fa-solid fa-trash-can"></i></button>`;
+              }
+          }
 
           const pkgBadge = (filterMode === 'all' && p.pkgName) 
               ? '<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.78em; border:1px solid #bae6fd;"><i class="fa-solid fa-cube"></i> ' + p.pkgName + '</span>' 
               : "";
 
+          const refundBadge = isNegative 
+              ? '<span class="badge" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); font-size:0.75em; font-weight:700;"><i class="fa-solid fa-arrow-rotate-left"></i> استرجاع إيداع</span>' 
+              : "";
+
+          const noteHtml = p.note 
+              ? `<span style="font-size:0.78em; color:var(--text-muted); display:inline-block; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.note}"><i class="fa-regular fa-comment-dots"></i> ${p.note}</span>` 
+              : "";
+
+          const amountDisplay = isNegative 
+              ? `<span style="font-weight:bold; font-size:1.05em; color:#ef4444; min-width:65px;">- ${absAmount} ج</span>`
+              : `<span style="font-weight:bold; font-size:1.05em; color:var(--success); min-width:65px;">+ ${absAmount} ج</span>`;
+
+          const cardBg = isNegative ? 'background:rgba(239,68,68,0.03); border:1px dashed rgba(239,68,68,0.3);' : 'background:var(--bg-surface); border:1px solid var(--border);';
+
           html += `
-          <div class="payment-record-card" style="display:flex; justify-content:space-between; align-items:center; padding:9px 12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.02); transition:all 0.2s ease;">
-              <div style="display:flex; align-items:center; gap:10px;">
-                  <span style="font-weight:bold; font-size:1.05em; color:var(--success); min-width:65px;">+ ${p.amount} ج</span>
+          <div class="payment-record-card" style="display:flex; justify-content:space-between; align-items:center; padding:9px 12px; ${cardBg} border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.02); transition:all 0.2s ease;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  ${amountDisplay}
                   <span class="badge" style="${badgeStyle}; font-size:0.8em; display:inline-flex; align-items:center; gap:4px;">
                       <i class="fa-solid ${mIcon}"></i> ${mLabel}
                   </span>
+                  ${refundBadge}
                   ${pkgBadge}
+                  ${noteHtml}
               </div>
-              <div style="display:flex; align-items:center; gap:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
                   <span style="font-size:0.82em; color:var(--text-secondary); display:flex; align-items:center; gap:4px;">
                       <i class="fa-regular fa-calendar" style="font-size:0.9em;"></i> ${prettyDate(p.date)}
                   </span>
-                  ${delBtn}
+                  ${actionBtn}
               </div>
           </div>`;
       });
@@ -6083,37 +6115,207 @@ on("saveStudentBtn", "click", function() {
   payInp.value = "";
 });
 
+ window.showRefundLockedToast = function() {
+   if (typeof showToast === "function") {
+     showToast("عفواً، خاصية استرجاع أو خصم الإيداعات مقفلة من قِبل المدير", "warning");
+   } else {
+     Swal.fire({
+       icon: "warning",
+       title: "خاصية مقفلة",
+       text: "عفواً، خاصية استرجاع أو خصم الإيداعات مقفلة من قِبل المدير.",
+       confirmButtonText: "حسناً"
+     });
+   }
+ };
+
+ window.refundStudentPayment = async function(index) {
+   if (!currentId) return;
+   const st = students[currentId];
+   if (!st || !st.payments || !st.payments[index]) return;
+
+   const isAdmin = (currentUserRole === "admin");
+   const canRefund = Boolean(isAdmin || (typeof currentPermissions !== "undefined" && currentPermissions.can_refund_payment === true));
+   if (!canRefund) {
+     window.showRefundLockedToast();
+     return;
+   }
+
+   const p = st.payments[index];
+   const origAmt = Number(p.amount) || 0;
+   if (origAmt <= 0) {
+     showToast("لا يمكن استرجاع حركة سالبة أو منعدمة", "err");
+     return;
+   }
+
+   const m = p.method || "cash";
+   let mLabel = "كاش (درج النقدية)";
+   let mIcon = "fa-money-bill-wave";
+   let mColor = "#10b981";
+   if (m === "instapay") {
+     mLabel = "إنستاباي (InstaPay)";
+     mIcon = "fa-bolt-lightning";
+     mColor = "#8b5cf6";
+   } else if (m === "wallet") {
+     mLabel = "محفظة فودافون كاش";
+     mIcon = "fa-mobile-screen-button";
+     mColor = "#ef4444";
+   }
+
+   const result = await Swal.fire({
+     title: `<div style="display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.15rem; color:#f59e0b;">
+               <i class="fa-solid fa-rotate-left"></i>
+               <span>استرجاع / خصم دفعة مسجلة</span>
+             </div>`,
+     html: `
+       <div style="text-align:right; direction:rtl; font-size:0.92rem; line-height:1.7; color:var(--text-primary, #333);">
+         <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:12px; margin-bottom:14px;">
+           <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+             <span style="color:var(--text-muted, #666);">المبلغ المسجل:</span>
+             <strong style="color:var(--success, #10b981); font-size:1.1em;">+${origAmt} ج</strong>
+           </div>
+           <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+             <span style="color:var(--text-muted, #666);">طريقة الدفع (الخزنة):</span>
+             <strong style="color:${mColor}; display:inline-flex; align-items:center; gap:5px;">
+               <i class="fa-solid ${mIcon}"></i> ${mLabel}
+             </strong>
+           </div>
+           <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+             <span style="color:var(--text-muted, #666);">تاريخ الدفعة:</span>
+             <strong>${prettyDate(p.date)}</strong>
+           </div>
+           ${p.pkgName ? `
+           <div style="display:flex; justify-content:space-between;">
+             <span style="color:var(--text-muted, #666);">الباقة:</span>
+             <strong>${p.pkgName}</strong>
+           </div>` : ''}
+         </div>
+
+         <p style="font-size:0.83rem; color:var(--text-muted, #888); margin-bottom:12px;">
+           <i class="fa-solid fa-circle-info" style="color:#f59e0b;"></i>
+           سيتم خصم المبلغ من خزنة (<b>${mLabel}</b>) ومن إيراد وردية اليوم، وتسجيل حركة استرجاع بالسالب في سجل الطالب.
+         </p>
+
+         <div style="margin-bottom:12px;">
+           <label style="display:block; font-weight:700; margin-bottom:5px; font-size:0.88rem;">المبلغ المراد خصمه / استرجاعه (ج):</label>
+           <input id="swalRefundAmount" type="number" min="1" max="${origAmt}" value="${origAmt}" class="swal2-input" style="width:100%; box-sizing:border-box; margin:0; padding:10px; border-radius:8px; font-size:1rem; font-weight:700;" placeholder="المبلغ">
+         </div>
+
+         <div>
+           <label style="display:block; font-weight:700; margin-bottom:5px; font-size:0.88rem;">سبب الاسترجاع (اختياري):</label>
+           <input id="swalRefundReason" type="text" class="swal2-input" style="width:100%; box-sizing:border-box; margin:0; padding:10px; border-radius:8px; font-size:0.9rem;" placeholder="مثال: إيداع بالخطأ، استرداد نقدي، إلخ">
+         </div>
+       </div>
+     `,
+     icon: 'warning',
+     showCancelButton: true,
+     confirmButtonText: '<i class="fa-solid fa-check"></i> تأكيد الخصم والاسترجاع',
+     cancelButtonText: 'إلغاء',
+     confirmButtonColor: '#f59e0b',
+     cancelButtonColor: '#6b7280',
+     focusConfirm: false,
+     preConfirm: () => {
+       const amtInp = document.getElementById('swalRefundAmount');
+       const reasonInp = document.getElementById('swalRefundReason');
+       const refundAmt = Number(amtInp ? amtInp.value : 0);
+       const reason = reasonInp ? reasonInp.value.trim() : "";
+
+       if (!refundAmt || refundAmt <= 0) {
+         Swal.showValidationMessage('يرجى إدخال مبلغ صحيح أكبر من الصفر');
+         return false;
+       }
+       if (refundAmt > origAmt) {
+         Swal.showValidationMessage(`المبلغ لا يمكن أن يتجاوز قيمة الدفعة الأصلية (${origAmt} ج)`);
+         return false;
+       }
+       return { refundAmt, reason };
+     }
+   });
+
+   if (!result.isConfirmed || !result.value) return;
+
+   const { refundAmt, reason } = result.value;
+   const today = nowDateStr();
+   const activeCollector = localStorage.getItem("ca_current_username") || (currentUserRole === "admin" ? "المدير" : "المساعد");
+
+   // 1. Update Student total paid
+   st.paid = Math.max(0, Number(st.paid || 0) - refundAmt);
+
+   // 2. If it was for session recharge and is session student, deduct proportional sessions
+   if (p.pkgName === "شحن رصيد حصص" && st.isSessionStudent && (st.sessionBalance || 0) > 0) {
+     const perSessionPrice = (typeof getSessionPrice === "function") ? getSessionPrice() : 50;
+     const deducedSessions = Math.max(1, Math.round(refundAmt / perSessionPrice));
+     st.sessionBalance = Math.max(0, (st.sessionBalance || 0) - deducedSessions);
+   }
+
+   // 3. Update today's revenue (keeps shift & daily report net accurate)
+   if (!revenueByDate[today]) revenueByDate[today] = 0;
+   revenueByDate[today] = Math.max(0, Number(revenueByDate[today]) - refundAmt);
+
+   // 4. Record negative refund transaction in st.payments
+   const refundRecord = {
+     id: Date.now(),
+     date: today,
+     amount: -refundAmt,
+     method: p.method || "cash",
+     pkgName: p.pkgName || "",
+     type: "refund",
+     originalPaymentId: p.id || null,
+     note: reason || "استرجاع / خصم إيداع",
+     by: activeCollector
+   };
+   st.payments.push(refundRecord);
+
+   // 5. Save and refresh
+   await saveAll();
+   updateStudentUI(currentId);
+   if (typeof updateTopStats === "function") updateTopStats();
+   if (typeof renderReport === "function") renderReport(today);
+   if (typeof renderCharts === "function") renderCharts();
+
+   if (typeof showToast === "function") {
+     showToast(`تم استرجاع مبلغ ${refundAmt} ج وخصمه من ${mLabel} وإيراد اليوم بنجاح`, "success");
+   }
+ };
+
  window.deleteStudentPayment = function(index) {
- if(!currentId) return;
- let st = students[currentId];
- if(!st || !st.payments || !st.payments[index]) return;
- 
- let msg = currentLang === 'ar' ? " متأكد من حذف هذه الدفعة نهائياً؟" : " Are you sure you want to delete this payment?";
- Swal.fire({
- title: 'تأكيد الحذف',
- text: msg,
- icon: 'warning',
- showCancelButton: true,
- confirmButtonText: currentLang === 'ar' ? 'نعم، احذف' : 'Yes, delete',
- cancelButtonText: currentLang === 'ar' ? 'إلغاء' : 'Cancel'
- }).then((result) => {
- if (result.isConfirmed) {
- let p = st.payments[index];
- st.paid = Math.max(0, st.paid - p.amount);
- 
- if (revenueByDate[p.date]) {
- revenueByDate[p.date] = Math.max(0, revenueByDate[p.date] - p.amount);
- }
- 
- st.payments.splice(index, 1);
- 
- saveAll(); 
- updateStudentUI(currentId); 
- renderReport(nowDateStr()); 
- renderCharts();
- if (typeof showToast === "function") showToast(currentLang === 'ar' ? "تم حذف الدفعة وتعديل الحساب " : "Payment deleted ", "warning");
- }
- });
+   if(!currentId) return;
+   let st = students[currentId];
+   if(!st || !st.payments || !st.payments[index]) return;
+   
+   let msg = currentLang === 'ar' ? "هل أنت متأكد من حذف هذا السجل نهائياً؟" : "Are you sure you want to delete this payment record?";
+   Swal.fire({
+     title: 'تأكيد الحذف',
+     text: msg,
+     icon: 'warning',
+     showCancelButton: true,
+     confirmButtonText: currentLang === 'ar' ? 'نعم، احذف' : 'Yes, delete',
+     cancelButtonText: currentLang === 'ar' ? 'إلغاء' : 'Cancel'
+   }).then((result) => {
+     if (result.isConfirmed) {
+       let p = st.payments[index];
+       const amt = Number(p.amount) || 0;
+       if (amt > 0) {
+         st.paid = Math.max(0, Number(st.paid || 0) - amt);
+         if (revenueByDate[p.date]) {
+           revenueByDate[p.date] = Math.max(0, Number(revenueByDate[p.date]) - amt);
+         }
+       } else {
+         // Deleting a negative record restores the paid amount and revenue
+         st.paid = Number(st.paid || 0) + Math.abs(amt);
+         if (revenueByDate[p.date]) {
+           revenueByDate[p.date] = Number(revenueByDate[p.date]) + Math.abs(amt);
+         }
+       }
+       
+       st.payments.splice(index, 1);
+       
+       saveAll(); 
+       updateStudentUI(currentId); 
+       renderReport(nowDateStr()); 
+       renderCharts();
+       if (typeof showToast === "function") showToast(currentLang === 'ar' ? "تم حذف السجل وتعديل الحساب " : "Record deleted ", "warning");
+     }
+   });
  };
 
  on("correctPayBtn", "click", function() {
@@ -7870,7 +8072,7 @@ async function fetchManagerAssistants() {
         const permGroups = [
           {
             title: "<i class='fa-solid fa-money-bill-wave'></i> الصلاحيات المالية",
-            keys: ["show_revenue", "can_request_discount"]
+            keys: ["show_revenue", "can_request_discount", "can_refund_payment"]
           },
           {
             title: "<i class='fa-solid fa-server'></i> إدارة البيانات والنظام",
@@ -8218,6 +8420,7 @@ window.deleteAssistant = async function(asstKey) {
   { key: "can_access_marketing", label: "أدوات التسويق", desc: "إتاحة فتح صفحة التسويق وإرسال رسائل للطلاب" },
   { key: "can_access_session_students", label: "طلاب الحصة", desc: "السماح بعرض قائمة الحضور المخصصة للحصة الحالية" },
   { key: "can_request_discount", label: "طلب خصم / إعفاء", desc: "إظهار زر 'خصم' عند الدفع ليتمكن المساعد من طلب إعفاء" },
+  { key: "can_refund_payment", label: "حذف واسترجاع الدفعات (خصم الإيداع)", desc: "السماح للمساعد بخصم أو استرجاع الدفعات المسجلة بالخطأ للطلاب" },
   { key: "can_access_booklets", label: "مخزون المذكرات", desc: "السماح بفتح جرد المذكرات وإدارة المبيعات" },
   { key: "can_access_settings", label: "إعدادات النظام", desc: "السماح بفتح لوحة الإعدادات المتقدمة (نسخ احتياطي - تصفير - إلخ)" }
 ];
@@ -10804,9 +11007,9 @@ window.openSessionStudentModal = function(item) {
           </div>
         </div>
         <div class="rev-card-right">
-          <div class="rev-card-amount">
-            <span class="rev-amount-plus">+</span>
-            <span class="rev-amount-val">${tx.amount}</span>
+          <div class="rev-card-amount" style="${Number(tx.amount) < 0 ? 'color:#ef4444;' : ''}">
+            <span class="rev-amount-plus">${Number(tx.amount) < 0 ? '-' : '+'}</span>
+            <span class="rev-amount-val">${Math.abs(Number(tx.amount) || 0)}</span>
             <span class="rev-amount-curr">${curr}</span>
           </div>
           ${statusHtml}
@@ -13622,6 +13825,7 @@ const NOTIF_PERM_TITLES = {
   'can_add_student': 'إضافة وتعديل بيانات الطلاب',
   'show_revenue': 'عرض الإيرادات والخزينة',
   'can_request_discount': 'طلب خصم أو إعفاء',
+  'can_refund_payment': 'استرجاع وخصم الدفعات',
   'can_manage_packages': 'إدارة الباقات والاشتراكات',
   'can_access_settings': 'إعدادات النظام والنسخ الاحتياطي',
   'can_access_syllabus': 'خريطة المنهج الدراسي',
