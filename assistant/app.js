@@ -7769,7 +7769,23 @@ on("importExcelInput", "change", async function(e) {
         }
       }
 
-      // 3. Clear from local state
+      // 3. Clean up attendance and session records across all dates
+      if (attByDate && typeof attByDate === 'object') {
+        Object.keys(attByDate).forEach(d => {
+          if (Array.isArray(attByDate[d])) {
+            attByDate[d] = attByDate[d].filter(x => String(x) !== String(targetId));
+          }
+        });
+      }
+      if (sessionStudentsByDate && typeof sessionStudentsByDate === 'object') {
+        Object.keys(sessionStudentsByDate).forEach(d => {
+          if (Array.isArray(sessionStudentsByDate[d])) {
+            sessionStudentsByDate[d] = sessionStudentsByDate[d].filter(item => item && String(item.id) !== String(targetId));
+          }
+        });
+      }
+
+      // 4. Clear from local state
       delete deletedStudents[targetId];
       if (targetId > BASE_MAX_ID) {
         delete students[targetId];
@@ -7778,7 +7794,7 @@ on("importExcelInput", "change", async function(e) {
         students[targetId] = makeEmptyStudent(targetId);
       }
 
-      // 4. Save and sync
+      // 5. Save and sync
       await saveAll();
       updateStudentUI(null);
       window.switchTab('Home');
@@ -8905,12 +8921,43 @@ function initSupabaseRealtimeSync() {
               }
             }
           }
-          if (cfg.group_fees) {
-            groupFees = Object.assign({}, groupFees, cfg.group_fees);
+          if (cfg.group_fees && typeof cfg.group_fees === 'object') {
+            groupFees = Object.assign({}, cfg.group_fees);
             secureSave(K_GROUP_FEES, groupFees);
             if (typeof renderGroupFeesModal === 'function') renderGroupFeesModal();
             if (typeof populatePackages === 'function') populatePackages();
             if (typeof renderTable === 'function') renderTable();
+          }
+          if (cfg.expenses_by_date && typeof cfg.expenses_by_date === 'object') {
+            expensesByDate = cfg.expenses_by_date;
+            secureSave(K_EXPENSES, expensesByDate);
+            if (typeof updateFinanceSummary === 'function') updateFinanceSummary();
+            if (typeof updateTopStats === 'function') updateTopStats();
+            if (typeof renderExpensesTable === 'function') renderExpensesTable();
+          }
+          if (cfg.booklets_stock && typeof cfg.booklets_stock === 'object') {
+            bookletsStock = cfg.booklets_stock;
+            secureSave(K_BOOKLETS, bookletsStock);
+            if (typeof window.renderBookletsStock === 'function') window.renderBookletsStock();
+            else if (typeof renderBookletsStock === 'function') renderBookletsStock();
+          }
+          if (cfg.student_packages && typeof cfg.student_packages === 'object') {
+            const spMap = cfg.student_packages;
+            let changedSp = false;
+            Object.keys(spMap).forEach(stId => {
+              if (students[stId]) {
+                const newPkgs = Array.isArray(spMap[stId]) ? spMap[stId] : [spMap[stId]];
+                students[stId].packages = newPkgs;
+                changedSp = true;
+              }
+            });
+            if (changedSp) {
+              secureSave(K_STUDENTS, students);
+              if (typeof currentId !== 'undefined' && currentId && students[currentId] && typeof updateStudentUI === 'function') {
+                updateStudentUI(currentId);
+              }
+              if (typeof renderTable === 'function') renderTable();
+            }
           }
           if (cfg.syllabus_data || cfg.syllabus) {
             const sylSrc = cfg.syllabus_data || cfg.syllabus;
@@ -8980,17 +9027,22 @@ function initSupabaseRealtimeSync() {
             }
             const stObj = {
               id: row.id,
-              name: row.name || (existing ? existing.name : ''),
-              phone: row.phone || (existing ? existing.phone : ''),
-              parentPhone: row.parent_phone || row.parentPhone || (existing ? existing.parentPhone : ''),
-              className: row.class_name || row.className || (existing ? existing.className : ''),
+              name: row.name !== undefined ? (row.name || '') : (existing ? existing.name : ''),
+              phone: row.phone !== undefined ? (row.phone || '') : (existing ? existing.phone : ''),
+              parentPhone: (row.parent_phone !== undefined ? row.parent_phone : (row.parentPhone !== undefined ? row.parentPhone : (existing ? existing.parentPhone : ''))),
+              className: row.class_name !== undefined ? row.class_name : (row.className !== undefined ? row.className : (existing ? existing.className : '')),
               paymentPlan: row.payment_plan || (existing ? existing.paymentPlan : 'cash'),
-              paid: Number(row.paid) || (existing ? existing.paid : 0),
-              discount: Number(row.discount) || (existing ? existing.discount : 0),
-              notes: row.notes || (existing ? existing.notes : ''),
+              paid: row.paid !== undefined ? (Number(row.paid) || 0) : (existing ? existing.paid : 0),
+              discount: row.discount !== undefined ? (Number(row.discount) || 0) : (existing ? existing.discount : 0),
+              notes: row.notes !== undefined ? (row.notes || '') : (existing ? existing.notes : ''),
               status: row.status || (existing ? existing.status : 'active'),
+              rank: (existing && existing.rank) ? existing.rank : 'normal',
+              isSessionStudent: !!(existing && existing.isSessionStudent),
+              sessionBalance: (existing && existing.sessionBalance !== undefined) ? existing.sessionBalance : 0,
+              createdAt: row.created_at || (existing ? (existing.createdAt || existing.joinedDate) : new Date().toISOString()),
+              joinedDate: (existing && existing.joinedDate) ? existing.joinedDate : (row.created_at ? row.created_at.split('T')[0] : (row.joined_date || '')),
               packages: Array.isArray(row.packages) ? row.packages : (existing ? existing.packages : []),
-              packageDiscounts: (existing ? existing.packageDiscounts : {}),
+              packageDiscounts: row.package_discounts || (existing ? existing.packageDiscounts : {}),
               installments: row.installments || (existing ? existing.installments : []),
               payments: row.payments || (existing ? existing.payments : []),
               attendanceDates: Array.from(new Set(row.attendance_dates || (existing ? existing.attendanceDates : []))),
@@ -10188,10 +10240,18 @@ window.openSessionStudentModal = function(item) {
            id: String(newId),
            name: newStudent.name,
            phone: newStudent.phone || '',
+           parent_phone: newStudent.parentPhone || '',
            class_name: newStudent.className || '',
-           paid: newStudent.paid || 0,
-           data: newStudent
-         }]);
+           paid: toInt(newStudent.paid) || 0,
+           discount: toInt(newStudent.discount) || 0,
+           payment_plan: newStudent.paymentPlan || 'cash',
+           status: newStudent.status || 'active',
+           installments: newStudent.installments || [],
+           payments: newStudent.payments || [],
+           attendance_dates: Array.from(new Set(newStudent.attendanceDates || [])),
+           created_at: newStudent.createdAt || new Date().toISOString(),
+           last_modified: Date.now()
+         }], { onConflict: 'id' });
        } catch (err) {
          console.warn('[Supabase promote student sync error]:', err);
        }

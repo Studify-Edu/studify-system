@@ -848,18 +848,31 @@ if (supabase) {
               delete students[String(row.id)];
             } else {
               const existing = students[String(row.id)] || {};
+              const rawCreatedAt = row.created_at || row.createdAt || existing.createdAt || '';
+              let jDate = '';
+              if (rawCreatedAt) {
+                jDate = rawCreatedAt.split('T')[0];
+              } else if (row.joined_date || row.joinedDate || existing.joinedDate) {
+                jDate = (row.joined_date || row.joinedDate || existing.joinedDate).split('T')[0];
+              }
+
               students[String(row.id)] = {
                 id: row.id,
-                name: row.name || existing.name || '',
+                name: row.name !== undefined ? (row.name || '') : (existing.name || ''),
                 className: row.class_name || row.className || existing.className || '',
-                phone: row.phone || existing.phone || '',
+                phone: row.phone !== undefined ? (row.phone || '') : (existing.phone || ''),
                 parentPhone: row.parent_phone || row.parentPhone || existing.parentPhone || '',
-                paid: Number(row.paid !== undefined ? row.paid : existing.paid) || 0,
-                discount: Number(row.discount !== undefined ? row.discount : existing.discount) || 0,
+                paid: row.paid !== undefined ? (Number(row.paid) || 0) : (existing.paid !== undefined ? (Number(existing.paid) || 0) : 0),
+                discount: row.discount !== undefined ? (Number(row.discount) || 0) : (existing.discount !== undefined ? (Number(existing.discount) || 0) : 0),
+                notes: row.notes !== undefined ? (row.notes || '') : (existing.notes || ''),
+                rank: row.rank || existing.rank || 'normal',
+                createdAt: rawCreatedAt,
+                joinedDate: jDate,
                 packageDiscounts: row.package_discounts || row.packageDiscounts || existing.packageDiscounts || {},
                 paymentPlan: row.payment_plan || row.paymentPlan || existing.paymentPlan || 'cash',
                 packages: Array.isArray(row.packages) ? row.packages : (existing.packages || []),
                 payments: row.payments || existing.payments || [],
+                installments: row.installments || existing.installments || [],
                 attendanceDates: row.attendance_dates || existing.attendanceDates || [],
                 status: row.status || existing.status || 'active'
               };
