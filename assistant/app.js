@@ -6357,10 +6357,7 @@ on("saveStudentBtn", "click", function() {
               + "نظام ستوديفاي التعليمي — Studify Edu System";
 
       setTimeout(function() { 
-          let cleanPhone = String(st.phone).replace(/[^\d]/g, '').trim();
-          if (cleanPhone.startsWith('20')) cleanPhone = cleanPhone;
-          else if (cleanPhone.startsWith('0')) cleanPhone = '2' + cleanPhone;
-          else cleanPhone = '20' + cleanPhone;
+          let cleanPhone = formatEgyptWaPhone(st.phone);
           window.open("https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(msg), '_blank'); 
       }, 1000);
   }
@@ -6956,12 +6953,16 @@ on("saveStudentBtn", "click", function() {
     if (!tbody) return;
     const isAr = (currentLang === "ar");
     const currencySuffix = isAr ? " ج" : " EGP";
+    const isAdmin = (typeof currentUserRole !== "undefined" && currentUserRole === "admin") || (window.CURRENT_ROLE === "admin");
 
     const allExp = [];
     for (const d in expensesByDate) {
       const list = expensesByDate[d] || [];
       list.forEach((item, idx) => {
-        if (item) allExp.push({ ...item, _date: d, _idx: idx });
+        if (!item) return;
+        const isWd = (item.type === "withdrawal" || item.isWithdrawal);
+        if (isWd && !isAdmin) return; // استبعاد المسحوبات الشخصية للمدير من الظهور في جدول المساعد
+        allExp.push({ ...item, _date: d, _idx: idx });
       });
     }
 
@@ -6984,17 +6985,23 @@ on("saveStudentBtn", "click", function() {
       const isWd = (it.type === "withdrawal" || it.isWithdrawal);
       const reasonLabel = isWd ? `<span style="color:#f59e0b; font-weight:700;">[مسحوبات]</span> ${it.reason}` : it.reason;
 
+      const deleteBtnHtml = isAdmin ? `
+        <button class="btn danger smallBtn iconOnly" onclick="window.deleteAssistantExpense('${it._date}', ${it._idx})" title="${isAr ? "حذف المصروف" : "Delete"}">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      ` : `
+        <span style="color:var(--text-secondary); opacity:0.4; font-size:0.85em;" title="${isAr ? "حذف المصروف متاح للمدير فقط" : "Admin only"}">
+          <i class="fa-solid fa-lock"></i>
+        </span>
+      `;
+
       html += `
         <tr>
           <td style="font-weight:700; white-space:nowrap;">${it._date || "—"}</td>
           <td style="font-weight:700;">${reasonLabel || "—"}</td>
           <td><span class="badge" style="color:${mInfo.color}; background:var(--bg-inset);"><i class="fa-solid ${mInfo.icon}"></i> ${isAr ? mInfo.ar : mInfo.en}</span></td>
           <td style="font-weight:900; color:#ef4444; white-space:nowrap;">${Number(it.amount || 0).toLocaleString()} ${currencySuffix}</td>
-          <td>
-            <button class="btn danger smallBtn iconOnly" onclick="window.deleteAssistantExpense('${it._date}', ${it._idx})" title="${isAr ? "حذف المصروف" : "Delete"}">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </td>
+          <td style="text-align:center;">${deleteBtnHtml}</td>
         </tr>
       `;
     });
@@ -7003,6 +7010,15 @@ on("saveStudentBtn", "click", function() {
 
   window.deleteAssistantExpense = async function(d, idx) {
     const isAr = (currentLang === "ar");
+    const isAdmin = (typeof currentUserRole !== "undefined" && currentUserRole === "admin") || (window.CURRENT_ROLE === "admin");
+
+    if (!isAdmin) {
+      if (typeof showToast === "function") {
+        showToast(isAr ? "عفواً، خاصية حذف المصروفات مقفلة ومتاحة للمدير فقط" : "Expense deletion is restricted to Admin only", "err");
+      }
+      return;
+    }
+
     if (!expensesByDate[d] || !expensesByDate[d][idx]) return;
 
     const conf = await Swal.fire({
@@ -10842,9 +10858,10 @@ window.openSessionStudentModal = function(item) {
       html += '<td style="padding:12px 14px; font-weight:800; color:var(--text); font-size:0.95em;">' + s.name + '</td>';
       html += '<td style="padding:12px 14px;">';
       if (s.phone) {
+        const waPhone = formatEgyptWaPhone(s.phone);
         html += '<div style="display:flex; align-items:center; gap:6px;">' +
           '<span style="font-family:monospace; font-size:0.92em; color:var(--text-secondary); direction:ltr;">' + s.phone + '</span>' +
-          '<button class="btn success smallBtn iconOnly" style="padding:3px 7px; border-radius:6px;" title="' + (isAr ? 'مراسلة واتساب' : 'WhatsApp Chat') + '" onclick="window.open(\x27https://wa.me/' + window.formatEgyptWaPhone(s.phone) + '\x27, \x27_blank\x27)"><i class="fa-brands fa-whatsapp"></i></button>' +
+          '<button class="btn success smallBtn iconOnly" style="padding:3px 7px; border-radius:6px;" title="' + (isAr ? 'مراسلة واتساب' : 'WhatsApp Chat') + '" onclick="window.open(\x27https://wa.me/' + waPhone + '\x27, \x27_blank\x27)"><i class="fa-brands fa-whatsapp"></i></button>' +
           '</div>';
       } else {
         html += '<span style="color:var(--text-secondary); opacity:0.5;">—</span>';
