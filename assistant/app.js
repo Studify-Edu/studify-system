@@ -1550,6 +1550,42 @@ let currentFilteredList = [];
   "btn_return_today": { ar: "اليوم", en: "Today" },
   "btn_return_today_full": { ar: "العودة لليوم", en: "Reset to Today" },
 
+  // Quick Datepicker & Session Students Localization
+  "lbl_today": { ar: "اليوم", en: "Today" },
+  "sess_filter_all": { ar: "كل الأوقات", en: "All Time" },
+  "sess_filter_month": { ar: "هذا الشهر", en: "This Month" },
+  "sess_filter_today": { ar: "اليوم", en: "Today" },
+  "sess_stat_total_rev": { ar: "إجمالي إيراد الحصص", en: "Total Sessions Revenue" },
+  "sess_stat_cash": { ar: "كاش (نقداً)", en: "Cash" },
+  "sess_stat_instapay": { ar: "إنستاباي", en: "InstaPay" },
+  "sess_stat_wallet": { ar: "فودافون كاش / محفظة", en: "Vodafone Cash" },
+  "sess_stat_total_students": { ar: "طلاب الحصة المسجلين", en: "Enrolled Session Students" },
+  "sess_stat_active_bal": { ar: "رصيد حصص متبقي", en: "Remaining Sessions Balance" },
+  "sess_tab_db": { ar: "سجل وقاعدة بيانات طلاب الحصة الشامل", en: "Session Students Database & Log" },
+  "sess_tab_quick": { ar: "تسجيل حضور ودفع فوري + سجل اليوم", en: "Instant Attendance & Payment + Today's Log" },
+  "plc_sess_search": { ar: "بحث بالاسم، رقم الموبايل، أو كود الحصة (ST-xxxx)...", en: "Search by name, phone, or ID (ST-xxxx)..." },
+  "sess_opt_all_classes": { ar: "كل المواد والصفوف", en: "All Subjects & Classes" },
+  "sess_opt_all_balances": { ar: "كل الأرصدة", en: "All Balances" },
+  "sess_opt_has_balance": { ar: "رصيد متاح (> 0)", en: "Available Balance (> 0)" },
+  "sess_opt_zero_balance": { ar: "رصيد منتهي (0)", en: "Zero Balance (0)" },
+  "btn_export_sess_excel": { ar: "تصدير سجل طلاب الحصة Excel", en: "Export Session Students Excel" },
+  "th_student_id": { ar: "الكود (ID)", en: "ID Code" },
+  "th_student_name": { ar: "اسم الطالب", en: "Student Name" },
+  "th_student_phone": { ar: "رقم الموبايل", en: "Phone Number" },
+  "th_subject_class": { ar: "المادة / الصف", en: "Subject / Class" },
+  "th_remaining_sessions": { ar: "رصيد الحصص المتبقي", en: "Remaining Sessions" },
+  "th_total_paid": { ar: "إجمالي المدفوع", en: "Total Paid" },
+  "th_last_payment_method": { ar: "طريقة آخر دفع", en: "Last Payment Method" },
+  "th_last_activity": { ar: "آخر نشاط", en: "Last Activity" },
+  "th_quick_actions": { ar: "إجراءات سريعة", en: "Quick Actions" },
+  "sess_empty_state": { ar: "لا يوجد طلاب حصة مطابقين لبيانات البحث", en: "No session students match your search criteria" },
+  "opt_pay_cash": { ar: "كاش (Cash)", en: "Cash" },
+  "opt_pay_instapay": { ar: "إنستاباي (InstaPay)", en: "InstaPay" },
+  "opt_pay_wallet": { ar: "فودافون كاش (Vodafone Cash)", en: "Vodafone Cash" },
+  "lbl_sess_id": { ar: "كود الحصة (ID)", en: "Session ID" },
+  "lbl_sess_count": { ar: "عدد الحصص المدفوعة", en: "Paid Sessions Count" },
+  "lbl_quick_buttons": { ar: "أزرار سريعة:", en: "Quick amounts:" },
+  "btn_use_sess_bal": { ar: "خصم من الرصيد", en: "Deduct from Balance" },
 };
 
  // ==========================================
@@ -1608,7 +1644,7 @@ let currentFilteredList = [];
      }
    }
    if (triggerLabel) {
-     triggerLabel.textContent = isPast ? targetDate : "اليوم";
+     triggerLabel.textContent = isPast ? targetDate : (currentLang === 'ar' ? "اليوم" : "Today");
    }
    if (resetBtn) {
      if (isPast) resetBtn.classList.remove("hidden");
@@ -3427,10 +3463,13 @@ function applyPermissions() {
       const rem = Math.max(0, netReq - paid);
       const pct = netReq > 0 ? Math.min(100, Math.round((paid / netReq) * 100)) : 100;
 
+      const isAr = (currentLang === 'ar');
+      const currUnit = isAr ? ' ج' : ' EGP';
+
       if (cardTitle) {
-          let titleHtml = '<i class="fa-solid fa-cube" style="color:var(--primary);"></i> حساب باقة: <b>' + selectedPkg + '</b>';
+          let titleHtml = '<i class="fa-solid fa-cube" style="color:var(--primary);"></i> ' + (isAr ? 'حساب باقة: ' : 'Package Account: ') + '<b>' + selectedPkg + '</b>';
           if (pkgDisc > 0) {
-              titleHtml += ` <span class="badge" style="background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.3); font-size:0.75em; padding:2px 7px; border-radius:6px; margin-inline-start:6px;"><i class="fa-solid fa-tag"></i> خصم معتمد: ${pkgDisc} ج</span>`;
+              titleHtml += ` <span class="badge" style="background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.3); font-size:0.75em; padding:2px 7px; border-radius:6px; margin-inline-start:6px;"><i class="fa-solid fa-tag"></i> ${(isAr ? 'خصم معتمد: ' : 'Approved Discount: ') + pkgDisc + currUnit}</span>`;
           }
           cardTitle.innerHTML = titleHtml;
       }
@@ -3439,28 +3478,29 @@ function applyPermissions() {
           if (req === 0 || netReq === 0) {
               cardStatus.style.background = "#dcfce7";
               cardStatus.style.color = "#15803d";
-              cardStatus.innerHTML = '<i class="fa-solid fa-check"></i> ' + (netReq === 0 && pkgDisc > 0 ? 'معفى بقرار مدير' : 'باقة مجانية');
+              const exemptText = isAr ? (netReq === 0 && pkgDisc > 0 ? 'معفى بقرار مدير' : 'باقة مجانية') : (netReq === 0 && pkgDisc > 0 ? 'Exempted by Manager' : 'Free Package');
+              cardStatus.innerHTML = '<i class="fa-solid fa-check"></i> ' + exemptText;
           } else if (rem === 0) {
               cardStatus.style.background = "#dcfce7";
               cardStatus.style.color = "#15803d";
-              cardStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> مسددة بالكامل';
+              cardStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (isAr ? 'مسددة بالكامل' : 'Fully Paid');
           } else {
               cardStatus.style.background = "#fee2e2";
               cardStatus.style.color = "#b91c1c";
-              cardStatus.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> باقي: ' + rem + ' ج';
+              cardStatus.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> ' + (isAr ? 'باقي: ' : 'Remaining: ') + rem + currUnit;
           }
       }
 
       if (cardPrice) {
           if (pkgDisc > 0) {
-              cardPrice.innerHTML = `<span style="font-size:0.82em; text-decoration:line-through; opacity:0.6; margin-inline-end:5px;">${req} ج</span><b>${netReq} ج</b>`;
+              cardPrice.innerHTML = `<span style="font-size:0.82em; text-decoration:line-through; opacity:0.6; margin-inline-end:5px;">${req}${currUnit}</span><b>${netReq}${currUnit}</b>`;
           } else {
-              cardPrice.textContent = req + " ج";
+              cardPrice.textContent = req + currUnit;
           }
       }
-      if (cardPaid) cardPaid.textContent = paid + " ج";
+      if (cardPaid) cardPaid.textContent = paid + currUnit;
       if (cardRemain) {
-          cardRemain.textContent = rem + " ج";
+          cardRemain.textContent = rem + currUnit;
           cardRemain.style.color = (rem > 0) ? "var(--danger)" : "var(--success)";
       }
       if (progressBar) {
@@ -3521,12 +3561,14 @@ function applyPermissions() {
       if (!listEl) return;
 
       const filterMode = window.currentPayFilterMode || 'package';
+      const isAr = (currentLang === 'ar');
+      const currUnit = isAr ? ' ج' : ' EGP';
       const titleEl = $("stPayHistoryTitle");
       if (titleEl) {
           if (filterMode === 'all') {
-              titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> سجل كافة دفعات الطالب:';
+              titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> ' + (isAr ? 'سجل كافة دفعات الطالب:' : 'All Student Payments:');
           } else {
-              titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> سجل دفعات: <b>' + (selectedPkg || 'الباقة') + '</b>';
+              titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> ' + (isAr ? 'سجل دفعات: ' : 'Payment History: ') + '<b>' + (selectedPkg || (isAr ? 'الباقة' : 'Package')) + '</b>';
           }
       }
 
@@ -3553,8 +3595,8 @@ function applyPermissions() {
 
       if (paymentsToShow.length === 0) {
           const msg = (filterMode === 'package' && selectedPkg)
-              ? 'لم يتم تسجيل أي دفعات لباقة (' + selectedPkg + ') حتى الآن'
-              : (st && st.paid > 0 ? 'المدفوع القديم: +' + st.paid + ' ج (كاش)' : 'لا توجد دفعات مسجلة حتى الآن');
+              ? (isAr ? 'لم يتم تسجيل أي دفعات لباقة (' + selectedPkg + ') حتى الآن' : 'No payments recorded for package (' + selectedPkg + ') yet')
+              : (st && st.paid > 0 ? (isAr ? 'المدفوع القديم: +' + st.paid + ' ج (كاش)' : 'Old Payment: +' + st.paid + ' EGP (Cash)') : (isAr ? 'لا توجد دفعات مسجلة حتى الآن' : 'No payments recorded yet'));
           listEl.innerHTML = '<div class="mutedCenter" style="padding:15px; font-size:0.88em; color:var(--text-secondary);">' + msg + '</div>';
           return;
       }
@@ -3564,16 +3606,16 @@ function applyPermissions() {
       let html = "";
       paymentsToShow.forEach(p => {
           const m = p.method || "cash";
-          let mLabel = "كاش";
+          let mLabel = isAr ? "كاش" : "Cash";
           let mIcon = "fa-money-bill-wave";
           let badgeStyle = "background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-weight:700;";
           
           if (m === "instapay") {
-              mLabel = "إنستاباي";
+              mLabel = "InstaPay";
               mIcon = "fa-bolt-lightning";
               badgeStyle = "background:rgba(139,92,246,0.12); color:#8b5cf6; border:1px solid rgba(139,92,246,0.3); font-weight:700;";
           } else if (m === "wallet") {
-              mLabel = "فودافون كاش";
+              mLabel = isAr ? "فودافون كاش" : "Vodafone Cash";
               mIcon = "fa-mobile-screen-button";
               badgeStyle = "background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.3); font-weight:700;";
           }
@@ -3585,16 +3627,16 @@ function applyPermissions() {
           let actionBtn = "";
           if (isNegative) {
               if (isAdmin) {
-                  actionBtn = `<button type="button" class="btn danger smallBtn iconOnly" style="padding:4px 7px; font-size:11px; border-radius:6px;" onclick="window.deleteStudentPayment(${p.originalIndex})" title="حذف قيد الاسترجاع"><i class="fa-solid fa-trash-can"></i></button>`;
+                  actionBtn = `<button type="button" class="btn danger smallBtn iconOnly" style="padding:4px 7px; font-size:11px; border-radius:6px;" onclick="window.deleteStudentPayment(${p.originalIndex})" title="${isAr ? 'حذف قيد الاسترجاع' : 'Delete refund record'}"><i class="fa-solid fa-trash-can"></i></button>`;
               }
           } else {
               if (canRefund) {
-                  actionBtn = `<button type="button" class="btn warning smallBtn" style="padding:4px 9px; font-size:11px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); cursor:pointer; font-weight:700;" onclick="window.refundStudentPayment(${p.originalIndex})" title="خصم / استرجاع دفعة مسجلة بالخطأ"><i class="fa-solid fa-rotate-left"></i> استرجاع / خصم</button>`;
+                  actionBtn = `<button type="button" class="btn warning smallBtn" style="padding:4px 9px; font-size:11px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); cursor:pointer; font-weight:700;" onclick="window.refundStudentPayment(${p.originalIndex})" title="${isAr ? 'خصم / استرجاع دفعة مسجلة بالخطأ' : 'Refund / deduct an incorrect payment'}"><i class="fa-solid fa-rotate-left"></i> ${isAr ? 'استرجاع / خصم' : 'Refund / Deduct'}</button>`;
               } else {
-                  actionBtn = `<button type="button" class="btn secondary smallBtn locked-feature" style="padding:4px 9px; font-size:11px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; cursor:not-allowed; opacity:0.85;" onclick="window.showRefundLockedToast()" title="خاصية استرجاع الدفعات مقفلة من قِبل المدير"><i class="fa-solid fa-lock" style="color:#f59e0b;"></i> استرجاع</button>`;
+                  actionBtn = `<button type="button" class="btn secondary smallBtn locked-feature" style="padding:4px 9px; font-size:11px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; cursor:not-allowed; opacity:0.85;" onclick="window.showRefundLockedToast()" title="${isAr ? 'خاصية استرجاع الدفعات مقفلة من قِبل المدير' : 'Refund feature is locked by manager'}"><i class="fa-solid fa-lock" style="color:#f59e0b;"></i> ${isAr ? 'استرجاع' : 'Refund'}</button>`;
               }
               if (isAdmin) {
-                  actionBtn += ` <button type="button" class="btn danger smallBtn iconOnly" style="padding:4px 7px; font-size:11px; border-radius:6px; margin-right:4px;" onclick="window.deleteStudentPayment(${p.originalIndex})" title="حذف الدفعة نهائياً"><i class="fa-solid fa-trash-can"></i></button>`;
+                  actionBtn += ` <button type="button" class="btn danger smallBtn iconOnly" style="padding:4px 7px; font-size:11px; border-radius:6px; margin-inline-start:4px;" onclick="window.deleteStudentPayment(${p.originalIndex})" title="${isAr ? 'حذف الدفعة نهائياً' : 'Permanently delete payment'}"><i class="fa-solid fa-trash-can"></i></button>`;
               }
           }
 
@@ -3603,7 +3645,7 @@ function applyPermissions() {
               : "";
 
           const refundBadge = isNegative 
-              ? '<span class="badge" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); font-size:0.75em; font-weight:700;"><i class="fa-solid fa-arrow-rotate-left"></i> استرجاع إيداع</span>' 
+              ? `<span class="badge" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); font-size:0.75em; font-weight:700;"><i class="fa-solid fa-arrow-rotate-left"></i> ${isAr ? 'استرجاع إيداع' : 'Deposit Refund'}</span>` 
               : "";
 
           const noteHtml = p.note 
@@ -3611,8 +3653,8 @@ function applyPermissions() {
               : "";
 
           const amountDisplay = isNegative 
-              ? `<span style="font-weight:bold; font-size:1.05em; color:#ef4444; min-width:65px;">- ${absAmount} ج</span>`
-              : `<span style="font-weight:bold; font-size:1.05em; color:var(--success); min-width:65px;">+ ${absAmount} ج</span>`;
+              ? `<span style="font-weight:bold; font-size:1.05em; color:#ef4444; min-width:65px;">- ${absAmount}${currUnit}</span>`
+              : `<span style="font-weight:bold; font-size:1.05em; color:var(--success); min-width:65px;">+ ${absAmount}${currUnit}</span>`;
 
           const cardBg = isNegative ? 'background:rgba(239,68,68,0.03); border:1px dashed rgba(239,68,68,0.3);' : 'background:var(--bg-surface); border:1px solid var(--border);';
 
@@ -5076,6 +5118,17 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
   if (typeof window.setNotebookSyncStatus === "function") window.setNotebookSyncStatus('synced');
 
   const isEn = (currentLang === 'en');
+  document.querySelectorAll('input[type="date"]').forEach(inp => {
+    inp.lang = isEn ? 'en-US' : 'ar-EG';
+  });
+  const quickTriggerLabel = document.getElementById("quickDateTriggerLabel");
+  if (quickTriggerLabel && !quickTriggerLabel.classList.contains("past-date-active") && (quickTriggerLabel.textContent === "اليوم" || quickTriggerLabel.textContent === "Today")) {
+    quickTriggerLabel.textContent = isEn ? "Today" : "اليوم";
+  }
+  const quickResetBtnSpan = document.querySelector("#quickResetDateBtn span");
+  if (quickResetBtnSpan) {
+    quickResetBtnSpan.textContent = isEn ? "Today" : "اليوم";
+  }
   if ($("sessRevenueCurr")) $("sessRevenueCurr").textContent = isEn ? "EGP" : "ج";
   if ($("todayRevenue")) {
     const revVal = $("todayRevenue").getAttribute("data-val") || $("todayRevenue").textContent.replace(/[^0-9.]/g, '');
@@ -5111,6 +5164,11 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
   if (revModal && !revModal.classList.contains("hidden")) {
     const revBtn = $("openRevenueModalBtn");
     if (revBtn) revBtn.click();
+  }
+  if (typeof updateSessionFinanceStats === "function") updateSessionFinanceStats();
+  if (typeof renderAllSessionStudentsTable === "function") renderAllSessionStudentsTable();
+  if (typeof currentId !== "undefined" && currentId && typeof updateStudentUI === "function") {
+    updateStudentUI(currentId);
   }
   
   // Remove the anti-FOUC loading class once translation is complete
@@ -6129,280 +6187,287 @@ on("saveStudentBtn", "click", function() {
  };
 
  window.refundStudentPayment = async function(index) {
-   if (!currentId) return;
-   const st = students[currentId];
-   if (!st || !st.payments || !st.payments[index]) return;
+    if (!currentId) return;
+    const st = students[currentId];
+    if (!st || !st.payments || !st.payments[index]) return;
 
-   const isAdmin = (currentUserRole === "admin");
-   const canRefund = Boolean(isAdmin || (typeof currentPermissions !== "undefined" && currentPermissions.can_refund_payment === true));
-   if (!canRefund) {
-     window.showRefundLockedToast();
-     return;
-   }
+    const isAdmin = (currentUserRole === "admin");
+    const canRefund = Boolean(isAdmin || (typeof currentPermissions !== "undefined" && currentPermissions.can_refund_payment === true));
+    if (!canRefund) {
+      window.showRefundLockedToast();
+      return;
+    }
 
-   const p = st.payments[index];
-   const origAmt = Number(p.amount) || 0;
-   if (origAmt <= 0) {
-     showToast("لا يمكن استرجاع حركة سالبة أو منعدمة", "err");
-     return;
-   }
+    const isAr = (currentLang === 'ar');
+    const currUnit = isAr ? ' ج' : ' EGP';
+    const textDir = isAr ? 'rtl' : 'ltr';
+    const textAlign = isAr ? 'right' : 'left';
 
-   const m = p.method || "cash";
-   let mLabel = "كاش (درج النقدية)";
-   let mIcon = "fa-money-bill-wave";
-   let mColor = "#10b981";
-   if (m === "instapay") {
-     mLabel = "إنستاباي (InstaPay)";
-     mIcon = "fa-bolt-lightning";
-     mColor = "#8b5cf6";
-   } else if (m === "wallet") {
-     mLabel = "محفظة فودافون كاش";
-     mIcon = "fa-mobile-screen-button";
-     mColor = "#ef4444";
-   }
+    const p = st.payments[index];
+    const origAmt = Number(p.amount) || 0;
+    if (origAmt <= 0) {
+      showToast(isAr ? "لا يمكن استرجاع حركة سالبة أو منعدمة" : "Cannot refund a negative or zero transaction", "err");
+      return;
+    }
 
-   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || document.body.classList.contains('theme-dark');
-   const cardBg = isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
-   const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
-   const labelColor = isDark ? '#94a3b8' : '#64748b';
-   const valColor = isDark ? '#ffffff' : '#0f172a';
-   const inputBg = isDark ? 'rgba(0,0,0,0.3)' : '#ffffff';
-   const inputBorder = isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1';
-   const inputColor = isDark ? '#ffffff' : '#0f172a';
-   const chipBg = isDark ? 'rgba(255,255,255,0.08)' : '#f1f5f9';
-   const chipBorder = isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1';
-   const chipColor = isDark ? '#e2e8f0' : '#334155';
+    const m = p.method || "cash";
+    let mLabel = isAr ? "كاش (درج النقدية)" : "Cash (Cash Drawer)";
+    let mIcon = "fa-money-bill-wave";
+    let mColor = "#10b981";
+    if (m === "instapay") {
+      mLabel = isAr ? "إنستاباي (InstaPay)" : "InstaPay";
+      mIcon = "fa-bolt-lightning";
+      mColor = "#8b5cf6";
+    } else if (m === "wallet") {
+      mLabel = isAr ? "محفظة فودافون كاش" : "Vodafone Cash Wallet";
+      mIcon = "fa-mobile-screen-button";
+      mColor = "#ef4444";
+    }
 
-   let mBg = "rgba(16,185,129,0.12)";
-   if (m === "instapay") mBg = "rgba(139,92,246,0.12)";
-   else if (m === "wallet") mBg = "rgba(239,68,68,0.12)";
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || document.body.classList.contains('theme-dark');
+    const cardBg = isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc';
+    const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
+    const labelColor = isDark ? '#94a3b8' : '#64748b';
+    const valColor = isDark ? '#ffffff' : '#0f172a';
+    const inputBg = isDark ? 'rgba(0,0,0,0.3)' : '#ffffff';
+    const inputBorder = isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1';
+    const inputColor = isDark ? '#ffffff' : '#0f172a';
+    const chipBg = isDark ? 'rgba(255,255,255,0.08)' : '#f1f5f9';
+    const chipBorder = isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1';
+    const chipColor = isDark ? '#e2e8f0' : '#334155';
 
-   // Quick preset amounts
-   const halfAmt = Math.round(origAmt / 2);
-   let presetChipsHtml = `
-     <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(${origAmt})" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
-       كامل المبلغ (${origAmt} ج)
-     </button>
-   `;
-   if (halfAmt > 0 && halfAmt < origAmt) {
-     presetChipsHtml += `
-       <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(${halfAmt})" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
-         نصف المبلغ (${halfAmt} ج)
-       </button>
-     `;
-   }
-   if (origAmt > 500) {
-     presetChipsHtml += `
-       <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(500)" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
-         500 ج
-       </button>
-     `;
-   }
-   if (origAmt > 200 && origAmt !== 500) {
-     presetChipsHtml += `
-       <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(200)" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
-         200 ج
-       </button>
-     `;
-   }
+    let mBg = "rgba(16,185,129,0.12)";
+    if (m === "instapay") mBg = "rgba(139,92,246,0.12)";
+    else if (m === "wallet") mBg = "rgba(239,68,68,0.12)";
 
-   // Quick reason chips
-   const reasonChips = ["إيداع بالخطأ", "استرداد نقدي", "تعديل باقة", "تسجيل مكرر"];
-   let reasonChipsHtml = reasonChips.map(r => `
-     <button type="button" class="refund-chip-btn" onclick="window._setRefundReason('${r}')" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor}; font-size:0.75rem; padding:4px 8px;">
-       ${r}
-     </button>
-   `).join("");
+    // Quick preset amounts
+    const halfAmt = Math.round(origAmt / 2);
+    let presetChipsHtml = `
+      <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(${origAmt})" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
+        ${isAr ? `كامل المبلغ (${origAmt} ج)` : `Full Amount (${origAmt} EGP)`}
+      </button>
+    `;
+    if (halfAmt > 0 && halfAmt < origAmt) {
+      presetChipsHtml += `
+        <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(${halfAmt})" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
+          ${isAr ? `نصف المبلغ (${halfAmt} ج)` : `Half Amount (${halfAmt} EGP)`}
+        </button>
+      `;
+    }
+    if (origAmt > 500) {
+      presetChipsHtml += `
+        <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(500)" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
+          500${currUnit}
+        </button>
+      `;
+    }
+    if (origAmt > 200 && origAmt !== 500) {
+      presetChipsHtml += `
+        <button type="button" class="refund-chip-btn" onclick="window._setRefundAmt(200)" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor};">
+          200${currUnit}
+        </button>
+      `;
+    }
 
-   const result = await Swal.fire({
-     width: '780px',
-     padding: '20px 24px',
-     background: isDark ? 'rgba(15, 23, 42, 0.98)' : '#ffffff',
-     color: isDark ? '#f1f5f9' : '#0f172a',
-     showCloseButton: true,
-     customClass: { popup: 'swal2-refund-landscape-modal' },
-     html: `
-       <div style="text-align:right; direction:rtl; font-family:'Cairo', sans-serif;">
-         <!-- Header -->
-         <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid ${cardBorder}; padding-bottom:12px; margin-bottom:14px;">
-           <div style="display:flex; align-items:center; gap:12px;">
-             <div style="width:40px; height:40px; border-radius:12px; background:rgba(245,158,11,0.15); color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
-               <i class="fa-solid fa-rotate-left"></i>
-             </div>
-             <div>
-               <div style="font-size:1.15rem; font-weight:800; color:${valColor};">استرجاع / خصم دفعة مسجلة</div>
-               <div style="font-size:0.78rem; color:${labelColor};">خصم فوري من الخزنة ووردية اليوم مع توثيق القيد</div>
-             </div>
-           </div>
-           <span class="badge" style="background:${mBg}; color:${mColor}; border:1px solid ${mColor}40; padding:6px 12px; border-radius:8px; font-weight:700; font-size:0.82rem; display:inline-flex; align-items:center; gap:6px;">
-             <i class="fa-solid ${mIcon}"></i> ${mLabel}
-           </span>
-         </div>
+    // Quick reason chips
+    const reasonChips = isAr
+      ? ["إيداع بالخطأ", "استرداد نقدي", "تعديل باقة", "تسجيل مكرر"]
+      : ["Mistaken Deposit", "Cash Refund", "Package Change", "Duplicate Entry"];
+    let reasonChipsHtml = reasonChips.map(r => `
+      <button type="button" class="refund-chip-btn" onclick="window._setRefundReason('${r}')" style="background:${chipBg}; border-color:${chipBorder}; color:${chipColor}; font-size:0.75rem; padding:4px 8px;">
+        ${r}
+      </button>
+    `).join("");
 
-         <!-- Body: 2 Columns Grid -->
-         <div class="refund-grid-layout">
-           <!-- Right: بيانات الدفعة المسجلة -->
-           <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
-             <div>
-               <div style="font-size:0.85rem; font-weight:800; color:#f59e0b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
-                 <i class="fa-solid fa-receipt"></i> بيانات الدفعة المسجلة
-               </div>
-               <div style="display:flex; flex-direction:column; gap:8px; font-size:0.88rem;">
-                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
-                   <span style="color:${labelColor};">المبلغ المسجل:</span>
-                   <span style="color:var(--success, #10b981); font-weight:900; font-size:1.2rem;">+${origAmt} ج</span>
-                 </div>
-                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
-                   <span style="color:${labelColor};">الخزنة المستهدفة:</span>
-                   <strong style="color:${mColor}; display:inline-flex; align-items:center; gap:5px;">
-                     <i class="fa-solid ${mIcon}"></i> ${mLabel}
-                   </strong>
-                 </div>
-                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
-                   <span style="color:${labelColor};">تاريخ الدفعة:</span>
-                   <strong style="color:${valColor};">${prettyDate(p.date)}</strong>
-                 </div>
-                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                   <span style="color:${labelColor};">الباقة / البند:</span>
-                   <strong style="color:${valColor};">${p.pkgName || 'عام'}</strong>
-                 </div>
-               </div>
-             </div>
+    const result = await Swal.fire({
+      width: '780px',
+      padding: '20px 24px',
+      background: isDark ? 'rgba(15, 23, 42, 0.98)' : '#ffffff',
+      color: isDark ? '#f1f5f9' : '#0f172a',
+      showCloseButton: true,
+      customClass: { popup: 'swal2-refund-landscape-modal' },
+      html: `
+        <div style="text-align:${textAlign}; direction:${textDir}; font-family:'Cairo', sans-serif;">
+          <!-- Header -->
+          <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid ${cardBorder}; padding-bottom:12px; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:40px; height:40px; border-radius:12px; background:rgba(245,158,11,0.15); color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+                <i class="fa-solid fa-rotate-left"></i>
+              </div>
+              <div>
+                <div style="font-size:1.15rem; font-weight:800; color:${valColor};">${isAr ? 'استرجاع / خصم دفعة مسجلة' : 'Refund / Deduct Recorded Payment'}</div>
+                <div style="font-size:0.78rem; color:${labelColor};">${isAr ? 'خصم فوري من الخزنة ووردية اليوم مع توثيق القيد' : 'Instant deduction from treasury & today shift with audit log'}</div>
+              </div>
+            </div>
+            <span class="badge" style="background:${mBg}; color:${mColor}; border:1px solid ${mColor}40; padding:6px 12px; border-radius:8px; font-weight:700; font-size:0.82rem; display:inline-flex; align-items:center; gap:6px;">
+              <i class="fa-solid ${mIcon}"></i> ${mLabel}
+            </span>
+          </div>
 
-             <div style="padding:10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:10px; font-size:0.75rem; color:${labelColor}; line-height:1.5;">
-               <i class="fa-solid fa-shield-halved" style="color:#f59e0b;"></i>
-               سيتم خصم المبلغ من خزنة (<b>${mLabel}</b>) ومن إيراد وردية اليوم، وتسجيل حركة سالبة في كشف حساب الطالب.
-             </div>
-           </div>
+          <!-- Body: 2 Columns Grid -->
+          <div class="refund-grid-layout">
+            <!-- Details Column -->
+            <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+              <div>
+                <div style="font-size:0.85rem; font-weight:800; color:#f59e0b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-receipt"></i> ${isAr ? 'بيانات الدفعة المسجلة' : 'Recorded Payment Details'}
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px; font-size:0.88rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
+                    <span style="color:${labelColor};">${isAr ? 'المبلغ المسجل:' : 'Recorded Amount:'}</span>
+                    <span style="color:var(--success, #10b981); font-weight:900; font-size:1.2rem;">+${origAmt}${currUnit}</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
+                    <span style="color:${labelColor};">${isAr ? 'الخزنة المستهدفة:' : 'Target Treasury:'}</span>
+                    <strong style="color:${mColor}; display:inline-flex; align-items:center; gap:5px;">
+                      <i class="fa-solid ${mIcon}"></i> ${mLabel}
+                    </strong>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px; border-bottom:1px dashed ${cardBorder};">
+                    <span style="color:${labelColor};">${isAr ? 'تاريخ الدفعة:' : 'Payment Date:'}</span>
+                    <strong style="color:${valColor};">${prettyDate(p.date)}</strong>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:${labelColor};">${isAr ? 'الباقة / البند:' : 'Package / Item:'}</span>
+                    <strong style="color:${valColor};">${p.pkgName || (isAr ? 'عام' : 'General')}</strong>
+                  </div>
+                </div>
+              </div>
 
-           <!-- Left: تحديد الخصم والاسترجاع -->
-           <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px;">
-             <div>
-               <label style="display:block; font-weight:800; margin-bottom:6px; font-size:0.86rem; color:${valColor};">
-                 المبلغ المراد استرجاعه (ج):
-               </label>
-               <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
-                 ${presetChipsHtml}
-               </div>
-               <div style="position:relative;">
-                 <input id="swalRefundAmount" type="number" min="1" max="${origAmt}" value="${origAmt}" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:10px; font-size:1.15rem; font-weight:800; background:${inputBg}; border:1px solid ${inputBorder}; color:${inputColor}; outline:none; text-align:center;" placeholder="المبلغ">
-               </div>
-               <div id="swalRefundCalcPreview" style="font-size:0.78rem; color:${labelColor}; display:flex; justify-content:space-between; margin-top:6px; padding:0 4px;">
-                 <span>المتبقي في الدفعة بعد الخصم:</span>
-                 <b id="swalRefundRemainVal" style="color:var(--success, #10b981);">0 ج</b>
-               </div>
-             </div>
+              <div style="padding:10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:10px; font-size:0.75rem; color:${labelColor}; line-height:1.5;">
+                <i class="fa-solid fa-shield-halved" style="color:#f59e0b;"></i>
+                ${isAr ? `سيتم خصم المبلغ من خزنة (<b>${mLabel}</b>) ومن إيراد وردية اليوم، وتسجيل حركة سالبة في كشف حساب الطالب.` : `Amount will be deducted from treasury (<b>${mLabel}</b>) & today's shift revenue, logging a negative transaction in student account.`}
+              </div>
+            </div>
 
-             <div>
-               <label style="display:block; font-weight:800; margin-bottom:6px; font-size:0.86rem; color:${valColor};">
-                 سبب الاسترجاع (اختياري):
-               </label>
-               <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
-                 ${reasonChipsHtml}
-               </div>
-               <input id="swalRefundReason" type="text" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; font-size:0.85rem; background:${inputBg}; border:1px solid ${inputBorder}; color:${inputColor}; outline:none;" placeholder="مثال: إيداع بالخطأ، استرداد نقدي، إلخ">
-             </div>
-           </div>
-         </div>
-       </div>
-     `,
-     showCancelButton: true,
-     confirmButtonText: '<i class="fa-solid fa-check"></i> تأكيد الخصم والاسترجاع',
-     cancelButtonText: 'إلغاء',
-     confirmButtonColor: '#f59e0b',
-     cancelButtonColor: isDark ? '#334155' : '#94a3b8',
-     focusConfirm: false,
-     didOpen: () => {
-       const amtInp = document.getElementById('swalRefundAmount');
-       const remainEl = document.getElementById('swalRefundRemainVal');
-       const updateRemain = () => {
-         const v = Number(amtInp ? amtInp.value : 0);
-         const rem = Math.max(0, origAmt - v);
-         if (remainEl) remainEl.textContent = rem + " ج";
-       };
-       if (amtInp) {
-         amtInp.addEventListener('input', updateRemain);
-         amtInp.focus();
-         amtInp.select();
-       }
-       window._setRefundAmt = (val) => {
-         if (amtInp) {
-           amtInp.value = val;
-           updateRemain();
-           amtInp.focus();
-         }
-       };
-       window._setRefundReason = (text) => {
-         const rInp = document.getElementById('swalRefundReason');
-         if (rInp) {
-           rInp.value = text;
-           rInp.focus();
-         }
-       };
-     },
-     preConfirm: () => {
-       const amtInp = document.getElementById('swalRefundAmount');
-       const reasonInp = document.getElementById('swalRefundReason');
-       const refundAmt = Number(amtInp ? amtInp.value : 0);
-       const reason = reasonInp ? reasonInp.value.trim() : "";
+            <!-- Input Column -->
+            <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+              <div>
+                <label style="display:block; font-weight:800; margin-bottom:6px; font-size:0.86rem; color:${valColor};">
+                  ${isAr ? 'المبلغ المراد استرجاعه (ج):' : 'Amount to Refund (EGP):'}
+                </label>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                  ${presetChipsHtml}
+                </div>
+                <div style="position:relative;">
+                  <input id="swalRefundAmount" type="number" min="1" max="${origAmt}" value="${origAmt}" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:10px; font-size:1.15rem; font-weight:800; background:${inputBg}; border:1px solid ${inputBorder}; color:${inputColor}; outline:none; text-align:center;" placeholder="${isAr ? 'المبلغ' : 'Amount'}">
+                </div>
+                <div id="swalRefundCalcPreview" style="font-size:0.78rem; color:${labelColor}; display:flex; justify-content:space-between; margin-top:6px; padding:0 4px;">
+                  <span>${isAr ? 'المتبقي في الدفعة بعد الخصم:' : 'Remaining in payment:'}</span>
+                  <b id="swalRefundRemainVal" style="color:var(--success, #10b981);">0${currUnit}</b>
+                </div>
+              </div>
 
-       if (!refundAmt || refundAmt <= 0) {
-         Swal.showValidationMessage('يرجى إدخال مبلغ صحيح أكبر من الصفر');
-         return false;
-       }
-       if (refundAmt > origAmt) {
-         Swal.showValidationMessage(`المبلغ لا يمكن أن يتجاوز قيمة الدفعة الأصلية (${origAmt} ج)`);
-         return false;
-       }
-       return { refundAmt, reason };
-     }
-   });
+              <div>
+                <label style="display:block; font-weight:800; margin-bottom:6px; font-size:0.86rem; color:${valColor};">
+                  ${isAr ? 'سبب الاسترجاع (اختياري):' : 'Refund Reason (Optional):'}
+                </label>
+                <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
+                  ${reasonChipsHtml}
+                </div>
+                <input id="swalRefundReason" type="text" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; font-size:0.85rem; background:${inputBg}; border:1px solid ${inputBorder}; color:${inputColor}; outline:none;" placeholder="${isAr ? 'مثال: إيداع بالخطأ، استرداد نقدي، إلخ' : 'e.g., Mistaken deposit, cash refund, etc.'}">
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: isAr ? '<i class="fa-solid fa-check"></i> تأكيد الخصم والاسترجاع' : '<i class="fa-solid fa-check"></i> Confirm Refund & Deduction',
+      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: isDark ? '#334155' : '#94a3b8',
+      focusConfirm: false,
+      didOpen: () => {
+        const amtInp = document.getElementById('swalRefundAmount');
+        const remainEl = document.getElementById('swalRefundRemainVal');
+        const updateRemain = () => {
+          const v = Number(amtInp ? amtInp.value : 0);
+          const rem = Math.max(0, origAmt - v);
+          if (remainEl) remainEl.textContent = rem + currUnit;
+        };
+        if (amtInp) {
+          amtInp.addEventListener('input', updateRemain);
+          amtInp.focus();
+          amtInp.select();
+        }
+        window._setRefundAmt = (val) => {
+          if (amtInp) {
+            amtInp.value = val;
+            updateRemain();
+            amtInp.focus();
+          }
+        };
+        window._setRefundReason = (text) => {
+          const rInp = document.getElementById('swalRefundReason');
+          if (rInp) {
+            rInp.value = text;
+            rInp.focus();
+          }
+        };
+      },
+      preConfirm: () => {
+        const amtInp = document.getElementById('swalRefundAmount');
+        const reasonInp = document.getElementById('swalRefundReason');
+        const refundAmt = Number(amtInp ? amtInp.value : 0);
+        const reason = reasonInp ? reasonInp.value.trim() : "";
 
-   if (!result.isConfirmed || !result.value) return;
+        if (!refundAmt || refundAmt <= 0) {
+          Swal.showValidationMessage(isAr ? 'يرجى إدخال مبلغ صحيح أكبر من الصفر' : 'Please enter a valid amount greater than zero');
+          return false;
+        }
+        if (refundAmt > origAmt) {
+          Swal.showValidationMessage(isAr ? `المبلغ لا يمكن أن يتجاوز قيمة الدفعة الأصلية (${origAmt} ج)` : `Amount cannot exceed the original payment amount (${origAmt} EGP)`);
+          return false;
+        }
+        return { refundAmt, reason };
+      }
+    });
 
-   const { refundAmt, reason } = result.value;
-   const today = nowDateStr();
-   const activeCollector = localStorage.getItem("ca_current_username") || (currentUserRole === "admin" ? "المدير" : "المساعد");
+    if (!result.isConfirmed || !result.value) return;
 
-   // 1. Update Student total paid
-   st.paid = Math.max(0, Number(st.paid || 0) - refundAmt);
+    const { refundAmt, reason } = result.value;
+    const today = nowDateStr();
+    const activeCollector = localStorage.getItem("ca_current_username") || (currentUserRole === "admin" ? (isAr ? "المدير" : "Manager") : (isAr ? "المساعد" : "Assistant"));
 
-   // 2. If it was for session recharge and is session student, deduct proportional sessions
-   if (p.pkgName === "شحن رصيد حصص" && st.isSessionStudent && (st.sessionBalance || 0) > 0) {
-     const perSessionPrice = (typeof getSessionPrice === "function") ? getSessionPrice() : 50;
-     const deducedSessions = Math.max(1, Math.round(refundAmt / perSessionPrice));
-     st.sessionBalance = Math.max(0, (st.sessionBalance || 0) - deducedSessions);
-   }
+    // 1. Update Student total paid
+    st.paid = Math.max(0, Number(st.paid || 0) - refundAmt);
 
-   // 3. Update today's revenue (keeps shift & daily report net accurate)
-   if (!revenueByDate[today]) revenueByDate[today] = 0;
-   revenueByDate[today] = Math.max(0, Number(revenueByDate[today]) - refundAmt);
+    // 2. If it was for session recharge and is session student, deduct proportional sessions
+    if (p.pkgName === "شحن رصيد حصص" && st.isSessionStudent && (st.sessionBalance || 0) > 0) {
+      const perSessionPrice = (typeof getSessionPrice === "function") ? getSessionPrice() : 50;
+      const deducedSessions = Math.max(1, Math.round(refundAmt / perSessionPrice));
+      st.sessionBalance = Math.max(0, (st.sessionBalance || 0) - deducedSessions);
+    }
 
-   // 4. Record negative refund transaction in st.payments
-   const refundRecord = {
-     id: Date.now(),
-     date: today,
-     amount: -refundAmt,
-     method: p.method || "cash",
-     pkgName: p.pkgName || "",
-     type: "refund",
-     originalPaymentId: p.id || null,
-     note: reason || "استرجاع / خصم إيداع",
-     by: activeCollector
-   };
-   st.payments.push(refundRecord);
+    // 3. Update today's revenue (keeps shift & daily report net accurate)
+    if (!revenueByDate[today]) revenueByDate[today] = 0;
+    revenueByDate[today] = Math.max(0, Number(revenueByDate[today]) - refundAmt);
 
-   // 5. Save and refresh
-   await saveAll();
-   updateStudentUI(currentId);
-   if (typeof updateTopStats === "function") updateTopStats();
-   if (typeof renderReport === "function") renderReport(today);
-   if (typeof renderCharts === "function") renderCharts();
+    // 4. Record negative refund transaction in st.payments
+    const refundRecord = {
+      id: Date.now(),
+      date: today,
+      amount: -refundAmt,
+      method: p.method || "cash",
+      pkgName: p.pkgName || "",
+      type: "refund",
+      originalPaymentId: p.id || null,
+      note: reason || (isAr ? "استرجاع / خصم إيداع" : "Deposit Refund / Deduction"),
+      by: activeCollector
+    };
+    st.payments.push(refundRecord);
 
-   if (typeof showToast === "function") {
-     showToast(`تم استرجاع مبلغ ${refundAmt} ج وخصمه من ${mLabel} وإيراد اليوم بنجاح`, "success");
-   }
- };
+    // 5. Save and refresh
+    await saveAll();
+    updateStudentUI(currentId);
+    if (typeof updateTopStats === "function") updateTopStats();
+    if (typeof renderReport === "function") renderReport(today);
+    if (typeof renderCharts === "function") renderCharts();
+
+    if (typeof showToast === "function") {
+      showToast(isAr ? `تم استرجاع مبلغ ${refundAmt} ج وخصمه من ${mLabel} وإيراد اليوم بنجاح` : `Successfully refunded ${refundAmt} EGP and deducted from ${mLabel} & today's revenue`, "success");
+    }
+  };
 
  window.deleteStudentPayment = function(index) {
    if(!currentId) return;
@@ -10197,14 +10262,19 @@ window.openSessionStudentModal = function(item) {
       activeBalance += Math.max(0, toInt(s.sessionBalance));
     });
 
-    if ($("sessStatTotalRev")) $("sessStatTotalRev").textContent = totalRev + " ج";
-    if ($("sessStatCashRev")) $("sessStatCashRev").textContent = cashRev + " ج";
-    if ($("sessStatInstapayRev")) $("sessStatInstapayRev").textContent = instapayRev + " ج";
-    if ($("sessStatWalletRev")) $("sessStatWalletRev").textContent = walletRev + " ج";
+    const isAr = (currentLang === 'ar');
+    const currUnit = isAr ? " ج" : " EGP";
+    const sessUnit = isAr ? " حصة" : " Sessions";
+
+    if ($("sessStatTotalRev")) $("sessStatTotalRev").textContent = totalRev + currUnit;
+    if ($("sessStatCashRev")) $("sessStatCashRev").textContent = cashRev + currUnit;
+    if ($("sessStatInstapayRev")) $("sessStatInstapayRev").textContent = instapayRev + currUnit;
+    if ($("sessStatWalletRev")) $("sessStatWalletRev").textContent = walletRev + currUnit;
     if ($("sessStatTotalStudents")) $("sessStatTotalStudents").textContent = totalStudents;
-    if ($("sessStatActiveBalance")) $("sessStatActiveBalance").textContent = activeBalance + " حصة";
+    if ($("sessStatActiveBalance")) $("sessStatActiveBalance").textContent = activeBalance + sessUnit;
     if ($("sessDbStudentsCountBadge")) $("sessDbStudentsCountBadge").textContent = totalStudents;
   };
+  window.updateSessionFinanceStats = window.renderSessionFinanceStats;
 
   window.getAllSessionStudentsList = function() {
     const map = new Map();
@@ -10287,7 +10357,8 @@ window.openSessionStudentModal = function(item) {
       window.getAllSessionStudentsList().forEach(s => {
         if (s.className && s.className.trim()) classesSet.add(s.className.trim());
       });
-      let opts = '<option value="all">كل المواد والصفوف</option>';
+      const isAr = (currentLang === 'ar');
+      let opts = '<option value="all">' + (isAr ? 'كل المواد والصفوف' : 'All Subjects & Classes') + '</option>';
       classesSet.forEach(c => {
         opts += '<option value="' + c + '">' + c + '</option>';
       });
@@ -10331,13 +10402,17 @@ window.openSessionStudentModal = function(item) {
     if (emptyState) emptyState.style.display = "none";
     let html = "";
 
+    const isAr = (currentLang === 'ar');
+    const currUnit = isAr ? ' ج' : ' EGP';
+    const sessUnit = isAr ? ' حصة' : ' Sessions';
+
     filtered.forEach(s => {
       const bal = s.sessionBalance || 0;
       const balBadge = bal > 0 
-        ? '<span class="badge" style="background:#fce7f3; color:#db2777; font-weight:800; font-size:0.9em; padding:4px 10px; border-radius:8px;"><i class="fa-solid fa-ticket"></i> ' + bal + ' حصة</span>'
-        : '<span class="badge" style="background:#fee2e2; color:#dc2626; font-weight:800; font-size:0.85em; padding:4px 8px; border-radius:8px;"><i class="fa-solid fa-circle-exclamation"></i> رصيد 0</span>';
+        ? '<span class="badge" style="background:#fce7f3; color:#db2777; font-weight:800; font-size:0.9em; padding:4px 10px; border-radius:8px;"><i class="fa-solid fa-ticket"></i> ' + bal + sessUnit + '</span>'
+        : '<span class="badge" style="background:#fee2e2; color:#dc2626; font-weight:800; font-size:0.85em; padding:4px 8px; border-radius:8px;"><i class="fa-solid fa-circle-exclamation"></i> ' + (isAr ? 'رصيد 0' : '0 Balance') + '</span>';
 
-      let mBadge = s.lastMethod === "instapay" ? "إنستاباي" : (s.lastMethod === "wallet" ? "فودافون كاش" : "كاش");
+      let mBadge = s.lastMethod === "instapay" ? "InstaPay" : (s.lastMethod === "wallet" ? (isAr ? "فودافون كاش" : "Vodafone Cash") : (isAr ? "كاش" : "Cash"));
       let mBg = s.lastMethod === "instapay" ? "#e0f2fe" : (s.lastMethod === "wallet" ? "#f3e8ff" : "#dcfce7");
       let mColor = s.lastMethod === "instapay" ? "#0284c7" : (s.lastMethod === "wallet" ? "#7c3aed" : "#15803d");
 
@@ -10348,24 +10423,24 @@ window.openSessionStudentModal = function(item) {
       if (s.phone) {
         html += '<div style="display:flex; align-items:center; gap:6px;">' +
           '<span style="font-family:monospace; font-size:0.92em; color:var(--text-secondary); direction:ltr;">' + s.phone + '</span>' +
-          '<button class="btn success smallBtn iconOnly" style="padding:3px 7px; border-radius:6px;" title="مراسلة واتساب" onclick="window.open(\x27https://wa.me/20' + s.phone + '\x27, \x27_blank\x27)"><i class="fa-brands fa-whatsapp"></i></button>' +
+          '<button class="btn success smallBtn iconOnly" style="padding:3px 7px; border-radius:6px;" title="' + (isAr ? 'مراسلة واتساب' : 'WhatsApp Chat') + '" onclick="window.open(\x27https://wa.me/20' + s.phone + '\x27, \x27_blank\x27)"><i class="fa-brands fa-whatsapp"></i></button>' +
           '</div>';
       } else {
         html += '<span style="color:var(--text-secondary); opacity:0.5;">—</span>';
       }
       html += '</td>';
-      html += '<td style="padding:12px 14px;"><span class="badge" style="background:var(--bg-inset); color:var(--text); border:1px solid var(--border); padding:3px 8px; border-radius:6px; font-size:0.85em;">' + (s.className || 'بدون باقة') + '</span></td>';
+      html += '<td style="padding:12px 14px;"><span class="badge" style="background:var(--bg-inset); color:var(--text); border:1px solid var(--border); padding:3px 8px; border-radius:6px; font-size:0.85em;">' + (s.className || (isAr ? 'بدون باقة' : 'No Package')) + '</span></td>';
       html += '<td style="padding:12px 14px; text-align:center;">' + balBadge + '</td>';
-      html += '<td style="padding:12px 14px; text-align:center; font-weight:800; color:var(--success); font-size:1em;">' + s.paid + ' ج</td>';
+      html += '<td style="padding:12px 14px; text-align:center; font-weight:800; color:var(--success); font-size:1em;">' + s.paid + currUnit + '</td>';
       html += '<td style="padding:12px 14px; text-align:center;"><span class="badge" style="background:' + mBg + '; color:' + mColor + '; font-weight:700; font-size:0.82em; padding:3px 8px; border-radius:6px;">' + mBadge + '</span></td>';
       html += '<td style="padding:12px 14px; text-align:center; font-size:0.85em; color:var(--text-secondary); font-family:monospace;">' + (s.lastActivity || '—') + '</td>';
       html += '<td style="padding:12px 14px; text-align:center;">';
       html += '<div style="display:inline-flex; align-items:center; gap:6px;">';
-      html += '<button type="button" class="btn success smallBtn" style="padding:5px 9px; font-weight:700; font-size:0.8em; border-radius:6px;" title="شحن رصيد حصص سريع" onclick="window.quickRechargeSessionStudent(\x27' + s.id + '\x27)"><i class="fa-solid fa-plus"></i> شحن</button>';
+      html += '<button type="button" class="btn success smallBtn" style="padding:5px 9px; font-weight:700; font-size:0.8em; border-radius:6px;" title="' + (isAr ? 'شحن رصيد حصص سريع' : 'Quick Recharge Session Balance') + '" onclick="window.quickRechargeSessionStudent(\x27' + s.id + '\x27)"><i class="fa-solid fa-plus"></i> ' + (isAr ? 'شحن' : 'Recharge') + '</button>';
       if (String(s.id).startsWith("ST-") || s.studentObj) {
-        html += '<button type="button" class="btn primary smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="فتح الملف وتعديل البيانات" onclick="window.extOpen(\x27' + s.id + '\x27)"><i class="fa-solid fa-user-gear"></i></button>';
+        html += '<button type="button" class="btn primary smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="' + (isAr ? 'فتح الملف وتعديل البيانات' : 'Open File & Edit Details') + '" onclick="window.extOpen(\x27' + s.id + '\x27)"><i class="fa-solid fa-user-gear"></i></button>';
       }
-      html += '<button type="button" class="btn danger smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="حذف طالب الحصة بالكامل" onclick="window.deleteSessionStudentCompletely(\x27' + s.id + '\x27)"><i class="fa-solid fa-trash-can"></i></button>';
+      html += '<button type="button" class="btn danger smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="' + (isAr ? 'حذف طالب الحصة بالكامل' : 'Delete Session Student') + '" onclick="window.deleteSessionStudentCompletely(\x27' + s.id + '\x27)"><i class="fa-solid fa-trash-can"></i></button>';
       html += '</div></td></tr>';
     });
 
@@ -10373,54 +10448,58 @@ window.openSessionStudentModal = function(item) {
   };
 
   window.quickRechargeSessionStudent = function(id) {
+    const isAr = (currentLang === 'ar');
     const sList = window.getAllSessionStudentsList();
     const st = sList.find(x => x.id === id);
     if (!st) {
-      showToast("تعذر العثور على طالب الحصة", "err");
+      showToast(isAr ? "تعذر العثور على طالب الحصة" : "Session student not found", "err");
       return;
     }
 
     if (typeof Swal !== "undefined") {
+      const sessUnit = isAr ? "حصة" : "Sessions";
+      const textAlign = isAr ? "right" : "left";
+      const textDir = isAr ? "rtl" : "ltr";
       Swal.fire({
-        title: "شحن رصيد حصص: " + st.name,
+        title: (isAr ? "شحن رصيد حصص: " : "Recharge Session Balance: ") + st.name,
         html: `
-          <div style="text-align:right; font-size:0.9em; margin-bottom:12px; color:var(--text-secondary);">
-            كود الطالب: <b>${st.id}</b> | الرصيد الحالي: <b>${st.sessionBalance}</b> حصة
+          <div style="text-align:${textAlign}; direction:${textDir}; font-size:0.9em; margin-bottom:12px; color:var(--text-secondary);">
+            ${isAr ? 'كود الطالب:' : 'Student ID:'} <b>${st.id}</b> | ${isAr ? 'الرصيد الحالي:' : 'Current Balance:'} <b>${st.sessionBalance}</b> ${sessUnit}
           </div>
-          <div style="display:flex; flex-direction:column; gap:10px; text-align:right;">
+          <div style="display:flex; flex-direction:column; gap:10px; text-align:${textAlign}; direction:${textDir};">
             <div>
-              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">عدد الحصص المراد شحنها:</label>
+              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">${isAr ? 'عدد الحصص المراد شحنها:' : 'Sessions to recharge:'}</label>
               <input type="number" id="swalSessCount" class="swal2-input" value="1" min="1" style="width:100%; margin:0;">
             </div>
             <div>
-              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">المبلغ المحصل (ج):</label>
-              <input type="number" id="swalSessAmount" class="swal2-input" placeholder="مثال: 100" style="width:100%; margin:0;">
+              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">${isAr ? 'المبلغ المحصل (ج):' : 'Collected Amount (EGP):'}</label>
+              <input type="number" id="swalSessAmount" class="swal2-input" placeholder="${isAr ? 'مثال: 100' : 'e.g. 100'}" style="width:100%; margin:0;">
             </div>
             <div>
-              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">طريقة التحصيل:</label>
+              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">${isAr ? 'طريقة التحصيل:' : 'Payment Method:'}</label>
               <select id="swalSessMethod" class="swal2-select" style="width:100%; margin:0;">
-                <option value="cash">كاش</option>
-                <option value="instapay">إنستاباي</option>
-                <option value="wallet">فودافون كاش</option>
+                <option value="cash">${isAr ? 'كاش' : 'Cash'}</option>
+                <option value="instapay">InstaPay</option>
+                <option value="wallet">${isAr ? 'فودافون كاش' : 'Vodafone Cash'}</option>
               </select>
             </div>
           </div>
         `,
         focusConfirm: false,
         showCancelButton: true,
-        confirmButtonText: "تأكيد الشحن والتحصيل",
+        confirmButtonText: isAr ? "تأكيد الشحن والتحصيل" : "Confirm Recharge & Payment",
         confirmButtonColor: "#10b981",
-        cancelButtonText: "إلغاء",
+        cancelButtonText: isAr ? "إلغاء" : "Cancel",
         preConfirm: () => {
           const count = toInt(document.getElementById("swalSessCount")?.value);
           const amt = toInt(document.getElementById("swalSessAmount")?.value);
           const method = document.getElementById("swalSessMethod")?.value || 'cash';
           if (count <= 0) {
-            Swal.showValidationMessage("يرجى إدخال عدد حصص صحيح (1 على الأقل)");
+            Swal.showValidationMessage(isAr ? "يرجى إدخال عدد حصص صحيح (1 على الأقل)" : "Please enter a valid sessions count (at least 1)");
             return false;
           }
           if (amt < 0) {
-            Swal.showValidationMessage("يرجى إدخال مبلغ صحيح");
+            Swal.showValidationMessage(isAr ? "يرجى إدخال مبلغ صحيح" : "Please enter a valid amount");
             return false;
           }
           return { count, amt, method };
