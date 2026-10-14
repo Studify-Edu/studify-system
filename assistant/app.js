@@ -1730,6 +1730,9 @@ let currentFilteredList = [];
  function formatEgyptWaPhone(rawPhone) {
    if (!rawPhone) return "";
    let cleanPhone = String(rawPhone).replace(/[^\d]/g, '').trim();
+   if (!cleanPhone) return "";
+   if (cleanPhone.startsWith('00')) cleanPhone = cleanPhone.substring(2);
+   if (cleanPhone.startsWith('200')) cleanPhone = '20' + cleanPhone.substring(3);
    if (cleanPhone.startsWith('20')) return cleanPhone;
    if (cleanPhone.startsWith('0')) return '2' + cleanPhone;
    return '20' + cleanPhone;
@@ -1772,81 +1775,113 @@ let currentFilteredList = [];
  };
 
  window.checkStudentPackageStatus = function(st) {
-   if (!st || !st.className || !groupFees || !groupFees[st.className]) {
+   if (!st) {
      return { status: "none", text: "", badgeClass: "", isExpiring: false, isExpired: false };
    }
-   const pkg = window.getPkgDetails(st.className);
-   if (pkg.expiryType === "none") {
-     return { status: "valid", text: "نشطة", badgeClass: "status-badge-success", isExpiring: false, isExpired: false };
+
+   // 1. Gather all enrolled package names
+   let pkgList = [];
+   if (Array.isArray(st.packages) && st.packages.length > 0) {
+     pkgList = st.packages.filter(p => p && groupFees && groupFees[p]);
    }
-
-   let timeExpired = false;
-   let timeWarning = false;
-   let daysLeft = null;
-
-   if (pkg.expiryType === "time" || pkg.expiryType === "both") {
-     const startDateStr = st.pkgStartDate || st.joinedDate || nowDateStr();
-     const startDate = new Date(startDateStr);
-     const now = new Date();
-     const diffTime = now - startDate;
-     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-     daysLeft = pkg.durationDays - diffDays;
-
-     if (daysLeft <= 0) {
-       timeExpired = true;
-     } else if (daysLeft <= 5) {
-       timeWarning = true;
+   if (pkgList.length === 0 && st.className) {
+     const parts = String(st.className).split(/[,،|\-\+]/).map(s => s.trim()).filter(Boolean);
+     parts.forEach(p => {
+       if (groupFees && groupFees[p] && !pkgList.includes(p)) pkgList.push(p);
+     });
+     if (pkgList.length === 0 && groupFees && groupFees[st.className]) {
+       pkgList.push(st.className);
      }
    }
 
-   let sessionsExpired = false;
-   let sessionsWarning = false;
-   let sessionsLeft = null;
+   if (pkgList.length === 0) {
+     return { status: "none", text: "", badgeClass: "", isExpiring: false, isExpired: false };
+   }
 
-   if (pkg.expiryType === "sessions" || pkg.expiryType === "both") {
-     const usedSessions = (st.attendanceDates || []).length;
-     sessionsLeft = pkg.sessionLimit - usedSessions;
-     if (sessionsLeft <= 0) {
-       sessionsExpired = true;
-     } else if (sessionsLeft <= 2) {
-       sessionsWarning = true;
+   let worstRes = null;
+
+   for (let i = 0; i < pkgList.length; i++) {
+     const pkgName = pkgList[i];
+     const pkg = window.getPkgDetails(pkgName);
+     if (!pkg || pkg.expiryType === "none") continue;
+
+     let timeExpired = false;
+     let timeWarning = false;
+     let daysLeft = null;
+
+     if (pkg.expiryType === "time" || pkg.expiryType === "both") {
+       if (pkg.startDate && pkg.endDate) {
+         const endD = new Date(pkg.endDate);
+         const nowD = new Date();
+         const diffTime = endD - nowD;
+         daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+         if (daysLeft <= 0) timeExpired = true;
+         else if (daysLeft <= 5) timeWarning = true;
+       } else if (pkg.durationDays > 0) {
+         const startDateStr = st.pkgStartDate || st.joinedDate || nowDateStr();
+         const startDate = new Date(startDateStr);
+         const now = new Date();
+         const diffTime = now - startDate;
+         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+         daysLeft = pkg.durationDays - diffDays;
+         if (daysLeft <= 0) timeExpired = true;
+         else if (daysLeft <= 5) timeWarning = true;
+       }
+     }
+
+     let sessionsExpired = false;
+     let sessionsWarning = false;
+     let sessionsLeft = null;
+
+     if (pkg.expiryType === "sessions" || pkg.expiryType === "both") {
+       const usedSessions = (st.attendanceDates || []).length;
+       sessionsLeft = (pkg.sessionLimit || 0) - usedSessions;
+       if (sessionsLeft <= 0) {
+         sessionsExpired = true;
+       } else if (sessionsLeft <= 2) {
+         sessionsWarning = true;
+       }
+     }
+
+     if (timeExpired || sessionsExpired) {
+       let reason = timeExpired ? "انتهت المدة" : "انتهت الحصص";
+       const pkgLabel = pkgList.length > 1 ? ` (${pkgName}: ${reason})` : ` (${reason})`;
+       return {
+         status: "expired",
+         text: "الباقة منتهية" + pkgLabel,
+         badgeClass: "status-badge-danger",
+         isExpiring: false,
+         isExpired: true,
+         pkgName: pkgName,
+         daysLeft,
+         sessionsLeft
+       };
+     }
+
+     if (timeWarning || sessionsWarning) {
+       let reason = timeWarning ? `متبقي ${daysLeft} يوم` : `متبقي ${sessionsLeft} حصة`;
+       const pkgLabel = pkgList.length > 1 ? ` (${pkgName}: ${reason})` : ` (${reason})`;
+       worstRes = {
+         status: "warning",
+         text: "على وشك الانتهاء" + pkgLabel,
+         badgeClass: "status-badge-warning",
+         isExpiring: true,
+         isExpired: false,
+         pkgName: pkgName,
+         daysLeft,
+         sessionsLeft
+       };
      }
    }
 
-   if (timeExpired || sessionsExpired) {
-     let reason = timeExpired ? "انتهت المدة" : "انتهت الحصص";
-     return {
-       status: "expired",
-       text: "الباقة منتهية (" + reason + ")",
-       badgeClass: "status-badge-danger",
-       isExpiring: false,
-       isExpired: true,
-       daysLeft,
-       sessionsLeft
-     };
-   }
-
-   if (timeWarning || sessionsWarning) {
-     let reason = timeWarning ? `متبقي ${daysLeft} يوم` : `متبقي ${sessionsLeft} حصة`;
-     return {
-       status: "warning",
-       text: "على وشك الانتهاء (" + reason + ")",
-       badgeClass: "status-badge-warning",
-       isExpiring: true,
-       isExpired: false,
-       daysLeft,
-       sessionsLeft
-     };
-   }
+   if (worstRes) return worstRes;
 
    return {
      status: "valid",
      text: "نشطة",
      badgeClass: "status-badge-success",
      isExpiring: false,
-     isExpired: false,
-     daysLeft,
-     sessionsLeft
+     isExpired: false
    };
  };
 
@@ -4692,13 +4727,18 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
 
      let totalPaid = s.paid || 0;
      let totalDisc = toInt(s.discount) || 0;
+     if (s.packageDiscounts && typeof s.packageDiscounts === 'object') {
+       let pkgDiscSum = 0;
+       Object.values(s.packageDiscounts).forEach(v => pkgDiscSum += toInt(v));
+       if (pkgDiscSum > 0) totalDisc = pkgDiscSum;
+     }
      let netReq = Math.max(0, totalReq - totalDisc);
      let remainAmt = Math.max(0, netReq - totalPaid);
 
      if(fStatus !== "all") {
-        if(fStatus === "paid" && (remainAmt > 0 || totalReq === 0)) isValid = false;
+        if(fStatus === "paid" && (remainAmt > 0 || (totalPaid === 0 && (totalReq === 0 || totalDisc < totalReq)))) isValid = false;
         if(fStatus === "partial" && (remainAmt === 0 || totalPaid === 0 || totalReq === 0)) isValid = false;
-        if(fStatus === "unpaid" && (totalPaid > 0 || totalReq === 0)) isValid = false;
+        if(fStatus === "unpaid" && (totalPaid > 0 || totalReq === 0 || remainAmt === 0)) isValid = false;
         if(fStatus === "debt" && (remainAmt === 0 || totalReq === 0)) isValid = false;
      }
  
@@ -4818,12 +4858,17 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
 
      let totalPaid = s.paid || 0;
      let totalDisc = toInt(s.discount) || 0;
+     if (s.packageDiscounts && typeof s.packageDiscounts === 'object') {
+       let pkgDiscSum = 0;
+       Object.values(s.packageDiscounts).forEach(v => pkgDiscSum += toInt(v));
+       if (pkgDiscSum > 0) totalDisc = pkgDiscSum;
+     }
      let netReq = Math.max(0, totalReq - totalDisc);
      let remainAmt = Math.max(0, netReq - totalPaid);
 
-     let percent = netReq > 0 ? Math.min((totalPaid / netReq) * 100, 100) : (totalPaid > 0 ? 100 : 0);
-     let pBarColor = (remainAmt === 0 && totalReq > 0) ? "var(--success)" : "var(--primary)";
-     let pBar = netReq > 0 ? `<div style="width:100%; background:var(--bg-inset); height:5px; border-radius:3px; margin-top:4px; overflow:hidden; border:1px solid var(--border);"><div style="width:${percent}%; height:100%; background:${pBarColor}; border-radius:3px;"></div></div>` : '';
+     let percent = netReq > 0 ? Math.min((totalPaid / netReq) * 100, 100) : ((totalPaid > 0 || (totalReq > 0 && totalDisc >= totalReq)) ? 100 : 0);
+     let pBarColor = (remainAmt === 0 && (netReq > 0 || totalReq > 0)) ? "var(--success)" : "var(--primary)";
+     let pBar = (netReq > 0 || (totalReq > 0 && totalDisc >= totalReq)) ? `<div style="width:100%; background:var(--bg-inset); height:5px; border-radius:3px; margin-top:4px; overflow:hidden; border:1px solid var(--border);"><div style="width:${percent}%; height:100%; background:${pBarColor}; border-radius:3px;"></div></div>` : '';
 
      const isAr = (currentLang === "ar");
      const currencySuffix = isAr ? " ج" : " EGP";
@@ -9860,6 +9905,11 @@ if (document.readyState === "loading") {
 
  let p = s.paid || 0;
  let disc = toInt(s.discount) || 0;
+ if (s.packageDiscounts && typeof s.packageDiscounts === 'object') {
+   let pkgDiscSum = 0;
+   Object.values(s.packageDiscounts).forEach(v => pkgDiscSum += toInt(v));
+   if (pkgDiscSum > 0) disc = pkgDiscSum;
+ }
  let netReq = Math.max(0, req - disc);
  let remain = Math.max(0, netReq - p);
 
@@ -9960,6 +10010,11 @@ if (document.readyState === "loading") {
 
  let p = s.paid || 0;
  let disc = toInt(s.discount) || 0;
+ if (s.packageDiscounts && typeof s.packageDiscounts === 'object') {
+   let pkgDiscSum = 0;
+   Object.values(s.packageDiscounts).forEach(v => pkgDiscSum += toInt(v));
+   if (pkgDiscSum > 0) disc = pkgDiscSum;
+ }
  let netReq = Math.max(0, req - disc);
  let remain = Math.max(0, netReq - p);
 
@@ -11464,7 +11519,7 @@ window.openSessionStudentModal = function(item) {
         let p = s.payments[j];
         if(p && p.date === today) {
           // استبعاد مدفوعات الحصص الفورية لتجنب التكرار الحسابي (تُحسب بالكامل ضمن طلاب الحصة)
-          if (p.sessionsCount !== undefined || (p.note && p.note.includes("حصة") && s.isSessionStudent) || (s.isSessionStudent && (!s.packages || s.packages.length === 0))) {
+          if (p.sessionsCount !== undefined || (p.note && p.note.includes("حصة") && s.isSessionStudent) || (s.isSessionStudent && (!s.packages || s.packages.length === 0)) || s.isSessionStudent || String(s.id).startsWith("ST-")) {
             continue;
           }
           let amt = toInt(p.amount) || 0;
@@ -11489,6 +11544,11 @@ window.openSessionStudentModal = function(item) {
           }
 
           let disc = toInt(s.discount) || 0;
+          if (s.packageDiscounts && typeof s.packageDiscounts === 'object') {
+            let pkgDiscSum = 0;
+            Object.values(s.packageDiscounts).forEach(v => pkgDiscSum += toInt(v));
+            if (pkgDiscSum > 0) disc = pkgDiscSum;
+          }
           let netReq = Math.max(0, req - disc);
           let remain = Math.max(0, netReq - (toInt(s.paid) || 0));
 
@@ -12410,7 +12470,13 @@ window.openSessionStudentModal = function(item) {
 
         let paid = toInt(st.paid) || 0;
         let discount = toInt(st.discount) || 0;
-        let remain = Math.max(0, req - paid - discount);
+        if (st.packageDiscounts && typeof st.packageDiscounts === 'object') {
+          let pkgDiscSum = 0;
+          Object.values(st.packageDiscounts).forEach(v => pkgDiscSum += toInt(v));
+          if (pkgDiscSum > 0) discount = pkgDiscSum;
+        }
+        let netReq = Math.max(0, req - discount);
+        let remain = Math.max(0, netReq - paid);
         let descText = stClassName ? (isAr ? ("باقة: " + stClassName) : ("Pkg: " + stClassName)) : (isAr ? "بدون باقة" : "Without Package");
         let bClass = "badge-normal";
 
