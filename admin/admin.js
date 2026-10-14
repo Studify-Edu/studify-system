@@ -2528,8 +2528,59 @@ export async function confirmRejectDailyShift() {
 }
 window.confirmRejectDailyShift = confirmRejectDailyShift;
 
+// ========================================================
+// 4. DAILY REPORT & DETAILED BREAKDOWNS (UPGRADED)
+// ========================================================
+window.currentDailySubtab = 'subjects';
+window.dailyCachedPayments = [];
+window.dailyCachedAttended = [];
+window.dailyCachedAbsent = [];
+
+if (typeof window.formatEgyptWaPhone !== 'function') {
+  window.formatEgyptWaPhone = function(rawPhone) {
+    if (!rawPhone) return "";
+    let p = String(rawPhone).replace(/[^\d]/g, "").trim();
+    if (p.startsWith("0020")) p = p.substring(4);
+    else if (p.startsWith("+20")) p = p.substring(3);
+    else if (p.startsWith("20")) p = p.substring(2);
+    else if (p.startsWith("0")) p = p.substring(1);
+    return "20" + p;
+  };
+}
+
+window.switchDailyReportSubtab = function(tabName) {
+  window.currentDailySubtab = tabName || 'subjects';
+  
+  document.querySelectorAll('.daily-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.dailyTab === window.currentDailySubtab);
+  });
+
+  const panes = {
+    subjects: 'dailySubtabSubjects',
+    revenue: 'dailySubtabRevenue',
+    expenses: 'dailySubtabExpenses',
+    attended: 'dailySubtabAttended',
+    absent: 'dailySubtabAbsent'
+  };
+
+  Object.keys(panes).forEach(k => {
+    const el = document.getElementById(panes[k]);
+    if (el) el.classList.toggle('hidden', k !== window.currentDailySubtab);
+  });
+};
+
+window.refreshCurrentDailyReport = function() {
+  const dInp = document.getElementById("adminDailyDateInput");
+  const d = (dInp && dInp.value) ? dInp.value : (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+  window.loadDailyReport(d);
+};
+
 export function loadDailyReport(dateStr) {
   const d = dateStr || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+  window._currentDailyReportDate = d;
+
+  const dateInp = document.getElementById("adminDailyDateInput");
+  if (dateInp && dateInp.value !== d) dateInp.value = d;
   
   if (typeof window.renderDailyApprovalWidget === 'function') {
     window.renderDailyApprovalWidget(d);
@@ -2538,12 +2589,14 @@ export function loadDailyReport(dateStr) {
   const ids = (attByDate && attByDate[d]) ? attByDate[d] : [];
   const sessList = (sessionStudentsByDate && sessionStudentsByDate[d]) ? sessionStudentsByDate[d] : [];
   const rev = (revenueByDate && revenueByDate[d]) ? revenueByDate[d] : 0;
+  
   let expArr = [];
   if (Array.isArray(expensesByDate)) {
     expArr = expensesByDate.filter(e => e && e.date === d);
   } else if (expensesByDate && typeof expensesByDate === 'object') {
     expArr = Array.isArray(expensesByDate[d]) ? expensesByDate[d] : [];
   }
+  
   const sessCount = (typeof window.getAdminUniqueSessionStudentsCount === 'function') ? window.getAdminUniqueSessionStudentsCount() : 0;
   const totalSt = Object.keys(students || {}).length + sessCount;
   let totalExp = 0;
@@ -2564,90 +2617,439 @@ export function loadDailyReport(dateStr) {
   if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - totalAttended);
   if (statExp) statExp.textContent = totalExp.toLocaleString() + currencySuffix;
 
+  // Subtab badges
+  const bRev = document.getElementById("dailyRevBadge");
+  const bExp = document.getElementById("dailyExpBadge");
+  const bAtt = document.getElementById("dailyAttendedBadge");
+  const bAbs = document.getElementById("dailyAbsentBadge");
+
+  if (bRev) bRev.textContent = rev.toLocaleString() + currencySuffix;
+  if (bExp) bExp.textContent = totalExp.toLocaleString() + currencySuffix;
+  if (bAtt) bAtt.textContent = totalAttended;
+  if (bAbs) bAbs.textContent = Math.max(0, totalSt - totalAttended);
+
   const statDailyNew = document.getElementById("statDailyNewStudents");
   if (statDailyNew) {
-    const targetDate = d || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
     let todayNewCount = 0;
     Object.values(students || {}).forEach(st => {
       if (!st || !st.name) return;
       const jDate = st.joinedDate || (st.createdAt ? st.createdAt.split('T')[0] : '');
-      if (jDate === targetDate) {
-        todayNewCount++;
-      }
+      if (jDate === d) todayNewCount++;
     });
     statDailyNew.textContent = todayNewCount;
   }
 
-  // Render Groups Breakdown
-  const body = document.getElementById("dailyGroupsBreakdown");
-  if (body) {
-    if (ids.length === 0 && sessList.length === 0 && expArr.length === 0) {
-      body.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 24px;">${isAr ? `لا توجد بيانات مسجلة لهذا التاريخ (${d})` : `No data recorded for this date (${d})`}</div>`;
+  // 1. GATHER ALL PAYMENTS COLLECTED TODAY
+  const defaultSubject = (typeof evalData !== 'undefined' && evalData.currentSubject) ? evalData.currentSubject.trim() : (isAr ? "حصة عامة" : "General Session");
+  const todayPayments = [];
+  const subjectRevenueMap = {};
+
+  // Payments from regular students
+  Object.values(students || {}).forEach(st => {
+    if (!st || !Array.isArray(st.payments)) return;
+    st.payments.forEach(p => {
+      if (p && p.date === d && Number(p.amount) > 0) {
+        let pkg = (p.pkgName && p.pkgName !== 'بدون باقة') 
+          ? p.pkgName.trim() 
+          : ((st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
+              ? st.className.trim() 
+              : defaultSubject);
+        if (!pkg || pkg === "()" || pkg === "( )") pkg = defaultSubject;
+
+        const amt = Number(p.amount);
+        todayPayments.push({
+          id: st.id,
+          name: st.name,
+          className: pkg,
+          amount: amt,
+          method: p.method || 'cash',
+          type: 'package',
+          timestamp: p.timestamp || ''
+        });
+        subjectRevenueMap[pkg] = (subjectRevenueMap[pkg] || 0) + amt;
+      }
+    });
+  });
+
+  // Payments from session students
+  sessList.forEach(sSt => {
+    const amt = Number(sSt.amount) || 0;
+    let cls = (sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : defaultSubject;
+    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+
+    if (amt > 0) {
+      todayPayments.push({
+        id: sSt.id,
+        name: sSt.name,
+        className: cls,
+        amount: amt,
+        method: sSt.method || 'cash',
+        type: 'session',
+        timestamp: sSt.timestamp || ''
+      });
+      subjectRevenueMap[cls] = (subjectRevenueMap[cls] || 0) + amt;
+    }
+  });
+
+  window.dailyCachedPayments = todayPayments;
+
+  // 2. BUILD ACTIVE SUBJECTS BREAKDOWN (ONLY subjects with attendees today)
+  const groups = {};
+  ids.forEach(id => {
+    const st = (students && students[id]) ? students[id] : null;
+    let cls = (st && st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة' && st.className !== 'No Package') 
+      ? st.className.trim() 
+      : ((st && Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : defaultSubject);
+    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+
+    if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
+    groups[cls].count++;
+  });
+
+  sessList.forEach(sSt => {
+    let cls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : defaultSubject;
+    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+
+    if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
+    groups[cls].count++;
+  });
+
+  // Assign actual collected revenue to each subject
+  for (const g in groups) {
+    groups[g].revenue = subjectRevenueMap[g] || 0;
+  }
+
+  // Render Subtab 1: Subjects
+  const groupsBody = document.getElementById("dailyGroupsBreakdown");
+  if (groupsBody) {
+    const groupKeys = Object.keys(groups);
+    if (groupKeys.length === 0) {
+      groupsBody.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 32px;"><i class="fa-solid fa-calendar-xmark" style="font-size:2rem; margin-bottom:10px; opacity:0.5; display:block;"></i>' + (isAr ? ('لا توجد مواد أو حضور مسجل لهذا التاريخ (' + d + ')') : ('No subjects or attendance recorded for (' + d + ')')) + '</div>';
     } else {
-      let groups = {};
-      ids.forEach(id => {
-        const st = (students && students[id]) ? students[id] : null;
-        const cls = (st && st.className && st.className !== 'عام' && st.className !== 'General') ? st.className.trim() : (isAr ? "بدون باقة" : "No Package");
-        if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
-        groups[cls].count++;
-        if (st && st.paid !== undefined) {
-          const p = (packages && packages[cls]) ? packages[cls] : null;
-          let req = p ? p.price : 0;
-          if (req > 0) groups[cls].revenue += req;
-        }
-      });
-
-      // Add session students to groups breakdown
-      sessList.forEach(sSt => {
-        const defaultSessLabel = "";
-        const rawCls = (sSt && sSt.className) ? sSt.className.trim() : defaultSessLabel;
-        const grpKey = rawCls.includes("حصة") || rawCls.includes("Session") ? rawCls : `${rawCls} (${defaultSessLabel})`;
-        if (!groups[grpKey]) groups[grpKey] = { count: 0, revenue: 0 };
-        groups[grpKey].count++;
-        groups[grpKey].revenue += (Number(sSt.amount) || 0);
-      });
-
-      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">';
-      for (const g in groups) {
+      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">';
+      groupKeys.forEach(g => {
+        const revVal = groups[g].revenue;
+        const revBadgeStyle = revVal > 0 
+          ? 'background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);'
+          : 'background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border);';
+        
         html += `
-          <div style="background: var(--bg-inset); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div class="daily-subject-card">
             <div>
-              <span style="font-weight: 700; color: var(--primary); font-size: 1.05em;">${g}</span>
-              <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 2px;">${isAr ? 'إيراد تقديري:' : 'Estimated Revenue:'} ${groups[g].revenue} ${currencySuffix}</div>
+              <div class="daily-subject-title">
+                <i class="fa-solid fa-book-bookmark"></i> ${g}
+              </div>
+              <div style="margin-top: 6px;">
+                <span class="daily-subject-rev-badge" style="${revBadgeStyle}">
+                  <i class="fa-solid fa-money-bill-wave"></i> ${isAr ? 'دخل اليوم:' : "Today's Income:"} ${revVal.toLocaleString()} ${currencySuffix}
+                </span>
+              </div>
             </div>
-            <span style="background: var(--gradient-subtle); color: var(--primary); font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.9em;">
-              ${groups[g].count} ${isAr ? 'طالب' : 'Students'}
+            <span style="background: var(--gradient-subtle); color: var(--primary); font-weight: 800; padding: 6px 14px; border-radius: 20px; font-size: 0.9em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-user-check"></i> ${groups[g].count} ${isAr ? 'طالب' : 'Students'}
             </span>
           </div>
         `;
-      }
+      });
       html += '</div>';
-      body.innerHTML = html;
+      groupsBody.innerHTML = html;
     }
   }
 
-  // Render Expenses Breakdown
-  const expBody = document.getElementById("dailyExpensesBreakdown");
-  if (expBody) {
-    if (expArr.length > 0) {
-      let expHtml = `<h4 style="color: var(--danger); font-size: 0.95em; margin-bottom: 10px; font-weight: 700;"><i class="fa-solid fa-receipt"></i> ${isAr ? 'مصروفات اليوم:' : "Today's Expenses:"}</h4>`;
-      expHtml += '<div style="display: flex; flex-direction: column; gap: 8px;">';
-      expArr.forEach(e => {
-        expHtml += `
-          <div style="display:flex; justify-content:space-between; align-items:center; background: var(--bg-danger-subtle); border: 1px solid rgba(239,68,68,0.2); padding: 8px 14px; border-radius: 8px; font-size: 0.88em;">
-            <span>${e.reason || (isAr ? "مصروف" : "Expense")}</span>
-            <b style="color: var(--danger); font-size: 1.05em;">${e.amount} ${currencySuffix}</b>
-          </div>
-        `;
-      });
-      expHtml += '</div>';
-      expBody.innerHTML = expHtml;
-    } else {
-      expBody.innerHTML = '';
-    }
-  }
+  // Render Subtab 2: Revenue Table
+  window.renderDailyRevenueTable(todayPayments);
+
+  // Render Subtab 3: Expenses Table
+  window.renderDailyExpensesTable(expArr);
+
+  // 3. BUILD ATTENDED STUDENTS LIST
+  const attendedList = [];
+  ids.forEach(id => {
+    const st = (students && students[id]) ? students[id] : null;
+    if (!st) return;
+    let cls = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
+      ? st.className.trim() 
+      : ((Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : defaultSubject);
+    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+
+    attendedList.push({
+      id: st.id,
+      name: st.name || (isAr ? "طالب بدون اسم" : "Unnamed"),
+      className: cls,
+      paidStatus: st.paidStatus || (st.paid > 0 ? (isAr ? 'مسدد' : 'Paid') : (isAr ? 'غير مسدد' : 'Unpaid')),
+      phone: st.phone || '',
+      type: 'regular'
+    });
+  });
+
+  sessList.forEach(sSt => {
+    let cls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : defaultSubject;
+    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+
+    attendedList.push({
+      id: sSt.id,
+      name: sSt.name || (isAr ? "طالب حصة" : "Session Student"),
+      className: cls,
+      paidStatus: isAr ? `حصة (${sSt.amount || 0} ج)` : `Session (${sSt.amount || 0} EGP)`,
+      phone: sSt.phone || '',
+      type: 'session'
+    });
+  });
+
+  window.dailyCachedAttended = attendedList;
+  window.populateDailyAttendedClassFilter(attendedList);
+  window.renderDailyAttendedTable(attendedList);
+
+  // 4. BUILD ABSENT STUDENTS LIST (Registered students who did not attend today)
+  const attendedIdsSet = new Set([...ids.map(String), ...sessList.map(s => String(s.id))]);
+  const absentList = [];
+
+  Object.values(students || {}).forEach(st => {
+    if (!st || !st.name) return;
+    if (String(st.id).startsWith("ST-") || st.isSessionStudent) return; // Ignore session ghost students
+    if (attendedIdsSet.has(String(st.id))) return; // Attended today
+
+    let cls = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
+      ? st.className.trim() 
+      : ((Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : defaultSubject);
+    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+
+    absentList.push({
+      id: st.id,
+      name: st.name,
+      className: cls,
+      phone: st.phone || '',
+      parentPhone: st.parentPhone || st.phone || ''
+    });
+  });
+
+  window.dailyCachedAbsent = absentList;
+  window.populateDailyAbsentClassFilter(absentList);
+  window.renderDailyAbsentTable(absentList);
+
+  // Maintain active subtab
+  window.switchDailyReportSubtab(window.currentDailySubtab || 'subjects');
 }
 window.loadDailyReport = loadDailyReport;
+
+// ==========================================
+// RENDERERS FOR DAILY SUBTABS
+// ==========================================
+window.renderDailyRevenueTable = function(payments) {
+  const tbody = document.getElementById("dailyRevenueTableBody");
+  if (!tbody) return;
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
+
+  const list = payments || window.dailyCachedPayments || [];
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:28px; color:var(--text-secondary);"><i class="fa-solid fa-money-bill-wave" style="font-size:1.8rem; margin-bottom:8px; opacity:0.4; display:block;"></i>${isAr ? "لا توجد تحصيلات مسجلة لهذا اليوم" : "No revenue recorded for this date"}</td></tr>`;
+    return;
+  }
+
+  const methodBadges = {
+    cash: { label: isAr ? "كاش" : "Cash", bg: "#dcfce7", color: "#15803d", icon: "fa-money-bill-wave" },
+    wallet: { label: isAr ? "فودافون كاش" : "Vodafone Cash", bg: "#f3e8ff", color: "#7c3aed", icon: "fa-wallet" },
+    instapay: { label: "InstaPay", bg: "#e0f2fe", color: "#0284c7", icon: "fa-mobile-screen-button" }
+  };
+
+  let html = "";
+  list.forEach(p => {
+    const m = methodBadges[String(p.method || 'cash').toLowerCase()] || methodBadges.cash;
+    const typeBadge = p.type === 'session'
+      ? `<span class="badge" style="background:#fef3c7; color:#b45309; font-weight:700; font-size:0.82em; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-ticket"></i> ${isAr ? 'طالب حصة' : 'Session'}</span>`
+      : `<span class="badge" style="background:var(--bg-surface); color:var(--primary); font-weight:700; font-size:0.82em; padding:3px 8px; border-radius:6px; border:1px solid var(--border);"><i class="fa-solid fa-layer-group"></i> ${isAr ? 'اشتراك باقة' : 'Package'}</span>`;
+
+    html += `
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:10px 12px;"><span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:800; font-size:0.88em; padding:3px 8px; border-radius:6px;">${p.id}</span></td>
+        <td style="padding:10px 12px; font-weight:800; color:var(--text-primary);">${p.name}</td>
+        <td style="padding:10px 12px;"><span class="badge" style="background:var(--bg-inset); color:var(--text-primary); border:1px solid var(--border); padding:3px 8px; border-radius:6px; font-size:0.85em;">${p.className}</span></td>
+        <td style="padding:10px 12px; text-align:center; font-weight:900; color:var(--success); font-size:1.05em;">${p.amount.toLocaleString()} ${currencySuffix}</td>
+        <td style="padding:10px 12px; text-align:center;">
+          <span class="badge" style="background:${m.bg}; color:${m.color}; font-weight:700; font-size:0.82em; padding:3px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:5px;">
+            <i class="fa-solid ${m.icon}"></i> ${m.label}
+          </span>
+        </td>
+        <td style="padding:10px 12px; text-align:center;">${typeBadge}</td>
+        <td style="padding:10px 12px; text-align:center; font-size:0.85em; color:var(--text-secondary); font-family:monospace;">${p.timestamp || '—'}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+};
+
+window.filterDailyRevenueTable = function() {
+  const query = (document.getElementById("dailyRevSearchInput")?.value || "").toLowerCase().trim();
+  const list = window.dailyCachedPayments || [];
+  if (!query) {
+    window.renderDailyRevenueTable(list);
+    return;
+  }
+  const filtered = list.filter(p => 
+    String(p.id).toLowerCase().includes(query) ||
+    String(p.name).toLowerCase().includes(query) ||
+    String(p.className).toLowerCase().includes(query)
+  );
+  window.renderDailyRevenueTable(filtered);
+};
+
+window.renderDailyExpensesTable = function(expenses) {
+  const tbody = document.getElementById("dailyExpensesTableBody");
+  if (!tbody) return;
+  const isAr = (currentLang === "ar");
+  const currencySuffix = isAr ? " ج" : " EGP";
+
+  const list = expenses || [];
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:28px; color:var(--text-secondary);"><i class="fa-solid fa-receipt" style="font-size:1.8rem; margin-bottom:8px; opacity:0.4; display:block;"></i>${isAr ? "لا توجد مصروفات مسجلة لهذا اليوم" : "No expenses recorded for this date"}</td></tr>`;
+    return;
+  }
+
+  let html = "";
+  list.forEach((e, idx) => {
+    html += `
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:10px 12px; font-weight:700; color:var(--text-secondary);">#${idx + 1}</td>
+        <td style="padding:10px 12px; font-weight:800; color:var(--text-primary);">${e.reason || (isAr ? 'مصروف سنتر' : 'Center Expense')}</td>
+        <td style="padding:10px 12px; text-align:center; font-weight:900; color:var(--danger); font-size:1.05em;">${Number(e.amount || 0).toLocaleString()} ${currencySuffix}</td>
+        <td style="padding:10px 12px; text-align:center;"><span class="badge" style="background:#fee2e2; color:#b91c1c; font-weight:700; padding:3px 8px; border-radius:6px; font-size:0.82em;">${e.method || (isAr ? 'كاش' : 'Cash')}</span></td>
+        <td style="padding:10px 12px; text-align:center; font-size:0.85em; color:var(--text-secondary); font-family:monospace;">${e.date || ''}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+};
+
+window.populateDailyAttendedClassFilter = function(list) {
+  const sel = document.getElementById("dailyAttendedClassFilter");
+  if (!sel) return;
+  const isAr = (currentLang === "ar");
+  const currentVal = sel.value;
+  const classes = [...new Set(list.map(s => s.className).filter(Boolean))];
+  
+  sel.innerHTML = `<option value="">${isAr ? "جميع المواد (" + list.length + ")" : "All Subjects (" + list.length + ")"}</option>`;
+  classes.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  if (currentVal && classes.includes(currentVal)) sel.value = currentVal;
+};
+
+window.renderDailyAttendedTable = function(list) {
+  const tbody = document.getElementById("dailyAttendedTableBody");
+  if (!tbody) return;
+  const isAr = (currentLang === "ar");
+
+  const items = list || window.dailyCachedAttended || [];
+  if (items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:28px; color:var(--text-secondary);"><i class="fa-solid fa-user-xmark" style="font-size:1.8rem; margin-bottom:8px; opacity:0.4; display:block;"></i>${isAr ? "لا يوجد حضور مسجل لهذا اليوم" : "No attendance recorded for this date"}</td></tr>`;
+    return;
+  }
+
+  let html = "";
+  items.forEach(st => {
+    const waPhone = window.formatEgyptWaPhone(st.phone);
+    const waBtn = waPhone 
+      ? `<button type="button" class="btn success smallBtn iconOnly" style="padding:5px 8px; border-radius:6px;" title="${isAr ? 'مراسلة واتساب' : 'WhatsApp'}" onclick="window.open('https://wa.me/${waPhone}', '_blank')"><i class="fa-brands fa-whatsapp"></i></button>`
+      : '<span style="color:var(--text-secondary); opacity:0.4;">—</span>';
+
+    html += `
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:10px 12px;"><span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:800; font-size:0.88em; padding:3px 8px; border-radius:6px;">${st.id}</span></td>
+        <td style="padding:10px 12px; font-weight:800; color:var(--text-primary);">${st.name}</td>
+        <td style="padding:10px 12px;"><span class="badge" style="background:var(--bg-inset); color:var(--text-primary); border:1px solid var(--border); padding:3px 8px; border-radius:6px; font-size:0.85em;">${st.className}</span></td>
+        <td style="padding:10px 12px; text-align:center;"><span class="badge" style="background:rgba(16, 185, 129, 0.12); color:#10b981; font-weight:700; padding:3px 8px; border-radius:6px; font-size:0.85em;">${st.paidStatus}</span></td>
+        <td style="padding:10px 12px; font-family:monospace; font-size:0.9em;">${st.phone || '—'}</td>
+        <td style="padding:10px 12px; text-align:center;">${waBtn}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+};
+
+window.filterDailyAttendedTable = function() {
+  const query = (document.getElementById("dailyAttendedSearchInput")?.value || "").toLowerCase().trim();
+  const clsFilter = document.getElementById("dailyAttendedClassFilter")?.value || "";
+  const list = window.dailyCachedAttended || [];
+
+  const filtered = list.filter(st => {
+    const matchQuery = !query || String(st.id).toLowerCase().includes(query) || String(st.name).toLowerCase().includes(query);
+    const matchCls = !clsFilter || st.className === clsFilter;
+    return matchQuery && matchCls;
+  });
+  window.renderDailyAttendedTable(filtered);
+};
+
+window.populateDailyAbsentClassFilter = function(list) {
+  const sel = document.getElementById("dailyAbsentClassFilter");
+  if (!sel) return;
+  const isAr = (currentLang === "ar");
+  const currentVal = sel.value;
+  const classes = [...new Set(list.map(s => s.className).filter(Boolean))];
+  
+  sel.innerHTML = `<option value="">${isAr ? "جميع المواد (" + list.length + ")" : "All Subjects (" + list.length + ")"}</option>`;
+  classes.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  if (currentVal && classes.includes(currentVal)) sel.value = currentVal;
+};
+
+window.renderDailyAbsentTable = function(list) {
+  const tbody = document.getElementById("dailyAbsentTableBody");
+  if (!tbody) return;
+  const isAr = (currentLang === "ar");
+  const curDate = window._currentDailyReportDate || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+
+  const items = list || window.dailyCachedAbsent || [];
+  if (items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:28px; color:var(--text-secondary);"><i class="fa-solid fa-circle-check" style="font-size:1.8rem; margin-bottom:8px; color:var(--success); display:block;"></i>${isAr ? "ممتاز! لا يوجد غياب مسجل لهذا التاريخ" : "Great! No absent students for this date"}</td></tr>`;
+    return;
+  }
+
+  let html = "";
+  items.forEach(st => {
+    const targetPhone = st.parentPhone || st.phone || '';
+    const waPhone = window.formatEgyptWaPhone(targetPhone);
+    const msgText = isAr
+      ? `السلام عليكم، نود إحاطتكم بغياب الطالب (${st.name}) كود (${st.id}) عن حضور مادة (${st.className}) بتاريخ (${curDate}). يرجى التواصل مع إدارة السنتر للمتابعة.`
+      : `Dear Parent, this is to inform you that student (${st.name}) (#${st.id}) was absent from (${st.className}) on (${curDate}). Please contact the center administration.`;
+
+    const waBtn = waPhone 
+      ? `<button type="button" class="btn success smallBtn" style="padding:4px 10px; font-weight:700; font-size:0.8em; border-radius:6px; display:inline-flex; align-items:center; gap:5px;" onclick="window.open('https://wa.me/${waPhone}?text=${encodeURIComponent(msgText)}', '_blank')"><i class="fa-brands fa-whatsapp"></i> ${isAr ? 'إرسال إنذار غياب' : 'Send Alert'}</button>`
+      : '<span style="color:var(--text-secondary); opacity:0.4;">—</span>';
+
+    html += `
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:10px 12px;"><span class="badge" style="background:#fee2e2; color:#b91c1c; font-weight:800; font-size:0.88em; padding:3px 8px; border-radius:6px;">${st.id}</span></td>
+        <td style="padding:10px 12px; font-weight:800; color:var(--text-primary);">${st.name}</td>
+        <td style="padding:10px 12px;"><span class="badge" style="background:var(--bg-inset); color:var(--text-primary); border:1px solid var(--border); padding:3px 8px; border-radius:6px; font-size:0.85em;">${st.className}</span></td>
+        <td style="padding:10px 12px; font-family:monospace; font-size:0.9em;">${st.phone || '—'}</td>
+        <td style="padding:10px 12px; font-family:monospace; font-size:0.9em; font-weight:700; color:var(--primary);">${st.parentPhone || '—'}</td>
+        <td style="padding:10px 12px; text-align:center;">${waBtn}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+};
+
+window.filterDailyAbsentTable = function() {
+  const query = (document.getElementById("dailyAbsentSearchInput")?.value || "").toLowerCase().trim();
+  const clsFilter = document.getElementById("dailyAbsentClassFilter")?.value || "";
+  const list = window.dailyCachedAbsent || [];
+
+  const filtered = list.filter(st => {
+    const matchQuery = !query || String(st.id).toLowerCase().includes(query) || String(st.name).toLowerCase().includes(query);
+    const matchCls = !clsFilter || st.className === clsFilter;
+    return matchQuery && matchCls;
+  });
+  window.renderDailyAbsentTable(filtered);
+};
 
 
 // ========================================================
