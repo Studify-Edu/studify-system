@@ -1091,6 +1091,8 @@ let currentFilteredList = [];
   "mark_attend_btn": { ar: "حضور", en: "Present" },
   "mark_absent_btn": { ar: "غياب", en: "Absent" },
   "quick_controls_title": { ar: "قائمة التحكم السريعة", en: "Quick Controls" },
+  "quick_fullscreen_toggle": { ar: "ملء الشاشة", en: "Fullscreen" },
+  "quick_fullscreen_exit": { ar: "الخروج من ملء الشاشة", en: "Exit Fullscreen" },
   "quick_theme_toggle": { ar: "تبديل المظهر (ليلي / نهاري)", en: "Switch Theme (Dark / Light)" },
   "quick_lang_toggle": { ar: "تبديل اللغة (Language)", en: "Switch Language (اللغة)" },
   "admin_portal_link": { ar: "لوحة الإدارة (Admin)", en: "Admin Dashboard" },
@@ -15548,23 +15550,17 @@ window.toggleAppFullscreen = function() {
 
 function updateFullscreenIcons() {
   const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-  const icon = document.getElementById("topbarFullscreenIcon");
   const quickIcon = document.getElementById("quickFullscreenIcon");
   const quickText = document.querySelector("#quickFullscreenBtn [data-i18n]");
   const isAr = (typeof currentLang !== "undefined" ? currentLang === "ar" : true);
 
-  if (icon) {
-    icon.className = isFs ? "fa-solid fa-compress" : "fa-solid fa-expand";
-    const btn = document.getElementById("topbarFullscreenToggle");
-    if (btn) btn.title = isFs ? (isAr ? "الخروج من ملء الشاشة" : "Exit Fullscreen") : (isAr ? "ملء الشاشة كبرنامج كامل" : "Fullscreen App Mode");
-  }
   if (quickIcon) {
     quickIcon.className = isFs ? "fa-solid fa-compress" : "fa-solid fa-expand";
   }
   if (quickText) {
     quickText.textContent = isFs 
       ? (isAr ? "الخروج من ملء الشاشة" : "Exit Fullscreen")
-      : (isAr ? "ملء الشاشة كبرنامج (إخفاء المتصفح)" : "Fullscreen App Mode");
+      : (isAr ? "ملء الشاشة" : "Fullscreen");
   }
 }
 
