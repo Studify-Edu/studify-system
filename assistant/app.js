@@ -8766,27 +8766,25 @@ window.deleteAssistant = async function(asstKey) {
  body.innerHTML = `<div class="mutedCenter">لا يوجد بيانات لهذا اليوم</div>`;
  return;
  }
- // Group by class
+ // Group by subject / class
  let groups = {};
  ids.forEach(id => {
  const st = students[id];
- const cls = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
- if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
- groups[cls].count++;
- if (st && st.paid !== undefined) {
- 
-    let req = 0;
-    if (cls && groupFees[cls] !== undefined) {
-       const pkg = groupFees[cls];
-       if (st && st.paymentPlan === "installments" && pkg.hasInstallments) {
-           req = toInt(pkg.installmentPrice) || 0;
-       } else {
-           req = toInt(pkg.price || pkg);
-       }
-    }
-
- if (req > 0) groups[cls].revenue += req;
+ let raw = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : "";
+ if (/^01[0-9]{9}$/.test(raw) || /^\d{10,11}$/.test(raw)) raw = "";
+ if (!raw && st && Array.isArray(st.packages) && st.packages.length > 0) {
+   const vPkg = st.packages.find(x => x && x !== 'بدون باقة' && !/^01[0-9]{9}$/.test(x));
+   if (vPkg) raw = vPkg.trim();
  }
+ const pkg = (typeof groupFees !== 'undefined' && groupFees && groupFees[raw]) || null;
+ const rawSubj = (pkg && pkg.subject && String(pkg.subject).trim() !== '') ? String(pkg.subject).trim() : raw;
+ const subs = splitSubjectNames(rawSubj);
+ const subList = subs.length > 0 ? subs : [raw || (currentLang === "ar" ? "عام" : "General")];
+
+ subList.forEach(sName => {
+   if (!groups[sName]) groups[sName] = { count: 0, revenue: 0, pkg: raw };
+   groups[sName].count++;
+ });
  });
  let html = "";
  for (let g in groups) {

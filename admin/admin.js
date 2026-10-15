@@ -2666,39 +2666,90 @@ export function loadDailyReport(dateStr) {
   // 1. GATHER ALL PAYMENTS COLLECTED TODAY & RESOLVE SUBJECTS
   const defaultSessionGeneral = isAr ? "طلاب الحصة (عام)" : "Session Students (General)";
 
-  // Helper to extract the actual subject and package tag
+  function splitSubjectNames(raw) {
+    if (!raw || typeof raw !== 'string') return [];
+    if (/[\/*,\n]|\s\+\s/.test(raw)) {
+      return raw.split(/[\/*,\n]|\s\+\s/).map(s => s.trim()).filter(Boolean);
+    }
+    return [raw.trim()];
+  }
+
+  // Helper to extract constituent subjects and package tag
   function resolveSubjectInfo(pkgOrClassName, isSession = false) {
     if (!pkgOrClassName || pkgOrClassName === 'عام' || pkgOrClassName === 'General' || pkgOrClassName === 'بدون باقة' || pkgOrClassName === 'No Package') {
-      return isSession 
-        ? { title: defaultSessionGeneral, pkgBadge: '', isSession: true }
-        : { title: (isAr ? "عام" : "General"), pkgBadge: '', isSession: false };
+      return [{
+        title: isSession ? defaultSessionGeneral : (isAr ? "عام" : "General"),
+        pkgBadge: '',
+        isSession: isSession,
+        bundleCount: 1
+      }];
     }
     const clean = String(pkgOrClassName).trim();
+    if (/^01[0-9]{9}$/.test(clean) || /^\d{10,11}$/.test(clean)) {
+      return [{
+        title: isSession ? defaultSessionGeneral : (isAr ? "عام" : "General"),
+        pkgBadge: '',
+        isSession: isSession,
+        bundleCount: 1
+      }];
+    }
+
     const pkg = (packages && packages[clean]) || (typeof window.getPkgDetails === 'function' ? window.getPkgDetails(clean) : null);
     const rawSubj = (pkg && pkg.subject && pkg.subject.trim() !== '') ? pkg.subject.trim() : '';
 
     if (isSession) {
       const subjectName = rawSubj || clean;
-      return {
+      const subs = splitSubjectNames(subjectName);
+      if (subs.length > 1) {
+        return subs.map(s => ({
+          title: isAr ? `طلاب الحصة - ${s}` : `Session - ${s}`,
+          pkgBadge: clean !== s ? clean : '',
+          isSession: true,
+          bundleCount: subs.length
+        }));
+      }
+      return [{
         title: isAr ? `طلاب الحصة - ${subjectName}` : `Session - ${subjectName}`,
         pkgBadge: '',
-        isSession: true
-      };
+        isSession: true,
+        bundleCount: 1
+      }];
     }
 
     if (rawSubj && rawSubj.toLowerCase() !== clean.toLowerCase()) {
-      return {
+      const subs = splitSubjectNames(rawSubj);
+      if (subs.length > 1) {
+        return subs.map(s => ({
+          title: s,
+          pkgBadge: clean,
+          isSession: false,
+          bundleCount: subs.length
+        }));
+      }
+      return [{
         title: rawSubj,
         pkgBadge: clean,
-        isSession: false
-      };
+        isSession: false,
+        bundleCount: 1
+      }];
     }
 
-    return {
+    const subs = splitSubjectNames(clean);
+    if (subs.length > 1) {
+      return subs.map(s => ({
+        title: s,
+        pkgBadge: '',
+        isSession: false,
+        bundleCount: subs.length
+      }));
+    }
+
+    return [{
       title: clean,
       pkgBadge: '',
-      isSession: false
-    };
+      isSession: false,
+      bundleCount: 1
+    }];
   }
 
   const todayPayments = [];
@@ -2711,24 +2762,33 @@ export function loadDailyReport(dateStr) {
       if (p && p.date === d && Number(p.amount) > 0) {
         let rawPkg = (p.pkgName && p.pkgName !== 'بدون باقة') 
           ? p.pkgName.trim() 
-          : ((st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
+          : ((st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة' && !/^01[0-9]{9}$/.test(st.className)) 
               ? st.className.trim() 
               : '');
         
-        const info = resolveSubjectInfo(rawPkg, false);
-        const cardKey = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
+        if (!rawPkg && Array.isArray(st.packages) && st.packages.length > 0) {
+          const vPkg = st.packages.find(x => x && x !== 'بدون باقة' && !/^01[0-9]{9}$/.test(x));
+          if (vPkg) rawPkg = vPkg.trim();
+        }
+
+        const subInfos = resolveSubjectInfo(rawPkg, false);
         const amt = Number(p.amount);
+        const splitAmt = Math.round(amt / subInfos.length);
 
         todayPayments.push({
           id: st.id,
           name: st.name,
-          className: info.pkgBadge ? `${info.title} (${info.pkgBadge})` : info.title,
+          className: subInfos.length > 1 ? `${subInfos[0].pkgBadge || rawPkg} (${subInfos.map(s => s.title).join(' / ')})` : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title),
           amount: amt,
           method: p.method || 'cash',
           type: 'package',
           timestamp: p.timestamp || ''
         });
-        subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + amt;
+
+        subInfos.forEach(info => {
+          const cardKey = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
+          subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + splitAmt;
+        });
       }
     });
   });
@@ -2737,20 +2797,24 @@ export function loadDailyReport(dateStr) {
   sessList.forEach(sSt => {
     const amt = Number(sSt.amount) || 0;
     let cls = (sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
-    const info = resolveSubjectInfo(cls, true);
-    const cardKey = `SESSION:::${info.title}`;
+    if (/^01[0-9]{9}$/.test(cls) || /^\d{10,11}$/.test(cls)) cls = '';
+    const subInfos = resolveSubjectInfo(cls, true);
+    const splitAmt = Math.round(amt / subInfos.length);
 
     if (amt > 0) {
       todayPayments.push({
         id: sSt.id,
         name: sSt.name || (isAr ? "طالب حصة" : "Session Student"),
-        className: info.title,
+        className: subInfos.map(s => s.title).join(' / '),
         amount: amt,
         method: sSt.method || 'cash',
         type: 'session',
         timestamp: sSt.timestamp || ''
       });
-      subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + amt;
+      subInfos.forEach(info => {
+        const cardKey = `SESSION:::${info.title}`;
+        subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + splitAmt;
+      });
     }
   });
 
@@ -2784,40 +2848,52 @@ export function loadDailyReport(dateStr) {
   const groups = {};
   ids.forEach(id => {
     const st = (students && students[id]) ? students[id] : null;
-    let cls = (st && st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة' && st.className !== 'No Package') 
-      ? st.className.trim() 
-      : ((st && Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : '');
-    
-    const info = resolveSubjectInfo(cls, false);
-    const key = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
-
-    if (!groups[key]) {
-      groups[key] = {
-        title: info.title,
-        pkgBadge: info.pkgBadge,
-        isSession: false,
-        count: 0,
-        revenue: 0
-      };
+    let cls = '';
+    if (st) {
+      let raw = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة' && st.className !== 'No Package') 
+        ? st.className.trim() 
+        : '';
+      if (/^01[0-9]{9}$/.test(raw) || /^\d{10,11}$/.test(raw)) raw = '';
+      if (!raw && Array.isArray(st.packages) && st.packages.length > 0) {
+        const vPkg = st.packages.find(x => x && x !== 'بدون باقة' && !/^01[0-9]{9}$/.test(x));
+        if (vPkg) raw = vPkg.trim();
+      }
+      cls = raw;
     }
-    groups[key].count++;
+    
+    const subInfos = resolveSubjectInfo(cls, false);
+    subInfos.forEach(info => {
+      const key = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
+      if (!groups[key]) {
+        groups[key] = {
+          title: info.title,
+          pkgBadge: info.pkgBadge,
+          isSession: false,
+          count: 0,
+          revenue: 0
+        };
+      }
+      groups[key].count++;
+    });
   });
 
   sessList.forEach(sSt => {
     let cls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
-    const info = resolveSubjectInfo(cls, true);
-    const key = `SESSION:::${info.title}`;
-
-    if (!groups[key]) {
-      groups[key] = {
-        title: info.title,
-        pkgBadge: '',
-        isSession: true,
-        count: 0,
-        revenue: 0
-      };
-    }
-    groups[key].count++;
+    if (/^01[0-9]{9}$/.test(cls) || /^\d{10,11}$/.test(cls)) cls = '';
+    const subInfos = resolveSubjectInfo(cls, true);
+    subInfos.forEach(info => {
+      const key = `SESSION:::${info.title}`;
+      if (!groups[key]) {
+        groups[key] = {
+          title: info.title,
+          pkgBadge: info.pkgBadge || '',
+          isSession: true,
+          count: 0,
+          revenue: 0
+        };
+      }
+      groups[key].count++;
+    });
   });
 
   // Assign actual collected revenue to each subject/card
@@ -2892,11 +2968,21 @@ export function loadDailyReport(dateStr) {
   ids.forEach(id => {
     const st = (students && students[id]) ? students[id] : null;
     if (!st) return;
-    let rawCls = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
+    let rawCls = '';
+    let raw = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
       ? st.className.trim() 
-      : ((Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : '');
-    const info = resolveSubjectInfo(rawCls, false);
-    const displayCls = info.pkgBadge ? `${info.title} (${info.pkgBadge})` : info.title;
+      : '';
+    if (/^01[0-9]{9}$/.test(raw) || /^\d{10,11}$/.test(raw)) raw = '';
+    if (!raw && Array.isArray(st.packages) && st.packages.length > 0) {
+      const vPkg = st.packages.find(x => x && x !== 'بدون باقة' && !/^01[0-9]{9}$/.test(x));
+      if (vPkg) raw = vPkg.trim();
+    }
+    rawCls = raw;
+
+    const subInfos = resolveSubjectInfo(rawCls, false);
+    const displayCls = subInfos.length > 1 
+      ? (subInfos[0].pkgBadge || rawCls)
+      : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title);
 
     attendedList.push({
       id: st.id,
@@ -2910,12 +2996,13 @@ export function loadDailyReport(dateStr) {
 
   sessList.forEach(sSt => {
     let rawCls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
-    const info = resolveSubjectInfo(rawCls, true);
+    if (/^01[0-9]{9}$/.test(rawCls) || /^\d{10,11}$/.test(rawCls)) rawCls = '';
+    const subInfos = resolveSubjectInfo(rawCls, true);
 
     attendedList.push({
       id: sSt.id,
       name: sSt.name || (isAr ? "طالب حصة" : "Session Student"),
-      className: info.title,
+      className: subInfos.map(s => s.title).join(' / '),
       paidStatus: isAr ? `حصة (${sSt.amount || 0} ج)` : `Session (${sSt.amount || 0} EGP)`,
       phone: sSt.phone || '',
       type: 'session'
@@ -2935,11 +3022,19 @@ export function loadDailyReport(dateStr) {
     if (String(st.id).startsWith("ST-") || st.isSessionStudent) return; // Ignore session ghost students
     if (attendedIdsSet.has(String(st.id))) return; // Attended today
 
-    let rawCls = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
+    let raw = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
       ? st.className.trim() 
-      : ((Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : '');
-    const info = resolveSubjectInfo(rawCls, false);
-    const displayCls = info.pkgBadge ? `${info.title} (${info.pkgBadge})` : info.title;
+      : '';
+    if (/^01[0-9]{9}$/.test(raw) || /^\d{10,11}$/.test(raw)) raw = '';
+    if (!raw && Array.isArray(st.packages) && st.packages.length > 0) {
+      const vPkg = st.packages.find(x => x && x !== 'بدون باقة' && !/^01[0-9]{9}$/.test(x));
+      if (vPkg) raw = vPkg.trim();
+    }
+
+    const subInfos = resolveSubjectInfo(raw, false);
+    const displayCls = subInfos.length > 1 
+      ? (subInfos[0].pkgBadge || raw) 
+      : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title);
 
     absentList.push({
       id: st.id,
