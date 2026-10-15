@@ -15158,7 +15158,7 @@ window.openStudentContractModal = function() {
   const isFullyPaid = (totalRequiredPrice > 0 && actualPaid >= totalRequiredPrice);
   const downPayment = actualPaid;
   const remainPayment = actualRemain;
-  const packagesListText = enrolledPkgs.length > 0 ? enrolledPkgs.join(" + ") : (st.className || "حصة عامة");
+  const packagesListText = enrolledPkgs.length > 0 ? enrolledPkgs.join(" + ") : (st.className || (st.isSessionStudent ? "طالب حصة" : "بدون باقة"));
 
   const contractHtml = `
     <div class="contract-single-page" style="border: 2px solid #0b192c; padding: 12px 16px; border-radius: 4px; position: relative; background: #ffffff; box-sizing: border-box; font-family: 'Cairo', sans-serif; color: #0f172a;">

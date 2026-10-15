@@ -2663,8 +2663,44 @@ export function loadDailyReport(dateStr) {
     statDailyNew.textContent = todayNewCount;
   }
 
-  // 1. GATHER ALL PAYMENTS COLLECTED TODAY
-  const defaultSubject = (typeof evalData !== 'undefined' && evalData.currentSubject) ? evalData.currentSubject.trim() : (isAr ? "حصة عامة" : "General Session");
+  // 1. GATHER ALL PAYMENTS COLLECTED TODAY & RESOLVE SUBJECTS
+  const defaultSessionGeneral = isAr ? "طلاب الحصة (عام)" : "Session Students (General)";
+
+  // Helper to extract the actual subject and package tag
+  function resolveSubjectInfo(pkgOrClassName, isSession = false) {
+    if (!pkgOrClassName || pkgOrClassName === 'عام' || pkgOrClassName === 'General' || pkgOrClassName === 'بدون باقة' || pkgOrClassName === 'No Package') {
+      return isSession 
+        ? { title: defaultSessionGeneral, pkgBadge: '', isSession: true }
+        : { title: (isAr ? "عام" : "General"), pkgBadge: '', isSession: false };
+    }
+    const clean = String(pkgOrClassName).trim();
+    const pkg = (packages && packages[clean]) || (typeof window.getPkgDetails === 'function' ? window.getPkgDetails(clean) : null);
+    const rawSubj = (pkg && pkg.subject && pkg.subject.trim() !== '') ? pkg.subject.trim() : '';
+
+    if (isSession) {
+      const subjectName = rawSubj || clean;
+      return {
+        title: isAr ? `طلاب الحصة - ${subjectName}` : `Session - ${subjectName}`,
+        pkgBadge: '',
+        isSession: true
+      };
+    }
+
+    if (rawSubj && rawSubj.toLowerCase() !== clean.toLowerCase()) {
+      return {
+        title: rawSubj,
+        pkgBadge: clean,
+        isSession: false
+      };
+    }
+
+    return {
+      title: clean,
+      pkgBadge: '',
+      isSession: false
+    };
+  }
+
   const todayPayments = [];
   const subjectRevenueMap = {};
 
@@ -2673,24 +2709,26 @@ export function loadDailyReport(dateStr) {
     if (!st || !Array.isArray(st.payments)) return;
     st.payments.forEach(p => {
       if (p && p.date === d && Number(p.amount) > 0) {
-        let pkg = (p.pkgName && p.pkgName !== 'بدون باقة') 
+        let rawPkg = (p.pkgName && p.pkgName !== 'بدون باقة') 
           ? p.pkgName.trim() 
           : ((st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
               ? st.className.trim() 
-              : defaultSubject);
-        if (!pkg || pkg === "()" || pkg === "( )") pkg = defaultSubject;
-
+              : '');
+        
+        const info = resolveSubjectInfo(rawPkg, false);
+        const cardKey = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
         const amt = Number(p.amount);
+
         todayPayments.push({
           id: st.id,
           name: st.name,
-          className: pkg,
+          className: info.pkgBadge ? `${info.title} (${info.pkgBadge})` : info.title,
           amount: amt,
           method: p.method || 'cash',
           type: 'package',
           timestamp: p.timestamp || ''
         });
-        subjectRevenueMap[pkg] = (subjectRevenueMap[pkg] || 0) + amt;
+        subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + amt;
       }
     });
   });
@@ -2698,20 +2736,21 @@ export function loadDailyReport(dateStr) {
   // Payments from session students
   sessList.forEach(sSt => {
     const amt = Number(sSt.amount) || 0;
-    let cls = (sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : defaultSubject;
-    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+    let cls = (sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
+    const info = resolveSubjectInfo(cls, true);
+    const cardKey = `SESSION:::${info.title}`;
 
     if (amt > 0) {
       todayPayments.push({
         id: sSt.id,
-        name: sSt.name,
-        className: cls,
+        name: sSt.name || (isAr ? "طالب حصة" : "Session Student"),
+        className: info.title,
         amount: amt,
         method: sSt.method || 'cash',
         type: 'session',
         timestamp: sSt.timestamp || ''
       });
-      subjectRevenueMap[cls] = (subjectRevenueMap[cls] || 0) + amt;
+      subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + amt;
     }
   });
 
@@ -2733,8 +2772,8 @@ export function loadDailyReport(dateStr) {
           type: 'booklet',
           timestamp: s.timestamp || s.time || ''
         });
-        const bkSubject = isAr ? "مبيعات مذكرات" : "Booklet Sales";
-        subjectRevenueMap[bkSubject] = (subjectRevenueMap[bkSubject] || 0) + bAmt;
+        const bkKey = isAr ? "مبيعات مذكرات" : "Booklet Sales";
+        subjectRevenueMap[bkKey] = (subjectRevenueMap[bkKey] || 0) + bAmt;
       });
     });
   }
@@ -2747,24 +2786,43 @@ export function loadDailyReport(dateStr) {
     const st = (students && students[id]) ? students[id] : null;
     let cls = (st && st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة' && st.className !== 'No Package') 
       ? st.className.trim() 
-      : ((st && Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : defaultSubject);
-    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+      : ((st && Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : '');
+    
+    const info = resolveSubjectInfo(cls, false);
+    const key = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
 
-    if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
-    groups[cls].count++;
+    if (!groups[key]) {
+      groups[key] = {
+        title: info.title,
+        pkgBadge: info.pkgBadge,
+        isSession: false,
+        count: 0,
+        revenue: 0
+      };
+    }
+    groups[key].count++;
   });
 
   sessList.forEach(sSt => {
-    let cls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : defaultSubject;
-    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+    let cls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
+    const info = resolveSubjectInfo(cls, true);
+    const key = `SESSION:::${info.title}`;
 
-    if (!groups[cls]) groups[cls] = { count: 0, revenue: 0 };
-    groups[cls].count++;
+    if (!groups[key]) {
+      groups[key] = {
+        title: info.title,
+        pkgBadge: '',
+        isSession: true,
+        count: 0,
+        revenue: 0
+      };
+    }
+    groups[key].count++;
   });
 
-  // Assign actual collected revenue to each subject
-  for (const g in groups) {
-    groups[g].revenue = subjectRevenueMap[g] || 0;
+  // Assign actual collected revenue to each subject/card
+  for (const k in groups) {
+    groups[k].revenue = subjectRevenueMap[k] || 0;
   }
 
   // Render Subtab 1: Subjects
@@ -2775,26 +2833,45 @@ export function loadDailyReport(dateStr) {
       groupsBody.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 32px;"><i class="fa-solid fa-calendar-xmark" style="font-size:2rem; margin-bottom:10px; opacity:0.5; display:block;"></i>' + (isAr ? ('لا توجد مواد أو حضور مسجل لهذا التاريخ (' + d + ')') : ('No subjects or attendance recorded for (' + d + ')')) + '</div>';
     } else {
       let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">';
-      groupKeys.forEach(g => {
-        const revVal = groups[g].revenue;
+      groupKeys.forEach(k => {
+        const item = groups[k];
+        const revVal = item.revenue;
         const revBadgeStyle = revVal > 0 
           ? 'background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);'
           : 'background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border);';
         
+        const isSess = item.isSession;
+        const cardBorder = isSess ? 'border-inline-start: 4px solid #8b5cf6;' : '';
+        const iconClass = isSess ? 'fa-ticket' : 'fa-book-bookmark';
+        const iconColor = isSess ? '#8b5cf6' : 'var(--primary)';
+        const countBadgeBg = isSess ? 'rgba(139, 92, 246, 0.12)' : 'var(--gradient-subtle)';
+        const countBadgeColor = isSess ? '#8b5cf6' : 'var(--primary)';
+
+        const pkgTagHtml = item.pkgBadge 
+          ? `<span class="badge" style="background: var(--bg-inset); color: var(--text-secondary); border: 1px solid var(--border); font-size: 0.76em; padding: 2px 7px; border-radius: 6px;" title="${isAr ? 'الباقة التابعة لها' : 'Package'}"><i class="fa-solid fa-box-archive" style="font-size: 0.82em; margin-inline-end: 3px;"></i>${item.pkgBadge}</span>`
+          : '';
+
+        const sessTagHtml = isSess
+          ? `<span class="badge" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6; font-size: 0.76em; padding: 2px 7px; border-radius: 6px;"><i class="fa-solid fa-ticket" style="font-size: 0.82em; margin-inline-end: 3px;"></i>${isAr ? "طلاب الحصة" : "Session"}</span>`
+          : '';
+
         html += `
-          <div class="daily-subject-card">
-            <div>
-              <div class="daily-subject-title">
-                <i class="fa-solid fa-book-bookmark"></i> ${g}
+          <div class="daily-subject-card" style="${cardBorder}">
+            <div style="flex: 1; min-width: 0;">
+              <div class="daily-subject-title" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <i class="fa-solid ${iconClass}" style="color: ${iconColor};"></i>
+                <span style="font-weight: 800; font-size: 1.05em; color: var(--text);">${item.title}</span>
+                ${pkgTagHtml}
+                ${sessTagHtml}
               </div>
-              <div style="margin-top: 6px;">
+              <div style="margin-top: 8px;">
                 <span class="daily-subject-rev-badge" style="${revBadgeStyle}">
                   <i class="fa-solid fa-money-bill-wave"></i> ${isAr ? 'دخل اليوم:' : "Today's Income:"} ${revVal.toLocaleString()} ${currencySuffix}
                 </span>
               </div>
             </div>
-            <span style="background: var(--gradient-subtle); color: var(--primary); font-weight: 800; padding: 6px 14px; border-radius: 20px; font-size: 0.9em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: inline-flex; align-items: center; gap: 6px;">
-              <i class="fa-solid fa-user-check"></i> ${groups[g].count} ${isAr ? 'طالب' : 'Students'}
+            <span style="background: ${countBadgeBg}; color: ${countBadgeColor}; font-weight: 800; padding: 6px 14px; border-radius: 20px; font-size: 0.9em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+              <i class="fa-solid fa-user-check"></i> ${item.count} ${isAr ? 'طالب' : 'Students'}
             </span>
           </div>
         `;
@@ -2815,15 +2892,16 @@ export function loadDailyReport(dateStr) {
   ids.forEach(id => {
     const st = (students && students[id]) ? students[id] : null;
     if (!st) return;
-    let cls = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
+    let rawCls = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
       ? st.className.trim() 
-      : ((Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : defaultSubject);
-    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+      : ((Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : '');
+    const info = resolveSubjectInfo(rawCls, false);
+    const displayCls = info.pkgBadge ? `${info.title} (${info.pkgBadge})` : info.title;
 
     attendedList.push({
       id: st.id,
       name: st.name || (isAr ? "طالب بدون اسم" : "Unnamed"),
-      className: cls,
+      className: displayCls,
       paidStatus: st.paidStatus || (st.paid > 0 ? (isAr ? 'مسدد' : 'Paid') : (isAr ? 'غير مسدد' : 'Unpaid')),
       phone: st.phone || '',
       type: 'regular'
@@ -2831,13 +2909,13 @@ export function loadDailyReport(dateStr) {
   });
 
   sessList.forEach(sSt => {
-    let cls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : defaultSubject;
-    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+    let rawCls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
+    const info = resolveSubjectInfo(rawCls, true);
 
     attendedList.push({
       id: sSt.id,
       name: sSt.name || (isAr ? "طالب حصة" : "Session Student"),
-      className: cls,
+      className: info.title,
       paidStatus: isAr ? `حصة (${sSt.amount || 0} ج)` : `Session (${sSt.amount || 0} EGP)`,
       phone: sSt.phone || '',
       type: 'session'
@@ -2857,15 +2935,16 @@ export function loadDailyReport(dateStr) {
     if (String(st.id).startsWith("ST-") || st.isSessionStudent) return; // Ignore session ghost students
     if (attendedIdsSet.has(String(st.id))) return; // Attended today
 
-    let cls = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
+    let rawCls = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة') 
       ? st.className.trim() 
-      : ((Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : defaultSubject);
-    if (!cls || cls === "()" || cls === "( )") cls = defaultSubject;
+      : ((Array.isArray(st.packages) && st.packages.length > 0) ? st.packages[0].trim() : '');
+    const info = resolveSubjectInfo(rawCls, false);
+    const displayCls = info.pkgBadge ? `${info.title} (${info.pkgBadge})` : info.title;
 
     absentList.push({
       id: st.id,
       name: st.name,
-      className: cls,
+      className: displayCls,
       phone: st.phone || '',
       parentPhone: st.parentPhone || st.phone || ''
     });
