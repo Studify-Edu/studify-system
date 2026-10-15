@@ -5135,29 +5135,52 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
 /* ======================================================== */
 .daily-subtabs-bar {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 8px;
+  overflow: hidden;
+  padding-bottom: 10px;
   margin-bottom: 18px;
   border-bottom: 1px solid var(--border);
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.daily-subtabs-bar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .daily-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
   border-radius: 10px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   font-weight: 700;
-  font-size: 0.9em;
+  font-size: 0.88em;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
   font-family: inherit;
+  flex: 1 1 auto;
+  min-width: fit-content;
+}
+
+@media (max-width: 768px) {
+  .daily-subtabs-bar {
+    gap: 6px;
+  }
+  .daily-tab-btn {
+    padding: 7px 10px;
+    font-size: 0.82em;
+    gap: 5px;
+  }
 }
 
 .daily-tab-btn:hover {
