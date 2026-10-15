@@ -385,9 +385,16 @@
 
             <!-- SUBTAB 2: DAILY REVENUE LOG -->
             <div id="dailySubtabRevenue" class="daily-subtab-pane hidden">
-              <div class="daily-pane-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                <div style="font-weight: 800; color: var(--primary); font-size: 0.95em;"><i class="fa-solid fa-money-bill-wave"></i> <span data-i18n="daily_rev_header_title">سجل المدفوعات والتحصيلات المسجلة اليوم</span></div>
-                <input type="text" id="dailyRevSearchInput" class="inp" placeholder="بحث باسم الطالب أو الكود أو المادة.." data-i18n-placeholder="daily_rev_search_plc" style="max-width: 280px; font-size: 0.85em; padding: 6px 10px;" oninput="window.filterDailyRevenueTable()">
+              <div class="daily-pane-header">
+                <div class="daily-pane-title" style="color: var(--primary);">
+                  <i class="fa-solid fa-money-bill-wave"></i> <span data-i18n="daily_rev_header_title">سجل المدفوعات والتحصيلات المسجلة اليوم</span>
+                </div>
+                <div class="daily-pane-controls">
+                  <div class="daily-search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="dailyRevSearchInput" class="inp" placeholder="بحث باسم الطالب أو الكود أو المادة.." data-i18n-placeholder="daily_rev_search_plc" oninput="window.filterDailyRevenueTable()">
+                  </div>
+                </div>
               </div>
               <div class="tableWrap" style="max-height: 440px; overflow-y: auto;">
                 <table class="table" style="width: 100%; border-collapse: collapse;">
@@ -411,8 +418,10 @@
 
             <!-- SUBTAB 3: DAILY EXPENSES LOG -->
             <div id="dailySubtabExpenses" class="daily-subtab-pane hidden">
-              <div class="daily-pane-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div style="font-weight: 800; color: var(--danger); font-size: 0.95em;"><i class="fa-solid fa-receipt"></i> <span data-i18n="daily_exp_header_title">سجل المصروفات والمنصرفات اليومية</span></div>
+              <div class="daily-pane-header">
+                <div class="daily-pane-title" style="color: var(--danger);">
+                  <i class="fa-solid fa-receipt"></i> <span data-i18n="daily_exp_header_title">سجل المصروفات والمنصرفات اليومية</span>
+                </div>
               </div>
               <div class="tableWrap" style="max-height: 440px; overflow-y: auto;">
                 <table class="table" style="width: 100%; border-collapse: collapse;">
@@ -434,15 +443,18 @@
 
             <!-- SUBTAB 4: ATTENDED STUDENTS -->
             <div id="dailySubtabAttended" class="daily-subtab-pane hidden">
-              <div class="daily-pane-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-weight: 800; color: var(--success); font-size: 0.95em;"><i class="fa-solid fa-user-check"></i> <span data-i18n="daily_att_header_title">كشف الطلاب الحاضرين اليوم</span></span>
+              <div class="daily-pane-header">
+                <div class="daily-pane-title" style="color: var(--success);">
+                  <i class="fa-solid fa-user-check"></i> <span data-i18n="daily_att_header_title">كشف الطلاب الحاضرين اليوم</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <select id="dailyAttendedClassFilter" class="inp" style="max-width: 180px; font-size: 0.85em; padding: 6px 8px;" onchange="window.filterDailyAttendedTable()">
+                <div class="daily-pane-controls">
+                  <select id="dailyAttendedClassFilter" class="inp daily-filter-select" onchange="window.filterDailyAttendedTable()">
                     <option value="" data-i18n="daily_all_subjects_opt">جميع المواد</option>
                   </select>
-                  <input type="text" id="dailyAttendedSearchInput" class="inp" placeholder="بحث بالاسم أو الكود.." data-i18n-placeholder="daily_att_search_plc" style="max-width: 220px; font-size: 0.85em; padding: 6px 10px;" oninput="window.filterDailyAttendedTable()">
+                  <div class="daily-search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="dailyAttendedSearchInput" class="inp" placeholder="بحث بالاسم أو الكود.." data-i18n-placeholder="daily_att_search_plc" oninput="window.filterDailyAttendedTable()">
+                  </div>
                 </div>
               </div>
               <div class="tableWrap" style="max-height: 440px; overflow-y: auto;">
@@ -466,15 +478,18 @@
 
             <!-- SUBTAB 5: ABSENT STUDENTS -->
             <div id="dailySubtabAbsent" class="daily-subtab-pane hidden">
-              <div class="daily-pane-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-weight: 800; color: var(--danger); font-size: 0.95em;"><i class="fa-solid fa-user-xmark"></i> <span data-i18n="daily_abs_header_title">كشف الطلاب الغائبين اليوم</span></span>
+              <div class="daily-pane-header">
+                <div class="daily-pane-title" style="color: var(--danger);">
+                  <i class="fa-solid fa-user-xmark"></i> <span data-i18n="daily_abs_header_title">كشف الطلاب الغائبين اليوم</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <select id="dailyAbsentClassFilter" class="inp" style="max-width: 180px; font-size: 0.85em; padding: 6px 8px;" onchange="window.filterDailyAbsentTable()">
+                <div class="daily-pane-controls">
+                  <select id="dailyAbsentClassFilter" class="inp daily-filter-select" onchange="window.filterDailyAbsentTable()">
                     <option value="" data-i18n="daily_all_subjects_opt">جميع المواد</option>
                   </select>
-                  <input type="text" id="dailyAbsentSearchInput" class="inp" placeholder="بحث بالاسم أو الكود.." data-i18n-placeholder="daily_abs_search_plc" style="max-width: 220px; font-size: 0.85em; padding: 6px 10px;" oninput="window.filterDailyAbsentTable()">
+                  <div class="daily-search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="dailyAbsentSearchInput" class="inp" placeholder="بحث بالاسم أو الكود.." data-i18n-placeholder="daily_abs_search_plc" oninput="window.filterDailyAbsentTable()">
+                  </div>
                 </div>
               </div>
               <div class="tableWrap" style="max-height: 440px; overflow-y: auto;">

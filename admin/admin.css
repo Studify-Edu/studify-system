@@ -5269,3 +5269,105 @@ html[dir="ltr"], body[dir="ltr"], [dir="ltr"] {
   font-size: 0.88em;
   margin-top: 4px;
 }
+
+/* ======================================================== */
+/* DAILY PANE HEADERS & UNIFIED SEARCH/FILTER TOOLBARS      */
+/* ======================================================== */
+.daily-pane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.daily-pane-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 1em;
+}
+
+.daily-pane-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.daily-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.daily-search-box i {
+  position: absolute;
+  inset-inline-start: 12px;
+  color: var(--text-secondary);
+  font-size: 0.85em;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.daily-search-box input.inp {
+  padding-inline-start: 34px !important;
+  height: 38px;
+  border-radius: 9px;
+  font-size: 0.88em;
+  min-width: 220px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.daily-search-box input.inp:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.daily-filter-select {
+  height: 38px;
+  border-radius: 9px;
+  font-size: 0.88em;
+  padding: 0 14px;
+  min-width: 170px;
+  cursor: pointer;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.daily-filter-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+@media (max-width: 768px) {
+  .daily-pane-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .daily-pane-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .daily-search-box {
+    width: 100%;
+  }
+  .daily-search-box input.inp {
+    min-width: 0;
+    width: 100%;
+  }
+  .daily-filter-select {
+    min-width: 0;
+    width: 100%;
+  }
+}
