@@ -125,7 +125,7 @@ const ADMIN_DICT = {
 
   // New Students of the Month Module
   "stat_term_new_students": { ar: "طلاب جدد هذا الشهر", en: "New Students This Month" },
-  "stat_daily_new_students": { ar: "جدد هذا اليوم", en: "New Today" },
+  "stat_daily_new_students": { ar: "طلاب جداد", en: "New Today" },
   "new_st_modal_title": { ar: "الطلاب الجدد المنضمين", en: "New Registered Students" },
   "new_st_modal_subtitle": { ar: "متابعة الطلاب الجدد الذين تمت إضافتهم، بيانات اشتراكاتهم، والتواصل الترحيبي", en: "Track newly enrolled students, packages & welcome outreach" },
   "lbl_total_new_students": { ar: "إجمالي الطلاب الجدد:", en: "Total New Students:" },
