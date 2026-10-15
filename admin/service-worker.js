@@ -1,2 +1,2 @@
-// Studify Admin Service Worker v170
-importScripts('../service-worker.js?v=170');
+// Studify Admin Service Worker v171
+importScripts('../service-worker.js?v=171');

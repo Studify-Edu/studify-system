@@ -731,6 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
  const K_SESSION_STUDENTS = "ca_session_students_v1";
 const K_VAULT_TRANSFERS = "ca_vault_transfers_v1";
  const K_BOOKLETS = "ca_booklets_v1";
+ const K_ATT_SUBJECTS = "ca_att_subjects_v1";
 
  // ==========================================
  // 2.5 SECURE STORAGE LAYER (localForage + CryptoJS)
@@ -883,6 +884,7 @@ const K_VAULT_TRANSFERS = "ca_vault_transfers_v1";
  let deletedStudents = {}; 
  let extraIds = []; 
  let attByDate = {}; 
+ let attSubjectsByDate = {}; 
  let revenueByDate = {}; 
  let groupFees = {}; 
  let expensesByDate = {};
@@ -909,12 +911,14 @@ let currentFilteredList = [];
     Object.defineProperty(window, 'currentId', { get: () => currentId, set: (v) => { currentId = v; }, configurable: true });
     Object.defineProperty(window, 'currentUserRole', { get: () => currentUserRole, set: (v) => { currentUserRole = v; }, configurable: true });
     Object.defineProperty(window, 'sessionStudentsByDate', { get: () => sessionStudentsByDate, set: (v) => { sessionStudentsByDate = v; }, configurable: true });
+    Object.defineProperty(window, 'attSubjectsByDate', { get: () => attSubjectsByDate, set: (v) => { attSubjectsByDate = v; }, configurable: true });
   } catch(e) {
     window.students = students;
     window.evalData = evalData;
     window.currentId = currentId;
     window.currentUserRole = currentUserRole;
     window.sessionStudentsByDate = sessionStudentsByDate;
+    window.attSubjectsByDate = attSubjectsByDate;
   }
 
   // Early definition of session students helpers
@@ -2335,6 +2339,7 @@ window.switchTab = function(tabId, force = false) {
     await Promise.all([
       secureSave(K_STUDENTS, students),
       secureSave(K_ATT_BY_DATE, attByDate),
+      secureSave(K_ATT_SUBJECTS, attSubjectsByDate),
       secureSave(K_REVENUE, revenueByDate),
       secureSave(K_GROUP_FEES, groupFees),
       secureSave(K_EXPENSES, expensesByDate),
@@ -2472,6 +2477,7 @@ window.switchTab = function(tabId, force = false) {
         student_sessions: Object.fromEntries(Object.values(students || {}).filter(s => s.isSessionStudent).map(s => [s.id, s.sessionBalance || 0])),
         vault_transfers: vaultTransfers || [],
         att_by_date: attByDate || {},
+        att_subjects_by_date: attSubjectsByDate || {},
         syllabus: (syllabusData || []).map(s => ({
           title: s.title || s.name || '',
           name: s.name || s.title || '',
@@ -2540,6 +2546,7 @@ async function saveAttendanceOnly(targetStudentId = null) {
     await Promise.all([
       secureSave(K_STUDENTS, students),
       secureSave(K_ATT_BY_DATE, attByDate),
+      secureSave(K_ATT_SUBJECTS, attSubjectsByDate),
       secureSave(K_SESSION_STUDENTS, sessionStudentsByDate)
     ]);
     updateTopStats();
@@ -2592,6 +2599,7 @@ async function saveAttendanceOnly(targetStudentId = null) {
         settings: { lastModified: Date.now() },
         revenue_by_date: revenueByDate || {},
         att_by_date: attByDate || {},
+        att_subjects_by_date: attSubjectsByDate || {},
         session_students_by_date: sessionStudentsByDate || {},
         student_sessions: Object.fromEntries(Object.values(students || {}).filter(s => s.isSessionStudent).map(s => [s.id, s.sessionBalance || 0]))
       });
@@ -2650,6 +2658,7 @@ async function loadAll() {
     students = await secureLoad(K_STUDENTS, {});
     deletedStudents = await secureLoad(K_DELETED, {});
     attByDate = await secureLoad(K_ATT_BY_DATE, {});
+    attSubjectsByDate = await secureLoad(K_ATT_SUBJECTS, {});
     revenueByDate = await secureLoad(K_REVENUE, {});
     expensesByDate = await secureLoad(K_EXPENSES, {});
     groupFees = await secureLoad(K_GROUP_FEES, {});
@@ -2874,6 +2883,12 @@ async function loadAll() {
           const attSrc = cd.att_by_date !== undefined ? cd.att_by_date : (cfg.att_by_date || cfg.attendance_by_date);
           if (attSrc && typeof attSrc === 'object') {
             attByDate = attSrc;
+          }
+
+          const attSubjSrc = cd.att_subjects_by_date !== undefined ? cd.att_subjects_by_date : cfg.att_subjects_by_date;
+          if (attSubjSrc && typeof attSubjSrc === 'object') {
+            attSubjectsByDate = attSubjSrc;
+            await secureSave(K_ATT_SUBJECTS, attSubjectsByDate);
           }
 
           // Single source of truth for session_students_by_date from cloud
@@ -9107,6 +9122,10 @@ function initSupabaseRealtimeSync() {
             if (typeof updateTopStats === 'function') updateTopStats();
             if (typeof renderExpensesTable === 'function') renderExpensesTable();
           }
+          if (cfg.att_subjects_by_date && typeof cfg.att_subjects_by_date === 'object') {
+            attSubjectsByDate = cfg.att_subjects_by_date;
+            secureSave(K_ATT_SUBJECTS, attSubjectsByDate);
+          }
           if (cfg.booklets_stock && typeof cfg.booklets_stock === 'object' && Object.keys(cfg.booklets_stock).length > 0) {
             bookletsStock = Object.assign({}, bookletsStock, cfg.booklets_stock);
             secureSave(K_BOOKLETS, bookletsStock);
@@ -14658,6 +14677,12 @@ window.CLOUD_MONITOR_SECTIONS = [
     label: "سجلات الحضور",
     localCount: () => Object.keys(attByDate || {}).length,
     cloudTable: "settings (config.att_by_date)"
+  },
+  {
+    id: "att_subjects",
+    label: "سجل حضور المواد اليومية",
+    localCount: () => Object.keys(attSubjectsByDate || {}).length,
+    cloudTable: "settings (config.att_subjects_by_date)"
   },
   {
     id: "session_students",
