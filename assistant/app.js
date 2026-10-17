@@ -7896,6 +7896,13 @@ on("importExcelInput", "change", async function(e) {
             if (st.payments && Array.isArray(st.payments)) {
               st.payments.forEach(p => { if (p && p.date === todayStr) todayPaid += toInt(p.amount); });
             }
+            if (Array.isArray(sessionStudentsByDate?.[todayStr])) {
+              sessionStudentsByDate[todayStr].forEach(sItem => {
+                if (sItem && String(sItem.id) === String(targetId)) {
+                  todayPaid += toInt(sItem.amount) || 0;
+                }
+              });
+            }
             return (todayPaid > 0) ? `
               <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 10px; border-radius: 8px; margin-top: 8px;">
                 <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; color: #f59e0b; font-size:0.88em;">
@@ -7921,20 +7928,30 @@ on("importExcelInput", "change", async function(e) {
 
       showToast(isAr ? "جاري حذف الطالب من السحابة..." : "Deleting student from cloud...", "info");
 
-      // 1. Delete from Supabase cloud table
+      // 1. Delete from Supabase cloud tables
       if (window.supabaseClient) {
         try {
           await window.supabaseClient.from('students').delete().eq('id', String(targetId));
+          await window.supabaseClient.from('session_students').delete().or(`student_name.eq.${studentName},phone.eq.${st.phone || 'NO_PHONE'}`);
         } catch (err) {
           console.warn("[deleteStudent] Supabase delete warning:", err);
         }
       }
 
-      // 2. Adjust today's revenue if requested (ONLY for payments collected today)
-      if (shouldDeduct && st.payments && Array.isArray(st.payments)) {
+      // 2. Adjust today's revenue if requested (for payments collected today)
+      if (shouldDeduct) {
         const today = nowDateStr();
         let todayPaid = 0;
-        st.payments.forEach(p => { if (p && p.date === today) todayPaid += toInt(p.amount); });
+        if (st.payments && Array.isArray(st.payments)) {
+          st.payments.forEach(p => { if (p && p.date === today) todayPaid += toInt(p.amount); });
+        }
+        if (Array.isArray(sessionStudentsByDate?.[today])) {
+          sessionStudentsByDate[today].forEach(sItem => {
+            if (sItem && String(sItem.id) === String(targetId)) {
+              todayPaid += toInt(sItem.amount) || 0;
+            }
+          });
+        }
         if (todayPaid > 0) {
           revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - todayPaid);
         }
@@ -11021,26 +11038,107 @@ window.openSessionStudentModal = function(item) {
   };
 
   window.deleteSessionStudentCompletely = function(id) {
+    const isAr = (currentLang === 'ar');
+    const st = students[id] || {};
+    const stName = st.name || ("#" + id);
+
+    // Calculate total payments registered across dates for this session student
+    const paymentsByDate = {};
+    let totalAmt = 0;
+    Object.keys(sessionStudentsByDate || {}).forEach(d => {
+      const arr = sessionStudentsByDate[d] || [];
+      arr.forEach(it => {
+        if (it && String(it.id) === String(id)) {
+          const amt = toInt(it.amount) || 0;
+          if (amt > 0) {
+            paymentsByDate[d] = (paymentsByDate[d] || 0) + amt;
+            totalAmt += amt;
+          }
+        }
+      });
+    });
+
+    const stPaid = toInt(st.paid) || 0;
+    const displayAmt = Math.max(totalAmt, stPaid);
+
+    const deductCheckboxHtml = displayAmt > 0 ? `
+      <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px 12px; border-radius: 8px; margin-top: 12px; text-align: ${isAr ? 'right' : 'left'};">
+        <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; color: #f59e0b; font-size: 0.9em;">
+          <input type="checkbox" id="swalDeductSessStudentRevenue" checked style="width: 17px; height: 17px; accent-color: #f59e0b;">
+          <span>${isAr ? `خصم المبلغ المدفوع (${displayAmt} ج) من إيراد اليوم والخزينة؟` : `Deduct paid amount (${displayAmt} EGP) from today's revenue?`}</span>
+        </label>
+        <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 4px; padding-inline-start: 25px;">
+          ${isAr ? 'عند التفعيل، سيتم تحديث الإيراد اليومي والخزينة فوراً لمطابقة المبلغ الفعلي.' : 'When enabled, daily revenue and treasury will be updated immediately.'}
+        </div>
+      </div>
+    ` : '';
+
     if (typeof Swal !== "undefined") {
       Swal.fire({
-        title: "حذف طالب الحصة",
-        text: "هل أنت متأكد من حذف طالب الحصة (" + id + ") وجميع سجلاته نهائياً؟",
+        title: isAr ? "حذف طالب الحصة" : "Delete Session Student",
+        html: `
+          <div style="text-align: ${isAr ? 'right' : 'left'}; font-size: 0.95rem; line-height: 1.6;">
+            <p style="color: #ef4444; font-weight: 700; margin-bottom: 6px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              ${isAr ? `هل أنت متأكد من حذف طالب الحصة (${stName}) وجميع سجلاته نهائياً؟` : `Are you sure you want to permanently delete session student (${stName})?`}
+            </p>
+            <p style="color: var(--text-secondary); margin-bottom: 8px; font-size: 0.88em;">
+              ${isAr ? 'سيتم حذف الطالب من كشوفات الحصة والسجلات بالكامل.' : 'The student will be removed from session sheets and records.'}
+            </p>
+            ${deductCheckboxHtml}
+          </div>
+        `,
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#ef4444",
         cancelButtonColor: "#64748b",
-        confirmButtonText: "نعم، حذف نهائي",
-        cancelButtonText: "إلغاء"
+        confirmButtonText: isAr ? "نعم، حذف نهائي" : "Yes, Delete",
+        cancelButtonText: isAr ? "إلغاء" : "Cancel"
       }).then(async res => {
         if (res.isConfirmed) {
+          const deductEl = document.getElementById('swalDeductSessStudentRevenue');
+          const shouldDeduct = deductEl ? deductEl.checked : false;
+
+          // 1. Deduct revenue if requested
+          if (shouldDeduct && displayAmt > 0) {
+            const today = nowDateStr();
+            if (Object.keys(paymentsByDate).length > 0) {
+              Object.keys(paymentsByDate).forEach(d => {
+                const amt = paymentsByDate[d];
+                if (revenueByDate[d] !== undefined) {
+                  revenueByDate[d] = Math.max(0, (revenueByDate[d] || 0) - amt);
+                } else {
+                  revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - amt);
+                }
+              });
+            } else {
+              revenueByDate[today] = Math.max(0, (revenueByDate[today] || 0) - displayAmt);
+            }
+          }
+
+          // 2. Remove from students and sessionStudentsByDate
           if (students[id]) delete students[id];
           Object.keys(sessionStudentsByDate || {}).forEach(d => {
-            sessionStudentsByDate[d] = (sessionStudentsByDate[d] || []).filter(x => x.id !== id);
+            sessionStudentsByDate[d] = (sessionStudentsByDate[d] || []).filter(x => String(x.id) !== String(id));
           });
+
+          // 3. Delete from Supabase session_students table and students table
+          if (window.supabaseClient) {
+            try {
+              await window.supabaseClient.from('session_students').delete().or(`student_name.eq.${stName},phone.eq.${st.phone || 'NO_PHONE'}`);
+              await window.supabaseClient.from('students').delete().eq('id', String(id));
+            } catch(e) {
+              console.warn('[Supabase delete session student warning]:', e);
+            }
+          }
+
           await saveAll();
-          window.renderSessionFinanceStats();
-          window.renderAllSessionStudentsTable();
-          showToast("تم حذف طالب الحصة بنجاح", "success");
+          if (typeof window.renderSessionFinanceStats === "function") window.renderSessionFinanceStats();
+          if (typeof window.renderAllSessionStudentsTable === "function") window.renderAllSessionStudentsTable();
+          if (typeof updateTopStats === "function") updateTopStats();
+          if (typeof renderList === "function") renderList(false);
+          if (typeof AssistantSounds !== "undefined") AssistantSounds.paymentDelete();
+          showToast(isAr ? (shouldDeduct ? "تم حذف طالب الحصة وخصم المبلغ من الإيراد بنجاح" : "تم حذف طالب الحصة بنجاح") : "Session student deleted successfully", "success");
         }
       });
     }
@@ -11158,33 +11256,40 @@ window.openSessionStudentModal = function(item) {
     const triggerBtn = this;
     const isAr = (currentLang === "ar");
 
-    const proceedDelete = async () => {
+    let delItem = sessionStudentsByDate[dt] ? sessionStudentsByDate[dt][idx] : null;
+    if (!delItem) return;
+    const delAmt = toInt(delItem.amount) || 0;
+    const stName = delItem.name || (isAr ? "طالب الحصة" : "Session Student");
+
+    const proceedDelete = async (shouldDeduct = true) => {
       if (triggerBtn) {
         triggerBtn.disabled = true;
         triggerBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
       }
 
-      let delItem = sessionStudentsByDate[dt] ? sessionStudentsByDate[dt][idx] : null;
       let st = null;
       let targetStId = null;
       let ghostToDelete = null;
 
       if (delItem) {
-        revenueByDate[dt] = Math.max(0, (revenueByDate[dt] || 0) - toInt(delItem.amount));
+        if (shouldDeduct && delAmt > 0) {
+          revenueByDate[dt] = Math.max(0, (revenueByDate[dt] || 0) - delAmt);
+        }
         if (delItem.id && students[delItem.id]) {
           targetStId = String(delItem.id);
           st = students[targetStId];
-          const delAmt = toInt(delItem.amount);
           if (delAmt === 0) {
             st.sessionBalance = (st.sessionBalance || 0) + 1;
           } else {
             const addedBal = Math.max(0, (toInt(delItem.sessionsCount) || 1) - 1);
             st.sessionBalance = Math.max(0, (st.sessionBalance || 0) - addedBal);
-            st.paid = Math.max(0, (toInt(st.paid) || 0) - delAmt);
+            if (shouldDeduct) {
+              st.paid = Math.max(0, (toInt(st.paid) || 0) - delAmt);
+            }
           }
 
           // 1. حذف وصل الدفع المقابل من st.payments
-          if (Array.isArray(st.payments) && delAmt > 0) {
+          if (Array.isArray(st.payments) && delAmt > 0 && shouldDeduct) {
             const pIdx = st.payments.map((p, i) => (p && (p.date === dt || !p.date) && toInt(p.amount) === delAmt) ? i : -1).filter(i => i !== -1).pop();
             if (pIdx !== undefined) {
               st.payments.splice(pIdx, 1);
@@ -11233,14 +11338,19 @@ window.openSessionStudentModal = function(item) {
       if (typeof window.renderAllSessionStudentsTable === "function") window.renderAllSessionStudentsTable();
       if (typeof updateTopStats === "function") updateTopStats();
       if (typeof renderList === "function") renderList(false);
-      showToast(isAr ? "تم إلغاء تسجيل الحضور والمبلغ بنجاح" : "Session attendance cancelled successfully", "success");
+      showToast(isAr ? (shouldDeduct && delAmt > 0 ? "تم إلغاء تسجيل الحضور وخصم المبلغ من الإيراد بنجاح" : "تم إلغاء تسجيل الحضور بنجاح") : "Session attendance cancelled successfully", "success");
       if (typeof AssistantSounds !== "undefined") AssistantSounds.paymentDelete();
 
-      // الحفظ في الخلفية دون تعطيل واجهة المستخدم
+      // الحفظ والمزامنة السحابية
       (async () => {
         try {
-          if (ghostToDelete && window.supabaseClient) {
-            await window.supabaseClient.from('students').delete().eq('id', ghostToDelete);
+          if (window.supabaseClient) {
+            if (ghostToDelete) {
+              await window.supabaseClient.from('students').delete().eq('id', ghostToDelete);
+            }
+            if (delItem && delItem.name) {
+              await window.supabaseClient.from('session_students').delete().match({ date: dt, student_name: delItem.name });
+            }
           }
           await saveAll();
         } catch(e) {
@@ -11249,10 +11359,30 @@ window.openSessionStudentModal = function(item) {
       })();
     };
 
+    const deductCheckboxHtml = delAmt > 0 ? `
+      <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px 12px; border-radius: 8px; margin-top: 12px; text-align: ${isAr ? 'right' : 'left'};">
+        <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; color: #f59e0b; font-size: 0.9em;">
+          <input type="checkbox" id="swalDeductSessAttendanceRevenue" checked style="width: 17px; height: 17px; accent-color: #f59e0b;">
+          <span>${isAr ? `خصم مبلغ الحضور (${delAmt} ج) من إيراد اليوم والخزينة؟` : `Deduct session fee (${delAmt} EGP) from treasury & revenue?`}</span>
+        </label>
+        <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 4px; padding-inline-start: 25px;">
+          ${isAr ? 'عند التفعيل، سيتم تحديث الإيراد اليومي فوراً لمطابقة المبلغ المتبقي.' : 'When enabled, daily revenue will be adjusted immediately.'}
+        </div>
+      </div>
+    ` : '';
+
     if (typeof Swal !== 'undefined') {
       Swal.fire({
         title: isAr ? "إلغاء الحضور المالي" : "Cancel Session Attendance",
-        text: isAr ? "هل أنت متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟" : "Are you sure you want to delete and cancel this student's attendance for today?",
+        html: `
+          <div style="text-align: ${isAr ? 'right' : 'left'}; font-size: 0.95rem; line-height: 1.6;">
+            <p style="color: #ef4444; font-weight: 700; margin-bottom: 6px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              ${isAr ? `هل أنت متأكد من حذف وإلغاء حضور الطالب (${stName}) لليوم؟` : `Are you sure you want to cancel session attendance for (${stName})?`}
+            </p>
+            ${deductCheckboxHtml}
+          </div>
+        `,
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#ef4444",
@@ -11260,11 +11390,15 @@ window.openSessionStudentModal = function(item) {
         confirmButtonText: isAr ? "نعم، إلغاء الحضور" : "Yes, Cancel Attendance",
         cancelButtonText: isAr ? "تراجع" : "Cancel"
       }).then(res => {
-        if (res.isConfirmed) proceedDelete();
+        if (res.isConfirmed) {
+          const deductEl = document.getElementById('swalDeductSessAttendanceRevenue');
+          const shouldDeduct = deductEl ? deductEl.checked : (delAmt > 0);
+          proceedDelete(shouldDeduct);
+        }
       });
     } else {
-      if (confirm(isAr ? "هل أنت متأكد من حذف وإلغاء حضور هذا الطالب المالي لليوم؟" : "Are you sure you want to delete and cancel this student's attendance for today?")) {
-        proceedDelete();
+      if (confirm(isAr ? `هل أنت متأكد من حذف وإلغاء حضور الطالب (${stName}) لليوم؟` : `Are you sure you want to cancel session attendance for (${stName})?`)) {
+        proceedDelete(true);
       }
     }
   };
