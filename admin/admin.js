@@ -2660,8 +2660,7 @@ export function loadDailyReport(dateStr) {
     expArr = Array.isArray(expensesByDate[d]) ? expensesByDate[d] : [];
   }
   
-  const sessCount = (typeof window.getAdminUniqueSessionStudentsCount === 'function') ? window.getAdminUniqueSessionStudentsCount() : 0;
-  const totalSt = Object.keys(students || {}).length + sessCount;
+  const totalSt = Object.values(students || {}).filter(s => s && s.name && !s.isSessionStudent && !String(s.id).startsWith("ST-")).length;
   let totalExp = 0;
   expArr.forEach(e => totalExp += (Number(e && e.amount) || 0));
 
@@ -2677,7 +2676,7 @@ export function loadDailyReport(dateStr) {
   const totalAttended = ids.length + sessList.length;
   if (statAttend) statAttend.textContent = totalAttended;
   if (statRev) statRev.textContent = rev.toLocaleString() + currencySuffix;
-  if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - totalAttended);
+  if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - ids.length);
   if (statExp) statExp.textContent = totalExp.toLocaleString() + currencySuffix;
 
   // Subtab badges
@@ -2689,7 +2688,7 @@ export function loadDailyReport(dateStr) {
   if (bRev) bRev.textContent = rev.toLocaleString() + currencySuffix;
   if (bExp) bExp.textContent = totalExp.toLocaleString() + currencySuffix;
   if (bAtt) bAtt.textContent = totalAttended;
-  if (bAbs) bAbs.textContent = Math.max(0, totalSt - totalAttended);
+  if (bAbs) bAbs.textContent = Math.max(0, totalSt - ids.length);
 
   const statDailyNew = document.getElementById("statDailyNewStudents");
   if (statDailyNew) {
@@ -2856,22 +2855,24 @@ export function loadDailyReport(dateStr) {
     let cls = (sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
     if (/^01[0-9]{9}$/.test(cls) || /^\d{10,11}$/.test(cls)) cls = '';
     const subInfos = resolveSubjectInfo(cls, true);
-    const splitAmt = Math.round(amt / subInfos.length);
+    const subName = (cls && cls !== 'عام' && cls !== 'General') ? cls : (subInfos.length > 0 && subInfos[0].title !== defaultSessionGeneral ? subInfos[0].title : '');
 
     if (amt > 0) {
       todayPayments.push({
         id: sSt.id,
         name: sSt.name || (isAr ? "طالب حصة" : "Session Student"),
-        className: subInfos.map(s => s.title).join(' / '),
+        className: subName || (isAr ? "طالب حصة" : "Session Student"),
         amount: amt,
         method: sSt.method || 'cash',
         type: 'session',
         timestamp: sSt.timestamp || ''
       });
-      subInfos.forEach(info => {
-        const cardKey = `SESSION:::${info.title}`;
-        subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + splitAmt;
-      });
+      if (subName) {
+        subjectRevenueMap[subName] = (subjectRevenueMap[subName] || 0) + amt;
+      } else {
+        const genKey = isAr ? "طلاب الحصة" : "Session Students";
+        subjectRevenueMap[genKey] = (subjectRevenueMap[genKey] || 0) + amt;
+      }
     }
   });
 
@@ -2911,25 +2912,12 @@ export function loadDailyReport(dateStr) {
       const studentIds = daySubjMap[subjName] || [];
       if (!Array.isArray(studentIds) || studentIds.length === 0) return;
 
-      // Find package tag if available from students attending this subject
-      let pkgBadge = '';
-      const sampleSt = (students && studentIds[0]) ? students[studentIds[0]] : null;
-      if (sampleSt) {
-        if (Array.isArray(sampleSt.packages) && sampleSt.packages.length > 0) {
-          const vP = sampleSt.packages.find(p => p && p !== 'بدون باقة' && !/^01[0-9]{9}$/.test(p));
-          if (vP) pkgBadge = vP;
-        } else if (sampleSt.className && sampleSt.className !== 'عام' && sampleSt.className !== 'بدون باقة') {
-          pkgBadge = sampleSt.className;
-        }
-      }
-
-      const key = pkgBadge ? `${subjName}:::${pkgBadge}` : subjName;
-      groups[key] = {
+      groups[subjName] = {
         title: subjName,
-        pkgBadge: pkgBadge,
+        pkgBadge: '',
         isSession: false,
         count: studentIds.length,
-        revenue: 0
+        revenue: subjectRevenueMap[subjName] || 0
       };
     });
   } else {
@@ -2951,11 +2939,11 @@ export function loadDailyReport(dateStr) {
       
       const subInfos = resolveSubjectInfo(cls, false);
       subInfos.forEach(info => {
-        const key = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
+        const key = info.title;
         if (!groups[key]) {
           groups[key] = {
             title: info.title,
-            pkgBadge: info.pkgBadge,
+            pkgBadge: '',
             isSession: false,
             count: 0,
             revenue: 0
@@ -2966,23 +2954,40 @@ export function loadDailyReport(dateStr) {
     });
   }
 
+  // Count session students into their corresponding subject without creating generic cards
   sessList.forEach(sSt => {
     let cls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
     if (/^01[0-9]{9}$/.test(cls) || /^\d{10,11}$/.test(cls)) cls = '';
-    const subInfos = resolveSubjectInfo(cls, true);
-    subInfos.forEach(info => {
-      const key = `SESSION:::${info.title}`;
-      if (!groups[key]) {
-        groups[key] = {
-          title: info.title,
-          pkgBadge: info.pkgBadge || '',
+    if (cls) {
+      if (!groups[cls]) {
+        groups[cls] = {
+          title: cls,
+          pkgBadge: '',
+          isSession: false,
+          count: 1,
+          revenue: subjectRevenueMap[cls] || 0
+        };
+      } else {
+        const idStr = String(sSt.id);
+        const isInDaySubj = daySubjMap && daySubjMap[cls] && daySubjMap[cls].includes(idStr);
+        if (!isInDaySubj) {
+          groups[cls].count++;
+        }
+      }
+    } else if (Object.keys(groups).length === 0) {
+      // Only if NO subjects exist at all for today
+      const fallbackKey = isAr ? "طلاب الحصة" : "Session Students";
+      if (!groups[fallbackKey]) {
+        groups[fallbackKey] = {
+          title: fallbackKey,
+          pkgBadge: '',
           isSession: true,
           count: 0,
-          revenue: 0
+          revenue: subjectRevenueMap[fallbackKey] || 0
         };
       }
-      groups[key].count++;
-    });
+      groups[fallbackKey].count++;
+    }
   });
 
   // Assign actual collected revenue to each subject/card
@@ -3141,6 +3146,10 @@ export function loadDailyReport(dateStr) {
   window.dailyCachedAbsent = absentList;
   window.populateDailyAbsentClassFilter(absentList);
   window.renderDailyAbsentTable(absentList);
+
+  // Sync stat cards and badges to exact absent list count
+  if (statAbsent) statAbsent.textContent = absentList.length;
+  if (bAbs) bAbs.textContent = absentList.length;
 
   // Maintain active subtab
   window.switchDailyReportSubtab(window.currentDailySubtab || 'subjects');

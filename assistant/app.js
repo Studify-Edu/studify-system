@@ -4347,7 +4347,6 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
           }
       } else {
           let validPkgName = null;
-          let pkgError = `الطالب غير مشترك في باقة تخص مادة (${selectedSubject})`;
           
           const candidatePkgs = [];
           if (Array.isArray(s.packages)) {
@@ -4374,11 +4373,9 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
                           const end = pkgDetails.endDate ? new Date(pkgDetails.endDate).setHours(0,0,0,0) : null;
                           
                           if (start && checkDate < start) {
-                              pkgError = `باقة (${pName}) لم تبدأ بعد`;
                               continue;
                           }
                           if (end && checkDate > end) {
-                              pkgError = `باقة (${pName}) منتهية الصلاحية`;
                               continue;
                           }
                       }
@@ -4393,7 +4390,6 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
                               usedCount = s.attendanceDates.length;
                           }
                           if (usedCount >= limit) {
-                              pkgError = `الطالب استنفذ عدد الحصص المسموح بها في باقة (${pName}) [${limit} حصة]`;
                               continue;
                           }
                           remainingSessionsOnPkg = limit - (usedCount + 1);
@@ -4417,9 +4413,9 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
               }
           }
 
+          // If no specific matching package was found, attendance is STILL allowed without blocking!
           if (!validPkgName) {
-              if (typeof showFullscreenFeedback === 'function') showFullscreenFeedback(false, false);
-              return { ok: false, msg: pkgError };
+              validPkgName = (s.className && s.className !== 'بدون باقة') ? s.className : '';
           }
       }
   }
@@ -5228,9 +5224,11 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
     for (let i = 0; i < ids.length; i++) {
       let id = ids[i];
       const st = students[id]; 
-      let c = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
-      if(!groups[c]) groups[c] = { count: 0 }; 
-      groups[c].count++;
+      let c = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : "";
+      if (c) {
+        if(!groups[c]) groups[c] = { count: 0 }; 
+        groups[c].count++;
+      }
     }
   }
  
@@ -7732,12 +7730,22 @@ Deleting it will automatically unlink it from these students. Do you want to pro
  let txt = ` *${t("report_title")}: ${prettyDate(d)}*\r\n\r\n`;
  
  let groups = {};
- for (let i = 0; i < ids.length; i++) {
- let id = ids[i];
- const st = students[id];
- let c = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
- if(!groups[c]) groups[c] = 0; 
- groups[c]++; 
+ const daySubjMap = (attSubjectsByDate && attSubjectsByDate[d]) ? attSubjectsByDate[d] : null;
+ if (daySubjMap && Object.keys(daySubjMap).length > 0) {
+   Object.keys(daySubjMap).forEach(subName => {
+     const arr = daySubjMap[subName] || [];
+     if (arr.length > 0) groups[subName] = arr.length;
+   });
+ } else {
+   for (let i = 0; i < ids.length; i++) {
+     let id = ids[i];
+     const st = students[id];
+     let c = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : "";
+     if (c) {
+       if(!groups[c]) groups[c] = 0;
+       groups[c]++;
+     }
+   }
  }
  
  for(let g in groups) { txt += ` ${g}: ${groups[g]} طالب\r\n`; }
@@ -11502,6 +11510,9 @@ window.openSessionStudentModal = function(item) {
   let name = $("sessStName") ? $("sessStName").value.trim() : "";
   let phone = $("sessStPhone") ? $("sessStPhone").value.trim() : "";
   let className = $("sessStClass") ? $("sessStClass").value : "";
+  if (!className && window.currentGlobalSubject) {
+    className = window.currentGlobalSubject;
+  }
   let amount = $("sessStAmount") ? toInt($("sessStAmount").value) : 0;
   let sessCount = $("sessStCount") ? Math.max(1, toInt($("sessStCount").value)) : 1;
   let method = $("sessStMethod") ? $("sessStMethod").value : "cash";
@@ -11639,6 +11650,20 @@ window.openSessionStudentModal = function(item) {
   if (amount > 0) {
     revenueByDate[today] = (revenueByDate[today] || 0) + amount;
   }
+
+  // Also register in attSubjectsByDate and attByDate so session students count under their subject
+  const effSubj = className || window.currentGlobalSubject || "طلاب الحصة";
+  if (!attSubjectsByDate || typeof attSubjectsByDate !== 'object') attSubjectsByDate = {};
+  if (!attSubjectsByDate[today] || typeof attSubjectsByDate[today] !== 'object') attSubjectsByDate[today] = {};
+  if (!Array.isArray(attSubjectsByDate[today][effSubj])) attSubjectsByDate[today][effSubj] = [];
+  if (!attSubjectsByDate[today][effSubj].includes(String(stId))) {
+    attSubjectsByDate[today][effSubj].push(String(stId));
+  }
+  if (!attByDate[today]) attByDate[today] = [];
+  if (!attByDate[today].includes(String(stId))) {
+    attByDate[today].push(String(stId));
+  }
+
 
   // Insert into Supabase session_students and upsert students
   if (window.supabaseClient) {
@@ -11868,7 +11893,10 @@ window.openSessionStudentModal = function(item) {
         const bAmt = toInt(s.price) || toInt(b.price) || 0;
         if (bAmt <= 0) return;
         grandTotal += bAmt;
-        cashTotal += bAmt;
+        const bMeth = (s.method || "cash").toLowerCase();
+        if (bMeth === "instapay") instapayTotal += bAmt;
+        else if (bMeth === "wallet") walletTotal += bAmt;
+        else cashTotal += bAmt;
         allTransactions.push({
           type: "booklet",
           id: b.id || "",
@@ -11876,7 +11904,7 @@ window.openSessionStudentModal = function(item) {
           className: isAr ? "مبيعات مذكرات" : "Booklet Sales",
           amount: bAmt,
           remain: 0,
-          method: "cash",
+          method: bMeth,
           time: s.time || ""
         });
       });
