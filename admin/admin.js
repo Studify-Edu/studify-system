@@ -2713,21 +2713,21 @@ export function loadDailyReport(dateStr) {
   // Helper to extract constituent subjects and package tag
   function resolveSubjectInfo(pkgOrClassName, isSession = false) {
     if (!pkgOrClassName || pkgOrClassName === 'عام' || pkgOrClassName === 'General' || pkgOrClassName === 'بدون باقة' || pkgOrClassName === 'No Package') {
-      return [{
-        title: isSession ? defaultSessionGeneral : (isAr ? "عام" : "General"),
+      return isSession ? [{
+        title: defaultSessionGeneral,
         pkgBadge: '',
-        isSession: isSession,
+        isSession: true,
         bundleCount: 1
-      }];
+      }] : [];
     }
     const clean = String(pkgOrClassName).trim();
     if (/^01[0-9]{9}$/.test(clean) || /^\d{10,11}$/.test(clean)) {
-      return [{
-        title: isSession ? defaultSessionGeneral : (isAr ? "عام" : "General"),
+      return isSession ? [{
+        title: defaultSessionGeneral,
         pkgBadge: '',
-        isSession: isSession,
+        isSession: true,
         bundleCount: 1
-      }];
+      }] : [];
     }
 
     const pkg = (packages && packages[clean]) || (typeof window.getPkgDetails === 'function' ? window.getPkgDetails(clean) : null);
@@ -2752,40 +2752,45 @@ export function loadDailyReport(dateStr) {
       }];
     }
 
-    if (rawSubj && rawSubj.toLowerCase() !== clean.toLowerCase()) {
+    // For regular students: MUST belong to an officially registered package
+    if (rawSubj) {
       const subs = splitSubjectNames(rawSubj);
       if (subs.length > 1) {
         return subs.map(s => ({
           title: s,
-          pkgBadge: clean,
+          pkgBadge: clean !== s ? clean : '',
           isSession: false,
           bundleCount: subs.length
         }));
       }
       return [{
         title: rawSubj,
-        pkgBadge: clean,
+        pkgBadge: clean !== rawSubj ? clean : '',
         isSession: false,
         bundleCount: 1
       }];
     }
 
-    const subs = splitSubjectNames(clean);
-    if (subs.length > 1) {
-      return subs.map(s => ({
-        title: s,
+    if (pkg) {
+      const subs = splitSubjectNames(clean);
+      if (subs.length > 1) {
+        return subs.map(s => ({
+          title: s,
+          pkgBadge: '',
+          isSession: false,
+          bundleCount: subs.length
+        }));
+      }
+      return [{
+        title: clean,
         pkgBadge: '',
         isSession: false,
-        bundleCount: subs.length
-      }));
+        bundleCount: 1
+      }];
     }
 
-    return [{
-      title: clean,
-      pkgBadge: '',
-      isSession: false,
-      bundleCount: 1
-    }];
+    // If clean does not match any registered package in packages, it is purely metadata and NOT a subject
+    return [];
   }
 
   const todayPayments = [];
@@ -2809,22 +2814,35 @@ export function loadDailyReport(dateStr) {
 
         const subInfos = resolveSubjectInfo(rawPkg, false);
         const amt = Number(p.amount);
-        const splitAmt = Math.round(amt / subInfos.length);
 
-        todayPayments.push({
-          id: st.id,
-          name: st.name,
-          className: subInfos.length > 1 ? `${subInfos[0].pkgBadge || rawPkg} (${subInfos.map(s => s.title).join(' / ')})` : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title),
-          amount: amt,
-          method: p.method || 'cash',
-          type: 'package',
-          timestamp: p.timestamp || ''
-        });
+        if (subInfos.length > 0) {
+          const splitAmt = Math.round(amt / subInfos.length);
 
-        subInfos.forEach(info => {
-          const cardKey = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
-          subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + splitAmt;
-        });
+          todayPayments.push({
+            id: st.id,
+            name: st.name,
+            className: subInfos.length > 1 ? `${subInfos[0].pkgBadge || rawPkg} (${subInfos.map(s => s.title).join(' / ')})` : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title),
+            amount: amt,
+            method: p.method || 'cash',
+            type: 'package',
+            timestamp: p.timestamp || ''
+          });
+
+          subInfos.forEach(info => {
+            const cardKey = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
+            subjectRevenueMap[cardKey] = (subjectRevenueMap[cardKey] || 0) + splitAmt;
+          });
+        } else {
+          todayPayments.push({
+            id: st.id,
+            name: st.name,
+            className: rawPkg || (isAr ? 'عام' : 'General'),
+            amount: amt,
+            method: p.method || 'cash',
+            type: 'package',
+            timestamp: p.timestamp || ''
+          });
+        }
       }
     });
   });
@@ -3016,9 +3034,11 @@ export function loadDailyReport(dateStr) {
     rawCls = raw;
 
     const subInfos = resolveSubjectInfo(rawCls, false);
-    const displayCls = subInfos.length > 1 
-      ? (subInfos[0].pkgBadge || rawCls)
-      : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title);
+    const displayCls = subInfos.length > 0
+      ? (subInfos.length > 1 
+          ? (subInfos[0].pkgBadge || rawCls)
+          : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title))
+      : (rawCls || (isAr ? "بدون باقة" : "No Package"));
 
     attendedList.push({
       id: st.id,
@@ -3068,9 +3088,11 @@ export function loadDailyReport(dateStr) {
     }
 
     const subInfos = resolveSubjectInfo(raw, false);
-    const displayCls = subInfos.length > 1 
-      ? (subInfos[0].pkgBadge || raw) 
-      : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title);
+    const displayCls = subInfos.length > 0
+      ? (subInfos.length > 1 
+          ? (subInfos[0].pkgBadge || raw) 
+          : (subInfos[0].pkgBadge ? `${subInfos[0].title} (${subInfos[0].pkgBadge})` : subInfos[0].title))
+      : (raw || (isAr ? "بدون باقة" : "No Package"));
 
     absentList.push({
       id: st.id,
