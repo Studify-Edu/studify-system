@@ -822,6 +822,7 @@ let students = {};
 let packages = {};
 let groupFees = {};
 let attByDate = {};
+let attSubjectsByDate = {};
 let revenueByDate = {};
 let sessionStudentsByDate = {};
 
@@ -951,6 +952,7 @@ if (supabase) {
           if (payload.new && payload.new.config) {
             const cfg = payload.new.config;
             if (cfg.att_by_date) attByDate = cfg.att_by_date;
+            if (cfg.att_subjects_by_date) attSubjectsByDate = cfg.att_subjects_by_date;
             if (cfg.revenue_by_date) revenueByDate = cfg.revenue_by_date;
             if (cfg.session_students_by_date) sessionStudentsByDate = cfg.session_students_by_date;
             if (cfg.daily_approval_map) {
@@ -2091,6 +2093,7 @@ async function loadAllAdminData() {
       localStorage.setItem('studify_daily_approval_map', JSON.stringify(dailyApprovalMap));
 
       attByDate = cfg.att_by_date || cfg.attendance_by_date || {};
+      if (cfg.att_subjects_by_date) attSubjectsByDate = cfg.att_subjects_by_date;
       if (cfg.revenue_by_date) revenueByDate = cfg.revenue_by_date;
       if (cfg.session_students_by_date && typeof cfg.session_students_by_date === 'object') {
         sessionStudentsByDate = cfg.session_students_by_date;
@@ -2900,36 +2903,68 @@ export function loadDailyReport(dateStr) {
 
   // 2. BUILD ACTIVE SUBJECTS BREAKDOWN (ONLY subjects with attendees today)
   const groups = {};
-  ids.forEach(id => {
-    const st = (students && students[id]) ? students[id] : null;
-    let cls = '';
-    if (st) {
-      let raw = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة' && st.className !== 'No Package') 
-        ? st.className.trim() 
-        : '';
-      if (/^01[0-9]{9}$/.test(raw) || /^\d{10,11}$/.test(raw)) raw = '';
-      if (!raw && Array.isArray(st.packages) && st.packages.length > 0) {
-        const vPkg = st.packages.find(x => x && x !== 'بدون باقة' && !/^01[0-9]{9}$/.test(x));
-        if (vPkg) raw = vPkg.trim();
+  const daySubjMap = (attSubjectsByDate && attSubjectsByDate[d]) ? attSubjectsByDate[d] : null;
+
+  if (daySubjMap && Object.keys(daySubjMap).length > 0) {
+    // Mode A: Active Sessions from attSubjectsByDate (exact subjects selected by assistant!)
+    Object.keys(daySubjMap).forEach(subjName => {
+      const studentIds = daySubjMap[subjName] || [];
+      if (!Array.isArray(studentIds) || studentIds.length === 0) return;
+
+      // Find package tag if available from students attending this subject
+      let pkgBadge = '';
+      const sampleSt = (students && studentIds[0]) ? students[studentIds[0]] : null;
+      if (sampleSt) {
+        if (Array.isArray(sampleSt.packages) && sampleSt.packages.length > 0) {
+          const vP = sampleSt.packages.find(p => p && p !== 'بدون باقة' && !/^01[0-9]{9}$/.test(p));
+          if (vP) pkgBadge = vP;
+        } else if (sampleSt.className && sampleSt.className !== 'عام' && sampleSt.className !== 'بدون باقة') {
+          pkgBadge = sampleSt.className;
+        }
       }
-      cls = raw;
-    }
-    
-    const subInfos = resolveSubjectInfo(cls, false);
-    subInfos.forEach(info => {
-      const key = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
-      if (!groups[key]) {
-        groups[key] = {
-          title: info.title,
-          pkgBadge: info.pkgBadge,
-          isSession: false,
-          count: 0,
-          revenue: 0
-        };
-      }
-      groups[key].count++;
+
+      const key = pkgBadge ? `${subjName}:::${pkgBadge}` : subjName;
+      groups[key] = {
+        title: subjName,
+        pkgBadge: pkgBadge,
+        isSession: false,
+        count: studentIds.length,
+        revenue: 0
+      };
     });
-  });
+  } else {
+    // Mode B: Fallback for historical dates (legacy)
+    ids.forEach(id => {
+      const st = (students && students[id]) ? students[id] : null;
+      let cls = '';
+      if (st) {
+        let raw = (st.className && st.className !== 'عام' && st.className !== 'General' && st.className !== 'بدون باقة' && st.className !== 'No Package') 
+          ? st.className.trim() 
+          : '';
+        if (/^01[0-9]{9}$/.test(raw) || /^\d{10,11}$/.test(raw)) raw = '';
+        if (!raw && Array.isArray(st.packages) && st.packages.length > 0) {
+          const vPkg = st.packages.find(x => x && x !== 'بدون باقة' && !/^01[0-9]{9}$/.test(x));
+          if (vPkg) raw = vPkg.trim();
+        }
+        cls = raw;
+      }
+      
+      const subInfos = resolveSubjectInfo(cls, false);
+      subInfos.forEach(info => {
+        const key = info.pkgBadge ? `${info.title}:::${info.pkgBadge}` : info.title;
+        if (!groups[key]) {
+          groups[key] = {
+            title: info.title,
+            pkgBadge: info.pkgBadge,
+            isSession: false,
+            count: 0,
+            revenue: 0
+          };
+        }
+        groups[key].count++;
+      });
+    });
+  }
 
   sessList.forEach(sSt => {
     let cls = (sSt && sSt.className && sSt.className !== 'بدون باقة') ? sSt.className.trim() : '';
@@ -9034,3 +9069,24 @@ window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   window.deferredPWAInstallPrompt = e;
 });
+
+// iOS Safari PWA Installation helper
+(function initIosPwaPrompt() {
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  const dismissed = localStorage.getItem('studify_ios_pwa_dismissed');
+
+  if (isIos && !isStandalone && !dismissed) {
+    setTimeout(() => {
+      const banner = document.getElementById('iosPwaBanner');
+      if (banner) banner.classList.remove('hidden');
+    }, 2500);
+  }
+
+  window.dismissIosPwaBanner = function() {
+    const banner = document.getElementById('iosPwaBanner');
+    if (banner) banner.classList.add('hidden');
+    localStorage.setItem('studify_ios_pwa_dismissed', 'true');
+  };
+})();
+

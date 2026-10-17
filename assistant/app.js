@@ -4337,6 +4337,7 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
   }
 
   let unpaidDebtOnAttendedPkg = 0;
+  let remainingSessionsOnPkg = null;
 
   if (selectedSubject) {
       if (s.isSessionStudent) {
@@ -4382,6 +4383,22 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
                           }
                       }
 
+                      // Check session limit if package is session-based
+                      if (pkgDetails && (pkgDetails.expiryType === 'sessions' || pkgDetails.expiryType === 'both') && Number(pkgDetails.sessionLimit) > 0) {
+                          const limit = Number(pkgDetails.sessionLimit);
+                          let usedCount = 0;
+                          if (Array.isArray(s.attendance)) {
+                              usedCount = s.attendance.filter(a => a && (a.pkgName === pName || (a.subject && isPackageMatchingSubject(pkgDetails, pName, a.subject)))).length;
+                          } else if (Array.isArray(s.attendanceDates)) {
+                              usedCount = s.attendanceDates.length;
+                          }
+                          if (usedCount >= limit) {
+                              pkgError = `الطالب استنفذ عدد الحصص المسموح بها في باقة (${pName}) [${limit} حصة]`;
+                              continue;
+                          }
+                          remainingSessionsOnPkg = limit - (usedCount + 1);
+                      }
+
                       // Calculate debt for informational notice only (does not block attendance)
                       let pPaid = 0;
                       if (Array.isArray(s.payments)) {
@@ -4407,15 +4424,54 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
       }
   }
   
+  // Check if student has already attended THIS specific subject on date d
+  if (!Array.isArray(s.attendance)) s.attendance = [];
+  const alreadyAttendedThisSubject = s.attendance.some(a => {
+      if (!a) return false;
+      const aDate = typeof a === 'string' ? a : a.date;
+      const aSubj = typeof a === 'object' ? (a.subject || '') : '';
+      return aDate === d && (areSubjectsMatching(aSubj, selectedSubject) || aSubj === selectedSubject);
+  });
+
+  if (alreadyAttendedThisSubject) {
+      showFullscreenFeedback(false, true);
+      const isAr = (typeof currentLang === "undefined" || currentLang === "ar");
+      return { 
+          ok: false, 
+          msg: isAr ? `الطالب مسجل حضور بالفعل اليوم في مادة (${selectedSubject})` : `Student already attended (${selectedSubject}) today` 
+      };
+  }
+
+  // 1. Add date to s.attendanceDates for overall daily presence
   if (!s.attendanceDates) s.attendanceDates = [];
-  s.attendanceDates = Array.from(new Set(s.attendanceDates));
-  if(!s.attendanceDates.includes(d)) {
-  s.attendanceDates.push(d); 
-  if(!attByDate[d]) attByDate[d] = []; 
-  attByDate[d].push(String(id)); 
+  if (!s.attendanceDates.includes(d)) {
+      s.attendanceDates.push(d);
+  }
+
+  // 2. Add detailed attendance record to s.attendance
+  s.attendance.push({
+      date: d,
+      subject: selectedSubject,
+      pkgName: validPkgName || s.className || '',
+      timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+  });
+
+  // 3. Add to overall attByDate[d] (unique IDs per date)
+  if (!attByDate[d]) attByDate[d] = [];
+  if (!attByDate[d].includes(String(id))) {
+      attByDate[d].push(String(id));
+  }
+
+  // 4. Add to attSubjectsByDate[d][selectedSubject]
+  if (!attSubjectsByDate || typeof attSubjectsByDate !== 'object') attSubjectsByDate = {};
+  if (!attSubjectsByDate[d] || typeof attSubjectsByDate[d] !== 'object') attSubjectsByDate[d] = {};
+  if (!Array.isArray(attSubjectsByDate[d][selectedSubject])) attSubjectsByDate[d][selectedSubject] = [];
+  if (!attSubjectsByDate[d][selectedSubject].includes(String(id))) {
+      attSubjectsByDate[d][selectedSubject].push(String(id));
+  }
   
   if (s.isSessionStudent) {
-      s.sessionBalance = (s.sessionBalance || 0) - 1;
+      s.sessionBalance = Math.max(0, (s.sessionBalance || 0) - 1);
   }
   
   saveAttendanceOnly(s.id); 
@@ -4423,31 +4479,54 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
   triggerEdgeFlash(); 
   showFullscreenFeedback(true, false);
   
-  let successMsg = t("msg_att_ok");
+  const isAr = (typeof currentLang === "undefined" || currentLang === "ar");
+  let successMsg = isAr ? `تم تسجيل حضور (${selectedSubject}) بنجاح` : `Attendance for (${selectedSubject}) recorded successfully`;
+  if (remainingSessionsOnPkg !== null) {
+      successMsg += isAr ? ` [المتبقي بالباقة: ${remainingSessionsOnPkg} حصة]` : ` [Remaining: ${remainingSessionsOnPkg} sessions]`;
+  } else if (s.isSessionStudent) {
+      successMsg += isAr ? ` [رصيد الحصص المتبقي: ${s.sessionBalance || 0}]` : ` [Remaining balance: ${s.sessionBalance || 0}]`;
+  }
   if (unpaidDebtOnAttendedPkg > 0) {
-      const isAr = (typeof currentLang === "undefined" || currentLang === "ar");
       successMsg += isAr ? ` (متبقي رسوم: ${unpaidDebtOnAttendedPkg} ج)` : ` (Unpaid: ${unpaidDebtOnAttendedPkg} EGP)`;
   }
   return { ok: true, msg: successMsg };
   }
-  showFullscreenFeedback(false, true);
-  return { ok: false, msg: t("msg_att_warn") };
-  }
 
- function removeAttendance(id, d) {
-  const s = students[String(id)]; if(!s) return;
-  if (s.attendanceDates && s.attendanceDates.includes(d) && s.isSessionStudent) {
-    s.sessionBalance = (s.sessionBalance || 0) + 1;
+  function removeAttendance(id, d, targetSubject = null) {
+    const s = students[String(id)]; if(!s) return;
+    
+    if (targetSubject && Array.isArray(s.attendance)) {
+      s.attendance = s.attendance.filter(a => !(a && (typeof a === 'object' ? a.date === d && (a.subject === targetSubject || areSubjectsMatching(a.subject, targetSubject)) : a === d)));
+      if (attSubjectsByDate && attSubjectsByDate[d] && attSubjectsByDate[d][targetSubject]) {
+        attSubjectsByDate[d][targetSubject] = attSubjectsByDate[d][targetSubject].filter(x => String(x) !== String(id));
+        if (attSubjectsByDate[d][targetSubject].length === 0) delete attSubjectsByDate[d][targetSubject];
+      }
+    } else {
+      if (Array.isArray(s.attendance)) {
+        s.attendance = s.attendance.filter(a => !(a && (typeof a === 'object' ? a.date === d : a === d)));
+      }
+      if (attSubjectsByDate && attSubjectsByDate[d]) {
+        Object.keys(attSubjectsByDate[d]).forEach(sub => {
+          attSubjectsByDate[d][sub] = (attSubjectsByDate[d][sub] || []).filter(x => String(x) !== String(id));
+          if (attSubjectsByDate[d][sub].length === 0) delete attSubjectsByDate[d][sub];
+        });
+      }
+    }
+
+    // If student has no other attendance entries on date d:
+    const hasOtherOnDate = Array.isArray(s.attendance) && s.attendance.some(a => (typeof a === 'object' ? a.date === d : a === d));
+    if (!hasOtherOnDate) {
+      if (s.attendanceDates) s.attendanceDates = s.attendanceDates.filter(date => date !== d);
+      if (attByDate && attByDate[d]) attByDate[d] = attByDate[d].filter(x => String(x) !== String(id));
+    }
+
+    if (s.isSessionStudent) {
+      s.sessionBalance = (s.sessionBalance || 0) + 1;
+    }
+
+    saveAttendanceOnly(id);
+    if (typeof updateTopStats === "function") updateTopStats();
   }
-  if (s.attendanceDates) {
-    s.attendanceDates = s.attendanceDates.filter(date => date !== d);
-  }
-  if (attByDate[d]) {
-    attByDate[d] = attByDate[d].filter(x => String(x) !== String(id));
-  }
-  saveAttendanceOnly(id);
-  if (typeof updateTopStats === "function") updateTopStats();
-}
 
  // ==========================================
  // 10. FINANCIAL & ANALYTICS MODULE
@@ -5136,14 +5215,24 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
  if($("reportMoney")) $("reportMoney").textContent = rev;
  if($("reportExpense")) $("reportExpense").textContent = totalExp;
  
- let groups = {}; 
- for (let i = 0; i < ids.length; i++) {
- let id = ids[i];
- const st = students[id]; 
- let c = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
- if(!groups[c]) groups[c] = { count: 0 }; 
- groups[c].count++;
- }
+  let groups = {}; 
+  const daySubjMap = (attSubjectsByDate && attSubjectsByDate[d]) ? attSubjectsByDate[d] : null;
+  if (daySubjMap && Object.keys(daySubjMap).length > 0) {
+    Object.keys(daySubjMap).forEach(subName => {
+      const arr = daySubjMap[subName] || [];
+      if (arr.length > 0) {
+        groups[subName] = { count: arr.length };
+      }
+    });
+  } else {
+    for (let i = 0; i < ids.length; i++) {
+      let id = ids[i];
+      const st = students[id]; 
+      let c = (st && st.className && st.className !== "بدون باقة" && st.className !== "Without Package") ? st.className.trim() : (currentLang === "ar" ? "بدون باقة" : "Without Package");
+      if(!groups[c]) groups[c] = { count: 0 }; 
+      groups[c].count++;
+    }
+  }
  
  let html = "";
  for(let g in groups) {
@@ -15735,3 +15824,24 @@ window.addEventListener('appinstalled', () => {
   window.deferredPWAInstallPrompt = null;
   showToast(typeof currentLang !== "undefined" && currentLang === "en" ? "Studify installed as a standalone application!" : "تم تثبيت Studify كبرنامج مستقل على جهازك بنجاح!", "success");
 });
+
+// iOS Safari PWA Installation helper
+(function initIosPwaPrompt() {
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  const dismissed = localStorage.getItem('studify_ios_pwa_dismissed');
+
+  if (isIos && !isStandalone && !dismissed) {
+    setTimeout(() => {
+      const banner = document.getElementById('iosPwaBanner');
+      if (banner) banner.classList.remove('hidden');
+    }, 2500);
+  }
+
+  window.dismissIosPwaBanner = function() {
+    const banner = document.getElementById('iosPwaBanner');
+    if (banner) banner.classList.add('hidden');
+    localStorage.setItem('studify_ios_pwa_dismissed', 'true');
+  };
+})();
+
