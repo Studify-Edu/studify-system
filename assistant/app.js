@@ -4338,6 +4338,7 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
 
   let unpaidDebtOnAttendedPkg = 0;
   let remainingSessionsOnPkg = null;
+  let validPkgName = null;
 
   if (selectedSubject) {
       if (s.isSessionStudent) {
@@ -4346,7 +4347,7 @@ window.isPackageMatchingSubject = isPackageMatchingSubject;
               return { ok: false, msg: "الطالب استنفذ رصيد الحصص الخاص به، يرجى شحن الرصيد أولاً" };
           }
       } else {
-          let validPkgName = null;
+          validPkgName = null;
           let pkgError = `الطالب غير مشترك في باقة تخص مادة (${selectedSubject})`;
           
           const candidatePkgs = [];
