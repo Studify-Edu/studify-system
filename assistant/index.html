@@ -819,7 +819,7 @@
     
     <div class="payRow pay-method-cash" id="newPaymentBox">
       <span class="payLabel" data-i18n="lbl_new_pay"> إيداع جديد:</span>
-      <div class="row" style="flex:1; gap:8px; align-items:center;">
+      <div class="row" style="flex:1; gap:8px; align-items:center; flex-wrap:wrap;">
         <input id="newPaymentInput" type="number" class="inp" placeholder="المبلغ" data-i18n-placeholder="plc_new_payment_amt" style="min-width:80px; flex:1; transition:all 0.3s ease;">
         <div class="payment-method-selector-wrap" style="position:relative; display:inline-flex; align-items:center;">
           <select id="newPaymentMethod" class="inp" style="width:auto; font-size:0.88em; padding-inline-start:34px; cursor:pointer; transition:all 0.3s ease;" onchange="window.updatePaymentMethodTheme(this.value)">
@@ -830,6 +830,9 @@
           <span id="newPaymentMethodIcon" style="position:absolute; inset-inline-start:11px; pointer-events:none; font-size:0.95em; transition:all 0.25s ease;">
             <i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i>
           </span>
+        </div>
+        <div class="payment-date-selector-wrap" style="position:relative; display:inline-flex; align-items:center;" title="تاريخ تسجيل الدفعة">
+          <input type="date" id="newPaymentDate" class="inp" style="width:auto; font-size:0.85em; padding:6px 10px; cursor:pointer; border-radius:8px; font-weight:700;" title="تاريخ تسجيل الدفعة">
         </div>
         <button id="addPaymentBtn" class="btn success" style="padding:0 16px; font-weight:800; min-height:38px; display:inline-flex; align-items:center; gap:6px; transition:all 0.3s ease;"><i class="fa-solid fa-money-bill-1-wave"></i> <span data-i18n="btn_deposit">إيداع</span></button>
       </div>
@@ -2304,7 +2307,7 @@
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Studify Studio Real MP3 Sound Engine -->
   <script src="sounds.js?v=STUDIO_REAL_V8"></script>
-  <script type="module" src="app.js?v=STUDIFY_ASST_V205"></script>
+  <script type="module" src="app.js?v=STUDIFY_ASST_V206"></script>
 
   
   <!-- Ultra Premium Add Assistant Modal -->

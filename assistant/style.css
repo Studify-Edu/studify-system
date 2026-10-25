@@ -9289,3 +9289,26 @@ body.system-hard-locked #appBox {
   }
 }
 
+
+
+/* ── PAYMENT DATE SELECTOR STYLING ── */
+.payment-date-selector-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+#newPaymentDate {
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid var(--border, #cbd5e1);
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-primary, #0f172a);
+  padding: 6px 10px;
+  transition: all 0.25s ease;
+}
+#newPaymentDate:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}

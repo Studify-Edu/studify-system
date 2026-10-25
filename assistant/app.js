@@ -1627,7 +1627,8 @@ let currentFilteredList = [];
 
    const dateInputs = [
      document.getElementById("quickAttendanceDateInp"),
-     document.getElementById("sheetAttendanceDateInp")
+     document.getElementById("sheetAttendanceDateInp"),
+     document.getElementById("newPaymentDate")
    ];
    dateInputs.forEach(inp => {
      if (inp && inp.value !== targetDate) {
@@ -3896,6 +3897,10 @@ const st = students[id];
    if($("stParentPhone")) $("stParentPhone").value = st.parentPhone || "";
    if($("stClass")) $("stClass").value = st.className || "";
    if($("newPaymentInput")) $("newPaymentInput").value = "";
+    if($("newPaymentDate")) {
+      const activeDate = (typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr();
+      $("newPaymentDate").value = activeDate || nowDateStr();
+    }
    if($("newSessionBalanceInp")) $("newSessionBalanceInp").value = "";
    if($("stDiscount")) $("stDiscount").value = "";
    if($("quickNoteInp")) $("quickNoteInp").value = "";
@@ -6377,12 +6382,28 @@ on("saveStudentBtn", "click", function() {
   if ($("stName")) st.name = $("stName").value; 
   if ($("stPhone")) st.phone = $("stPhone").value;
   
+  const today = nowDateStr();
+  const dateInp = $("newPaymentDate");
+  const chosenDate = (dateInp && dateInp.value && /^\d{4}-\d{2}-\d{2}$/.test(dateInp.value)) 
+    ? dateInp.value 
+    : ((typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : today);
+  const payDate = (chosenDate && /^\d{4}-\d{2}-\d{2}$/.test(chosenDate)) ? chosenDate : today;
+  const isPastPayment = (payDate !== today);
+
   st.paid = (st.paid || 0) + v;
   if (!st.payments) st.payments = [];
-  st.payments.push({ date: nowDateStr(), amount: v, method: method, pkgName: pkgName });
-  const today = nowDateStr();
-  if (!revenueByDate[today]) revenueByDate[today] = 0;
-  revenueByDate[today] += v;
+  st.payments.push({ 
+    id: Date.now(),
+    date: payDate, 
+    amount: v, 
+    method: method, 
+    pkgName: pkgName,
+    time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+    timestamp: Date.now()
+  });
+
+  if (!revenueByDate[payDate]) revenueByDate[payDate] = 0;
+  revenueByDate[payDate] += v;
   
   if (stType !== "session") {
       st.payments.forEach(p => {
@@ -6408,7 +6429,14 @@ on("saveStudentBtn", "click", function() {
       }
     } else playSound("money");
   }
-  showToast(t("msg_deposit"));
+  if (isPastPayment) {
+    const isAr = (currentLang === "ar");
+    showToast(isAr 
+      ? `تم تسجيل دفعة بقيمة ${v} ج لتاريخ (${payDate}) بنجاح - تم ترحيلها للتاريخ القديم ولن تُضاف لخزينة اليوم` 
+      : `Payment of ${v} EGP recorded for past date (${payDate}) - Excluded from today's drawer`, "warning");
+  } else {
+    showToast(t("msg_deposit"), "success");
+  }
   
   if(st.phone) {
       const activeCollector = localStorage.getItem("ca_current_username") || currentManager || ((typeof currentUserRole !== 'undefined' && currentUserRole === "admin") ? "المدير العام" : "المساعد المسؤول");
@@ -11047,6 +11075,10 @@ window.openSessionStudentModal = function(item) {
                 <option value="wallet">${isAr ? 'فودافون كاش' : 'Vodafone Cash'}</option>
               </select>
             </div>
+            <div>
+              <label style="display:block; font-size:0.85em; font-weight:bold; margin-bottom:4px;">${isAr ? 'تاريخ العملية / التحصيل:' : 'Transaction Date:'}</label>
+              <input type="date" id="swalSessDate" class="swal2-input" value="${(typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr()}" style="width:100%; margin:0;">
+            </div>
           </div>
         `,
         focusConfirm: false,
@@ -11066,12 +11098,14 @@ window.openSessionStudentModal = function(item) {
             Swal.showValidationMessage(isAr ? "يرجى إدخال مبلغ صحيح" : "Please enter a valid amount");
             return false;
           }
-          return { count, amt, method };
+          const targetDate = document.getElementById("swalSessDate")?.value || ((typeof window.getAttendanceActiveDate === 'function') ? window.getAttendanceActiveDate() : nowDateStr());
+          return { count, amt, method, targetDate };
         }
       }).then(async res => {
         if (res.isConfirmed && res.value) {
-          const { count, amt, method } = res.value;
-          const today = nowDateStr();
+          const { count, amt, method, targetDate } = res.value;
+          const today = targetDate || nowDateStr();
+          const isPastRecharge = (today !== nowDateStr());
 
           let targetSt = students[id];
           if (!targetSt) {
@@ -11121,7 +11155,13 @@ window.openSessionStudentModal = function(item) {
           await saveAll();
           window.renderSessionFinanceStats();
           window.renderAllSessionStudentsTable();
-          showToast("تم شحن " + count + " حصة بنجاح للطالب (" + st.name + ") - الرصيد الجديد: " + targetSt.sessionBalance + " حصة", "success");
+          if (amt > 0 && isPastRecharge) {
+            showToast(isAr 
+              ? `تم شحن ${count} حصة بنجاح للطالب (${st.name}) لتاريخ (${today}) - تم ترحيلها للتاريخ القديم ولن تُضاف لخزينة اليوم` 
+              : `Recharged ${count} sessions for (${st.name}) on past date (${today}) - Excluded from today`, "warning");
+          } else {
+            showToast("تم شحن " + count + " حصة بنجاح للطالب (" + st.name + ") - الرصيد الجديد: " + targetSt.sessionBalance + " حصة", "success");
+          }
         }
       });
     }
@@ -11688,10 +11728,16 @@ window.openSessionStudentModal = function(item) {
   if (typeof renderList === "function") renderList(false);
   if (typeof window.refreshSessionFormAutoId === "function") window.refreshSessionFormAutoId();
 
-  const toastMsg = amount > 0
-    ? `تم تسجيل الحضور (${stId}) وتحصيل ${amount} ج (الرصيد المتبقي: ${newBalance} حصة)`
-    : `تم تسجيل الحضور وخصم حصة من رصيد الطالب (${stId}) (الرصيد المتبقي: ${newBalance} حصة)`;
-  showToast(toastMsg, "success");
+  const isPastSess = (today !== nowDateStr());
+  let toastMsg = "";
+  if (amount > 0) {
+    toastMsg = isPastSess
+      ? `تم تسجيل الحضور (${stId}) وتحصيل ${amount} ج لتاريخ (${today}) - تم ترحيلها للتاريخ القديم ولن تُضاف لخزينة اليوم`
+      : `تم تسجيل الحضور (${stId}) وتحصيل ${amount} ج (الرصيد المتبقي: ${newBalance} حصة)`;
+  } else {
+    toastMsg = `تم تسجيل الحضور وخصم حصة من رصيد الطالب (${stId}) (الرصيد المتبقي: ${newBalance} حصة)`;
+  }
+  showToast(toastMsg, isPastSess && amount > 0 ? "warning" : "success");
   if (typeof AssistantSounds !== "undefined") AssistantSounds.cloudSyncSuccess(); else playSound("pop");
 
   if($("sessStName")) $("sessStName").value = "";
