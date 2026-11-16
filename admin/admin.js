@@ -360,6 +360,8 @@ const ADMIN_DICT = {
   "stat_shift_revenue": { ar: "إيراد الوردية (ج)", en: "Shift Revenue (EGP)" },
   "stat_absent_today": { ar: "غياب اليوم", en: "Absent Today" },
   "stat_expenses_today": { ar: "مصروفات اليوم (ج)", en: "Today's Expenses (EGP)" },
+  "btn_copy_daily_report": { ar: "نسخ التقرير للواتساب", en: "Copy Report for WhatsApp" },
+  "stat_daily_net_revenue": { ar: "صافي اليومية (الخزينة)", en: "Net Daily Revenue (Drawer)" },
   "daily_breakdown_title": { ar: "تفاصيل الحضور والمجموعات ليوم:", en: "Attendance & Groups Details for:" },
   "daily_reject_lbl": { ar: "سبب التعليق أو الرفض (يظهر للمساعدين):", en: "Suspension or Rejection Reason (Visible to Assistants):" },
   "daily_reject_ph": { ar: "اكتب سبب الرفض أو التعليمات هنا..", en: "Type rejection reason or instructions here.." },
@@ -2698,14 +2700,14 @@ export function loadDailyReport(dateStr) {
   if (bAtt) bAtt.textContent = totalAttended;
   if (bAbs) bAbs.textContent = Math.max(0, totalSt - totalAttended);
 
+  let todayNewCount = 0;
+  Object.values(students || {}).forEach(st => {
+    if (!st || !st.name) return;
+    const jDate = st.joinedDate || (st.createdAt ? st.createdAt.split('T')[0] : '');
+    if (jDate === d) todayNewCount++;
+  });
   const statDailyNew = document.getElementById("statDailyNewStudents");
   if (statDailyNew) {
-    let todayNewCount = 0;
-    Object.values(students || {}).forEach(st => {
-      if (!st || !st.name) return;
-      const jDate = st.joinedDate || (st.createdAt ? st.createdAt.split('T')[0] : '');
-      if (jDate === d) todayNewCount++;
-    });
     statDailyNew.textContent = todayNewCount;
   }
 
@@ -3149,6 +3151,16 @@ export function loadDailyReport(dateStr) {
   window.populateDailyAbsentClassFilter(absentList);
   window.renderDailyAbsentTable(absentList);
 
+  // Cache comprehensive daily report data for copy / export
+  window.dailyCachedGroups = groups;
+  window.dailyCachedExpenses = expArr;
+  window.dailyCachedNewCount = todayNewCount;
+  window.dailyCachedTotalAttended = totalAttended;
+  window.dailyCachedTotalAbsent = Math.max(0, totalSt - totalAttended);
+  window.dailyCachedGrossRev = rev;
+  window.dailyCachedTotalExp = totalExp;
+  window.dailyCachedNetRev = netDailyRev;
+
   // Maintain active subtab
   window.switchDailyReportSubtab(window.currentDailySubtab || 'subjects');
 }
@@ -3372,6 +3384,309 @@ window.filterDailyAbsentTable = function() {
   });
   window.renderDailyAbsentTable(filtered);
 };
+
+// ========================================================
+// 4.5 COMPREHENSIVE DAILY REPORT EXPORT (WHATSAPP COPY)
+// ========================================================
+async function copyDailyTextToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      console.warn("navigator.clipboard failed, fallback to execCommand", e);
+    }
+  }
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-999999px";
+  textArea.style.top = "-999999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    const successful = document.execCommand('copy');
+    textArea.remove();
+    return successful;
+  } catch (err) {
+    textArea.remove();
+    return false;
+  }
+}
+
+export async function copyDailyReportToWhatsApp() {
+  const isAr = (currentLang === "ar");
+  const d = window._currentDailyReportDate || document.getElementById("adminDailyDateInput")?.value || (typeof nowDateStr === 'function' ? nowDateStr() : new Date().toISOString().split('T')[0]);
+
+  // Ensure data for date d is fully loaded and cached
+  if (window._currentDailyReportDate !== d || !window.dailyCachedGroups) {
+    loadDailyReport(d);
+  }
+
+  const centerName = (typeof centerSettings !== 'undefined' && centerSettings?.centerName) 
+    ? centerSettings.centerName 
+    : (isAr ? 'السنتر التعليمي' : 'Educational Center');
+
+  // Format Date and Day Name
+  let dayName = "";
+  try {
+    const parts = d.split('-').map(Number);
+    if (parts.length === 3) {
+      const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+      const arDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      dayName = isAr ? arDays[dt.getDay()] : dt.toLocaleDateString('en-US', { weekday: 'long' });
+    }
+  } catch(e) {}
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+
+  // 1. Attendance Metrics
+  const totalAttended = window.dailyCachedTotalAttended || 0;
+  const ids = (attByDate && attByDate[d]) ? attByDate[d] : [];
+  const sessList = (sessionStudentsByDate && sessionStudentsByDate[d]) ? sessionStudentsByDate[d] : [];
+  const totalAbsent = window.dailyCachedTotalAbsent || 0;
+  const newCount = window.dailyCachedNewCount || 0;
+
+  // 2. Groups / Subjects
+  const groups = window.dailyCachedGroups || {};
+  const groupKeys = Object.keys(groups);
+
+  // 3. Financials
+  const grossRev = window.dailyCachedGrossRev || 0;
+  const totalExp = window.dailyCachedTotalExp || 0;
+  const netRev = window.dailyCachedNetRev !== undefined ? window.dailyCachedNetRev : (grossRev - totalExp);
+
+  // Revenue by method
+  let cashRev = 0, instaRev = 0, walletRev = 0, otherRev = 0;
+  const payments = window.dailyCachedPayments || [];
+  payments.forEach(p => {
+    const m = String(p.method || 'cash').toLowerCase().trim();
+    const amt = Number(p.amount) || 0;
+    if (m === 'cash' || m === 'كاش') cashRev += amt;
+    else if (m === 'instapay' || m === 'انستاباي' || m === 'إنستاباي') instaRev += amt;
+    else if (m === 'wallet' || m === 'vodafone' || m === 'محفظة' || m === 'فودافون كاش') walletRev += amt;
+    else otherRev += amt;
+  });
+
+  // Expenses by method
+  let cashExp = 0, instaExp = 0, walletExp = 0, otherExp = 0;
+  const expenses = window.dailyCachedExpenses || [];
+  expenses.forEach(e => {
+    const m = String(e.method || 'cash').toLowerCase().trim();
+    const amt = Number(e.amount) || 0;
+    if (m === 'cash' || m === 'كاش') cashExp += amt;
+    else if (m === 'instapay' || m === 'انستاباي' || m === 'إنستاباي') instaExp += amt;
+    else if (m === 'wallet' || m === 'vodafone' || m === 'محفظة' || m === 'فودافون كاش') walletExp += amt;
+    else otherExp += amt;
+  });
+
+  // Net Cash in Drawer (صافي درج الكاش)
+  const netCash = cashRev - cashExp;
+
+  // Build WhatsApp text
+  let lines = [];
+  lines.push("═════════════════════════");
+  lines.push(isAr ? `📊 *تقرير اليومية الشامل*` : `📊 *Comprehensive Daily Report*`);
+  lines.push(isAr ? `🏫 *السنتر:* ${centerName}` : `🏫 *Center:* ${centerName}`);
+  lines.push(isAr ? `📅 *التاريخ:* ${dayName ? dayName + '، ' : ''}${d}` : `📅 *Date:* ${dayName ? dayName + ', ' : ''}${d}`);
+  lines.push(isAr ? `⏰ *وقت التقرير:* ${timeStr}` : `⏰ *Report Time:* ${timeStr}`);
+  lines.push("═════════════════════════");
+  lines.push("");
+
+  // Section 1: Attendance
+  if (isAr) {
+    lines.push(`👥 *١. ملخص الحضور والطلاب:*`);
+    lines.push(`▫️ إجمالي الحضور: *${totalAttended}* طالب`);
+    lines.push(`   • طلاب اشتراكات: *${ids.length}*`);
+    lines.push(`   • طلاب حصص: *${sessList.length}*`);
+    lines.push(`▫️ إجمالي الغياب (المقيدين): *${totalAbsent}* طالب`);
+    lines.push(`▫️ طلاب جدد مسجلين اليوم: *${newCount}* طالب`);
+  } else {
+    lines.push(`👥 *1. Attendance & Student Summary:*`);
+    lines.push(`▫️ Total Attended: *${totalAttended}* students`);
+    lines.push(`   • Enrolled subscribers: *${ids.length}*`);
+    lines.push(`   • Session students: *${sessList.length}*`);
+    lines.push(`▫️ Total Absent (Enrolled): *${totalAbsent}* students`);
+    lines.push(`▫️ New students joined today: *${newCount}* students`);
+  }
+  lines.push("");
+
+  // Section 2: Subjects Breakdown
+  if (isAr) {
+    lines.push(`📚 *٢. تفصيل المواد والمجموعات الحاضرة:*`);
+    if (groupKeys.length === 0) {
+      lines.push(`- لا توجد مواد أو حضور مسجل لهذا اليوم.`);
+    } else {
+      groupKeys.forEach(k => {
+        const g = groups[k];
+        const typeTag = g.isSession ? " (حصة)" : (g.pkgBadge ? ` [${g.pkgBadge}]` : "");
+        lines.push(`• *${g.title}${typeTag}*: ${g.count} طالب | دخل المادة: ${Number(g.revenue || 0).toLocaleString()} ج`);
+      });
+    }
+  } else {
+    lines.push(`📚 *2. Active Subjects Breakdown:*`);
+    if (groupKeys.length === 0) {
+      lines.push(`- No subjects or attendance recorded for today.`);
+    } else {
+      groupKeys.forEach(k => {
+        const g = groups[k];
+        const typeTag = g.isSession ? " (Session)" : (g.pkgBadge ? ` [${g.pkgBadge}]` : "");
+        lines.push(`• *${g.title}${typeTag}*: ${g.count} students | Income: ${Number(g.revenue || 0).toLocaleString()} EGP`);
+      });
+    }
+  }
+  lines.push("");
+
+  // Section 3: Financial Summary
+  if (isAr) {
+    lines.push(`💰 *٣. الملخص المالي والخزينة:*`);
+    lines.push(`📥 *إجمالي المقبوضات:* *${grossRev.toLocaleString()}* ج`);
+    lines.push(`📤 *إجمالي المصروفات:* *${totalExp.toLocaleString()}* ج`);
+    lines.push(`💵 *صافي اليومية (الخزينة):* *${netRev.toLocaleString()}* ج`);
+    lines.push(`───────────────`);
+    lines.push(`💳 *تفصيل طرق استلام الإيراد:*`);
+    lines.push(`  💵 كاش: ${cashRev.toLocaleString()} ج`);
+    lines.push(`  ⚡ إنستاباي: ${instaRev.toLocaleString()} ج`);
+    lines.push(`  📱 فودافون كاش: ${walletRev.toLocaleString()} ج`);
+    if (otherRev > 0) lines.push(`  🔹 أخرى: ${otherRev.toLocaleString()} ج`);
+    lines.push(`───────────────`);
+    lines.push(`💸 *تفصيل طرق صرف المصروفات:*`);
+    lines.push(`  💵 كاش: ${cashExp.toLocaleString()} ج`);
+    lines.push(`  ⚡ إنستاباي: ${instaExp.toLocaleString()} ج`);
+    lines.push(`  📱 فودافون كاش: ${walletExp.toLocaleString()} ج`);
+    if (otherExp > 0) lines.push(`  🔹 أخرى: ${otherExp.toLocaleString()} ج`);
+    lines.push(`───────────────`);
+    lines.push(`💼 *صافي درج الكاش الفعلي:* *${netCash.toLocaleString()}* ج`);
+  } else {
+    lines.push(`💰 *3. Financial & Drawer Summary:*`);
+    lines.push(`📥 *Total Receipts (Revenue):* *${grossRev.toLocaleString()}* EGP`);
+    lines.push(`📤 *Total Expenses:* *${totalExp.toLocaleString()}* EGP`);
+    lines.push(`💵 *Net Daily Revenue:* *${netRev.toLocaleString()}* EGP`);
+    lines.push(`───────────────`);
+    lines.push(`💳 *Revenue by Payment Method:*`);
+    lines.push(`  💵 Cash: ${cashRev.toLocaleString()} EGP`);
+    lines.push(`  ⚡ InstaPay: ${instaRev.toLocaleString()} EGP`);
+    lines.push(`  📱 Vodafone Cash: ${walletRev.toLocaleString()} EGP`);
+    if (otherRev > 0) lines.push(`  🔹 Other: ${otherRev.toLocaleString()} EGP`);
+    lines.push(`───────────────`);
+    lines.push(`💸 *Expenses by Payment Method:*`);
+    lines.push(`  💵 Cash: ${cashExp.toLocaleString()} EGP`);
+    lines.push(`  ⚡ InstaPay: ${instaExp.toLocaleString()} EGP`);
+    lines.push(`  📱 Vodafone Cash: ${walletExp.toLocaleString()} EGP`);
+    if (otherExp > 0) lines.push(`  🔹 Other: ${otherExp.toLocaleString()} EGP`);
+    lines.push(`───────────────`);
+    lines.push(`💼 *Net Physical Cash in Drawer:* *${netCash.toLocaleString()}* EGP`);
+  }
+  lines.push("");
+
+  // Section 4: Itemized Expenses
+  if (isAr) {
+    lines.push(`🧾 *٤. كشف المصروفات بالتفصيل (${expenses.length}):*`);
+    if (expenses.length === 0) {
+      lines.push(`- لا توجد مصروفات مسجلة لهذا اليوم.`);
+    } else {
+      expenses.forEach((e, idx) => {
+        const reason = e.reason || 'مصروف عام';
+        const amt = Number(e.amount || 0).toLocaleString();
+        let meth = 'كاش';
+        const mLower = String(e.method || 'cash').toLowerCase();
+        if (mLower === 'instapay') meth = 'إنستاباي';
+        else if (mLower === 'wallet') meth = 'فودافون كاش';
+        else if (e.method) meth = e.method;
+        lines.push(`${idx + 1}. ${reason} ⬅️ *${amt} ج* (${meth})`);
+      });
+    }
+  } else {
+    lines.push(`🧾 *4. Itemized Expenses (${expenses.length}):*`);
+    if (expenses.length === 0) {
+      lines.push(`- No expenses recorded for today.`);
+    } else {
+      expenses.forEach((e, idx) => {
+        const reason = e.reason || 'General Expense';
+        const amt = Number(e.amount || 0).toLocaleString();
+        const meth = e.method || 'Cash';
+        lines.push(`${idx + 1}. ${reason} ⬅️ *${amt} EGP* (${meth})`);
+      });
+    }
+  }
+  lines.push("");
+
+  // Section 5: Itemized Collections
+  if (isAr) {
+    lines.push(`📥 *٥. كشف المقبوضات بالتفصيل (${payments.length}):*`);
+    if (payments.length === 0) {
+      lines.push(`- لا توجد تحصيلات مسجلة لهذا اليوم.`);
+    } else {
+      payments.forEach((p, idx) => {
+        const name = p.name || 'طالب';
+        const idTag = p.id ? ` (#${p.id})` : '';
+        const cls = p.className ? ` [${p.className}]` : '';
+        const amt = Number(p.amount || 0).toLocaleString();
+        let mLabel = 'كاش';
+        const mLower = String(p.method || 'cash').toLowerCase();
+        if (mLower === 'instapay') mLabel = 'إنستاباي';
+        else if (mLower === 'wallet') mLabel = 'فودافون كاش';
+        else if (p.method) mLabel = p.method;
+
+        const tLabel = p.type === 'session' ? 'حصة' : (p.type === 'booklet' ? 'مذكرة' : 'باقة');
+        lines.push(`${idx + 1}. *${name}*${idTag}${cls} ⬅️ *${amt} ج* (${mLabel} - ${tLabel})`);
+      });
+    }
+  } else {
+    lines.push(`📥 *5. Itemized Receipts (${payments.length}):*`);
+    if (payments.length === 0) {
+      lines.push(`- No receipts recorded for today.`);
+    } else {
+      payments.forEach((p, idx) => {
+        const name = p.name || 'Student';
+        const idTag = p.id ? ` (#${p.id})` : '';
+        const cls = p.className ? ` [${p.className}]` : '';
+        const amt = Number(p.amount || 0).toLocaleString();
+        const mLabel = p.method || 'Cash';
+        const tLabel = p.type === 'session' ? 'Session' : (p.type === 'booklet' ? 'Booklet' : 'Package');
+        lines.push(`${idx + 1}. *${name}*${idTag}${cls} ⬅️ *${amt} EGP* (${mLabel} - ${tLabel})`);
+      });
+    }
+  }
+  lines.push("");
+  lines.push("═════════════════════════");
+  lines.push(isAr ? "✨ *تم استخراج التقرير آلياً عبر نظام ستوديفاي (Studify)*" : "✨ *Report automatically generated via Studify System*");
+
+  const fullReportText = lines.join("\n");
+
+  // Copy to clipboard
+  const copied = await copyDailyTextToClipboard(fullReportText);
+
+  // Visual button feedback
+  const btn = document.getElementById("btnCopyDailyReport");
+  if (btn) {
+    const origContent = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>${isAr ? "تم النسخ بنجاح!" : "Copied!"}</span>`;
+    btn.style.background = "#15803d";
+    btn.style.borderColor = "#15803d";
+    setTimeout(() => {
+      btn.innerHTML = origContent;
+      btn.style.background = "#25D366";
+      btn.style.borderColor = "#25D366";
+    }, 2500);
+  }
+
+  if (copied) {
+    if (typeof showToast === 'function') {
+      showToast(isAr ? "تم نسخ تقرير اليومية الشامل بنجاح! يمكنك الآن لصقه في الواتساب 📋" : "Daily report copied successfully! Ready to paste into WhatsApp 📋", "success");
+    }
+  } else {
+    if (typeof showToast === 'function') {
+      showToast(isAr ? "تعذر النسخ التلقائي للحافظة، تم فتح نافذة التقرير لنسخه يدوياً" : "Failed to copy automatically, opened text window", "warning");
+    }
+    window.prompt(isAr ? "انسخ التقرير يدوياً من هنا:" : "Copy report manually:", fullReportText);
+  }
+}
+window.copyDailyReportToWhatsApp = copyDailyReportToWhatsApp;
+
+
 
 
 // ========================================================

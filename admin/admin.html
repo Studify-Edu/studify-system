@@ -346,10 +346,14 @@
                 <i class="fa-solid fa-calendar-check" style="color: var(--primary); font-size: 1.15em;"></i>
                 <span data-i18n="daily_breakdown_title" style="font-weight: 800; font-size: 1.05em;">تفاصيل اليومية ليوم:</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <input type="date" id="adminDailyDateInput" class="inp" style="width: auto; font-weight: 700; padding: 6px 12px;" onchange="window.loadDailyReport(this.value)">
                 <button type="button" class="btn secondary smallBtn" onclick="window.refreshCurrentDailyReport()" title="تحديث البيانات">
                   <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+                <button type="button" id="btnCopyDailyReport" class="btn success smallBtn" style="display: inline-flex; align-items: center; gap: 7px; font-weight: 800; padding: 7px 15px; background: #25D366; border-color: #25D366; color: #fff; box-shadow: 0 2px 8px rgba(37,211,102,0.25);" onclick="window.copyDailyReportToWhatsApp()" title="نسخ تقرير اليومية الشامل للواتساب">
+                  <i class="fa-brands fa-whatsapp" style="font-size: 1.2em;"></i>
+                  <span data-i18n="btn_copy_daily_report">نسخ التقرير للواتساب</span>
                 </button>
               </div>
             </div>
