@@ -10327,40 +10327,6 @@ if (document.readyState === "loading") {
 // ========================================================
 // SESSION STUDENTS (طلاب الحصة) ADVANCED ENGINE
 // ========================================================
-window.getNextSessionStudentId = function() {
-  let maxNum = 0;
-  // Check students object
-  const all = Object.values(students || {});
-  for (let i = 0; i < all.length; i++) {
-    const s = all[i];
-    if (s && s.id) {
-      const match = String(s.id).match(/^ST-?(\d+)$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (num > maxNum) maxNum = num;
-      }
-    }
-  }
-  // Also check sessionStudentsByDate records
-  for (let d in sessionStudentsByDate) {
-    const list = sessionStudentsByDate[d] || [];
-    for (let j = 0; j < list.length; j++) {
-      const item = list[j];
-      if (item && item.id) {
-        const match = String(item.id).match(/^ST-?(\d+)$/i);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (num > maxNum) maxNum = num;
-        }
-      }
-    }
-  }
-  const nextNum = maxNum + 1;
-  return `ST-${String(nextNum).padStart(5, '0')}`;
-};
-
-window.refreshSessionFormAutoId = function() {
-  const idInp = $("sessStId");
   if (idInp && (!idInp.value || idInp.getAttribute("data-custom") !== "1")) {
     idInp.value = window.getNextSessionStudentId();
   }
