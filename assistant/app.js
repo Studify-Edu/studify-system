@@ -3415,7 +3415,14 @@ function applyPermissions() {
   const sessionToday = (sessionStudentsByDate[activeAttDate] && Array.isArray(sessionStudentsByDate[activeAttDate])) ? sessionStudentsByDate[activeAttDate].length : 0;
   const todayCount = regularToday + sessionToday;
 
-  const revenue = revenueByDate[todayStr] || 0;
+  const grossRevenue = revenueByDate[todayStr] || 0;
+  let todayExpensesTotal = 0;
+  if (expensesByDate && expensesByDate[todayStr] && Array.isArray(expensesByDate[todayStr])) {
+    for (let i = 0; i < expensesByDate[todayStr].length; i++) {
+      todayExpensesTotal += (Number(expensesByDate[todayStr][i].amount) || 0);
+    }
+  }
+  const revenue = grossRevenue - todayExpensesTotal;
 
   if($("totalStudentsCount")) {
     const maxSt = window.SUBSCRIPTION?.maxStudents;
@@ -3459,12 +3466,18 @@ function applyPermissions() {
    if ($("todayRevenue")) {
      const isAr = (currentLang === "ar");
      const currencySuffix = isAr ? " ج" : " EGP";
-     $("todayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (revenue + currencySuffix);
+     $("todayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (revenue.toLocaleString() + currencySuffix);
+     $("todayRevenue").title = isAr 
+       ? `صافي الخزينة: ${revenue} ج (المقبوضات: ${grossRevenue} ج | المصروفات: ${todayExpensesTotal} ج)`
+       : `Net Cash: ${revenue} (Gross: ${grossRevenue} | Expenses: ${todayExpensesTotal})`;
    }
    if ($("sheetTodayRevenue")) {
      const isAr = (currentLang === "ar");
      const currencySuffix = isAr ? " ج" : " EGP";
-     $("sheetTodayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (revenue + currencySuffix);
+     $("sheetTodayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (revenue.toLocaleString() + currencySuffix);
+     $("sheetTodayRevenue").title = isAr 
+       ? `صافي الخزينة: ${revenue} ج (المقبوضات: ${grossRevenue} ج | المصروفات: ${todayExpensesTotal} ج)`
+       : `Net Cash: ${revenue} (Gross: ${grossRevenue} | Expenses: ${todayExpensesTotal})`;
    }
  }
 
@@ -7078,6 +7091,7 @@ on("saveStudentBtn", "click", function() {
     saveAll();
     $("asstExpenseAmtInp").value = "";
     $("asstExpenseReasonInp").value = "";
+    if (typeof updateTopStats === "function") updateTopStats();
     showToast(isAr ? "تم تسجيل المصروف بنجاح وتحديث الخزائن" : "Expense recorded successfully", "success");
     if (typeof renderAssistantExpensesTable === "function") renderAssistantExpensesTable();
     if (typeof renderReport === "function") renderReport(d);
@@ -7170,6 +7184,7 @@ on("saveStudentBtn", "click", function() {
       expensesByDate[d].splice(idx, 1);
       if (expensesByDate[d].length === 0) delete expensesByDate[d];
       saveAll();
+      if (typeof updateTopStats === "function") updateTopStats();
       showToast(isAr ? "تم حذف المصروف وتحديث الخزينة" : "Expense deleted", "success");
       if (typeof renderAssistantExpensesTable === "function") renderAssistantExpensesTable();
       if (typeof renderReport === "function") renderReport(d);
@@ -11907,6 +11922,7 @@ window.openSessionStudentModal = function(item) {
     }
   }
   // 3. Booklets Sales today
+  let bookletCount = 0;
   if (bookletsStock && typeof bookletsStock === 'object') {
     Object.values(bookletsStock).forEach(b => {
       if (!b || !Array.isArray(b.sales)) return;
@@ -11916,6 +11932,7 @@ window.openSessionStudentModal = function(item) {
         if (bAmt <= 0) return;
         grandTotal += bAmt;
         cashTotal += bAmt;
+        bookletCount++;
         allTransactions.push({
           type: "booklet",
           id: b.id || "",
@@ -11930,18 +11947,62 @@ window.openSessionStudentModal = function(item) {
     });
   }
 
-  // المزامنة التلقائية الدقيقة: ضمان تطابق شريط التوب بار مع إجمالي المعاملات الفعلي في المودال
+  // 4. Center Expenses today
+  let expCash = 0;
+  let expInstapay = 0;
+  let expWallet = 0;
+  let expTotal = 0;
+  let expCount = 0;
+  const expTodayList = (expensesByDate && expensesByDate[today] && Array.isArray(expensesByDate[today])) ? expensesByDate[today] : [];
+  for (let i = 0; i < expTodayList.length; i++) {
+    const it = expTodayList[i];
+    if (it) {
+      const eAmt = Number(it.amount) || 0;
+      if (eAmt <= 0) continue;
+      expTotal += eAmt;
+      expCount++;
+
+      const m = String(it.method || "cash").toLowerCase();
+      if (m === "instapay") expInstapay += eAmt;
+      else if (m === "wallet") expWallet += eAmt;
+      else expCash += eAmt;
+
+      allTransactions.push({
+        type: "expense",
+        id: it.id || "",
+        name: it.reason || (isAr ? "مصروف تشغيلي" : "Operational Expense"),
+        className: isAr ? "مصروفات عامة" : "Center Expenses",
+        amount: -eAmt,
+        remain: 0,
+        method: m,
+        time: it.timestamp ? new Date(it.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : (it.time || "")
+      });
+    }
+  }
+
+  const netGrandTotal = grandTotal - expTotal;
+  const netCash = cashTotal - expCash;
+  const netInstapay = instapayTotal - expInstapay;
+  const netWallet = walletTotal - expWallet;
+
+  // المزامنة التلقائية الدقيقة: تحديث الإيراد والمؤشرات
   if (revenueByDate[today] !== grandTotal) {
     revenueByDate[today] = grandTotal;
-    if ($("todayRevenue")) {
-      const currencySuffix = isAr ? " ج" : " EGP";
-      $("todayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (grandTotal + currencySuffix);
-    }
-    if ($("sheetTodayRevenue")) {
-      const currencySuffix = isAr ? " ج" : " EGP";
-      $("sheetTodayRevenue").textContent = isRevHidden ? ("******" + currencySuffix) : (grandTotal + currencySuffix);
-    }
     saveAll();
+  }
+  const currencySuffix = isAr ? " ج" : " EGP";
+  const netDisplay = isRevHidden ? ("******" + currencySuffix) : (netGrandTotal.toLocaleString() + currencySuffix);
+  if ($("todayRevenue")) {
+    $("todayRevenue").textContent = netDisplay;
+    $("todayRevenue").title = isAr 
+      ? `صافي الخزينة: ${netGrandTotal} ج (المقبوضات: ${grandTotal} ج | المصروفات: ${expTotal} ج)`
+      : `Net Cash: ${netGrandTotal} (Gross: ${grandTotal} | Expenses: ${expTotal})`;
+  }
+  if ($("sheetTodayRevenue")) {
+    $("sheetTodayRevenue").textContent = netDisplay;
+    $("sheetTodayRevenue").title = isAr 
+      ? `صافي الخزينة: ${netGrandTotal} ج (المقبوضات: ${grandTotal} ج | المصروفات: ${expTotal} ج)`
+      : `Net Cash: ${netGrandTotal} (Gross: ${grandTotal} | Expenses: ${expTotal})`;
   }
 
   let html = "";
@@ -11950,39 +12011,44 @@ window.openSessionStudentModal = function(item) {
     <div class="rev-empty-state">
       <div class="rev-empty-icon"><i class="fa-solid fa-receipt"></i></div>
       <h4>${t("txt_no_rev")}</h4>
-      <p>${isAr ? "لم يتم تحصيل أي مبالغ أو تسجيل اشتراكات لتاريخ اليوم حتى الآن." : "No payments or session fees have been recorded for today yet."}</p>
+      <p>${isAr ? "لم يتم تحصيل أي مبالغ أو تسجيل مصروفات لتاريخ اليوم حتى الآن." : "No payments or expenses have been recorded for today yet."}</p>
     </div>`;
   } else {
     html += `
     <div class="rev-summary-banner">
       <div class="rev-summary-main">
         <div class="rev-summary-lbl">
-          <i class="fa-solid fa-wallet"></i>
-          <span>${isAr ? "إجمالي إيراد اليوم المحصل" : "Total Collected Today"}</span>
+          <i class="fa-solid fa-scale-balanced"></i>
+          <span>${isAr ? "صافي نقدية اليوم (بعد خصم المصروفات)" : "Net Cash Today (After Expenses)"}</span>
         </div>
-        <div class="rev-summary-amount">
-          <span class="rev-num">${grandTotal.toLocaleString()}</span>
+        <div class="rev-summary-amount" style="${netGrandTotal < 0 ? 'color:#ef4444;' : ''}">
+          <span class="rev-num">${netGrandTotal.toLocaleString()}</span>
           <span class="rev-curr">${curr}</span>
         </div>
       </div>
       <div class="rev-summary-chips">
-        <div class="rev-stat-chip">
-          <i class="fa-solid fa-receipt" style="color:var(--primary);"></i>
-          <span><b>${allTransactions.length}</b> ${isAr ? "معاملة" : "Transactions"}</span>
+        <div class="rev-stat-chip" title="${isAr ? 'إجمالي المبالغ المحصلة' : 'Gross Collected'}">
+          <i class="fa-solid fa-arrow-trend-up" style="color:var(--success, #10b981);"></i>
+          <span>${isAr ? "المقبوضات" : "Gross"}: <b>+${grandTotal.toLocaleString()}</b> ${curr}</span>
         </div>
-        <div class="rev-stat-chip">
-          <i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i>
-          <span>${isAr ? "كاش" : "Cash"}: <b>${cashTotal.toLocaleString()}</b> ${curr}</span>
-        </div>
-        ${instapayTotal > 0 ? `
-        <div class="rev-stat-chip">
-          <i class="fa-solid fa-bolt" style="color:#0288d1;"></i>
-          <span>${isAr ? "إنستاباي" : "InstaPay"}: <b>${instapayTotal.toLocaleString()}</b> ${curr}</span>
+        ${expTotal > 0 ? `
+        <div class="rev-stat-chip" title="${isAr ? 'إجمالي المصروفات المنصرفة' : 'Total Expenses'}" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);">
+          <i class="fa-solid fa-arrow-trend-down" style="color:#ef4444;"></i>
+          <span style="color:#ef4444;">${isAr ? "المصروفات" : "Expenses"}: <b>-${expTotal.toLocaleString()}</b> ${curr}</span>
         </div>` : ''}
-        ${walletTotal > 0 ? `
-        <div class="rev-stat-chip">
+        <div class="rev-stat-chip" title="${isAr ? 'صافي النقدية بدرج الكاش' : 'Net Cash in Drawer'}">
+          <i class="fa-solid fa-money-bill-wave" style="color:#10b981;"></i>
+          <span>${isAr ? "درج الكاش" : "Cash Drawer"}: <b>${netCash.toLocaleString()}</b> ${curr}</span>
+        </div>
+        ${(instapayTotal > 0 || expInstapay > 0) ? `
+        <div class="rev-stat-chip" title="${isAr ? 'صافي رصيد إنستاباي' : 'Net InstaPay'}">
+          <i class="fa-solid fa-bolt" style="color:#0288d1;"></i>
+          <span>${isAr ? "إنستاباي" : "InstaPay"}: <b>${netInstapay.toLocaleString()}</b> ${curr}</span>
+        </div>` : ''}
+        ${(walletTotal > 0 || expWallet > 0) ? `
+        <div class="rev-stat-chip" title="${isAr ? 'صافي رصيد المحفظة' : 'Net Wallet'}">
           <i class="fa-solid fa-mobile-screen-button" style="color:#2e7d32;"></i>
-          <span>${isAr ? "محفظة" : "Wallet"}: <b>${walletTotal.toLocaleString()}</b> ${curr}</span>
+          <span>${isAr ? "محفظة" : "Wallet"}: <b>${netWallet.toLocaleString()}</b> ${curr}</span>
         </div>` : ''}
       </div>
     </div>
@@ -11997,6 +12063,14 @@ window.openSessionStudentModal = function(item) {
       <button type="button" class="rev-filter-btn" data-filter="session" onclick="window.filterRevModalCards('session', this)">
         ${isAr ? "طلاب الحصة" : "Session Students"} <span class="rev-count-pill">${sessCount}</span>
       </button>
+      ${bookletCount > 0 ? `
+      <button type="button" class="rev-filter-btn" data-filter="booklet" onclick="window.filterRevModalCards('booklet', this)">
+        ${isAr ? "مبيعات مذكرات" : "Booklet Sales"} <span class="rev-count-pill">${bookletCount}</span>
+      </button>` : ''}
+      ${expCount > 0 ? `
+      <button type="button" class="rev-filter-btn" data-filter="expense" onclick="window.filterRevModalCards('expense', this)" style="border-color:rgba(239,68,68,0.3); color:#ef4444;">
+        ${isAr ? "المصروفات" : "Expenses"} <span class="rev-count-pill" style="background:#fee2e2; color:#ef4444;">${expCount}</span>
+      </button>` : ''}
     </div>
 
     <div class="rev-cards-list" id="revCardsList">
@@ -12023,23 +12097,33 @@ window.openSessionStudentModal = function(item) {
         mColor = "#2e7d32";
       }
 
-      let clickAction = isReg 
-        ? `document.getElementById('revenueModal').classList.add('hidden'); window.extOpen('${tx.id}');`
-        : `document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('SessionStudents'); if(document.getElementById('sessFilterDate')) document.getElementById('sessFilterDate').value='${today}'; renderSessionStudentsList('${today}');`;
-
+      let clickAction = "";
+      let typeBadgeHtml = "";
       let statusHtml = "";
-      if (isReg) {
+      let cardBorder = "";
+
+      if (tx.type === "expense") {
+        clickAction = `document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('Expenses');`;
+        typeBadgeHtml = `<span class="rev-badge" style="background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.25);"><i class="fa-solid fa-receipt"></i> <bdi>${isAr ? "مصروف تشغيلي" : "Expense"}</bdi></span>`;
+        statusHtml = `<span class="rev-status-text" style="color:#ef4444; font-weight:700;"><i class="fa-solid fa-minus"></i> ${isAr ? "خصم من الخزينة" : "Deducted"}</span>`;
+        cardBorder = "border-inline-start: 4px solid #ef4444;";
+      } else if (tx.type === "booklet") {
+        clickAction = `document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('Booklets');`;
+        typeBadgeHtml = `<span class="rev-badge" style="background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.25);"><i class="fa-solid fa-book-open"></i> <bdi>${isAr ? "مذكرة" : "Booklet"}</bdi></span>`;
+        statusHtml = `<span class="rev-status-text rev-status-instant" style="color:#d97706;">${isAr ? "بيع فوري" : "Instant Sale"}</span>`;
+        cardBorder = "border-inline-start: 4px solid #f59e0b;";
+      } else if (isReg) {
+        clickAction = `document.getElementById('revenueModal').classList.add('hidden'); window.extOpen('${tx.id}');`;
+        typeBadgeHtml = `<span class="rev-badge rev-badge-id">#${tx.id}</span>`;
         statusHtml = `<span class="rev-status-text">${isAr ? "المتبقي: " : "Remaining: "}<bdi>${tx.remain} ${curr}</bdi></span>`;
       } else {
+        clickAction = `document.getElementById('revenueModal').classList.add('hidden'); window.switchTab('SessionStudents'); if(document.getElementById('sessFilterDate')) document.getElementById('sessFilterDate').value='${today}'; renderSessionStudentsList('${today}');`;
+        typeBadgeHtml = `<span class="rev-badge rev-badge-session"><i class="fa-solid fa-user-clock"></i> <bdi>${isAr ? "طالب حصة" : "Session Student"}</bdi></span>`;
         statusHtml = `<span class="rev-status-text rev-status-instant">${isAr ? "دفع فوري" : "Instant Payment"}</span>`;
       }
 
-      let typeBadgeHtml = isReg
-        ? `<span class="rev-badge rev-badge-id">#${tx.id}</span>`
-        : `<span class="rev-badge rev-badge-session"><i class="fa-solid fa-user-clock"></i> <bdi>${isAr ? "طالب حصة" : "Session Student"}</bdi></span>`;
-
       html += `
-      <div class="rev-card-item" data-type="${tx.type}" onclick="${clickAction}">
+      <div class="rev-card-item" data-type="${tx.type}" onclick="${clickAction}" style="${cardBorder}">
         <div class="rev-card-left">
           <div class="rev-card-name-row">
             <bdi class="rev-card-name">${safeRevText(tx.name)}</bdi>

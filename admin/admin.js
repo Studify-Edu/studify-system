@@ -2680,6 +2680,13 @@ export function loadDailyReport(dateStr) {
   if (statAbsent) statAbsent.textContent = Math.max(0, totalSt - totalAttended);
   if (statExp) statExp.textContent = totalExp.toLocaleString() + currencySuffix;
 
+  const netDailyRev = rev - totalExp;
+  const statNetRev = document.getElementById("statDailyNetRevenue");
+  if (statNetRev) {
+    statNetRev.textContent = netDailyRev.toLocaleString() + currencySuffix;
+    statNetRev.style.color = netDailyRev < 0 ? "var(--danger, #ef4444)" : "var(--success, #10b981)";
+  }
+
   // Subtab badges
   const bRev = document.getElementById("dailyRevBadge");
   const bExp = document.getElementById("dailyExpBadge");
